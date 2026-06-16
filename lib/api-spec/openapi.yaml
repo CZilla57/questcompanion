@@ -1,15 +1,24 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: FocusQuest API - ADHD gamified task tracker
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: users
+    description: User profile and stats
+  - name: tasks
+    description: Task management
+  - name: badges
+    description: Badges and achievements
+  - name: accountability
+    description: Accountability partner system
+  - name: leaderboard
+    description: Leaderboard and rankings
 paths:
   /healthz:
     get:
@@ -24,6 +33,349 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /users/me:
+    get:
+      operationId: getMe
+      tags: [users]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    patch:
+      operationId: updateMe
+      tags: [users]
+      summary: Update current user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/me/stats:
+    get:
+      operationId: getMyStats
+      tags: [users]
+      summary: Get current user dashboard stats
+      responses:
+        "200":
+          description: User stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserStats"
+
+  /tasks:
+    get:
+      operationId: getTasks
+      tags: [tasks]
+      summary: List tasks for the current user
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: ["string", "null"]
+          description: Filter by date (YYYY-MM-DD). Defaults to today.
+        - name: completed
+          in: query
+          schema:
+            type: ["boolean", "null"]
+      responses:
+        "200":
+          description: Task list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+    post:
+      operationId: createTask
+      tags: [tasks]
+      summary: Create a new task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskInput"
+      responses:
+        "201":
+          description: Created task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+
+  /tasks/{id}:
+    get:
+      operationId: getTask
+      tags: [tasks]
+      summary: Get a single task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+    patch:
+      operationId: updateTask
+      tags: [tasks]
+      summary: Update a task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskUpdate"
+      responses:
+        "200":
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+    delete:
+      operationId: deleteTask
+      tags: [tasks]
+      summary: Delete a task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /tasks/{id}/complete:
+    post:
+      operationId: completeTask
+      tags: [tasks]
+      summary: Mark a task complete and award points
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Completion result with points awarded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskCompletionResult"
+
+  /tasks/{id}/uncomplete:
+    post:
+      operationId: uncompleteTask
+      tags: [tasks]
+      summary: Mark a task as incomplete (undo)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Task reverted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+
+  /badges:
+    get:
+      operationId: getBadges
+      tags: [badges]
+      summary: List all available badges
+      responses:
+        "200":
+          description: All badges
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Badge"
+
+  /users/me/badges:
+    get:
+      operationId: getMyBadges
+      tags: [badges]
+      summary: Get badges earned by the current user
+      responses:
+        "200":
+          description: Earned badges
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserBadge"
+
+  /accountability/partners:
+    get:
+      operationId: getPartners
+      tags: [accountability]
+      summary: List accountability partners
+      responses:
+        "200":
+          description: Partners list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Partnership"
+    post:
+      operationId: sendPartnerRequest
+      tags: [accountability]
+      summary: Send an accountability partner request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PartnerRequestInput"
+      responses:
+        "201":
+          description: Request sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Partnership"
+
+  /accountability/partners/{id}/accept:
+    post:
+      operationId: acceptPartnerRequest
+      tags: [accountability]
+      summary: Accept a partnership request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Partnership accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Partnership"
+
+  /accountability/partners/{id}/decline:
+    post:
+      operationId: declinePartnerRequest
+      tags: [accountability]
+      summary: Decline or remove a partnership
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Partnership declined/removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Partnership"
+
+  /accountability/partners/{id}/feed:
+    get:
+      operationId: getPartnerFeed
+      tags: [accountability]
+      summary: Get recent activity for a partner
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Partner activity feed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+  /leaderboard:
+    get:
+      operationId: getLeaderboard
+      tags: [leaderboard]
+      summary: Get top users ranked by points
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [alltime, weekly]
+            default: alltime
+      responses:
+        "200":
+          description: Leaderboard entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntry"
+
+  /users/search:
+    get:
+      operationId: searchUsers
+      tags: [users]
+      summary: Search for users by username
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Matching users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserSummary"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +386,264 @@ components:
       required:
         - status
 
+    User:
+      type: object
+      required: [id, username, totalPoints, currentLevel, streakDays, createdAt]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        displayName:
+          type: ["string", "null"]
+        avatarColor:
+          type: string
+        totalPoints:
+          type: integer
+        weeklyPoints:
+          type: integer
+        currentLevel:
+          type: integer
+        levelName:
+          type: string
+        streakDays:
+          type: integer
+        longestStreak:
+          type: integer
+        pointsToNextLevel:
+          type: integer
+        createdAt:
+          type: string
+
+    UserSummary:
+      type: object
+      required: [id, username, currentLevel, totalPoints]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        displayName:
+          type: ["string", "null"]
+        avatarColor:
+          type: string
+        currentLevel:
+          type: integer
+        levelName:
+          type: string
+        totalPoints:
+          type: integer
+        streakDays:
+          type: integer
+
+    UserUpdate:
+      type: object
+      properties:
+        username:
+          type: string
+        displayName:
+          type: string
+        avatarColor:
+          type: string
+
+    UserStats:
+      type: object
+      required: [todayPoints, todayTasksTotal, todayTasksCompleted, allDayBonusEarned, weeklyPoints, totalPoints, currentLevel, levelName, streakDays, pointsToNextLevel, recentActivity]
+      properties:
+        todayPoints:
+          type: integer
+        todayTasksTotal:
+          type: integer
+        todayTasksCompleted:
+          type: integer
+        allDayBonusEarned:
+          type: boolean
+        weeklyPoints:
+          type: integer
+        totalPoints:
+          type: integer
+        currentLevel:
+          type: integer
+        levelName:
+          type: string
+        streakDays:
+          type: integer
+        pointsToNextLevel:
+          type: integer
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityItem"
+
+    Task:
+      type: object
+      required: [id, userId, title, points, completed, dueDate, priority, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        points:
+          type: integer
+        completed:
+          type: boolean
+        completedAt:
+          type: ["string", "null"]
+        dueDate:
+          type: string
+        priority:
+          type: string
+          enum: [low, medium, high]
+        createdAt:
+          type: string
+
+    TaskInput:
+      type: object
+      required: [title, dueDate]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        points:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+        dueDate:
+          type: string
+        priority:
+          type: string
+          enum: [low, medium, high]
+          default: medium
+
+    TaskUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        points:
+          type: integer
+          minimum: 1
+          maximum: 100
+        dueDate:
+          type: string
+        priority:
+          type: string
+          enum: [low, medium, high]
+
+    TaskCompletionResult:
+      type: object
+      required: [task, pointsAwarded, bonusAwarded, bonusPoints, newTotalPoints, newLevel, leveledUp, newBadges]
+      properties:
+        task:
+          $ref: "#/components/schemas/Task"
+        pointsAwarded:
+          type: integer
+        bonusAwarded:
+          type: boolean
+        bonusPoints:
+          type: integer
+        newTotalPoints:
+          type: integer
+        newLevel:
+          type: integer
+        leveledUp:
+          type: boolean
+        newBadges:
+          type: array
+          items:
+            $ref: "#/components/schemas/Badge"
+
+    Badge:
+      type: object
+      required: [id, name, description, icon, category, requirement]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        icon:
+          type: string
+        category:
+          type: string
+          enum: [streak, tasks, points, social, level]
+        requirement:
+          type: integer
+
+    UserBadge:
+      type: object
+      required: [badge, earnedAt]
+      properties:
+        badge:
+          $ref: "#/components/schemas/Badge"
+        earnedAt:
+          type: string
+
+    Partnership:
+      type: object
+      required: [id, requesterId, recipientId, status, createdAt]
+      properties:
+        id:
+          type: integer
+        requesterId:
+          type: integer
+        recipientId:
+          type: integer
+        status:
+          type: string
+          enum: [pending, accepted, declined]
+        partner:
+          $ref: "#/components/schemas/UserSummary"
+        createdAt:
+          type: string
+
+    PartnerRequestInput:
+      type: object
+      required: [recipientId]
+      properties:
+        recipientId:
+          type: integer
+
+    ActivityItem:
+      type: object
+      required: [id, userId, type, description, points, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        username:
+          type: string
+        type:
+          type: string
+          enum: [task_completed, badge_earned, level_up, streak_milestone, all_day_bonus]
+        description:
+          type: string
+        points:
+          type: integer
+        createdAt:
+          type: string
+
+    LeaderboardEntry:
+      type: object
+      required: [rank, user, points]
+      properties:
+        rank:
+          type: integer
+        user:
+          $ref: "#/components/schemas/UserSummary"
+        points:
+          type: integer
+        tasksCompleted:
+          type: integer
