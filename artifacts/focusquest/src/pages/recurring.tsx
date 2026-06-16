@@ -3,6 +3,7 @@ import { format, parseISO } from "date-fns";
 import {
   Plus, Repeat, Trash2, ToggleLeft, ToggleRight, Edit2,
   Calendar as CalendarIcon, Clock, Zap, ChevronDown, ChevronUp,
+  Flame, Trophy, CheckCircle2,
 } from "lucide-react";
 import {
   useGetRecurringTasks,
@@ -39,6 +40,36 @@ const PRIORITY_COLORS: Record<string, string> = {
   medium: "text-yellow-400 border-yellow-500/30 bg-yellow-500/10",
   low: "text-green-400 border-green-500/30 bg-green-500/10",
 };
+
+function getStreakColor(streak: number): string {
+  if (streak >= 30) return "text-orange-300";
+  if (streak >= 14) return "text-orange-400";
+  if (streak >= 7) return "text-amber-400";
+  if (streak >= 3) return "text-yellow-400";
+  return "text-muted-foreground";
+}
+
+function StreakBadge({ streak, longest, total }: { streak: number; longest: number; total: number }) {
+  if (total === 0) return null;
+  return (
+    <div className="flex items-center gap-3 text-xs flex-wrap">
+      <span className={`flex items-center gap-1 font-bold ${getStreakColor(streak)}`}>
+        <Flame className={`w-3.5 h-3.5 ${streak > 0 ? "drop-shadow-[0_0_4px_rgba(251,146,60,0.7)]" : ""}`} />
+        {streak} day streak
+      </span>
+      {longest > 0 && (
+        <span className="flex items-center gap-1 text-muted-foreground">
+          <Trophy className="w-3 h-3" />
+          Best: {longest}
+        </span>
+      )}
+      <span className="flex items-center gap-1 text-muted-foreground">
+        <CheckCircle2 className="w-3 h-3" />
+        {total} total
+      </span>
+    </div>
+  );
+}
 
 function DaySelector({
   value,
@@ -149,7 +180,6 @@ function RecurringTaskForm({
       onSubmit={(e) => { e.preventDefault(); if (valid) onSave(form); }}
       className="space-y-5"
     >
-      {/* Title */}
       <div>
         <label className="text-sm font-medium text-foreground mb-1 block">Objective</label>
         <Input
@@ -161,7 +191,6 @@ function RecurringTaskForm({
         />
       </div>
 
-      {/* Description */}
       <div>
         <label className="text-sm font-medium text-foreground mb-1 block">Details (Optional)</label>
         <Textarea
@@ -173,7 +202,6 @@ function RecurringTaskForm({
         />
       </div>
 
-      {/* Priority */}
       <div>
         <label className="text-sm font-medium text-foreground mb-1 block">Priority</label>
         <Select value={form.priority} onValueChange={(v) => set("priority", v)}>
@@ -188,7 +216,6 @@ function RecurringTaskForm({
         </Select>
       </div>
 
-      {/* Days of week */}
       <div>
         <label className="text-sm font-medium text-foreground mb-2 block">Repeat on</label>
         <DaySelector value={form.daysOfWeek} onChange={(d) => set("daysOfWeek", d)} />
@@ -197,7 +224,6 @@ function RecurringTaskForm({
         )}
       </div>
 
-      {/* Time of day */}
       <div>
         <label className="text-sm font-medium text-foreground mb-1 block">
           <Clock className="inline w-3.5 h-3.5 mr-1 text-primary" />
@@ -211,7 +237,6 @@ function RecurringTaskForm({
         />
       </div>
 
-      {/* Start date */}
       <div>
         <label className="text-sm font-medium text-foreground mb-1 block">
           <CalendarIcon className="inline w-3.5 h-3.5 mr-1 text-primary" />
@@ -234,7 +259,6 @@ function RecurringTaskForm({
         </Popover>
       </div>
 
-      {/* End date toggle */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
@@ -270,7 +294,6 @@ function RecurringTaskForm({
         )}
       </div>
 
-      {/* Actions */}
       <div className="pt-2 flex justify-end gap-3">
         <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>
         <Button
@@ -319,12 +342,12 @@ function RecurringTaskCard({ task }: { task: RecurringTask }) {
       data: {
         title: form.title,
         description: form.description || undefined,
-        priority: form.priority as any,
+        priority: form.priority as "low" | "medium" | "high",
         daysOfWeek: form.daysOfWeek,
         timeOfDay: form.timeOfDay,
         startDate: format(form.startDate, "yyyy-MM-dd"),
         endDate: form.hasEndDate && form.endDate ? format(form.endDate, "yyyy-MM-dd") : null,
-      } as any,
+      } as Parameters<typeof updateMutation.mutate>[0]["data"],
     }, {
       onSuccess: () => { invalidate(); setEditing(false); toast({ title: "Template updated" }); },
     });
@@ -354,10 +377,13 @@ function RecurringTaskCard({ task }: { task: RecurringTask }) {
     );
   }
 
+  const hasStreak = task.totalCompletions > 0;
+
   return (
     <div className={`
       bg-card border rounded-xl transition-all duration-200
       ${task.isActive ? "border-border hover:border-primary/40" : "border-border opacity-60"}
+      ${task.currentStreak >= 7 ? "shadow-[0_0_12px_rgba(251,146,60,0.15)]" : ""}
     `}>
       <div className="flex items-center gap-4 p-4">
         {/* Active toggle */}
@@ -400,6 +426,17 @@ function RecurringTaskCard({ task }: { task: RecurringTask }) {
               {task.estimatedPoints} XP · {task.categoryLabel}
             </span>
           </div>
+
+          {/* Streak row */}
+          {hasStreak && (
+            <div className="mt-2">
+              <StreakBadge
+                streak={task.currentStreak}
+                longest={task.longestStreak}
+                total={task.totalCompletions}
+              />
+            </div>
+          )}
         </div>
 
         {/* Actions */}
@@ -454,7 +491,34 @@ function RecurringTaskCard({ task }: { task: RecurringTask }) {
                 {task.daysOfWeek.map((d) => DAYS[d]?.label).join(", ")}
               </p>
             </div>
+            {hasStreak && (
+              <div>
+                <span className="text-xs text-muted-foreground uppercase tracking-wider">Last completed</span>
+                <p className="text-foreground mt-0.5">
+                  {task.lastCompletedDate
+                    ? format(parseISO(task.lastCompletedDate), "MMM d, yyyy")
+                    : "—"}
+                </p>
+              </div>
+            )}
           </div>
+
+          {/* Streak details panel */}
+          {hasStreak && (
+            <div className="mt-4 grid grid-cols-3 gap-3">
+              {[
+                { label: "Current streak", value: task.currentStreak, icon: <Flame className={`w-4 h-4 ${getStreakColor(task.currentStreak)}`} />, suffix: "days" },
+                { label: "Longest streak", value: task.longestStreak, icon: <Trophy className="w-4 h-4 text-amber-400" />, suffix: "days" },
+                { label: "Total done", value: task.totalCompletions, icon: <CheckCircle2 className="w-4 h-4 text-primary" />, suffix: "times" },
+              ].map((s) => (
+                <div key={s.label} className="bg-muted/20 rounded-lg p-3 text-center border border-border/50">
+                  <div className="flex justify-center mb-1">{s.icon}</div>
+                  <div className="text-lg font-bold text-foreground">{s.value}</div>
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -471,13 +535,15 @@ export default function Recurring() {
 
   const activeTasks = tasks?.filter((t) => t.isActive) ?? [];
   const pausedTasks = tasks?.filter((t) => !t.isActive) ?? [];
+  const totalStreak = tasks?.reduce((sum, t) => sum + t.currentStreak, 0) ?? 0;
+  const topStreak = tasks ? Math.max(0, ...tasks.map((t) => t.currentStreak)) : 0;
 
   const handleCreate = (form: TaskFormState) => {
     createMutation.mutate({
       data: {
         title: form.title,
         description: form.description || undefined,
-        priority: form.priority as any,
+        priority: form.priority as "low" | "medium" | "high",
         daysOfWeek: form.daysOfWeek,
         timeOfDay: form.timeOfDay,
         startDate: format(form.startDate, "yyyy-MM-dd"),
@@ -516,11 +582,12 @@ export default function Recurring() {
 
       {/* Stats bar */}
       {tasks && tasks.length > 0 && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
             { label: "Active templates", value: activeTasks.length },
             { label: "Paused", value: pausedTasks.length },
-            { label: "Total templates", value: tasks.length },
+            { label: "🔥 Top streak", value: `${topStreak}d` },
+            { label: "Total streak days", value: totalStreak },
           ].map((s) => (
             <div key={s.label} className="bg-card border border-border rounded-xl p-4 text-center">
               <div className="text-2xl font-bold text-foreground">{s.value}</div>

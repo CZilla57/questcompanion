@@ -6,6 +6,7 @@ import { usersTable } from "./users";
 export const tasksTable = pgTable("tasks", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => usersTable.id),
+  recurringTaskId: integer("recurring_task_id"),
   title: text("title").notNull(),
   description: text("description"),
   points: integer("points").notNull().default(10),

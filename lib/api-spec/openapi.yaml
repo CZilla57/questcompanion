@@ -673,7 +673,7 @@ components:
 
     RecurringTask:
       type: object
-      required: [id, userId, title, priority, daysOfWeek, timeOfDay, startDate, isActive, createdAt]
+      required: [id, userId, title, priority, daysOfWeek, timeOfDay, startDate, isActive, createdAt, currentStreak, longestStreak, totalCompletions]
       properties:
         id:
           type: integer
@@ -704,6 +704,14 @@ components:
           type: integer
         categoryLabel:
           type: string
+        currentStreak:
+          type: integer
+        longestStreak:
+          type: integer
+        totalCompletions:
+          type: integer
+        lastCompletedDate:
+          type: ["string", "null"]
         createdAt:
           type: string
 

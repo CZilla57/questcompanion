@@ -24,5 +24,10 @@ export interface RecurringTask {
   isActive: boolean;
   estimatedPoints?: number;
   categoryLabel?: string;
+  currentStreak: number;
+  longestStreak: number;
+  totalCompletions: number;
+  /** @nullable */
+  lastCompletedDate?: string | null;
   createdAt: string;
 }

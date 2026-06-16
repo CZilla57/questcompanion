@@ -3,6 +3,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, DAILY_BONUS_POINTS } from "../lib/gamification";
 import { assignPoints } from "../lib/auto-points";
+import { advanceHabitStreak } from "../lib/habit-streaks";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -158,6 +159,12 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     .set({ completed: true, completedAt: now })
     .where(eq(tasksTable.id, id))
     .returning();
+
+  // Advance per-template habit streak if this task came from a recurring template
+  if (task.recurringTaskId) {
+    const completionDate = now.toISOString().split("T")[0];
+    await advanceHabitStreak(DEFAULT_USER_ID, task.recurringTaskId, completionDate);
+  }
 
   // Award points to user
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, DEFAULT_USER_ID));

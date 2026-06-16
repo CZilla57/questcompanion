@@ -244,6 +244,10 @@ export const GetRecurringTasksResponseItem = zod.object({
   "isActive": zod.boolean(),
   "estimatedPoints": zod.number().optional(),
   "categoryLabel": zod.string().optional(),
+  "currentStreak": zod.number(),
+  "longestStreak": zod.number(),
+  "totalCompletions": zod.number(),
+  "lastCompletedDate": zod.string().nullish(),
   "createdAt": zod.string()
 })
 export const GetRecurringTasksResponse = zod.array(GetRecurringTasksResponseItem)
@@ -287,6 +291,10 @@ export const GetRecurringTaskResponse = zod.object({
   "isActive": zod.boolean(),
   "estimatedPoints": zod.number().optional(),
   "categoryLabel": zod.string().optional(),
+  "currentStreak": zod.number(),
+  "longestStreak": zod.number(),
+  "totalCompletions": zod.number(),
+  "lastCompletedDate": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -325,6 +333,10 @@ export const UpdateRecurringTaskResponse = zod.object({
   "isActive": zod.boolean(),
   "estimatedPoints": zod.number().optional(),
   "categoryLabel": zod.string().optional(),
+  "currentStreak": zod.number(),
+  "longestStreak": zod.number(),
+  "totalCompletions": zod.number(),
+  "lastCompletedDate": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -357,6 +369,10 @@ export const ToggleRecurringTaskResponse = zod.object({
   "isActive": zod.boolean(),
   "estimatedPoints": zod.number().optional(),
   "categoryLabel": zod.string().optional(),
+  "currentStreak": zod.number(),
+  "longestStreak": zod.number(),
+  "totalCompletions": zod.number(),
+  "lastCompletedDate": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
