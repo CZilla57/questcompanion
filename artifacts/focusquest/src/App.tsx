@@ -10,6 +10,7 @@ import Tasks from "@/pages/tasks";
 import Progress from "@/pages/progress";
 import Partners from "@/pages/partners";
 import Leaderboard from "@/pages/leaderboard";
+import Recurring from "@/pages/recurring";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,6 +27,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Dashboard} />
         <Route path="/tasks" component={Tasks} />
+        <Route path="/recurring" component={Recurring} />
         <Route path="/progress" component={Progress} />
         <Route path="/partners" component={Partners} />
         <Route path="/leaderboard" component={Leaderboard} />

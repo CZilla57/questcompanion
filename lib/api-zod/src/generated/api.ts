@@ -229,6 +229,139 @@ export const CompleteTaskResponse = zod.object({
 
 
 /**
+ * @summary List all recurring task templates
+ */
+export const GetRecurringTasksResponseItem = zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "priority": zod.enum(['low', 'medium', 'high']),
+  "daysOfWeek": zod.array(zod.number()).describe('0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat'),
+  "timeOfDay": zod.string().describe('HH:MM format'),
+  "startDate": zod.string(),
+  "endDate": zod.string().nullish(),
+  "isActive": zod.boolean(),
+  "estimatedPoints": zod.number().optional(),
+  "categoryLabel": zod.string().optional(),
+  "createdAt": zod.string()
+})
+export const GetRecurringTasksResponse = zod.array(GetRecurringTasksResponseItem)
+
+
+/**
+ * @summary Create a recurring task template
+ */
+
+export const createRecurringTaskBodyPriorityDefault = `medium`;
+
+
+export const CreateRecurringTaskBody = zod.object({
+  "title": zod.string().min(1),
+  "description": zod.string().optional(),
+  "priority": zod.enum(['low', 'medium', 'high']).default(createRecurringTaskBodyPriorityDefault),
+  "daysOfWeek": zod.array(zod.number()).min(1),
+  "timeOfDay": zod.string(),
+  "startDate": zod.string(),
+  "endDate": zod.string().optional()
+})
+
+
+/**
+ * @summary Get a single recurring task template
+ */
+export const GetRecurringTaskParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetRecurringTaskResponse = zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "priority": zod.enum(['low', 'medium', 'high']),
+  "daysOfWeek": zod.array(zod.number()).describe('0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat'),
+  "timeOfDay": zod.string().describe('HH:MM format'),
+  "startDate": zod.string(),
+  "endDate": zod.string().nullish(),
+  "isActive": zod.boolean(),
+  "estimatedPoints": zod.number().optional(),
+  "categoryLabel": zod.string().optional(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Update a recurring task template
+ */
+export const UpdateRecurringTaskParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+export const UpdateRecurringTaskBody = zod.object({
+  "title": zod.string().min(1).optional(),
+  "description": zod.string().optional(),
+  "priority": zod.enum(['low', 'medium', 'high']).optional(),
+  "daysOfWeek": zod.array(zod.number()).optional(),
+  "timeOfDay": zod.string().optional(),
+  "startDate": zod.string().optional(),
+  "endDate": zod.string().nullish(),
+  "isActive": zod.boolean().optional()
+})
+
+export const UpdateRecurringTaskResponse = zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "priority": zod.enum(['low', 'medium', 'high']),
+  "daysOfWeek": zod.array(zod.number()).describe('0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat'),
+  "timeOfDay": zod.string().describe('HH:MM format'),
+  "startDate": zod.string(),
+  "endDate": zod.string().nullish(),
+  "isActive": zod.boolean(),
+  "estimatedPoints": zod.number().optional(),
+  "categoryLabel": zod.string().optional(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a recurring task template
+ */
+export const DeleteRecurringTaskParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Enable or disable a recurring task template
+ */
+export const ToggleRecurringTaskParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ToggleRecurringTaskResponse = zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "priority": zod.enum(['low', 'medium', 'high']),
+  "daysOfWeek": zod.array(zod.number()).describe('0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat'),
+  "timeOfDay": zod.string().describe('HH:MM format'),
+  "startDate": zod.string(),
+  "endDate": zod.string().nullish(),
+  "isActive": zod.boolean(),
+  "estimatedPoints": zod.number().optional(),
+  "categoryLabel": zod.string().optional(),
+  "createdAt": zod.string()
+})
+
+
+/**
  * @summary Mark a task as incomplete (undo)
  */
 export const UncompleteTaskParams = zod.object({

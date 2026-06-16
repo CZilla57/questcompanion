@@ -1,7 +1,8 @@
-import { eq, and, lt, lte } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { db, tasksTable, usersTable, pushSubscriptionsTable } from "@workspace/db";
 import { sendPushNotification } from "./push-notifications";
 import { logger } from "./logger";
+import { spawnRecurringTasksForToday } from "../routes/recurring-tasks";
 
 const DEFAULT_USER_ID = 1;
 
@@ -21,7 +22,6 @@ async function notify(userId: number, title: string, body: string, tag: string) 
       { title, body, tag },
     );
     if (!ok) {
-      // Expired subscription — clean up
       await removeSubscription(sub.endpoint);
     }
   }
@@ -33,10 +33,8 @@ async function checkDueTasks() {
   const currentHour = now.getHours();
   const currentMinute = now.getMinutes();
 
-  // Only run during waking hours (7am – 10pm)
   if (currentHour < 7 || currentHour >= 22) return;
 
-  // Morning reminder at 8:00am — show all of today's pending tasks
   if (currentHour === 8 && currentMinute === 0) {
     const pendingTasks = await db.select().from(tasksTable).where(
       and(eq(tasksTable.dueDate, today), eq(tasksTable.completed, false), eq(tasksTable.userId, DEFAULT_USER_ID)),
@@ -51,7 +49,6 @@ async function checkDueTasks() {
     }
   }
 
-  // Midday reminder at 12:00pm — if still pending tasks
   if (currentHour === 12 && currentMinute === 0) {
     const pendingTasks = await db.select().from(tasksTable).where(
       and(eq(tasksTable.dueDate, today), eq(tasksTable.completed, false), eq(tasksTable.userId, DEFAULT_USER_ID)),
@@ -66,7 +63,6 @@ async function checkDueTasks() {
     }
   }
 
-  // Evening reminder at 7:00pm — last chance for daily bonus
   if (currentHour === 19 && currentMinute === 0) {
     const allTasks = await db.select().from(tasksTable).where(
       and(eq(tasksTable.dueDate, today), eq(tasksTable.userId, DEFAULT_USER_ID)),
@@ -88,7 +84,6 @@ async function checkStreakReminder() {
   const currentHour = now.getHours();
   const currentMinute = now.getMinutes();
 
-  // Streak reminder at 9:00pm if user hasn't completed any tasks today
   if (currentHour !== 21 || currentMinute !== 0) return;
 
   const today = now.toISOString().split("T")[0];
@@ -109,20 +104,53 @@ async function checkStreakReminder() {
   }
 }
 
+async function spawnRecurringTasks() {
+  const now = new Date();
+
+  // Spawn recurring tasks once per minute check — only run at the task's configured time (within the same minute)
+  try {
+    const created = await spawnRecurringTasksForToday();
+    if (created > 0) {
+      logger.info({ created }, "Spawned recurring tasks for today");
+    }
+  } catch (err) {
+    logger.error({ err }, "Failed to spawn recurring tasks");
+  }
+}
+
 let schedulerInterval: ReturnType<typeof setInterval> | null = null;
+let lastSpawnDate: string | null = null;
 
 export function startScheduler() {
   if (schedulerInterval) return;
 
-  // Check every minute
   schedulerInterval = setInterval(async () => {
     try {
+      const now = new Date();
+      const todayStr = now.toISOString().split("T")[0];
+
+      // Spawn recurring tasks once per day at the top of each hour (checking all templates)
+      // The actual per-template time check happens inside spawnRecurringTasksForToday
+      if (lastSpawnDate !== todayStr) {
+        lastSpawnDate = todayStr;
+        await spawnRecurringTasks();
+      } else {
+        // Also check every hour in case new templates were added mid-day
+        const minute = now.getMinutes();
+        if (minute === 0) {
+          await spawnRecurringTasks();
+        }
+      }
+
       await checkDueTasks();
       await checkStreakReminder();
     } catch (err) {
       logger.error({ err }, "Scheduler error");
     }
   }, 60 * 1000);
+
+  // Also spawn immediately on startup for today
+  spawnRecurringTasks().catch((err) => logger.error({ err }, "Initial spawn error"));
 
   logger.info("Notification scheduler started");
 }

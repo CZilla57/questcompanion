@@ -4,3 +4,4 @@ export * from "./badges";
 export * from "./partnerships";
 export * from "./activity";
 export * from "./push-subscriptions";
+export * from "./recurring-tasks";

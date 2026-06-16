@@ -177,6 +177,78 @@ export interface TaskCompletionResult {
   newBadges: Badge[];
 }
 
+export type RecurringTaskPriority = typeof RecurringTaskPriority[keyof typeof RecurringTaskPriority];
+
+
+export const RecurringTaskPriority = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export interface RecurringTask {
+  id: number;
+  userId: number;
+  title: string;
+  /** @nullable */
+  description?: string | null;
+  priority: RecurringTaskPriority;
+  /** 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat */
+  daysOfWeek: number[];
+  /** HH:MM format */
+  timeOfDay: string;
+  startDate: string;
+  /** @nullable */
+  endDate?: string | null;
+  isActive: boolean;
+  estimatedPoints?: number;
+  categoryLabel?: string;
+  createdAt: string;
+}
+
+export type RecurringTaskInputPriority = typeof RecurringTaskInputPriority[keyof typeof RecurringTaskInputPriority];
+
+
+export const RecurringTaskInputPriority = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export interface RecurringTaskInput {
+  /** @minLength 1 */
+  title: string;
+  description?: string;
+  priority?: RecurringTaskInputPriority;
+  /** @minItems 1 */
+  daysOfWeek: number[];
+  timeOfDay: string;
+  startDate: string;
+  endDate?: string;
+}
+
+export type RecurringTaskUpdatePriority = typeof RecurringTaskUpdatePriority[keyof typeof RecurringTaskUpdatePriority];
+
+
+export const RecurringTaskUpdatePriority = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export interface RecurringTaskUpdate {
+  /** @minLength 1 */
+  title?: string;
+  description?: string;
+  priority?: RecurringTaskUpdatePriority;
+  daysOfWeek?: number[];
+  timeOfDay?: string;
+  startDate?: string;
+  /** @nullable */
+  endDate?: string | null;
+  isActive?: boolean;
+}
+
 export interface UserBadge {
   badge: Badge;
   earnedAt: string;

@@ -13,6 +13,8 @@ tags:
     description: User profile and stats
   - name: tasks
     description: Task management
+  - name: recurring
+    description: Recurring task templates
   - name: badges
     description: Badges and achievements
   - name: accountability
@@ -192,6 +194,112 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TaskCompletionResult"
+
+  /recurring-tasks:
+    get:
+      operationId: getRecurringTasks
+      tags: [recurring]
+      summary: List all recurring task templates
+      responses:
+        "200":
+          description: Recurring tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RecurringTask"
+    post:
+      operationId: createRecurringTask
+      tags: [recurring]
+      summary: Create a recurring task template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecurringTaskInput"
+      responses:
+        "201":
+          description: Created recurring task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurringTask"
+
+  /recurring-tasks/{id}:
+    get:
+      operationId: getRecurringTask
+      tags: [recurring]
+      summary: Get a single recurring task template
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Recurring task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurringTask"
+    patch:
+      operationId: updateRecurringTask
+      tags: [recurring]
+      summary: Update a recurring task template
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecurringTaskUpdate"
+      responses:
+        "200":
+          description: Updated recurring task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurringTask"
+    delete:
+      operationId: deleteRecurringTask
+      tags: [recurring]
+      summary: Delete a recurring task template
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /recurring-tasks/{id}/toggle:
+    post:
+      operationId: toggleRecurringTask
+      tags: [recurring]
+      summary: Enable or disable a recurring task template
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Toggled recurring task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurringTask"
 
   /tasks/{id}/uncomplete:
     post:
@@ -562,6 +670,91 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Badge"
+
+    RecurringTask:
+      type: object
+      required: [id, userId, title, priority, daysOfWeek, timeOfDay, startDate, isActive, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        priority:
+          type: string
+          enum: [low, medium, high]
+        daysOfWeek:
+          type: array
+          items:
+            type: integer
+          description: "0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat"
+        timeOfDay:
+          type: string
+          description: "HH:MM format"
+        startDate:
+          type: string
+        endDate:
+          type: ["string", "null"]
+        isActive:
+          type: boolean
+        estimatedPoints:
+          type: integer
+        categoryLabel:
+          type: string
+        createdAt:
+          type: string
+
+    RecurringTaskInput:
+      type: object
+      required: [title, daysOfWeek, timeOfDay, startDate]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        priority:
+          type: string
+          enum: [low, medium, high]
+          default: medium
+        daysOfWeek:
+          type: array
+          items:
+            type: integer
+          minItems: 1
+        timeOfDay:
+          type: string
+        startDate:
+          type: string
+        endDate:
+          type: string
+
+    RecurringTaskUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        priority:
+          type: string
+          enum: [low, medium, high]
+        daysOfWeek:
+          type: array
+          items:
+            type: integer
+        timeOfDay:
+          type: string
+        startDate:
+          type: string
+        endDate:
+          type: ["string", "null"]
+        isActive:
+          type: boolean
 
     Badge:
       type: object
