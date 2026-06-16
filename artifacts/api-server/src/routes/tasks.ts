@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, and, desc } from "drizzle-orm";
 import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, DAILY_BONUS_POINTS } from "../lib/gamification";
+import { assignPoints } from "../lib/auto-points";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -21,6 +22,13 @@ function formatTask(task: typeof tasksTable.$inferSelect) {
     createdAt: task.createdAt.toISOString(),
   };
 }
+
+router.get("/tasks/suggest-points", (req, res): void => {
+  const title = String(req.query.title ?? "");
+  const priority = String(req.query.priority ?? "medium");
+  const result = assignPoints(title, priority);
+  res.json(result);
+});
 
 router.get("/tasks", async (req, res): Promise<void> => {
   const { date, completed } = req.query;
@@ -54,11 +62,13 @@ router.post("/tasks", async (req, res): Promise<void> => {
     return;
   }
 
+  const autoPoint = assignPoints(title, priority);
+
   const [task] = await db.insert(tasksTable).values({
     userId: DEFAULT_USER_ID,
     title,
     description,
-    points: Math.min(100, Math.max(1, points)),
+    points: autoPoint.points,
     dueDate,
     priority,
   }).returning();

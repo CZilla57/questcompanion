@@ -5,6 +5,7 @@ import tasksRouter from "./tasks";
 import badgesRouter from "./badges";
 import accountabilityRouter from "./accountability";
 import leaderboardRouter from "./leaderboard";
+import notificationsRouter from "./notifications";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(tasksRouter);
 router.use(badgesRouter);
 router.use(accountabilityRouter);
 router.use(leaderboardRouter);
+router.use(notificationsRouter);
 
 export default router;
