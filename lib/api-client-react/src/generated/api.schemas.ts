@@ -120,6 +120,8 @@ export interface UserStats {
   streakDays: number;
   /** Number of streak freezes currently held (max 1) */
   streakFreezes: number;
+  /** Whether the user has completed hero name setup */
+  onboardingComplete: boolean;
   pointsToNextLevel: number;
   recentActivity: ActivityItem[];
 }

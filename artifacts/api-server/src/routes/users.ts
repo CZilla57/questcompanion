@@ -41,7 +41,10 @@ router.patch("/users/me", async (req, res): Promise<void> => {
 
   const { username, displayName, avatarColor } = req.body as { username?: string; displayName?: string; avatarColor?: string };
   const updates: Partial<typeof usersTable.$inferInsert> = {};
-  if (username != null) updates.username = username;
+  if (username != null) {
+    updates.username = username;
+    updates.onboardingComplete = true;
+  }
   if (displayName != null) updates.displayName = displayName;
   if (avatarColor != null) updates.avatarColor = avatarColor;
 
@@ -89,6 +92,7 @@ router.get("/users/me/stats", async (req, res): Promise<void> => {
     levelName: levelInfo.name,
     streakDays: user.streakDays,
     streakFreezes: user.streakFreezes,
+    onboardingComplete: user.onboardingComplete,
     pointsToNextLevel: getPointsToNextLevel(user.totalPoints),
     recentActivity: recentActivity.map((a) => ({
       id: a.id,

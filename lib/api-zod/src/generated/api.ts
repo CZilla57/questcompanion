@@ -154,6 +154,7 @@ export const GetMyStatsResponse = zod.object({
   "levelName": zod.string(),
   "streakDays": zod.number(),
   "streakFreezes": zod.number().describe('Number of streak freezes currently held (max 1)'),
+  "onboardingComplete": zod.boolean().describe('Whether the user has completed hero name setup'),
   "pointsToNextLevel": zod.number(),
   "recentActivity": zod.array(zod.object({
   "id": zod.number(),

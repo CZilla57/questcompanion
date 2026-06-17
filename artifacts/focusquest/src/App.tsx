@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@workspace/replit-auth-web";
+import { useGetMyStats, useUpdateMe, getGetMyStatsQueryKey } from "@workspace/api-client-react";
 
 import Dashboard from "@/pages/dashboard";
 import Tasks from "@/pages/tasks";
@@ -21,6 +23,117 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
+
+function OnboardingScreen() {
+  const [heroName, setHeroName] = useState("");
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const qc = useQueryClient();
+  const updateMe = useUpdateMe();
+
+  const trimmed = heroName.trim();
+  const isFormatValid = USERNAME_REGEX.test(trimmed);
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setHeroName(e.target.value);
+    setValidationError(null);
+    setServerError(null);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!isFormatValid) {
+      setValidationError(
+        trimmed.length < 3
+          ? "Hero name must be at least 3 characters."
+          : trimmed.length > 20
+          ? "Hero name must be 20 characters or fewer."
+          : "Only letters, numbers, and underscores allowed."
+      );
+      return;
+    }
+    try {
+      await updateMe.mutateAsync({ data: { username: trimmed } });
+      await qc.invalidateQueries({ queryKey: getGetMyStatsQueryKey() });
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error ? err.message : "That name is already taken. Try another.";
+      setServerError(msg.includes("409") || msg.includes("unique") || msg.includes("duplicate")
+        ? "That hero name is already taken. Try another."
+        : "Something went wrong. Please try again.");
+    }
+  }
+
+  const showHint = trimmed.length > 0 && !isFormatValid;
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-6">
+      <div className="w-full max-w-sm text-center">
+        <div className="mb-4 text-6xl">⚔️</div>
+        <h1 className="mb-2 text-2xl font-bold tracking-tight">Choose Your Hero Name</h1>
+        <p className="mb-8 text-sm text-muted-foreground">
+          This is the name other players will see on the leaderboard. You can't change it later.
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2 text-left">
+            <input
+              type="text"
+              value={heroName}
+              onChange={handleChange}
+              placeholder="HeroName123"
+              maxLength={20}
+              autoFocus
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            {showHint && (
+              <p className="text-xs text-muted-foreground">
+                3–20 characters, letters, numbers, and underscores only.
+              </p>
+            )}
+            {validationError && (
+              <p className="text-xs text-destructive">{validationError}</p>
+            )}
+            {serverError && (
+              <p className="text-xs text-destructive">{serverError}</p>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            disabled={updateMe.isPending || trimmed.length === 0}
+            className="w-full inline-flex items-center justify-center rounded-md bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {updateMe.isPending ? "Saving…" : "Enter the Quest"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function OnboardingGate({ children }: { children: React.ReactNode }) {
+  const { data: stats, isLoading } = useGetMyStats();
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="mb-4 text-4xl">⚔️</div>
+          <p className="text-muted-foreground">Loading…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!stats?.onboardingComplete) {
+    return <OnboardingScreen />;
+  }
+
+  return <>{children}</>;
+}
 
 function Router() {
   return (
@@ -81,7 +194,9 @@ function App() {
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <AuthGate>
-            <Router />
+            <OnboardingGate>
+              <Router />
+            </OnboardingGate>
           </AuthGate>
         </WouterRouter>
         <Toaster />

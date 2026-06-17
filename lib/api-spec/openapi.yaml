@@ -794,7 +794,7 @@ components:
 
     UserStats:
       type: object
-      required: [todayPoints, todayTasksTotal, todayTasksCompleted, allDayBonusEarned, weeklyPoints, totalPoints, currentLevel, levelName, streakDays, streakFreezes, pointsToNextLevel, recentActivity]
+      required: [todayPoints, todayTasksTotal, todayTasksCompleted, allDayBonusEarned, weeklyPoints, totalPoints, currentLevel, levelName, streakDays, streakFreezes, pointsToNextLevel, recentActivity, onboardingComplete]
       properties:
         todayPoints:
           type: integer
@@ -817,6 +817,9 @@ components:
         streakFreezes:
           type: integer
           description: Number of streak freezes currently held (max 1)
+        onboardingComplete:
+          type: boolean
+          description: Whether the user has completed hero name setup
         pointsToNextLevel:
           type: integer
         recentActivity:
