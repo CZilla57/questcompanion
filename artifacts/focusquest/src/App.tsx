@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useGetMyStats, useUpdateMe, getGetMyStatsQueryKey } from "@workspace/api-client-react";
+import { Swords, Trophy } from "lucide-react";
 
 import Dashboard from "@/pages/dashboard";
 import Tasks from "@/pages/tasks";
@@ -71,7 +72,11 @@ function OnboardingScreen() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-6">
       <div className="w-full max-w-sm text-center">
-        <div className="mb-4 text-6xl">⚔️</div>
+        <div className="mb-4 flex justify-center">
+          <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20">
+            <Swords className="w-10 h-10 text-primary drop-shadow-[0_0_8px_rgba(0,255,255,0.6)]" />
+          </div>
+        </div>
         <h1 className="mb-2 text-2xl font-bold tracking-tight">Choose Your Hero Name</h1>
         <p className="mb-8 text-sm text-muted-foreground">
           This is the name other players will see on the leaderboard. You can't change it later.
@@ -121,8 +126,8 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <div className="mb-4 text-4xl">⚔️</div>
-          <p className="text-muted-foreground">Loading…</p>
+          <Swords className="w-8 h-8 text-primary animate-pulse mx-auto mb-3" />
+          <p className="text-muted-foreground text-sm">Loading…</p>
         </div>
       </div>
     );
@@ -158,8 +163,8 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <div className="mb-4 text-4xl">⚔️</div>
-          <p className="text-muted-foreground">Loading FocusQuest…</p>
+          <Swords className="w-8 h-8 text-primary animate-pulse mx-auto mb-3" />
+          <p className="text-muted-foreground text-sm">Loading FocusQuest…</p>
         </div>
       </div>
     );
@@ -169,7 +174,11 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center max-w-sm px-6">
-          <div className="mb-6 text-6xl">🏆</div>
+          <div className="mb-6 flex justify-center">
+            <div className="p-5 rounded-3xl bg-primary/10 border border-primary/20">
+              <Trophy className="w-12 h-12 text-primary drop-shadow-[0_0_10px_rgba(0,255,255,0.6)]" />
+            </div>
+          </div>
           <h1 className="mb-2 text-2xl font-bold tracking-tight">FocusQuest</h1>
           <p className="mb-8 text-muted-foreground">
             Gamified tasks and habits for ADHD. Complete quests, earn XP, and build streaks.

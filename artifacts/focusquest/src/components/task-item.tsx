@@ -97,22 +97,32 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
     });
   };
 
+  const isBusy = completeMutation.isPending || uncompleteMutation.isPending;
+
   return (
     <div className={`
       relative group flex items-center gap-4 p-4 rounded-xl border transition-all duration-300
-      ${task.completed ? "bg-muted/30 border-muted opacity-60" : "bg-card border-border hover:border-primary/50 hover:shadow-[0_0_15px_rgba(0,255,255,0.1)]"}
+      ${task.completed
+        ? "bg-muted/30 border-muted opacity-60"
+        : "bg-card border-border hover:border-primary/50 hover:shadow-[0_0_15px_rgba(0,255,255,0.1)]"}
     `}>
+      {/* Complete toggle */}
       <button
         onClick={handleToggle}
-        disabled={completeMutation.isPending || uncompleteMutation.isPending}
+        disabled={isBusy}
+        aria-label={task.completed ? "Mark quest incomplete" : "Complete quest"}
         className={`
-          flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-300
-          ${task.completed ? "bg-primary border-primary text-background neon-glow" : "border-muted-foreground/40 hover:border-primary hover:bg-primary/10"}
+          flex-shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center
+          transition-all duration-300 cursor-pointer
+          ${task.completed
+            ? "bg-primary border-primary text-background neon-glow"
+            : "border-muted-foreground/40 hover:border-primary hover:bg-primary/10 active:scale-95"}
         `}
       >
         {task.completed && <Check className="w-5 h-5" />}
       </button>
 
+      {/* Content */}
       <div className="flex-1 min-w-0">
         <h4 className={`font-semibold truncate transition-colors ${task.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
           {task.title}
@@ -148,13 +158,27 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Actions — always visible on mobile, hover-reveal on desktop */}
+      <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
         {onEdit && (
-          <Button variant="ghost" size="icon" onClick={() => onEdit(task)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Edit quest"
+            className="h-9 w-9 cursor-pointer"
+            onClick={() => onEdit(task)}
+          >
             <Edit2 className="w-4 h-4 text-muted-foreground" />
           </Button>
         )}
-        <Button variant="ghost" size="icon" className="hover:bg-destructive/20 hover:text-destructive" onClick={handleDelete}>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Delete quest"
+          className="h-9 w-9 cursor-pointer hover:bg-destructive/20 hover:text-destructive"
+          onClick={handleDelete}
+          disabled={deleteMutation.isPending}
+        >
           <Trash2 className="w-4 h-4" />
         </Button>
       </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation } from "wouter";
 import { Link } from "wouter";
-import { Home, CheckSquare, BarChart2, Users, Trophy, Menu, X, Zap, Bell, BellOff, Repeat } from "lucide-react";
+import { Home, CheckSquare, BarChart2, Users, Trophy, X, Zap, Bell, BellOff, Repeat, Menu } from "lucide-react";
 import { Button } from "./ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
@@ -55,6 +55,7 @@ function NotificationBell() {
             size="icon"
             onClick={handleToggle}
             disabled={loading || state === "denied"}
+            aria-label={isSubscribed ? "Disable notifications" : "Enable notifications"}
             className={`relative ${isSubscribed ? "text-primary" : "text-muted-foreground"}`}
           >
             {isSubscribed ? (
@@ -79,38 +80,48 @@ function NotificationBell() {
   );
 }
 
+const navItems = [
+  { href: "/",            label: "Home",       icon: Home },
+  { href: "/tasks",       label: "Quests",     icon: CheckSquare },
+  { href: "/recurring",   label: "Recurring",  icon: Repeat },
+  { href: "/progress",    label: "Progress",   icon: BarChart2 },
+  { href: "/partners",    label: "Allies",     icon: Users },
+  { href: "/leaderboard", label: "Board",      icon: Trophy },
+];
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const navItems = [
-    { href: "/", label: "Dashboard", icon: Home },
-    { href: "/tasks", label: "Quests", icon: CheckSquare },
-    { href: "/recurring", label: "Recurring", icon: Repeat },
-    { href: "/progress", label: "Progress", icon: BarChart2 },
-    { href: "/partners", label: "Allies", icon: Users },
-    { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  ];
-
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row overflow-hidden font-sans dark">
-      {/* Mobile Header */}
-      <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card/80 backdrop-blur-md z-20">
+
+      {/* ── Mobile header ─────────────────────────────────── */}
+      <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-card/80 backdrop-blur-md z-20 sticky top-0">
         <div className="flex items-center gap-2 text-primary">
-          <Zap className="w-6 h-6 fill-current" />
-          <span className="font-bold text-lg tracking-wider uppercase">FocusQuest</span>
+          <Zap className="w-5 h-5 fill-current" />
+          <span className="font-bold text-base tracking-wider uppercase">FocusQuest</span>
         </div>
         <div className="flex items-center gap-1">
           <NotificationBell />
-          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
-            {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          {/* Sidebar toggle for overflow items on very small screens if needed */}
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Open menu"
+            className="text-muted-foreground md:hidden"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+          >
+            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </Button>
         </div>
       </header>
 
-      {/* Sidebar */}
+      {/* ── Desktop sidebar ──────────────────────────────── */}
       <aside className={`
-        fixed inset-y-0 left-0 z-30 w-64 bg-card border-r border-border flex flex-col transition-transform duration-300 ease-in-out md:relative md:translate-x-0
+        fixed inset-y-0 left-0 z-30 w-64 bg-card border-r border-border flex flex-col
+        transition-transform duration-300 ease-in-out
+        md:relative md:translate-x-0
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
       `}>
         <div className="p-6 hidden md:flex items-center justify-between mb-8">
@@ -118,56 +129,85 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <div className="p-2 bg-primary/10 rounded-lg">
               <Zap className="w-6 h-6 fill-current" />
             </div>
-            <span className="font-bold text-xl tracking-wider uppercase text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">FocusQuest</span>
+            <span className="font-bold text-xl tracking-wider uppercase text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
+              FocusQuest
+            </span>
           </div>
           <NotificationBell />
         </div>
 
-        <nav className="flex-1 px-4 space-y-2 mt-8 md:mt-0">
+        <nav className="flex-1 px-4 space-y-1 mt-8 md:mt-0" aria-label="Main navigation">
           {navItems.map((item) => {
             const isActive = location === item.href;
             return (
-              <Link key={item.href} href={item.href} className="block" onClick={() => setSidebarOpen(false)}>
+              <Link
+                key={item.href}
+                href={item.href}
+                className="block"
+                onClick={() => setSidebarOpen(false)}
+              >
                 <div className={`
                   flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200
                   ${isActive
                     ? "bg-primary/15 text-primary neon-glow border border-primary/30"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent"}
                 `}>
-                  <item.icon className={`w-5 h-5 ${isActive ? "drop-shadow-[0_0_5px_rgba(0,255,255,0.8)]" : ""}`} />
-                  <span className="font-medium">{item.label}</span>
+                  <item.icon
+                    className={`w-5 h-5 flex-shrink-0 ${isActive ? "drop-shadow-[0_0_5px_rgba(0,255,255,0.8)]" : ""}`}
+                  />
+                  <span className="font-medium">{item.label === "Board" ? "Leaderboard" : item.label}</span>
                 </div>
               </Link>
             );
           })}
         </nav>
-
-        {/* Notification hint at bottom of sidebar */}
-        <div className="p-4 m-4 rounded-lg border border-border bg-muted/20 hidden md:block">
-          <div className="flex items-center gap-2 mb-2">
-            <Bell className="w-4 h-4 text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Reminders</span>
-          </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            Daily check-ins at 8am, noon, and 7pm. Streak alerts at 9pm.
-          </p>
-        </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 relative overflow-y-auto overflow-x-hidden p-4 md:p-8">
-        <div className="max-w-5xl mx-auto pb-20">
-          {children}
-        </div>
-      </main>
-
-      {/* Mobile overlay */}
+      {/* ── Sidebar overlay (mobile) ─────────────────────── */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-background/80 backdrop-blur-sm z-20 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
+
+      {/* ── Main content ─────────────────────────────────── */}
+      <main className="flex-1 relative overflow-y-auto overflow-x-hidden p-4 md:p-8 pb-24 md:pb-8">
+        <div className="max-w-5xl mx-auto">
+          {children}
+        </div>
+      </main>
+
+      {/* ── Mobile bottom navigation bar ─────────────────── */}
+      <nav
+        aria-label="Mobile navigation"
+        className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-card/95 backdrop-blur-md border-t border-border flex items-stretch safe-bottom"
+      >
+        {navItems.map((item) => {
+          const isActive = location === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex-1"
+              aria-label={item.label}
+              aria-current={isActive ? "page" : undefined}
+            >
+              <div className={`
+                flex flex-col items-center justify-center gap-1 py-2 h-full min-h-[56px] transition-colors
+                ${isActive ? "text-primary" : "text-muted-foreground"}
+              `}>
+                <item.icon
+                  className={`w-5 h-5 flex-shrink-0 transition-all ${isActive ? "drop-shadow-[0_0_5px_rgba(0,255,255,0.8)]" : ""}`}
+                />
+                <span className={`text-[10px] font-medium leading-none tracking-wide ${isActive ? "text-primary" : "text-muted-foreground"}`}>
+                  {item.label}
+                </span>
+              </div>
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }
