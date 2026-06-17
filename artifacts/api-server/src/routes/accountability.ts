@@ -126,27 +126,37 @@ router.post("/accountability/partners/:id/decline", async (req, res): Promise<vo
   const id = parseInt(raw, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
-  const [p] = await db.update(partnershipsTable)
-    .set({ status: "declined" })
+  // First, look up the named row to identify the other party.
+  const [target] = await db.select().from(partnershipsTable)
     .where(and(
       eq(partnershipsTable.id, id),
       or(
         eq(partnershipsTable.requesterId, userId),
         eq(partnershipsTable.recipientId, userId),
       ),
-    ))
-    .returning();
-  if (!p) { res.status(404).json({ error: "Partnership not found" }); return; }
+    ));
+  if (!target) { res.status(404).json({ error: "Partnership not found" }); return; }
 
-  const partnerId = p.requesterId === userId ? p.recipientId : p.requesterId;
+  const partnerId = target.requesterId === userId ? target.recipientId : target.requesterId;
+
+  // Revoke ALL rows between these two users to prevent duplicate-row access bypass.
+  await db.update(partnershipsTable)
+    .set({ status: "declined" })
+    .where(
+      or(
+        and(eq(partnershipsTable.requesterId, userId), eq(partnershipsTable.recipientId, partnerId)),
+        and(eq(partnershipsTable.requesterId, partnerId), eq(partnershipsTable.recipientId, userId)),
+      )
+    );
+
   const [partner] = await db.select().from(usersTable).where(eq(usersTable.id, partnerId));
   res.json({
-    id: p.id,
-    requesterId: p.requesterId,
-    recipientId: p.recipientId,
-    status: p.status,
+    id: target.id,
+    requesterId: target.requesterId,
+    recipientId: target.recipientId,
+    status: "declined",
     partner: partner ? formatUserSummary(partner) : null,
-    createdAt: p.createdAt.toISOString(),
+    createdAt: target.createdAt.toISOString(),
   });
 });
 
