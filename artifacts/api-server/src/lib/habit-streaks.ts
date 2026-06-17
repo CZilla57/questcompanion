@@ -14,8 +14,19 @@ export async function getHabitStreak(userId: number, recurringTaskId: number) {
   return row ?? null;
 }
 
+export interface HabitStreakPreviousState {
+  /** null means the row did not exist before (new insert); reverse by deleting it */
+  prevCurrentStreak: number | null;
+  prevLongestStreak: number | null;
+  prevTotalCompletions: number | null;
+  prevLastCompletedDate: string | null;
+  wasNew: boolean;
+  badgesGrantedIds: number[];
+}
+
 /** Advance the streak and award any newly unlocked habit-streak milestone badges.
- *  Returns { streak, newBadges } so the caller can surface them to the client. */
+ *  Returns { streak, newBadges, previousState } so the caller can surface them to the
+ *  client and store the previousState for later rollback on uncomplete. */
 export async function advanceHabitStreak(
   userId: number,
   recurringTaskId: number,
@@ -23,16 +34,38 @@ export async function advanceHabitStreak(
 ): Promise<{
   streak: typeof habitStreaksTable.$inferSelect;
   newBadges: typeof badgesTable.$inferSelect[];
+  previousState: HabitStreakPreviousState;
 }> {
   const existing = await getHabitStreak(userId, recurringTaskId);
 
   let streak: typeof habitStreaksTable.$inferSelect;
+  let previousState: HabitStreakPreviousState;
 
   if (existing) {
     // Already counted today — return unchanged with no new badges
     if (existing.lastCompletedDate === completionDate) {
-      return { streak: existing, newBadges: [] };
+      return {
+        streak: existing,
+        newBadges: [],
+        previousState: {
+          prevCurrentStreak: existing.currentStreak,
+          prevLongestStreak: existing.longestStreak,
+          prevTotalCompletions: existing.totalCompletions,
+          prevLastCompletedDate: existing.lastCompletedDate,
+          wasNew: false,
+          badgesGrantedIds: [],
+        },
+      };
     }
+
+    previousState = {
+      prevCurrentStreak: existing.currentStreak,
+      prevLongestStreak: existing.longestStreak,
+      prevTotalCompletions: existing.totalCompletions,
+      prevLastCompletedDate: existing.lastCompletedDate ?? null,
+      wasNew: false,
+      badgesGrantedIds: [],
+    };
 
     const yesterday = getPreviousDay(completionDate);
     const newStreak =
@@ -51,6 +84,17 @@ export async function advanceHabitStreak(
       .returning();
     streak = updated;
   } else {
+    previousState = {
+      prevCurrentStreak: null,
+      prevLongestStreak: null,
+      prevTotalCompletions: null,
+      prevLastCompletedDate: null,
+      wasNew: true,
+      badgesGrantedIds: [],
+    };
+
+    // The unique constraint on (user_id, recurring_task_id) ensures that even if two
+    // concurrent first-time completions race here, only one insert succeeds.
     const [created] = await db
       .insert(habitStreaksTable)
       .values({
@@ -61,20 +105,97 @@ export async function advanceHabitStreak(
         totalCompletions: 1,
         lastCompletedDate: completionDate,
       })
+      .onConflictDoNothing()
       .returning();
-    streak = created;
+
+    if (!created) {
+      // Another concurrent request won the insert race; fetch the row it created.
+      const [raced] = await db
+        .select()
+        .from(habitStreaksTable)
+        .where(
+          and(
+            eq(habitStreaksTable.userId, userId),
+            eq(habitStreaksTable.recurringTaskId, recurringTaskId),
+          ),
+        );
+      if (!raced) {
+        return {
+          streak: { id: 0, userId, recurringTaskId, currentStreak: 1, longestStreak: 1, totalCompletions: 1, lastCompletedDate: completionDate, createdAt: new Date() },
+          newBadges: [],
+          previousState,
+        };
+      }
+      streak = raced;
+    } else {
+      streak = created;
+    }
   }
 
   // Award any habit_streak milestone badges the user hasn't earned yet
-  const newBadges = await checkAndAwardHabitBadges(userId, streak.currentStreak);
+  const { awarded: newBadges, badgeIds } = await checkAndAwardHabitBadges(userId, streak.currentStreak);
+  previousState.badgesGrantedIds = badgeIds;
 
-  return { streak, newBadges };
+  return { streak, newBadges, previousState };
+}
+
+/** Reverse a previously applied habit streak advancement using a stored previousState snapshot. */
+export async function reverseHabitStreak(
+  userId: number,
+  recurringTaskId: number,
+  previousState: HabitStreakPreviousState,
+): Promise<void> {
+  if (previousState.wasNew) {
+    // The row was created by this completion; delete it entirely
+    await db
+      .delete(habitStreaksTable)
+      .where(
+        and(
+          eq(habitStreaksTable.userId, userId),
+          eq(habitStreaksTable.recurringTaskId, recurringTaskId),
+        ),
+      );
+  } else if (previousState.prevCurrentStreak !== null) {
+    // Restore the row to its pre-completion state
+    const [existing] = await db
+      .select({ id: habitStreaksTable.id })
+      .from(habitStreaksTable)
+      .where(
+        and(
+          eq(habitStreaksTable.userId, userId),
+          eq(habitStreaksTable.recurringTaskId, recurringTaskId),
+        ),
+      );
+    if (existing) {
+      await db
+        .update(habitStreaksTable)
+        .set({
+          currentStreak: previousState.prevCurrentStreak,
+          longestStreak: previousState.prevLongestStreak!,
+          totalCompletions: previousState.prevTotalCompletions!,
+          lastCompletedDate: previousState.prevLastCompletedDate,
+        })
+        .where(eq(habitStreaksTable.id, existing.id));
+    }
+  }
+
+  // Revoke habit-streak badges granted by this completion
+  for (const badgeId of previousState.badgesGrantedIds) {
+    await db
+      .delete(userBadgesTable)
+      .where(
+        and(
+          eq(userBadgesTable.userId, userId),
+          eq(userBadgesTable.badgeId, badgeId),
+        ),
+      );
+  }
 }
 
 async function checkAndAwardHabitBadges(
   userId: number,
   currentStreak: number,
-): Promise<typeof badgesTable.$inferSelect[]> {
+): Promise<{ awarded: typeof badgesTable.$inferSelect[]; badgeIds: number[] }> {
   // All habit_streak badges reachable at this streak level
   const eligible = await db
     .select()
@@ -86,7 +207,7 @@ async function checkAndAwardHabitBadges(
       ),
     );
 
-  if (eligible.length === 0) return [];
+  if (eligible.length === 0) return { awarded: [], badgeIds: [] };
 
   // Which ones does the user already own?
   const owned = await db
@@ -96,19 +217,29 @@ async function checkAndAwardHabitBadges(
   const ownedIds = new Set(owned.map((r) => r.badgeId));
 
   const toAward = eligible.filter((b) => !ownedIds.has(b.id));
-  if (toAward.length === 0) return [];
+  if (toAward.length === 0) return { awarded: [], badgeIds: [] };
 
+  const awarded: typeof badgesTable.$inferSelect[] = [];
+  const badgeIds: number[] = [];
   for (const badge of toAward) {
-    await db.insert(userBadgesTable).values({ userId, badgeId: badge.id });
-    await db.insert(activityTable).values({
-      userId,
-      type: "badge_earned",
-      description: `Earned habit badge: ${badge.name}`,
-      points: 0,
-    });
+    // onConflictDoNothing prevents duplicate badge rows from concurrent completions
+    const [inserted] = await db.insert(userBadgesTable)
+      .values({ userId, badgeId: badge.id })
+      .onConflictDoNothing()
+      .returning();
+    if (inserted) {
+      await db.insert(activityTable).values({
+        userId,
+        type: "badge_earned",
+        description: `Earned habit badge: ${badge.name}`,
+        points: 0,
+      });
+      awarded.push(badge);
+      badgeIds.push(badge.id);
+    }
   }
 
-  return toAward;
+  return { awarded, badgeIds };
 }
 
 function getPreviousDay(dateStr: string): string {

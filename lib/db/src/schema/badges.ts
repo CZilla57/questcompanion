@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
 
 export const badgesTable = pgTable("badges", {
@@ -15,7 +15,9 @@ export const userBadgesTable = pgTable("user_badges", {
   userId: integer("user_id").notNull().references(() => usersTable.id),
   badgeId: integer("badge_id").notNull().references(() => badgesTable.id),
   earnedAt: timestamp("earned_at").notNull().defaultNow(),
-});
+}, (t) => [
+  uniqueIndex("user_badges_user_id_badge_id_idx").on(t.userId, t.badgeId),
+]);
 
 export type Badge = typeof badgesTable.$inferSelect;
 export type UserBadge = typeof userBadgesTable.$inferSelect;

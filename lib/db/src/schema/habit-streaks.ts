@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
 import { recurringTasksTable } from "./recurring-tasks";
 
@@ -11,6 +11,8 @@ export const habitStreaksTable = pgTable("habit_streaks", {
   totalCompletions: integer("total_completions").notNull().default(0),
   lastCompletedDate: text("last_completed_date"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (t) => [
+  uniqueIndex("habit_streaks_user_id_recurring_task_id_idx").on(t.userId, t.recurringTaskId),
+]);
 
 export type HabitStreak = typeof habitStreaksTable.$inferSelect;

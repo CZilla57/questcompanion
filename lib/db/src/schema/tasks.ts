@@ -10,6 +10,17 @@ export const tasksTable = pgTable("tasks", {
   title: text("title").notNull(),
   description: text("description"),
   points: integer("points").notNull().default(10),
+
+  // Snapshot written at completion time so uncomplete can reverse exactly what was granted.
+  pointsAwarded: integer("points_awarded"),
+  dailyBonusAwarded: boolean("daily_bonus_awarded").notNull().default(false),
+  streakDaysBefore: integer("streak_days_before"),
+  longestStreakBefore: integer("longest_streak_before"),
+  lastActiveDateBefore: text("last_active_date_before"),
+  freezeConsumedOnComplete: boolean("freeze_consumed_on_complete").notNull().default(false),
+  badgesGrantedIds: text("badges_granted_ids"),
+  habitStreakSnapshot: text("habit_streak_snapshot"),
+
   completed: boolean("completed").notNull().default(false),
   completedAt: timestamp("completed_at"),
   dueDate: text("due_date").notNull(),
