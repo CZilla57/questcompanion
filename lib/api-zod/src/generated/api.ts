@@ -222,7 +222,7 @@ export const CompleteTaskResponse = zod.object({
   "name": zod.string(),
   "description": zod.string(),
   "icon": zod.string(),
-  "category": zod.enum(['streak', 'tasks', 'points', 'social', 'level']),
+  "category": zod.enum(['streak', 'tasks', 'points', 'social', 'level', 'habit_streak']),
   "requirement": zod.number()
 }))
 })
@@ -406,7 +406,7 @@ export const GetBadgesResponseItem = zod.object({
   "name": zod.string(),
   "description": zod.string(),
   "icon": zod.string(),
-  "category": zod.enum(['streak', 'tasks', 'points', 'social', 'level']),
+  "category": zod.enum(['streak', 'tasks', 'points', 'social', 'level', 'habit_streak']),
   "requirement": zod.number()
 })
 export const GetBadgesResponse = zod.array(GetBadgesResponseItem)
@@ -421,7 +421,7 @@ export const GetMyBadgesResponseItem = zod.object({
   "name": zod.string(),
   "description": zod.string(),
   "icon": zod.string(),
-  "category": zod.enum(['streak', 'tasks', 'points', 'social', 'level']),
+  "category": zod.enum(['streak', 'tasks', 'points', 'social', 'level', 'habit_streak']),
   "requirement": zod.number()
 }),
   "earnedAt": zod.string()

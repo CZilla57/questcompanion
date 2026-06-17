@@ -23,7 +23,7 @@ export default function Partners() {
   const { data: partners, isLoading: partnersLoading } = useGetPartners();
   const { data: searchResults, isLoading: searchLoading } = useSearchUsers(
     { q: debouncedSearch },
-    { query: { enabled: debouncedSearch.length > 2 } }
+    { query: { enabled: debouncedSearch.length > 2, queryKey: ["searchUsers", debouncedSearch] } }
   );
 
   const sendReq = useSendPartnerRequest();

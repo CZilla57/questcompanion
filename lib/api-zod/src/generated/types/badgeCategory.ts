@@ -15,4 +15,5 @@ export const BadgeCategory = {
   points: 'points',
   social: 'social',
   level: 'level',
+  habit_streak: 'habit_streak',
 } as const;

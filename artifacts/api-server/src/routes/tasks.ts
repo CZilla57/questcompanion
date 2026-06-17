@@ -161,9 +161,11 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     .returning();
 
   // Advance per-template habit streak if this task came from a recurring template
+  let habitBadges: typeof badgesTable.$inferSelect[] = [];
   if (task.recurringTaskId) {
     const completionDate = now.toISOString().split("T")[0];
-    await advanceHabitStreak(DEFAULT_USER_ID, task.recurringTaskId, completionDate);
+    const result = await advanceHabitStreak(DEFAULT_USER_ID, task.recurringTaskId, completionDate);
+    habitBadges = result.newBadges;
   }
 
   // Award points to user
@@ -288,6 +290,8 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     }
   }
 
+  const allNewBadges = [...newBadges, ...habitBadges];
+
   res.json({
     task: formatTask(completedTask),
     pointsAwarded: task.points,
@@ -296,7 +300,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     newTotalPoints,
     newLevel: newLevel.level,
     leveledUp,
-    newBadges: newBadges.map((b) => ({
+    newBadges: allNewBadges.map((b) => ({
       id: b.id,
       name: b.name,
       description: b.description,
