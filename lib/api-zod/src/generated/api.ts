@@ -74,16 +74,26 @@ export const GetMyStatsResponse = zod.object({
   "currentLevel": zod.number(),
   "levelName": zod.string(),
   "streakDays": zod.number(),
+  "streakFreezes": zod.number().describe('Number of streak freezes currently held (max 1)'),
   "pointsToNextLevel": zod.number(),
   "recentActivity": zod.array(zod.object({
   "id": zod.number(),
   "userId": zod.number(),
   "username": zod.string().optional(),
-  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus']),
+  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used']),
   "description": zod.string(),
   "points": zod.number(),
   "createdAt": zod.string()
 }))
+})
+
+
+/**
+ * @summary Spend 50 XP to buy a streak freeze (max 1 held at a time)
+ */
+export const BuyStreakFreezeResponse = zod.object({
+  "streakFreezes": zod.number(),
+  "totalPoints": zod.number()
 })
 
 
@@ -542,7 +552,7 @@ export const GetPartnerFeedResponseItem = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
   "username": zod.string().optional(),
-  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus']),
+  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used']),
   "description": zod.string(),
   "points": zod.number(),
   "createdAt": zod.string()

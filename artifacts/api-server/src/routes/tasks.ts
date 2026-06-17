@@ -228,10 +228,17 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
   const yesterdayStr = yesterday.toISOString().split("T")[0];
 
   let newStreak = user.streakDays;
+  let freezeConsumed = false;
   if (lastActive !== today) {
     if (lastActive === yesterdayStr) {
+      // Active yesterday — extend streak
       newStreak = user.streakDays + 1;
+    } else if (user.streakFreezes > 0) {
+      // Streak would break — auto-consume freeze to protect it
+      freezeConsumed = true;
+      // Keep current streak length; don't extend (freeze = preserve, not advance)
     } else {
+      // No freeze — streak resets
       newStreak = 1;
     }
   }
@@ -249,7 +256,17 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     streakDays: newStreak,
     longestStreak: newLongestStreak,
     lastActiveDate: today,
+    ...(freezeConsumed ? { streakFreezes: user.streakFreezes - 1 } : {}),
   }).where(eq(usersTable.id, DEFAULT_USER_ID));
+
+  if (freezeConsumed) {
+    await db.insert(activityTable).values({
+      userId: DEFAULT_USER_ID,
+      type: "streak_freeze_used",
+      description: `Streak Freeze activated! Your ${user.streakDays}-day streak is safe.`,
+      points: 0,
+    });
+  }
 
   if (leveledUp) {
     await db.insert(activityTable).values({

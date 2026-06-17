@@ -1,13 +1,18 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { format } from "date-fns";
-import { ActivityItem, Task, useGetMyStats, useGetTasks } from "@workspace/api-client-react";
+import { ActivityItem, Task, useGetMyStats, useGetTasks, useBuyStreakFreeze } from "@workspace/api-client-react";
 import { TaskItem } from "@/components/task-item";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Flame, Trophy, Target, Award, Zap, Check } from "lucide-react";
+import { Flame, Trophy, Target, Award, Zap, Check, Shield, ShieldCheck, ShieldOff } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useQueryClient } from "@tanstack/react-query";
+import { getGetMyStatsQueryKey } from "@workspace/api-client-react";
+import { useToast } from "@/hooks/use-toast";
+
+const FREEZE_COST = 50;
 
 export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useGetMyStats();
@@ -16,9 +21,32 @@ export default function Dashboard() {
   });
 
   const [levelUpData, setLevelUpData] = useState<any | null>(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const buyFreezeMutation = useBuyStreakFreeze();
 
   const pendingTasks = tasks?.filter(t => !t.completed) || [];
   const completedTasks = tasks?.filter(t => t.completed) || [];
+
+  const handleBuyFreeze = () => {
+    buyFreezeMutation.mutate(undefined, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetMyStatsQueryKey() });
+        toast({
+          title: "Streak Shield Activated! 🛡️",
+          description: `Spent ${FREEZE_COST} XP. Your next missed day won't break your streak.`,
+          className: "border-cyan-500/50 bg-cyan-500/10",
+        });
+      },
+      onError: (err: any) => {
+        toast({
+          title: "Can't buy freeze",
+          description: err?.response?.data?.error ?? "Something went wrong.",
+          variant: "destructive",
+        });
+      },
+    });
+  };
 
   if (statsLoading || tasksLoading) {
     return <div className="p-8 flex justify-center items-center h-64"><Zap className="w-8 h-8 text-primary animate-pulse" /></div>;
@@ -26,13 +54,16 @@ export default function Dashboard() {
 
   if (!stats) return null;
 
-  const progressPercent = stats.pointsToNextLevel > 0 
-    ? ((stats.totalPoints % 1000) / 1000) * 100 // Rough approx if pointsToNextLevel is not exactly a fixed scale
+  const progressPercent = stats.pointsToNextLevel > 0
+    ? ((stats.totalPoints % 1000) / 1000) * 100
     : 100;
+
+  const hasFreeze = stats.streakFreezes > 0;
+  const canAfford = stats.totalPoints >= FREEZE_COST;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
+
       {/* Top Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-card border-primary/20 neon-glow relative overflow-hidden">
@@ -100,6 +131,58 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
+      {/* Streak Shield */}
+      <Card className={`border transition-all duration-300 ${hasFreeze ? "border-cyan-500/40 bg-cyan-500/5 shadow-[0_0_20px_rgba(0,255,255,0.08)]" : "border-border"}`}>
+        <CardContent className="pt-5 pb-5">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-4">
+              <div className={`p-2.5 rounded-xl border ${hasFreeze ? "bg-cyan-500/15 border-cyan-500/40 shadow-[0_0_12px_rgba(0,255,255,0.25)]" : "bg-muted/40 border-border"}`}>
+                {hasFreeze
+                  ? <ShieldCheck className="w-6 h-6 text-cyan-400" />
+                  : <ShieldOff className="w-6 h-6 text-muted-foreground" />
+                }
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Streak Shield</span>
+                  {hasFreeze && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 uppercase tracking-wider">
+                      Ready
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm mt-0.5">
+                  {hasFreeze
+                    ? <span className="text-cyan-400 font-semibold">1 freeze held — auto-activates if you miss a day</span>
+                    : <span className="text-muted-foreground">Protects your streak from a missed day. Auto-activates when needed.</span>
+                  }
+                </p>
+              </div>
+            </div>
+
+            <Button
+              onClick={handleBuyFreeze}
+              disabled={hasFreeze || !canAfford || buyFreezeMutation.isPending}
+              variant={hasFreeze ? "ghost" : "outline"}
+              className={
+                hasFreeze
+                  ? "text-muted-foreground cursor-default"
+                  : canAfford
+                    ? "border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500"
+                    : "border-muted text-muted-foreground"
+              }
+            >
+              {hasFreeze
+                ? <><ShieldCheck className="w-4 h-4 mr-2" /> Shield Active</>
+                : !canAfford
+                  ? <><Shield className="w-4 h-4 mr-2" /> Need {FREEZE_COST} XP</>
+                  : <><Shield className="w-4 h-4 mr-2" /> Buy for {FREEZE_COST} XP</>
+              }
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Tasks List */}
         <div className="lg:col-span-2 space-y-6">
@@ -124,11 +207,11 @@ export default function Dashboard() {
                 </Button>
               </div>
             )}
-            
+
             {pendingTasks.map(task => (
               <TaskItem key={task.id} task={task} onLevelUp={setLevelUpData} />
             ))}
-            
+
             {completedTasks.length > 0 && (
               <>
                 <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mt-8 mb-4 flex items-center gap-2">
@@ -152,18 +235,24 @@ export default function Dashboard() {
               <div className="divide-y divide-border">
                 {stats.recentActivity.slice(0, 8).map((activity: ActivityItem) => (
                   <div key={activity.id} className="p-4 flex gap-4 hover:bg-muted/30 transition-colors">
-                    <div className="mt-1">
+                    <div className="mt-1 flex-shrink-0">
                       {activity.type === 'task_completed' && <Check className="w-5 h-5 text-green-500" />}
                       {activity.type === 'badge_earned' && <Award className="w-5 h-5 text-secondary" />}
                       {activity.type === 'level_up' && <Trophy className="w-5 h-5 text-primary" />}
                       {activity.type === 'streak_milestone' && <Flame className="w-5 h-5 text-accent" />}
                       {activity.type === 'all_day_bonus' && <Zap className="w-5 h-5 text-yellow-500" />}
+                      {activity.type === 'streak_freeze_bought' && <Shield className="w-5 h-5 text-cyan-400" />}
+                      {activity.type === 'streak_freeze_used' && <ShieldCheck className="w-5 h-5 text-cyan-400" />}
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground">{activity.description}</p>
                       <p className="text-xs text-muted-foreground mt-1">
                         {format(new Date(activity.createdAt), 'MMM d, h:mm a')}
-                        <span className="text-primary font-bold ml-2">+{activity.points} XP</span>
+                        {activity.points !== 0 && (
+                          <span className={`font-bold ml-2 ${activity.points < 0 ? "text-red-400" : "text-primary"}`}>
+                            {activity.points > 0 ? "+" : ""}{activity.points} XP
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -190,7 +279,7 @@ export default function Dashboard() {
             <Trophy className="w-24 h-24 text-primary mx-auto mb-6 drop-shadow-[0_0_15px_rgba(0,255,255,0.8)]" />
             <h3 className="text-3xl font-bold text-foreground mb-2">You reached Level {levelUpData?.newLevel}!</h3>
             <p className="text-muted-foreground">Keep the momentum going.</p>
-            
+
             {levelUpData?.newBadges?.length > 0 && (
               <div className="mt-8">
                 <h4 className="text-sm font-bold uppercase text-secondary mb-4">Badges Unlocked</h4>

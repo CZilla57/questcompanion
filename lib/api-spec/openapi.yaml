@@ -79,6 +79,28 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserStats"
 
+  /users/me/streak-freeze/buy:
+    post:
+      operationId: buyStreakFreeze
+      tags: [users]
+      summary: Spend 50 XP to buy a streak freeze (max 1 held at a time)
+      responses:
+        "200":
+          description: Freeze purchased
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StreakFreezeResult"
+        "400":
+          description: Not enough XP or already holding a freeze
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
   /users/me/xp-history:
     get:
       operationId: getMyXpHistory
@@ -577,7 +599,7 @@ components:
 
     UserStats:
       type: object
-      required: [todayPoints, todayTasksTotal, todayTasksCompleted, allDayBonusEarned, weeklyPoints, totalPoints, currentLevel, levelName, streakDays, pointsToNextLevel, recentActivity]
+      required: [todayPoints, todayTasksTotal, todayTasksCompleted, allDayBonusEarned, weeklyPoints, totalPoints, currentLevel, levelName, streakDays, streakFreezes, pointsToNextLevel, recentActivity]
       properties:
         todayPoints:
           type: integer
@@ -597,12 +619,24 @@ components:
           type: string
         streakDays:
           type: integer
+        streakFreezes:
+          type: integer
+          description: Number of streak freezes currently held (max 1)
         pointsToNextLevel:
           type: integer
         recentActivity:
           type: array
           items:
             $ref: "#/components/schemas/ActivityItem"
+
+    StreakFreezeResult:
+      type: object
+      required: [streakFreezes, totalPoints]
+      properties:
+        streakFreezes:
+          type: integer
+        totalPoints:
+          type: integer
 
     Task:
       type: object
@@ -870,7 +904,7 @@ components:
           type: string
         type:
           type: string
-          enum: [task_completed, badge_earned, level_up, streak_milestone, all_day_bonus]
+          enum: [task_completed, badge_earned, level_up, streak_milestone, all_day_bonus, streak_freeze_bought, streak_freeze_used]
         description:
           type: string
         points:

@@ -15,4 +15,6 @@ export const ActivityItemType = {
   level_up: 'level_up',
   streak_milestone: 'streak_milestone',
   all_day_bonus: 'all_day_bonus',
+  streak_freeze_bought: 'streak_freeze_bought',
+  streak_freeze_used: 'streak_freeze_used',
 } as const;

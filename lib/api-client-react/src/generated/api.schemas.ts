@@ -52,6 +52,8 @@ export const ActivityItemType = {
   level_up: 'level_up',
   streak_milestone: 'streak_milestone',
   all_day_bonus: 'all_day_bonus',
+  streak_freeze_bought: 'streak_freeze_bought',
+  streak_freeze_used: 'streak_freeze_used',
 } as const;
 
 export interface ActivityItem {
@@ -74,8 +76,15 @@ export interface UserStats {
   currentLevel: number;
   levelName: string;
   streakDays: number;
+  /** Number of streak freezes currently held (max 1) */
+  streakFreezes: number;
   pointsToNextLevel: number;
   recentActivity: ActivityItem[];
+}
+
+export interface StreakFreezeResult {
+  streakFreezes: number;
+  totalPoints: number;
 }
 
 export type TaskPriority = typeof TaskPriority[keyof typeof TaskPriority];
@@ -302,6 +311,10 @@ export interface LeaderboardEntry {
   points: number;
   tasksCompleted?: number;
 }
+
+export type BuyStreakFreeze400 = {
+  error?: string;
+};
 
 export type GetMyXpHistoryParams = {
 days?: number;

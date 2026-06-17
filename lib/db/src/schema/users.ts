@@ -13,6 +13,7 @@ export const usersTable = pgTable("users", {
   streakDays: integer("streak_days").notNull().default(0),
   longestStreak: integer("longest_streak").notNull().default(0),
   lastActiveDate: text("last_active_date"),
+  streakFreezes: integer("streak_freezes").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

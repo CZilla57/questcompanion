@@ -17,6 +17,8 @@ export interface UserStats {
   currentLevel: number;
   levelName: string;
   streakDays: number;
+  /** Number of streak freezes currently held (max 1) */
+  streakFreezes: number;
   pointsToNextLevel: number;
   recentActivity: ActivityItem[];
 }
