@@ -1,4 +1,6 @@
-import { useGetMe, useGetMyStats, useGetMyBadges } from "@workspace/api-client-react";
+import {
+  useGetMe, useGetMyStats, useGetMyBadges, useGetMyXpHistory,
+} from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Award, Flame, Trophy, Zap, CheckCircle2, Star, Target,
@@ -6,8 +8,8 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
 
 const ICON_MAP: Record<string, React.ReactNode> = {
@@ -28,28 +30,35 @@ const ICON_MAP: Record<string, React.ReactNode> = {
 };
 
 const CATEGORY_STYLE: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  tasks:        { label: "Task Mastery",    color: "text-primary",   bg: "bg-primary/10",   border: "border-primary/30" },
-  points:       { label: "XP Milestones",   color: "text-yellow-400",bg: "bg-yellow-400/10",border: "border-yellow-400/30" },
-  streak:       { label: "Daily Streaks",   color: "text-orange-400",bg: "bg-orange-400/10",border: "border-orange-400/30" },
-  level:        { label: "Rank Ups",        color: "text-purple-400",bg: "bg-purple-400/10",border: "border-purple-400/30" },
-  social:       { label: "Social",          color: "text-green-400", bg: "bg-green-400/10", border: "border-green-400/30" },
-  habit_streak: { label: "Habit Streaks",   color: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-500/40" },
+  tasks:        { label: "Task Mastery",  color: "text-primary",    bg: "bg-primary/10",    border: "border-primary/30" },
+  points:       { label: "XP Milestones", color: "text-yellow-400", bg: "bg-yellow-400/10", border: "border-yellow-400/30" },
+  streak:       { label: "Daily Streaks", color: "text-orange-400", bg: "bg-orange-400/10", border: "border-orange-400/30" },
+  level:        { label: "Rank Ups",      color: "text-purple-400", bg: "bg-purple-400/10", border: "border-purple-400/30" },
+  social:       { label: "Social",        color: "text-green-400",  bg: "bg-green-400/10",  border: "border-green-400/30" },
+  habit_streak: { label: "Habit Streaks", color: "text-amber-400",  bg: "bg-amber-400/10",  border: "border-amber-500/40" },
 };
 
-const generateWeeklyData = () => {
-  const data = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    data.push({ name: format(d, "EEE"), xp: Math.floor(Math.random() * 500) + 100 });
-  }
-  return data;
-};
+interface TooltipProps {
+  active?: boolean;
+  payload?: { value: number }[];
+  label?: string;
+}
+
+function XpTooltip({ active, payload, label }: TooltipProps) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-card border border-primary/30 rounded-lg px-3 py-2 shadow-lg">
+      <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
+      <p className="text-sm font-bold text-primary">{payload[0].value} XP</p>
+    </div>
+  );
+}
 
 export default function Progress() {
   const { data: user, isLoading: userLoading } = useGetMe();
   const { data: stats, isLoading: statsLoading } = useGetMyStats();
   const { data: userBadges, isLoading: badgesLoading } = useGetMyBadges();
+  const { data: xpHistory, isLoading: xpLoading } = useGetMyXpHistory({ days: 14 });
 
   if (userLoading || statsLoading || badgesLoading) {
     return (
@@ -59,8 +68,8 @@ export default function Progress() {
     );
   }
 
-  const chartData = generateWeeklyData();
-  if (stats) chartData[6].xp = stats.todayPoints;
+  const todayXp = stats?.todayPoints ?? 0;
+  const maxXp = xpHistory ? Math.max(...xpHistory.map((d) => d.xp), 1) : 1;
 
   // Group earned badges by category
   const earnedByCategory: Record<string, typeof userBadges> = {};
@@ -81,6 +90,7 @@ export default function Progress() {
 
       {/* Top row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Avatar card */}
         <Card className="md:col-span-1 bg-card border-primary/20 neon-glow relative overflow-hidden flex flex-col justify-center items-center p-8 text-center">
           <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center border-2 border-primary shadow-[0_0_30px_rgba(0,255,255,0.2)] mb-6">
             <Trophy className="w-12 h-12 text-primary" />
@@ -94,6 +104,7 @@ export default function Progress() {
           </div>
         </Card>
 
+        {/* Stats + chart */}
         <div className="md:col-span-2 grid grid-cols-2 gap-4">
           <Card className="bg-card border-border">
             <CardHeader className="pb-2">
@@ -119,30 +130,45 @@ export default function Progress() {
             </CardContent>
           </Card>
 
+          {/* Real XP chart */}
           <Card className="bg-card border-border col-span-2">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Weekly XP Gain</CardTitle>
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-medium text-muted-foreground">XP Earned — Last 14 Days</CardTitle>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="inline-block w-2 h-2 rounded-full bg-primary" />
+                Today: <span className="text-primary font-bold">{todayXp} XP</span>
+              </div>
             </CardHeader>
-            <CardContent className="h-[200px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2D3748" vertical={false} />
-                  <XAxis dataKey="name" stroke="#A0AEC0" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#A0AEC0" fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: "#1A202C", border: "1px solid #00FFFF", borderRadius: "8px" }}
-                    itemStyle={{ color: "#00FFFF" }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="xp"
-                    stroke="#00FFFF"
-                    strokeWidth={3}
-                    dot={{ fill: "#00FFFF", r: 4 }}
-                    activeDot={{ r: 6, fill: "#00FFFF", stroke: "#1A202C", strokeWidth: 2 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+            <CardContent className="h-[200px] w-full pt-2">
+              {xpLoading ? (
+                <div className="h-full flex items-center justify-center">
+                  <Zap className="w-6 h-6 text-primary animate-pulse" />
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={xpHistory ?? []} barSize={20} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#2D3748" vertical={false} />
+                    <XAxis
+                      dataKey="label"
+                      stroke="#A0AEC0"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                      interval={0}
+                    />
+                    <YAxis stroke="#A0AEC0" fontSize={11} tickLine={false} axisLine={false} />
+                    <Tooltip content={<XpTooltip />} cursor={{ fill: "rgba(0,255,255,0.05)" }} />
+                    <Bar dataKey="xp" radius={[4, 4, 0, 0]}>
+                      {(xpHistory ?? []).map((entry) => (
+                        <Cell
+                          key={entry.date}
+                          fill={entry.xp === 0 ? "#2D3748" : entry.xp >= maxXp * 0.8 ? "#00FFFF" : "rgba(0,255,255,0.5)"}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -160,11 +186,11 @@ export default function Progress() {
             {categoryOrder.map((cat) => {
               const items = earnedByCategory[cat];
               if (!items || items.length === 0) return null;
-              const style = CATEGORY_STYLE[cat] ?? CATEGORY_STYLE["tasks"];
+              const style = CATEGORY_STYLE[cat] ?? CATEGORY_STYLE["tasks"]!;
               return (
                 <div key={cat}>
                   <h3 className={`text-xs font-bold uppercase tracking-widest mb-3 flex items-center gap-2 ${style.color}`}>
-                    <span className={`inline-block w-2 h-2 rounded-full ${style.bg.replace("/10", "")} border ${style.border}`} />
+                    <span className="inline-block w-2 h-2 rounded-full border" style={{ background: "currentColor", borderColor: "currentColor" }} />
                     {style.label}
                     <span className="text-muted-foreground font-normal normal-case tracking-normal">
                       ({items.length})
@@ -176,7 +202,7 @@ export default function Progress() {
                         key={ub.badge.id}
                         className={`${style.bg} ${style.border} border flex flex-col items-center p-4 text-center hover:brightness-110 transition-all duration-200`}
                       >
-                        <div className={`w-16 h-16 rounded-full ${style.bg} flex items-center justify-center mb-3 border ${style.border} shadow-sm`}>
+                        <div className={`w-16 h-16 rounded-full ${style.bg} flex items-center justify-center mb-3 border ${style.border}`}>
                           <span className={style.color}>
                             {ICON_MAP[ub.badge.icon] ?? <Award className="w-8 h-8" />}
                           </span>
@@ -201,7 +227,7 @@ export default function Progress() {
           </div>
         )}
 
-        {/* Locked habit streak badges preview */}
+        {/* Habit streak milestone preview — always shown */}
         <div className="mt-8">
           <h3 className="text-xs font-bold uppercase tracking-widest mb-3 flex items-center gap-2 text-muted-foreground">
             <span className="inline-block w-2 h-2 rounded-full bg-muted border border-muted-foreground/30" />
@@ -210,24 +236,31 @@ export default function Progress() {
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
             {[
-              { name: "Warming Up",        req: 3,  icon: <Flame className="w-8 h-8" />,   desc: "3-day habit streak" },
-              { name: "On Fire",           req: 7,  icon: <Flame className="w-8 h-8" />,   desc: "7-day habit streak" },
-              { name: "Habit Forming",     req: 14, icon: <Zap className="w-8 h-8" />,     desc: "14-day habit streak" },
-              { name: "Habit Formed",      req: 21, icon: <Star className="w-8 h-8" />,    desc: "21-day habit streak" },
-              { name: "Unstoppable Habit", req: 30, icon: <Rocket className="w-8 h-8" />,  desc: "30-day habit streak" },
+              { name: "Warming Up",        req: 3,  icon: <Flame className="w-8 h-8" />,  desc: "3-day habit streak" },
+              { name: "On Fire",           req: 7,  icon: <Flame className="w-8 h-8" />,  desc: "7-day habit streak" },
+              { name: "Habit Forming",     req: 14, icon: <Zap className="w-8 h-8" />,    desc: "14-day habit streak" },
+              { name: "Habit Formed",      req: 21, icon: <Star className="w-8 h-8" />,   desc: "21-day habit streak" },
+              { name: "Unstoppable Habit", req: 30, icon: <Rocket className="w-8 h-8" />, desc: "30-day habit streak" },
             ].map((m) => {
-              const earned = userBadges?.some((ub) => ub.badge.name === m.name && ub.badge.category === "habit_streak");
+              const earned = userBadges?.some(
+                (ub) => ub.badge.name === m.name && ub.badge.category === "habit_streak",
+              );
               return (
                 <div
                   key={m.name}
-                  className={`border rounded-xl flex flex-col items-center p-4 text-center transition-all duration-200
-                    ${earned
+                  className={`border rounded-xl flex flex-col items-center p-4 text-center transition-all duration-200 ${
+                    earned
                       ? "bg-amber-400/10 border-amber-500/40 shadow-[0_0_12px_rgba(251,191,36,0.15)]"
                       : "bg-muted/10 border-border opacity-50"
-                    }`}
+                  }`}
                 >
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-3 border
-                    ${earned ? "bg-amber-400/20 border-amber-500/40 text-amber-400" : "bg-muted/20 border-border text-muted-foreground"}`}>
+                  <div
+                    className={`w-14 h-14 rounded-full flex items-center justify-center mb-3 border ${
+                      earned
+                        ? "bg-amber-400/20 border-amber-500/40 text-amber-400"
+                        : "bg-muted/20 border-border text-muted-foreground"
+                    }`}
+                  >
                     {m.icon}
                   </div>
                   <h3 className={`font-bold text-sm leading-tight ${earned ? "text-foreground" : "text-muted-foreground"}`}>

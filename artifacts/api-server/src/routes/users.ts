@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, gte, lt, desc } from "drizzle-orm";
+import { eq, and, gte, gt, desc } from "drizzle-orm";
 import { db, usersTable, tasksTable, activityTable } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel } from "../lib/gamification";
 
@@ -92,6 +92,45 @@ router.get("/users/me/stats", async (req, res): Promise<void> => {
       createdAt: a.createdAt.toISOString(),
     })),
   });
+});
+
+router.get("/users/me/xp-history", async (req, res): Promise<void> => {
+  const days = Math.min(90, Math.max(1, parseInt(String(req.query.days ?? "7"), 10) || 7));
+
+  // Build the last `days` date strings in order (oldest first)
+  const today = new Date();
+  const dateSlots: { date: string; label: string }[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split("T")[0];
+    const label = d.toLocaleDateString("en-US", { weekday: "short" });
+    dateSlots.push({ date: dateStr, label });
+  }
+
+  const earliest = dateSlots[0].date;
+  const cutoff = new Date(earliest + "T00:00:00.000Z");
+
+  // Fetch all activity rows with points > 0 in the window
+  const rows = await db
+    .select()
+    .from(activityTable)
+    .where(and(eq(activityTable.userId, DEFAULT_USER_ID), gte(activityTable.createdAt, cutoff), gt(activityTable.points, 0)));
+
+  // Group by local date string (YYYY-MM-DD of createdAt in UTC)
+  const xpByDate = new Map<string, number>();
+  for (const row of rows) {
+    const d = row.createdAt.toISOString().split("T")[0];
+    xpByDate.set(d, (xpByDate.get(d) ?? 0) + row.points);
+  }
+
+  res.json(
+    dateSlots.map(({ date, label }) => ({
+      date,
+      label,
+      xp: xpByDate.get(date) ?? 0,
+    })),
+  );
 });
 
 router.get("/users/search", async (req, res): Promise<void> => {

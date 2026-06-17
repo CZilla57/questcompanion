@@ -255,6 +255,14 @@ export interface RecurringTaskUpdate {
   isActive?: boolean;
 }
 
+export interface XpDataPoint {
+  /** YYYY-MM-DD */
+  date: string;
+  /** Short weekday label e.g. Mon */
+  label: string;
+  xp: number;
+}
+
 export interface UserBadge {
   badge: Badge;
   earnedAt: string;
@@ -288,6 +296,10 @@ export interface LeaderboardEntry {
   points: number;
   tasksCompleted?: number;
 }
+
+export type GetMyXpHistoryParams = {
+days?: number;
+};
 
 export type GetTasksParams = {
 /**

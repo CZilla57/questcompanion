@@ -23,6 +23,7 @@ import type {
   ActivityItem,
   Badge,
   GetLeaderboardParams,
+  GetMyXpHistoryParams,
   GetTasksParams,
   HealthStatus,
   LeaderboardEntry,
@@ -40,7 +41,8 @@ import type {
   UserBadge,
   UserStats,
   UserSummary,
-  UserUpdate
+  UserUpdate,
+  XpDataPoint
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -346,6 +348,90 @@ export function useGetMyStats<TData = Awaited<ReturnType<typeof getMyStats>>, TE
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetMyStatsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetMyXpHistoryUrl = (params?: GetMyXpHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/users/me/xp-history?${stringifiedParams}` : `/api/users/me/xp-history`
+}
+
+/**
+ * @summary Get daily XP earned for the past N days
+ */
+export const getMyXpHistory = async (params?: GetMyXpHistoryParams, options?: RequestInit): Promise<XpDataPoint[]> => {
+
+  return customFetch<XpDataPoint[]>(getGetMyXpHistoryUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyXpHistoryQueryKey = (params?: GetMyXpHistoryParams,) => {
+    return [
+    `/api/users/me/xp-history`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMyXpHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getMyXpHistory>>, TError = ErrorType<unknown>>(params?: GetMyXpHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyXpHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyXpHistoryQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyXpHistory>>> = ({ signal }) => getMyXpHistory(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyXpHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyXpHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getMyXpHistory>>>
+export type GetMyXpHistoryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get daily XP earned for the past N days
+ */
+
+export function useGetMyXpHistory<TData = Awaited<ReturnType<typeof getMyXpHistory>>, TError = ErrorType<unknown>>(
+ params?: GetMyXpHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyXpHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyXpHistoryQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

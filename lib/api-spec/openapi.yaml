@@ -79,6 +79,27 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserStats"
 
+  /users/me/xp-history:
+    get:
+      operationId: getMyXpHistory
+      tags: [users]
+      summary: Get daily XP earned for the past N days
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 7
+      responses:
+        "200":
+          description: XP history per day
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/XpDataPoint"
+
   /tasks:
     get:
       operationId: getTasks
@@ -780,6 +801,19 @@ components:
           type: string
           enum: [streak, tasks, points, social, level, habit_streak]
         requirement:
+          type: integer
+
+    XpDataPoint:
+      type: object
+      required: [date, label, xp]
+      properties:
+        date:
+          type: string
+          description: "YYYY-MM-DD"
+        label:
+          type: string
+          description: "Short weekday label e.g. Mon"
+        xp:
           type: integer
 
     UserBadge:

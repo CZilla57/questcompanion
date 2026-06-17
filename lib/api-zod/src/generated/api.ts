@@ -88,6 +88,23 @@ export const GetMyStatsResponse = zod.object({
 
 
 /**
+ * @summary Get daily XP earned for the past N days
+ */
+export const getMyXpHistoryQueryDaysDefault = 7;
+
+export const GetMyXpHistoryQueryParams = zod.object({
+  "days": zod.coerce.number().default(getMyXpHistoryQueryDaysDefault)
+})
+
+export const GetMyXpHistoryResponseItem = zod.object({
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "label": zod.string().describe('Short weekday label e.g. Mon'),
+  "xp": zod.number()
+})
+export const GetMyXpHistoryResponse = zod.array(GetMyXpHistoryResponseItem)
+
+
+/**
  * @summary List tasks for the current user
  */
 export const GetTasksQueryParams = zod.object({
