@@ -8,6 +8,14 @@ import { authMiddleware } from "./middlewares/authMiddleware";
 
 const app: Express = express();
 
+const allowedOrigins: Set<string> = new Set(
+  (process.env.REPLIT_DOMAINS ?? "")
+    .split(",")
+    .map((d) => d.trim())
+    .filter(Boolean)
+    .map((d) => `https://${d}`),
+);
+
 app.use(
   pinoHttp({
     logger,
@@ -27,7 +35,22 @@ app.use(
     },
   }),
 );
-app.use(cors({ credentials: true, origin: true }));
+app.use(
+  cors({
+    credentials: true,
+    origin: (origin, callback) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      if (allowedOrigins.size > 0 && allowedOrigins.has(origin)) {
+        callback(null, origin);
+      } else {
+        callback(null, false);
+      }
+    },
+  }),
+);
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

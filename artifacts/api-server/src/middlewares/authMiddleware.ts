@@ -63,10 +63,26 @@ export async function authMiddleware(
     return this.user != null && this.gameUserId != null;
   } as Request["isAuthenticated"];
 
+  const authHeader = req.headers["authorization"];
+  const isBearerAuth = typeof authHeader === "string" && authHeader.startsWith("Bearer ");
+
   const sid = getSessionId(req);
   if (!sid) {
     next();
     return;
+  }
+
+  if (!isBearerAuth) {
+    const reqOrigin = req.headers["origin"];
+    if (reqOrigin) {
+      const proto = req.headers["x-forwarded-proto"] ?? "https";
+      const host = req.headers["x-forwarded-host"] ?? req.headers["host"] ?? "";
+      const expectedOrigin = `${proto}://${host}`;
+      if (reqOrigin !== expectedOrigin) {
+        res.status(403).json({ error: "Forbidden" });
+        return;
+      }
+    }
   }
 
   const session = await getSession(sid);
