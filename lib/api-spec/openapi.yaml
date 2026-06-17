@@ -1318,13 +1318,16 @@ components:
 
     AvatarProfile:
       type: object
-      required: [avatarColor, avatarClass, battlePower, equippedGear, availableColors, availableClasses]
+      required: [avatarColor, avatarClass, avatarSkin, battlePower, equippedGear, availableColors, availableClasses, availableSkins]
       properties:
         avatarColor:
           type: string
         avatarClass:
           type: string
           enum: [fighter, mage, ranger, healer]
+        avatarSkin:
+          type: string
+          enum: [light, tan, brown, dark, green, blue]
         battlePower:
           type: integer
         equippedGear:
@@ -1339,6 +1342,10 @@ components:
           type: array
           items:
             type: string
+        availableSkins:
+          type: array
+          items:
+            type: string
 
     AvatarUpdateInput:
       type: object
@@ -1348,6 +1355,9 @@ components:
         avatarClass:
           type: string
           enum: [fighter, mage, ranger, healer]
+        avatarSkin:
+          type: string
+          enum: [light, tan, brown, dark, green, blue]
 
     GearStoreItem:
       type: object

@@ -6,13 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AvatarProfileAvatarClass } from './avatarProfileAvatarClass';
+import type { AvatarProfileAvatarSkin } from './avatarProfileAvatarSkin';
 import type { EquippedGearItem } from './equippedGearItem';
 
 export interface AvatarProfile {
   avatarColor: string;
   avatarClass: AvatarProfileAvatarClass;
+  avatarSkin: AvatarProfileAvatarSkin;
   battlePower: number;
   equippedGear: EquippedGearItem[];
   availableColors: string[];
   availableClasses: string[];
+  availableSkins: string[];
 }

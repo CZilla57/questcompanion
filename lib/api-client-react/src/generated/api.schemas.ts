@@ -432,13 +432,27 @@ export const AvatarProfileAvatarClass = {
   healer: 'healer',
 } as const;
 
+export type AvatarProfileAvatarSkin = typeof AvatarProfileAvatarSkin[keyof typeof AvatarProfileAvatarSkin];
+
+
+export const AvatarProfileAvatarSkin = {
+  light: 'light',
+  tan: 'tan',
+  brown: 'brown',
+  dark: 'dark',
+  green: 'green',
+  blue: 'blue',
+} as const;
+
 export interface AvatarProfile {
   avatarColor: string;
   avatarClass: AvatarProfileAvatarClass;
+  avatarSkin: AvatarProfileAvatarSkin;
   battlePower: number;
   equippedGear: EquippedGearItem[];
   availableColors: string[];
   availableClasses: string[];
+  availableSkins: string[];
 }
 
 export type AvatarUpdateInputAvatarClass = typeof AvatarUpdateInputAvatarClass[keyof typeof AvatarUpdateInputAvatarClass];
@@ -451,9 +465,22 @@ export const AvatarUpdateInputAvatarClass = {
   healer: 'healer',
 } as const;
 
+export type AvatarUpdateInputAvatarSkin = typeof AvatarUpdateInputAvatarSkin[keyof typeof AvatarUpdateInputAvatarSkin];
+
+
+export const AvatarUpdateInputAvatarSkin = {
+  light: 'light',
+  tan: 'tan',
+  brown: 'brown',
+  dark: 'dark',
+  green: 'green',
+  blue: 'blue',
+} as const;
+
 export interface AvatarUpdateInput {
   avatarColor?: string;
   avatarClass?: AvatarUpdateInputAvatarClass;
+  avatarSkin?: AvatarUpdateInputAvatarSkin;
 }
 
 export type GearStoreItemSlot = typeof GearStoreItemSlot[keyof typeof GearStoreItemSlot];

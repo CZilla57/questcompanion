@@ -17,6 +17,7 @@ export const usersTable = pgTable("users", {
   streakFreezes: integer("streak_freezes").notNull().default(0),
   onboardingComplete: boolean("onboarding_complete").notNull().default(false),
   avatarClass: text("avatar_class").notNull().default("fighter"),
+  avatarSkin: text("avatar_skin").notNull().default("light"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

@@ -701,6 +701,7 @@ export const SearchUsersResponse = zod.array(SearchUsersResponseItem)
 export const GetAvatarResponse = zod.object({
   "avatarColor": zod.string(),
   "avatarClass": zod.enum(['fighter', 'mage', 'ranger', 'healer']),
+  "avatarSkin": zod.enum(['light', 'tan', 'brown', 'dark', 'green', 'blue']),
   "battlePower": zod.number(),
   "equippedGear": zod.array(zod.object({
   "id": zod.number(),
@@ -711,7 +712,8 @@ export const GetAvatarResponse = zod.object({
   "icon": zod.string()
 })),
   "availableColors": zod.array(zod.string()),
-  "availableClasses": zod.array(zod.string())
+  "availableClasses": zod.array(zod.string()),
+  "availableSkins": zod.array(zod.string())
 })
 
 
@@ -720,12 +722,14 @@ export const GetAvatarResponse = zod.object({
  */
 export const UpdateAvatarBody = zod.object({
   "avatarColor": zod.string().optional(),
-  "avatarClass": zod.enum(['fighter', 'mage', 'ranger', 'healer']).optional()
+  "avatarClass": zod.enum(['fighter', 'mage', 'ranger', 'healer']).optional(),
+  "avatarSkin": zod.enum(['light', 'tan', 'brown', 'dark', 'green', 'blue']).optional()
 })
 
 export const UpdateAvatarResponse = zod.object({
   "avatarColor": zod.string(),
   "avatarClass": zod.enum(['fighter', 'mage', 'ranger', 'healer']),
+  "avatarSkin": zod.enum(['light', 'tan', 'brown', 'dark', 'green', 'blue']),
   "battlePower": zod.number(),
   "equippedGear": zod.array(zod.object({
   "id": zod.number(),
@@ -736,7 +740,8 @@ export const UpdateAvatarResponse = zod.object({
   "icon": zod.string()
 })),
   "availableColors": zod.array(zod.string()),
-  "availableClasses": zod.array(zod.string())
+  "availableClasses": zod.array(zod.string()),
+  "availableSkins": zod.array(zod.string())
 })
 
 
