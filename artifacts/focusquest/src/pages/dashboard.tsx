@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { format } from "date-fns";
-import { ActivityItem, Task, useGetMyStats, useGetTasks, useBuyStreakFreeze } from "@workspace/api-client-react";
+import { format, differenceInDays, parseISO } from "date-fns";
+import { ActivityItem, useGetMyStats, useGetTasks, useBuyStreakFreeze } from "@workspace/api-client-react";
 import { TaskItem } from "@/components/task-item";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Flame, Trophy, Target, Award, Zap, Check, Shield, ShieldCheck, ShieldOff } from "lucide-react";
+import { Flame, Trophy, Target, Award, Zap, Check, Shield, ShieldCheck, ShieldOff, AlertTriangle, X, TrendingDown } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -21,6 +21,7 @@ export default function Dashboard() {
   });
 
   const [levelUpData, setLevelUpData] = useState<any | null>(null);
+  const [decayDismissed, setDecayDismissed] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const buyFreezeMutation = useBuyStreakFreeze();
@@ -60,6 +61,13 @@ export default function Dashboard() {
 
   const hasFreeze = stats.streakFreezes > 0;
   const canAfford = stats.totalPoints >= FREEZE_COST;
+
+  // XP decay warning: show if no activity for 3+ days
+  const lastActivityIso = stats.recentActivity[0]?.createdAt ?? null;
+  const daysSinceActive = lastActivityIso
+    ? differenceInDays(new Date(), parseISO(lastActivityIso))
+    : 999;
+  const showDecayWarning = !decayDismissed && daysSinceActive >= 3;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -130,6 +138,37 @@ export default function Dashboard() {
           <Progress value={progressPercent} className="h-4 bg-muted" />
         </CardContent>
       </Card>
+
+      {/* XP Decay Warning */}
+      {showDecayWarning && (
+        <div className="relative flex items-start gap-4 p-4 rounded-xl border border-amber-500/40 bg-amber-500/8 shadow-[0_0_20px_rgba(251,191,36,0.08)] animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex-shrink-0 p-2 rounded-lg bg-amber-500/15 border border-amber-500/30 mt-0.5">
+            <TrendingDown className="w-5 h-5 text-amber-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <AlertTriangle className="w-4 h-4 text-amber-400" />
+              <span className="text-sm font-bold uppercase tracking-wider text-amber-400">XP Ranking Sliding</span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {daysSinceActive >= 999
+                ? "No quests completed yet — your weekly XP ranking hasn't started. Complete your first quest to get on the board."
+                : `You've been away for ${daysSinceActive} day${daysSinceActive === 1 ? "" : "s"}. Weekly XP rankings reset every Monday — every quest you skip lets others pull ahead.`
+              }
+            </p>
+            <Button asChild size="sm" className="mt-3 bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 hover:text-amber-200 h-8 px-4">
+              <Link href="/tasks">Get Back on Track →</Link>
+            </Button>
+          </div>
+          <button
+            onClick={() => setDecayDismissed(true)}
+            className="flex-shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            aria-label="Dismiss"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Streak Shield */}
       <Card className={`border transition-all duration-300 ${hasFreeze ? "border-cyan-500/40 bg-cyan-500/5 shadow-[0_0_20px_rgba(0,255,255,0.08)]" : "border-border"}`}>
