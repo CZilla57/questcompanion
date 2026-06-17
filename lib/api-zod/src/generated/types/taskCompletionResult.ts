@@ -10,9 +10,15 @@ import type { Task } from './task';
 
 export interface TaskCompletionResult {
   task: Task;
+  /** Total XP awarded (base + streak bonus + all-day bonus) */
   pointsAwarded: number;
   bonusAwarded: boolean;
+  /** All-day completion bonus XP */
   bonusPoints: number;
+  /** Extra XP from the streak difficulty multiplier */
+  streakBonus: number;
+  /** Streak-based multiplier applied to base XP (e.g. 1.05) */
+  xpMultiplier: number;
   newTotalPoints: number;
   newLevel: number;
   leveledUp: boolean;

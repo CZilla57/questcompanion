@@ -671,16 +671,24 @@ components:
 
     TaskCompletionResult:
       type: object
-      required: [task, pointsAwarded, bonusAwarded, bonusPoints, newTotalPoints, newLevel, leveledUp, newBadges]
+      required: [task, pointsAwarded, bonusAwarded, bonusPoints, streakBonus, xpMultiplier, newTotalPoints, newLevel, leveledUp, newBadges]
       properties:
         task:
           $ref: "#/components/schemas/Task"
         pointsAwarded:
           type: integer
+          description: Total XP awarded (base + streak bonus + all-day bonus)
         bonusAwarded:
           type: boolean
         bonusPoints:
           type: integer
+          description: All-day completion bonus XP
+        streakBonus:
+          type: integer
+          description: Extra XP from the streak difficulty multiplier
+        xpMultiplier:
+          type: number
+          description: Streak-based multiplier applied to base XP (e.g. 1.05)
         newTotalPoints:
           type: integer
         newLevel:

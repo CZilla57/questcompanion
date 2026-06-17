@@ -228,9 +228,11 @@ export const CompleteTaskResponse = zod.object({
   "priority": zod.enum(['low', 'medium', 'high']),
   "createdAt": zod.string()
 }),
-  "pointsAwarded": zod.number(),
+  "pointsAwarded": zod.number().describe('Total XP awarded (base + streak bonus + all-day bonus)'),
   "bonusAwarded": zod.boolean(),
-  "bonusPoints": zod.number(),
+  "bonusPoints": zod.number().describe('All-day completion bonus XP'),
+  "streakBonus": zod.number().describe('Extra XP from the streak difficulty multiplier'),
+  "xpMultiplier": zod.number().describe('Streak-based multiplier applied to base XP (e.g. 1.05)'),
   "newTotalPoints": zod.number(),
   "newLevel": zod.number(),
   "leveledUp": zod.boolean(),

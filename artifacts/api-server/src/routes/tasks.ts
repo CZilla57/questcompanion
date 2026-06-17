@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, and, desc } from "drizzle-orm";
+import { applyMultiplier } from "../lib/xp-multiplier";
 import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, DAILY_BONUS_POINTS } from "../lib/gamification";
 import { assignPoints } from "../lib/auto-points";
@@ -146,6 +147,8 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       pointsAwarded: 0,
       bonusAwarded: false,
       bonusPoints: 0,
+      streakBonus: 0,
+      xpMultiplier: 1,
       newTotalPoints: user!.totalPoints,
       newLevel: lvl.level,
       leveledUp: false,
@@ -173,14 +176,19 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
 
   const oldLevel = getLevelInfo(user.totalPoints);
-  let pointsToAdd = task.points;
 
-  // Log activity
+  // Apply streak difficulty multiplier (rewards sustained consistency)
+  const { totalPoints: boostedBase, streakBonus, multiplierInfo } = applyMultiplier(task.points, user.streakDays);
+  let pointsToAdd = boostedBase;
+
+  // Log activity (includes streak bonus embedded in the points value)
   await db.insert(activityTable).values({
     userId: DEFAULT_USER_ID,
     type: "task_completed",
-    description: `Completed "${task.title}"`,
-    points: task.points,
+    description: streakBonus > 0
+      ? `Completed "${task.title}" (${multiplierInfo.label})`
+      : `Completed "${task.title}"`,
+    points: boostedBase,
   });
 
   // Check if all tasks for today are done after this completion
@@ -294,9 +302,11 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
 
   res.json({
     task: formatTask(completedTask),
-    pointsAwarded: task.points,
+    pointsAwarded: pointsToAdd,  // total: base + streak bonus + all-day bonus
     bonusAwarded,
     bonusPoints: bonusAwarded ? DAILY_BONUS_POINTS : 0,
+    streakBonus,
+    xpMultiplier: multiplierInfo.multiplier,
     newTotalPoints,
     newLevel: newLevel.level,
     leveledUp,

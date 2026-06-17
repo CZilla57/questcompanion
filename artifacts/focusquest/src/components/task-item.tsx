@@ -39,10 +39,20 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
         onSuccess: (res) => {
           queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetMyStatsQueryKey() });
-          
+
+          const descParts: string[] = [];
+          if ((res.streakBonus ?? 0) > 0) {
+            const pct = Math.round(((res.xpMultiplier ?? 1) - 1) * 100);
+            descParts.push(`+${res.streakBonus} streak bonus (${pct}% curve)`);
+          }
+          if (res.bonusAwarded) {
+            descParts.push(`All tasks done! +${res.bonusPoints} bonus`);
+          }
+          const description = descParts.length > 0 ? descParts.join(" · ") : task.title;
+
           toast({
-            title: `Quest Completed! +${res.pointsAwarded} XP`,
-            description: res.bonusAwarded ? `All-day bonus! +${res.bonusPoints} XP` : task.title,
+            title: `Quest Complete! +${res.pointsAwarded} XP`,
+            description,
             className: "border-primary bg-primary/10 text-primary-foreground",
           });
 
