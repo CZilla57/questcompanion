@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { desc, eq, and } from "drizzle-orm";
+import { desc, eq, and, isNotNull } from "drizzle-orm";
 import { db, usersTable, tasksTable } from "@workspace/db";
 import { getLevelInfo } from "../lib/gamification";
 
@@ -9,6 +9,7 @@ router.get("/leaderboard", async (req, res): Promise<void> => {
   const period = req.query.period === "weekly" ? "weekly" : "alltime";
 
   const users = await db.select().from(usersTable)
+    .where(isNotNull(usersTable.replitId))
     .orderBy(period === "weekly" ? desc(usersTable.weeklyPoints) : desc(usersTable.totalPoints));
 
   const entries = await Promise.all(users.map(async (u, idx) => {
