@@ -8,6 +8,9 @@ import accountabilityRouter from "./accountability";
 import leaderboardRouter from "./leaderboard";
 import notificationsRouter from "./notifications";
 import recurringTasksRouter from "./recurring-tasks";
+import avatarRouter from "./avatar";
+import gearRouter from "./gear";
+import battleRouter from "./battle";
 
 const router: IRouter = Router();
 
@@ -20,5 +23,8 @@ router.use(badgesRouter);
 router.use(accountabilityRouter);
 router.use(leaderboardRouter);
 router.use(notificationsRouter);
+router.use(avatarRouter);
+router.use(gearRouter);
+router.use(battleRouter);
 
 export default router;

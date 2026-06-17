@@ -645,6 +645,150 @@ paths:
                 items:
                   $ref: "#/components/schemas/UserSummary"
 
+  /avatar:
+    get:
+      operationId: getAvatar
+      tags: [avatar]
+      summary: Get the current user's avatar profile and equipped gear
+      responses:
+        "200":
+          description: Avatar profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvatarProfile"
+    patch:
+      operationId: updateAvatar
+      tags: [avatar]
+      summary: Update avatar color and/or class
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvatarUpdateInput"
+      responses:
+        "200":
+          description: Updated avatar profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvatarProfile"
+
+  /gear/store:
+    get:
+      operationId: getGearStore
+      tags: [avatar]
+      summary: List all gear items with ownership and affordability status
+      responses:
+        "200":
+          description: Gear store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GearStoreResponse"
+
+  /gear/{id}/buy:
+    post:
+      operationId: buyGear
+      tags: [avatar]
+      summary: Purchase a gear item (deducts XP)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Purchase successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuyGearResult"
+        "403":
+          description: Not enough XP or level too low
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: Already owned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /gear/{id}/equip:
+    post:
+      operationId: equipGear
+      tags: [avatar]
+      summary: Equip a gear item (unequips same-slot item automatically)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Equipped
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessEnvelope"
+
+  /gear/{id}/unequip:
+    post:
+      operationId: unequipGear
+      tags: [avatar]
+      summary: Unequip a gear item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Unequipped
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessEnvelope"
+
+  /battle/current:
+    get:
+      operationId: getBattleCurrent
+      tags: [avatar]
+      summary: Get this week's battle status
+      responses:
+        "200":
+          description: Battle status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BattleStatus"
+
+  /battle/enter:
+    post:
+      operationId: enterBattle
+      tags: [avatar]
+      summary: Enter this week's battle
+      responses:
+        "200":
+          description: Battle result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BattleResult"
+        "409":
+          description: Already fought this week
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
 components:
   parameters:
     AuthorizationSessionHeader:
@@ -1122,3 +1266,163 @@ components:
           type: integer
         tasksCompleted:
           type: integer
+
+    SuccessEnvelope:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+
+    EquippedGearItem:
+      type: object
+      required: [id, name, slot, rarity, statPower, icon]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slot:
+          type: string
+          enum: [weapon, helmet, armor, boots, accessory]
+        rarity:
+          type: string
+          enum: [common, rare, epic, legendary]
+        statPower:
+          type: integer
+        icon:
+          type: string
+
+    AvatarProfile:
+      type: object
+      required: [avatarColor, avatarClass, battlePower, equippedGear, availableColors, availableClasses]
+      properties:
+        avatarColor:
+          type: string
+        avatarClass:
+          type: string
+          enum: [fighter, mage, ranger, healer]
+        battlePower:
+          type: integer
+        equippedGear:
+          type: array
+          items:
+            $ref: "#/components/schemas/EquippedGearItem"
+        availableColors:
+          type: array
+          items:
+            type: string
+        availableClasses:
+          type: array
+          items:
+            type: string
+
+    AvatarUpdateInput:
+      type: object
+      properties:
+        avatarColor:
+          type: string
+        avatarClass:
+          type: string
+          enum: [fighter, mage, ranger, healer]
+
+    GearStoreItem:
+      type: object
+      required: [id, name, description, slot, rarity, statPower, costXp, levelRequired, icon, owned, equipped, canAfford, meetsLevel]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        slot:
+          type: string
+          enum: [weapon, helmet, armor, boots, accessory]
+        rarity:
+          type: string
+          enum: [common, rare, epic, legendary]
+        statPower:
+          type: integer
+        costXp:
+          type: integer
+        levelRequired:
+          type: integer
+        icon:
+          type: string
+        owned:
+          type: boolean
+        equipped:
+          type: boolean
+        canAfford:
+          type: boolean
+        meetsLevel:
+          type: boolean
+
+    GearStoreResponse:
+      type: object
+      required: [items, userXp, userLevel]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/GearStoreItem"
+        userXp:
+          type: integer
+        userLevel:
+          type: integer
+
+    BuyGearResult:
+      type: object
+      required: [success, xpSpent, remainingXp]
+      properties:
+        success:
+          type: boolean
+        xpSpent:
+          type: integer
+        remainingXp:
+          type: integer
+
+    BattleStatus:
+      type: object
+      required: [weekKey, bossPower, yourPower, entered, winXp, loseXp]
+      properties:
+        weekKey:
+          type: string
+        bossPower:
+          type: integer
+        yourPower:
+          type: integer
+        entered:
+          type: boolean
+        result:
+          type: ["string", "null"]
+          enum: [win, lose, null]
+        xpAwarded:
+          type: ["integer", "null"]
+        roll:
+          type: ["integer", "null"]
+        foughtAt:
+          type: ["string", "null"]
+        winXp:
+          type: integer
+        loseXp:
+          type: integer
+
+    BattleResult:
+      type: object
+      required: [result, xpAwarded, bossPower, yourPower, roll, weekKey]
+      properties:
+        result:
+          type: string
+          enum: [win, lose]
+        xpAwarded:
+          type: integer
+        bossPower:
+          type: integer
+        yourPower:
+          type: integer
+        roll:
+          type: integer
+        weekKey:
+          type: string

@@ -15,6 +15,7 @@ import Progress from "@/pages/progress";
 import Partners from "@/pages/partners";
 import Leaderboard from "@/pages/leaderboard";
 import Recurring from "@/pages/recurring";
+import AvatarPage from "@/pages/avatar";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -150,6 +151,7 @@ function Router() {
         <Route path="/progress" component={Progress} />
         <Route path="/partners" component={Partners} />
         <Route path="/leaderboard" component={Leaderboard} />
+        <Route path="/avatar" component={AvatarPage} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

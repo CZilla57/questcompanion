@@ -22,10 +22,16 @@ import type {
 import type {
   ActivityItem,
   AuthUserEnvelope,
+  AvatarProfile,
+  AvatarUpdateInput,
   Badge,
+  BattleResult,
+  BattleStatus,
   BeginBrowserLoginParams,
+  BuyGearResult,
   BuyStreakFreeze400,
   ErrorEnvelope,
+  GearStoreResponse,
   GetLeaderboardParams,
   GetMyXpHistoryParams,
   GetTasksParams,
@@ -42,6 +48,7 @@ import type {
   RecurringTaskUpdate,
   SearchUsersParams,
   StreakFreezeResult,
+  SuccessEnvelope,
   Task,
   TaskCompletionResult,
   TaskInput,
@@ -2616,4 +2623,586 @@ export function useSearchUsers<TData = Awaited<ReturnType<typeof searchUsers>>, 
 
 
 
+
+export const getGetAvatarUrl = () => {
+
+
+
+
+  return `/api/avatar`
+}
+
+/**
+ * @summary Get the current user's avatar profile and equipped gear
+ */
+export const getAvatar = async ( options?: RequestInit): Promise<AvatarProfile> => {
+
+  return customFetch<AvatarProfile>(getGetAvatarUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAvatarQueryKey = () => {
+    return [
+    `/api/avatar`
+    ] as const;
+    }
+
+
+export const getGetAvatarQueryOptions = <TData = Awaited<ReturnType<typeof getAvatar>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAvatar>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAvatarQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAvatar>>> = ({ signal }) => getAvatar({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAvatar>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAvatarQueryResult = NonNullable<Awaited<ReturnType<typeof getAvatar>>>
+export type GetAvatarQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the current user's avatar profile and equipped gear
+ */
+
+export function useGetAvatar<TData = Awaited<ReturnType<typeof getAvatar>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAvatar>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAvatarQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateAvatarUrl = () => {
+
+
+
+
+  return `/api/avatar`
+}
+
+/**
+ * @summary Update avatar color and/or class
+ */
+export const updateAvatar = async (avatarUpdateInput: AvatarUpdateInput, options?: RequestInit): Promise<AvatarProfile> => {
+
+  return customFetch<AvatarProfile>(getUpdateAvatarUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      avatarUpdateInput,)
+  }
+);}
+
+
+
+
+export const getUpdateAvatarMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAvatar>>, TError,{data: BodyType<AvatarUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAvatar>>, TError,{data: BodyType<AvatarUpdateInput>}, TContext> => {
+
+const mutationKey = ['updateAvatar'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAvatar>>, {data: BodyType<AvatarUpdateInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateAvatar(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAvatarMutationResult = NonNullable<Awaited<ReturnType<typeof updateAvatar>>>
+    export type UpdateAvatarMutationBody = BodyType<AvatarUpdateInput>
+    export type UpdateAvatarMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update avatar color and/or class
+ */
+export const useUpdateAvatar = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAvatar>>, TError,{data: BodyType<AvatarUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAvatar>>,
+        TError,
+        {data: BodyType<AvatarUpdateInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateAvatarMutationOptions(options));
+    }
+
+export const getGetGearStoreUrl = () => {
+
+
+
+
+  return `/api/gear/store`
+}
+
+/**
+ * @summary List all gear items with ownership and affordability status
+ */
+export const getGearStore = async ( options?: RequestInit): Promise<GearStoreResponse> => {
+
+  return customFetch<GearStoreResponse>(getGetGearStoreUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGearStoreQueryKey = () => {
+    return [
+    `/api/gear/store`
+    ] as const;
+    }
+
+
+export const getGetGearStoreQueryOptions = <TData = Awaited<ReturnType<typeof getGearStore>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGearStore>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGearStoreQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGearStore>>> = ({ signal }) => getGearStore({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGearStore>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGearStoreQueryResult = NonNullable<Awaited<ReturnType<typeof getGearStore>>>
+export type GetGearStoreQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all gear items with ownership and affordability status
+ */
+
+export function useGetGearStore<TData = Awaited<ReturnType<typeof getGearStore>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGearStore>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGearStoreQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getBuyGearUrl = (id: number,) => {
+
+
+
+
+  return `/api/gear/${id}/buy`
+}
+
+/**
+ * @summary Purchase a gear item (deducts XP)
+ */
+export const buyGear = async (id: number, options?: RequestInit): Promise<BuyGearResult> => {
+
+  return customFetch<BuyGearResult>(getBuyGearUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getBuyGearMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyGear>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof buyGear>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['buyGear'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyGear>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  buyGear(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyGearMutationResult = NonNullable<Awaited<ReturnType<typeof buyGear>>>
+
+    export type BuyGearMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Purchase a gear item (deducts XP)
+ */
+export const useBuyGear = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyGear>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof buyGear>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getBuyGearMutationOptions(options));
+    }
+
+export const getEquipGearUrl = (id: number,) => {
+
+
+
+
+  return `/api/gear/${id}/equip`
+}
+
+/**
+ * @summary Equip a gear item (unequips same-slot item automatically)
+ */
+export const equipGear = async (id: number, options?: RequestInit): Promise<SuccessEnvelope> => {
+
+  return customFetch<SuccessEnvelope>(getEquipGearUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getEquipGearMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof equipGear>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof equipGear>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['equipGear'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof equipGear>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  equipGear(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EquipGearMutationResult = NonNullable<Awaited<ReturnType<typeof equipGear>>>
+
+    export type EquipGearMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Equip a gear item (unequips same-slot item automatically)
+ */
+export const useEquipGear = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof equipGear>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof equipGear>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getEquipGearMutationOptions(options));
+    }
+
+export const getUnequipGearUrl = (id: number,) => {
+
+
+
+
+  return `/api/gear/${id}/unequip`
+}
+
+/**
+ * @summary Unequip a gear item
+ */
+export const unequipGear = async (id: number, options?: RequestInit): Promise<SuccessEnvelope> => {
+
+  return customFetch<SuccessEnvelope>(getUnequipGearUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getUnequipGearMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unequipGear>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unequipGear>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['unequipGear'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unequipGear>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  unequipGear(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnequipGearMutationResult = NonNullable<Awaited<ReturnType<typeof unequipGear>>>
+
+    export type UnequipGearMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Unequip a gear item
+ */
+export const useUnequipGear = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unequipGear>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unequipGear>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getUnequipGearMutationOptions(options));
+    }
+
+export const getGetBattleCurrentUrl = () => {
+
+
+
+
+  return `/api/battle/current`
+}
+
+/**
+ * @summary Get this week's battle status
+ */
+export const getBattleCurrent = async ( options?: RequestInit): Promise<BattleStatus> => {
+
+  return customFetch<BattleStatus>(getGetBattleCurrentUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBattleCurrentQueryKey = () => {
+    return [
+    `/api/battle/current`
+    ] as const;
+    }
+
+
+export const getGetBattleCurrentQueryOptions = <TData = Awaited<ReturnType<typeof getBattleCurrent>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBattleCurrent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBattleCurrentQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBattleCurrent>>> = ({ signal }) => getBattleCurrent({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBattleCurrent>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBattleCurrentQueryResult = NonNullable<Awaited<ReturnType<typeof getBattleCurrent>>>
+export type GetBattleCurrentQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get this week's battle status
+ */
+
+export function useGetBattleCurrent<TData = Awaited<ReturnType<typeof getBattleCurrent>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBattleCurrent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBattleCurrentQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getEnterBattleUrl = () => {
+
+
+
+
+  return `/api/battle/enter`
+}
+
+/**
+ * @summary Enter this week's battle
+ */
+export const enterBattle = async ( options?: RequestInit): Promise<BattleResult> => {
+
+  return customFetch<BattleResult>(getEnterBattleUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getEnterBattleMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof enterBattle>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof enterBattle>>, TError,void, TContext> => {
+
+const mutationKey = ['enterBattle'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof enterBattle>>, void> = () => {
+
+
+          return  enterBattle(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EnterBattleMutationResult = NonNullable<Awaited<ReturnType<typeof enterBattle>>>
+
+    export type EnterBattleMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Enter this week's battle
+ */
+export const useEnterBattle = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof enterBattle>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof enterBattle>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getEnterBattleMutationOptions(options));
+    }
 

@@ -687,3 +687,140 @@ export const SearchUsersResponseItem = zod.object({
 export const SearchUsersResponse = zod.array(SearchUsersResponseItem)
 
 
+/**
+ * @summary Get the current user's avatar profile and equipped gear
+ */
+export const GetAvatarResponse = zod.object({
+  "avatarColor": zod.string(),
+  "avatarClass": zod.enum(['fighter', 'mage', 'ranger', 'healer']),
+  "battlePower": zod.number(),
+  "equippedGear": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slot": zod.enum(['weapon', 'helmet', 'armor', 'boots', 'accessory']),
+  "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
+  "statPower": zod.number(),
+  "icon": zod.string()
+})),
+  "availableColors": zod.array(zod.string()),
+  "availableClasses": zod.array(zod.string())
+})
+
+
+/**
+ * @summary Update avatar color and/or class
+ */
+export const UpdateAvatarBody = zod.object({
+  "avatarColor": zod.string().optional(),
+  "avatarClass": zod.enum(['fighter', 'mage', 'ranger', 'healer']).optional()
+})
+
+export const UpdateAvatarResponse = zod.object({
+  "avatarColor": zod.string(),
+  "avatarClass": zod.enum(['fighter', 'mage', 'ranger', 'healer']),
+  "battlePower": zod.number(),
+  "equippedGear": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slot": zod.enum(['weapon', 'helmet', 'armor', 'boots', 'accessory']),
+  "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
+  "statPower": zod.number(),
+  "icon": zod.string()
+})),
+  "availableColors": zod.array(zod.string()),
+  "availableClasses": zod.array(zod.string())
+})
+
+
+/**
+ * @summary List all gear items with ownership and affordability status
+ */
+export const GetGearStoreResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "slot": zod.enum(['weapon', 'helmet', 'armor', 'boots', 'accessory']),
+  "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
+  "statPower": zod.number(),
+  "costXp": zod.number(),
+  "levelRequired": zod.number(),
+  "icon": zod.string(),
+  "owned": zod.boolean(),
+  "equipped": zod.boolean(),
+  "canAfford": zod.boolean(),
+  "meetsLevel": zod.boolean()
+})),
+  "userXp": zod.number(),
+  "userLevel": zod.number()
+})
+
+
+/**
+ * @summary Purchase a gear item (deducts XP)
+ */
+export const BuyGearParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const BuyGearResponse = zod.object({
+  "success": zod.boolean(),
+  "xpSpent": zod.number(),
+  "remainingXp": zod.number()
+})
+
+
+/**
+ * @summary Equip a gear item (unequips same-slot item automatically)
+ */
+export const EquipGearParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const EquipGearResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Unequip a gear item
+ */
+export const UnequipGearParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UnequipGearResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Get this week's battle status
+ */
+export const GetBattleCurrentResponse = zod.object({
+  "weekKey": zod.string(),
+  "bossPower": zod.number(),
+  "yourPower": zod.number(),
+  "entered": zod.boolean(),
+  "result": zod.union([zod.literal('win'),zod.literal('lose'),zod.literal(null)]).nullish(),
+  "xpAwarded": zod.number().nullish(),
+  "roll": zod.number().nullish(),
+  "foughtAt": zod.string().nullish(),
+  "winXp": zod.number(),
+  "loseXp": zod.number()
+})
+
+
+/**
+ * @summary Enter this week's battle
+ */
+export const EnterBattleResponse = zod.object({
+  "result": zod.enum(['win', 'lose']),
+  "xpAwarded": zod.number(),
+  "bossPower": zod.number(),
+  "yourPower": zod.number(),
+  "roll": zod.number(),
+  "weekKey": zod.string()
+})
+
+

@@ -356,6 +356,168 @@ export interface LeaderboardEntry {
   tasksCompleted?: number;
 }
 
+export interface SuccessEnvelope {
+  success: boolean;
+}
+
+export type EquippedGearItemSlot = typeof EquippedGearItemSlot[keyof typeof EquippedGearItemSlot];
+
+
+export const EquippedGearItemSlot = {
+  weapon: 'weapon',
+  helmet: 'helmet',
+  armor: 'armor',
+  boots: 'boots',
+  accessory: 'accessory',
+} as const;
+
+export type EquippedGearItemRarity = typeof EquippedGearItemRarity[keyof typeof EquippedGearItemRarity];
+
+
+export const EquippedGearItemRarity = {
+  common: 'common',
+  rare: 'rare',
+  epic: 'epic',
+  legendary: 'legendary',
+} as const;
+
+export interface EquippedGearItem {
+  id: number;
+  name: string;
+  slot: EquippedGearItemSlot;
+  rarity: EquippedGearItemRarity;
+  statPower: number;
+  icon: string;
+}
+
+export type AvatarProfileAvatarClass = typeof AvatarProfileAvatarClass[keyof typeof AvatarProfileAvatarClass];
+
+
+export const AvatarProfileAvatarClass = {
+  fighter: 'fighter',
+  mage: 'mage',
+  ranger: 'ranger',
+  healer: 'healer',
+} as const;
+
+export interface AvatarProfile {
+  avatarColor: string;
+  avatarClass: AvatarProfileAvatarClass;
+  battlePower: number;
+  equippedGear: EquippedGearItem[];
+  availableColors: string[];
+  availableClasses: string[];
+}
+
+export type AvatarUpdateInputAvatarClass = typeof AvatarUpdateInputAvatarClass[keyof typeof AvatarUpdateInputAvatarClass];
+
+
+export const AvatarUpdateInputAvatarClass = {
+  fighter: 'fighter',
+  mage: 'mage',
+  ranger: 'ranger',
+  healer: 'healer',
+} as const;
+
+export interface AvatarUpdateInput {
+  avatarColor?: string;
+  avatarClass?: AvatarUpdateInputAvatarClass;
+}
+
+export type GearStoreItemSlot = typeof GearStoreItemSlot[keyof typeof GearStoreItemSlot];
+
+
+export const GearStoreItemSlot = {
+  weapon: 'weapon',
+  helmet: 'helmet',
+  armor: 'armor',
+  boots: 'boots',
+  accessory: 'accessory',
+} as const;
+
+export type GearStoreItemRarity = typeof GearStoreItemRarity[keyof typeof GearStoreItemRarity];
+
+
+export const GearStoreItemRarity = {
+  common: 'common',
+  rare: 'rare',
+  epic: 'epic',
+  legendary: 'legendary',
+} as const;
+
+export interface GearStoreItem {
+  id: number;
+  name: string;
+  description: string;
+  slot: GearStoreItemSlot;
+  rarity: GearStoreItemRarity;
+  statPower: number;
+  costXp: number;
+  levelRequired: number;
+  icon: string;
+  owned: boolean;
+  equipped: boolean;
+  canAfford: boolean;
+  meetsLevel: boolean;
+}
+
+export interface GearStoreResponse {
+  items: GearStoreItem[];
+  userXp: number;
+  userLevel: number;
+}
+
+export interface BuyGearResult {
+  success: boolean;
+  xpSpent: number;
+  remainingXp: number;
+}
+
+/**
+ * @nullable
+ */
+export type BattleStatusResult = typeof BattleStatusResult[keyof typeof BattleStatusResult] | null;
+
+
+export const BattleStatusResult = {
+  win: 'win',
+  lose: 'lose',
+} as const;
+
+export interface BattleStatus {
+  weekKey: string;
+  bossPower: number;
+  yourPower: number;
+  entered: boolean;
+  /** @nullable */
+  result?: BattleStatusResult;
+  /** @nullable */
+  xpAwarded?: number | null;
+  /** @nullable */
+  roll?: number | null;
+  /** @nullable */
+  foughtAt?: string | null;
+  winXp: number;
+  loseXp: number;
+}
+
+export type BattleResultResult = typeof BattleResultResult[keyof typeof BattleResultResult];
+
+
+export const BattleResultResult = {
+  win: 'win',
+  lose: 'lose',
+} as const;
+
+export interface BattleResult {
+  result: BattleResultResult;
+  xpAwarded: number;
+  bossPower: number;
+  yourPower: number;
+  roll: number;
+  weekKey: string;
+}
+
 /**
  * Opaque session token — `Bearer <sid>`.
  */

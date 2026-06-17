@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation } from "wouter";
 import { Link } from "wouter";
-import { Home, CheckSquare, BarChart2, Users, Trophy, X, Zap, Bell, BellOff, Repeat, Menu } from "lucide-react";
+import { Home, CheckSquare, BarChart2, Users, Trophy, X, Zap, Bell, BellOff, Repeat, Menu, User } from "lucide-react";
 import { Button } from "./ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
@@ -80,14 +80,17 @@ function NotificationBell() {
   );
 }
 
-const navItems = [
-  { href: "/",            label: "Home",       icon: Home },
-  { href: "/tasks",       label: "Quests",     icon: CheckSquare },
-  { href: "/recurring",   label: "Recurring",  icon: Repeat },
-  { href: "/progress",    label: "Progress",   icon: BarChart2 },
-  { href: "/partners",    label: "Allies",     icon: Users },
-  { href: "/leaderboard", label: "Board",      icon: Trophy },
+// All nav items — sidebar always shows all; mobile bottom bar shows mobileShow:true only
+const allNavItems = [
+  { href: "/",            label: "Home",       icon: Home,        mobileShow: true },
+  { href: "/tasks",       label: "Quests",     icon: CheckSquare, mobileShow: true },
+  { href: "/recurring",   label: "Recurring",  icon: Repeat,      mobileShow: false },
+  { href: "/progress",    label: "Progress",   icon: BarChart2,   mobileShow: true },
+  { href: "/avatar",      label: "Hero",       icon: User,        mobileShow: true },
+  { href: "/partners",    label: "Allies",     icon: Users,       mobileShow: true },
+  { href: "/leaderboard", label: "Board",      icon: Trophy,      mobileShow: false },
 ];
+const mobileNavItems = allNavItems.filter(i => i.mobileShow);
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -104,7 +107,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
         <div className="flex items-center gap-1">
           <NotificationBell />
-          {/* Sidebar toggle for overflow items on very small screens if needed */}
           <Button
             variant="ghost"
             size="icon"
@@ -137,7 +139,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex-1 px-4 space-y-1 mt-8 md:mt-0" aria-label="Main navigation">
-          {navItems.map((item) => {
+          {allNavItems.map((item) => {
             const isActive = location === item.href;
             return (
               <Link
@@ -155,7 +157,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <item.icon
                     className={`w-5 h-5 flex-shrink-0 ${isActive ? "drop-shadow-[0_0_5px_rgba(0,255,255,0.8)]" : ""}`}
                   />
-                  <span className="font-medium">{item.label === "Board" ? "Leaderboard" : item.label}</span>
+                  <span className="font-medium">
+                    {item.label === "Board" ? "Leaderboard" : item.label}
+                  </span>
                 </div>
               </Link>
             );
@@ -183,7 +187,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         aria-label="Mobile navigation"
         className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-card/95 backdrop-blur-md border-t border-border flex items-stretch safe-bottom"
       >
-        {navItems.map((item) => {
+        {mobileNavItems.map((item) => {
           const isActive = location === item.href;
           return (
             <Link
