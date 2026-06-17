@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-FocusQuest is a gamified task and habit tracker with a React frontend and an Express API backed by PostgreSQL. The production security boundary is the `/api` server in `artifacts/api-server/src/`; the browser client and service worker are untrusted, and all state-changing behavior must be enforced server-side. The mockup sandbox is development-only and out of scope unless shared code becomes reachable from production.
+FocusQuest is a gamified task and habit tracker with a React frontend and an Express API backed by PostgreSQL. The production security boundary is the `/api` server in `artifacts/api-server/src/`; the browser client and service worker are untrusted, and all state-changing behavior must be enforced server-side. The mockup sandbox is development-only and out of scope unless shared code becomes reachable from production. The current deployment visibility is `private`, so platform access controls limit network reachability, but any viewer who can reach the deployment and any authenticated app user must still be treated as untrusted with respect to application data and state.
 
 ## Assets
 
@@ -18,6 +18,7 @@ FocusQuest is a gamified task and habit tracker with a React frontend and an Exp
 - **API to PostgreSQL** — the API has broad authority over user records, tasks, partnerships, activity, badges, and push subscriptions; broken access control here becomes direct data compromise.
 - **API to external push endpoints** — the notification subsystem makes outbound requests using VAPID credentials to subscription endpoints stored in the database.
 - **Public vs authenticated surface** — health and possibly leaderboard-style endpoints may be public, but user profile, tasks, recurring tasks, badges, notifications, and partnership state are authenticated user surfaces and must be bound to the caller’s identity.
+- **Deployment viewer vs app user** — because the deployment is private, some routes may only be reachable by approved deployment viewers, but that platform gate does not replace in-app authorization or privacy controls for data exposed to those viewers.
 - **Production vs dev-only artifacts** — `artifacts/mockup-sandbox/` is non-production and should not drive findings unless shared code creates a production path.
 
 ## Scan Anchors
