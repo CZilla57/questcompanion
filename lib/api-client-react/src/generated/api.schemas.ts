@@ -96,6 +96,7 @@ export const ActivityItemType = {
   all_day_bonus: 'all_day_bonus',
   streak_freeze_bought: 'streak_freeze_bought',
   streak_freeze_used: 'streak_freeze_used',
+  gear_earned: 'gear_earned',
 } as const;
 
 export interface ActivityItem {
@@ -220,6 +221,36 @@ export interface Badge {
   requirement: number;
 }
 
+export type GearRewardInfoSlot = typeof GearRewardInfoSlot[keyof typeof GearRewardInfoSlot];
+
+
+export const GearRewardInfoSlot = {
+  weapon: 'weapon',
+  helmet: 'helmet',
+  armor: 'armor',
+  boots: 'boots',
+  accessory: 'accessory',
+} as const;
+
+export type GearRewardInfoRarity = typeof GearRewardInfoRarity[keyof typeof GearRewardInfoRarity];
+
+
+export const GearRewardInfoRarity = {
+  common: 'common',
+  rare: 'rare',
+  epic: 'epic',
+  legendary: 'legendary',
+} as const;
+
+export interface GearRewardInfo {
+  gearItemId: number;
+  name: string;
+  slot: GearRewardInfoSlot;
+  rarity: GearRewardInfoRarity;
+  statPower: number;
+  icon: string;
+}
+
 export interface TaskCompletionResult {
   task: Task;
   /** Total XP awarded (base + streak bonus + all-day bonus) */
@@ -235,6 +266,7 @@ export interface TaskCompletionResult {
   newLevel: number;
   leveledUp: boolean;
   newBadges: Badge[];
+  gearReward?: GearRewardInfo | null;
 }
 
 export type RecurringTaskPriority = typeof RecurringTaskPriority[keyof typeof RecurringTaskPriority];

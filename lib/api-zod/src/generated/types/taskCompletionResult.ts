@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Badge } from './badge';
+import type { GearRewardInfo } from './gearRewardInfo';
 import type { Task } from './task';
 
 export interface TaskCompletionResult {
@@ -23,4 +24,5 @@ export interface TaskCompletionResult {
   newLevel: number;
   leveledUp: boolean;
   newBadges: Badge[];
+  gearReward?: GearRewardInfo | null;
 }

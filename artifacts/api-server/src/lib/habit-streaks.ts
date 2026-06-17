@@ -1,5 +1,6 @@
 import { eq, and, lte } from "drizzle-orm";
 import { db, habitStreaksTable, badgesTable, userBadgesTable, activityTable } from "@workspace/db";
+import { awardStreakGear, getHabitGearRarity, isHabitGearMilestone, type GearRewardInfo } from "./gear-rewards";
 
 export async function getHabitStreak(userId: number, recurringTaskId: number) {
   const [row] = await db
@@ -24,16 +25,18 @@ export interface HabitStreakPreviousState {
   badgesGrantedIds: number[];
 }
 
-/** Advance the streak and award any newly unlocked habit-streak milestone badges.
- *  Returns { streak, newBadges, previousState } so the caller can surface them to the
- *  client and store the previousState for later rollback on uncomplete. */
+/** Advance the streak and award any newly unlocked habit-streak milestone badges and gear.
+ *  Returns { streak, newBadges, gearReward, previousState } so the caller can surface them
+ *  to the client and store the previousState for later rollback on uncomplete. */
 export async function advanceHabitStreak(
   userId: number,
   recurringTaskId: number,
   completionDate: string,
+  userLevel: number,
 ): Promise<{
   streak: typeof habitStreaksTable.$inferSelect;
   newBadges: typeof badgesTable.$inferSelect[];
+  gearReward: GearRewardInfo | null;
   previousState: HabitStreakPreviousState;
 }> {
   const existing = await getHabitStreak(userId, recurringTaskId);
@@ -42,11 +45,12 @@ export async function advanceHabitStreak(
   let previousState: HabitStreakPreviousState;
 
   if (existing) {
-    // Already counted today — return unchanged with no new badges
+    // Already counted today — return unchanged with no new badges or gear
     if (existing.lastCompletedDate === completionDate) {
       return {
         streak: existing,
         newBadges: [],
+        gearReward: null,
         previousState: {
           prevCurrentStreak: existing.currentStreak,
           prevLongestStreak: existing.longestStreak,
@@ -123,6 +127,7 @@ export async function advanceHabitStreak(
         return {
           streak: { id: 0, userId, recurringTaskId, currentStreak: 1, longestStreak: 1, totalCompletions: 1, lastCompletedDate: completionDate, createdAt: new Date() },
           newBadges: [],
+          gearReward: null,
           previousState,
         };
       }
@@ -136,7 +141,19 @@ export async function advanceHabitStreak(
   const { awarded: newBadges, badgeIds } = await checkAndAwardHabitBadges(userId, streak.currentStreak);
   previousState.badgesGrantedIds = badgeIds;
 
-  return { streak, newBadges, previousState };
+  // Award gear for habit completion milestones (5, 15, 30, 60, 100 completions, then every 50)
+  let gearReward: GearRewardInfo | null = null;
+  if (isHabitGearMilestone(streak.totalCompletions)) {
+    const targetRarity = getHabitGearRarity(streak.totalCompletions);
+    gearReward = await awardStreakGear(
+      userId,
+      userLevel,
+      targetRarity,
+      `${streak.totalCompletions}-completion habit milestone`,
+    );
+  }
+
+  return { streak, newBadges, gearReward, previousState };
 }
 
 /** Reverse a previously applied habit streak advancement using a stored previousState snapshot. */

@@ -26,6 +26,31 @@ Activity log entry written with negative points to record the spend.
 
 **Why:** Equipping is free/reversible; purchase is the permanent XP commitment.
 
+## Free gear rewards for streak milestones
+Implemented in `artifacts/api-server/src/lib/gear-rewards.ts`.
+
+### Account streak milestones (3, 7, 14, 30, every-30 days)
+- Rarity = `getStreakGearRarity(streak, isHighValue)` where isHighValue = task.points >= 50
+- 3d→common, 7d→common (high-val→rare), 14d→rare, 30d→rare (high-val→epic), 60d→epic, 100d→legendary
+
+### Habit streak milestones (totalCompletions 5, 15, 30, 60, 100, then every 50)
+- Rarity = `getHabitGearRarity(totalCompletions)`: 5→common, 15→rare, 60→epic, 100→legendary
+
+### Selection logic
+- Items must be unowned + `level_required <= userLevel`
+- Prefer slots the user has no owned gear in (fill empty slots first)
+- Fallback chain: legendary → epic → rare → common
+- Returns null if all qualifying items already owned
+
+### Response / UI
+- `gearReward: GearRewardInfo | null` added to `TaskCompletionResult` in OpenAPI spec
+- If both account-streak and habit-streak gear fire on same completion, best rarity is returned
+- Frontend shows rarity-styled toast (amber=legendary, violet=epic, blue=rare, slate=common)
+- Gear is awarded to inventory but NOT auto-equipped (user goes to Hero page)
+- Gear rewards are NOT reversed on task uncomplete
+
+**Why:** Gear is a permanent motivational reward; reversing it on uncomplete would undermine the incentive.
+
 ## Nav structure
 - Desktop sidebar: all 7 items (Home, Quests, Recurring, Progress, Hero, Allies, Board)
 - Mobile bottom nav: 5 items with mobileShow:true (Home, Quests, Progress, Hero, Allies)

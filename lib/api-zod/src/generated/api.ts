@@ -160,7 +160,7 @@ export const GetMyStatsResponse = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
   "username": zod.string().optional(),
-  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used']),
+  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_earned']),
   "description": zod.string(),
   "points": zod.number(),
   "createdAt": zod.string()
@@ -333,7 +333,15 @@ export const CompleteTaskResponse = zod.object({
   "icon": zod.string(),
   "category": zod.enum(['streak', 'tasks', 'points', 'social', 'level', 'habit_streak']),
   "requirement": zod.number()
-}))
+})),
+  "gearReward": zod.union([zod.object({
+  "gearItemId": zod.number(),
+  "name": zod.string(),
+  "slot": zod.enum(['weapon', 'helmet', 'armor', 'boots', 'accessory']),
+  "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
+  "statPower": zod.number(),
+  "icon": zod.string()
+}),zod.null()]).optional()
 })
 
 
@@ -632,7 +640,7 @@ export const GetPartnerFeedResponseItem = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
   "username": zod.string().optional(),
-  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used']),
+  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_earned']),
   "description": zod.string(),
   "points": zod.number(),
   "createdAt": zod.string()

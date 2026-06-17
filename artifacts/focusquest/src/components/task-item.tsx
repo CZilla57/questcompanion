@@ -1,4 +1,4 @@
-import { Check, Clock, Edit2, Flame, Trash2, Zap } from "lucide-react";
+import { Check, Clock, Edit2, Flame, Shield, Trash2, Zap } from "lucide-react";
 import { format } from "date-fns";
 import { Task, TaskPriority, useCompleteTask, useDeleteTask, useUncompleteTask, useGetMyStats } from "@workspace/api-client-react";
 import { Button } from "./ui/button";
@@ -79,6 +79,21 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
             description,
             className: "border-primary bg-primary/10 text-primary-foreground",
           });
+
+          if (res.gearReward) {
+            const rarityStyles: Record<string, string> = {
+              legendary: "border-amber-400 bg-amber-500/10 text-amber-300",
+              epic:      "border-violet-400 bg-violet-500/10 text-violet-300",
+              rare:      "border-blue-400 bg-blue-500/10 text-blue-300",
+              common:    "border-slate-400 bg-slate-500/10 text-slate-300",
+            };
+            const styleClass = rarityStyles[res.gearReward.rarity] ?? rarityStyles.common;
+            toast({
+              title: `${res.gearReward.icon} Gear Reward Unlocked!`,
+              description: `${res.gearReward.name} (${res.gearReward.rarity}) — equip it on your Hero page`,
+              className: `border ${styleClass}`,
+            });
+          }
 
           if (res.leveledUp || (res.newBadges && res.newBadges.length > 0)) {
             onLevelUp?.(res);

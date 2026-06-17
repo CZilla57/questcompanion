@@ -5,6 +5,7 @@ import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable
 import { getLevelInfo, getPointsToNextLevel, DAILY_BONUS_POINTS } from "../lib/gamification";
 import { assignPoints } from "../lib/auto-points";
 import { advanceHabitStreak, reverseHabitStreak, type HabitStreakPreviousState } from "../lib/habit-streaks";
+import { awardStreakGear, getStreakGearRarity, type GearRewardInfo } from "../lib/gear-rewards";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -330,11 +331,13 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
 
   let habitBadges: typeof badgesTable.$inferSelect[] = [];
   let habitStreakPreviousState: HabitStreakPreviousState | null = null;
+  let habitGearReward: GearRewardInfo | null = null;
   if (task.recurringTaskId) {
     const completionDate = today;
-    const result = await advanceHabitStreak(userId, task.recurringTaskId, completionDate);
+    const result = await advanceHabitStreak(userId, task.recurringTaskId, completionDate, newLevel.level);
     habitBadges = result.newBadges;
     habitStreakPreviousState = result.previousState;
+    habitGearReward = result.gearReward;
   }
 
   await db.insert(activityTable).values({
@@ -373,6 +376,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     });
   }
 
+  let accountGearReward: GearRewardInfo | null = null;
   if (newStreak > oldStreak && (newStreak === 3 || newStreak === 7 || newStreak === 14 || newStreak === 30 || newStreak % 30 === 0)) {
     await db.insert(activityTable).values({
       userId,
@@ -380,6 +384,14 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       description: `${newStreak}-day streak! Keep it up!`,
       points: 0,
     });
+    const isHighValue = task.points >= 50;
+    const targetRarity = getStreakGearRarity(newStreak, isHighValue);
+    accountGearReward = await awardStreakGear(
+      userId,
+      newLevel.level,
+      targetRarity,
+      `${newStreak}-day streak milestone`,
+    );
   }
 
   // Badge grants.
@@ -429,6 +441,18 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
 
   const allNewBadges = [...newBadges, ...habitBadges];
 
+  // Surface the best gear reward (highest rarity wins; habit over account if tied)
+  const RARITY_RANK: Record<string, number> = { common: 1, rare: 2, epic: 3, legendary: 4 };
+  let gearReward: GearRewardInfo | null = null;
+  if (accountGearReward && habitGearReward) {
+    gearReward =
+      (RARITY_RANK[habitGearReward.rarity] ?? 0) >= (RARITY_RANK[accountGearReward.rarity] ?? 0)
+        ? habitGearReward
+        : accountGearReward;
+  } else {
+    gearReward = habitGearReward ?? accountGearReward;
+  }
+
   res.json({
     task: formatTask(task),
     pointsAwarded: pointsToAdd,
@@ -447,6 +471,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       category: b.category,
       requirement: b.requirement,
     })),
+    gearReward,
   });
 });
 

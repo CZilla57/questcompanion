@@ -17,4 +17,5 @@ export const ActivityItemType = {
   all_day_bonus: 'all_day_bonus',
   streak_freeze_bought: 'streak_freeze_bought',
   streak_freeze_used: 'streak_freeze_used',
+  gear_earned: 'gear_earned',
 } as const;
