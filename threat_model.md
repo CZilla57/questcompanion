@@ -37,11 +37,11 @@ The API must derive caller identity from a verified session or bearer token on e
 
 ### Tampering
 
-Task state, recurring schedules, XP totals, streaks, badges, and partnership state are all high-value mutable records. The server must ensure that only the owning user can create, update, complete, or delete their own records, and that user-visible progression is computed server-side from authorized actions rather than from caller-supplied identity or trusted client state.
+Task state, recurring schedules, XP totals, streaks, badges, and partnership state are all high-value mutable records. The server must ensure that only the owning user can create, update, complete, or delete their own records, and that user-visible progression is computed server-side from authorized actions rather than from caller-supplied identity or trusted client state. Completion and uncompletion flows must also be idempotent and fully reversible, because partial or non-atomic reward logic lets users mint XP, bonuses, or badges without corresponding work.
 
 ### Information Disclosure
 
-User task content, activity history, and partner relationship data can expose personal routines and progress information. API responses must be scoped to the authenticated caller or an explicitly authorized partner relationship, and logs or error responses must not leak secrets, tokens, or internal details.
+User task content, activity history, and partner relationship data can expose personal routines and progress information. API responses must be scoped to the authenticated caller or an explicitly authorized partner relationship, and logs or error responses must not leak secrets, tokens, or internal details. Partnership revocation is an authorization boundary: once a user declines or removes a partner relationship, that former partner must not be able to restore feed access without a fresh consent flow from the other side.
 
 ### Denial of Service
 
