@@ -5,8 +5,6 @@ import { getLevelInfo, getPointsToNextLevel } from "../lib/gamification";
 
 const router: IRouter = Router();
 
-const DEFAULT_USER_ID = 1;
-
 function formatUser(user: typeof usersTable.$inferSelect) {
   const levelInfo = getLevelInfo(user.totalPoints);
   return {
@@ -26,7 +24,10 @@ function formatUser(user: typeof usersTable.$inferSelect) {
 }
 
 router.get("/users/me", async (req, res): Promise<void> => {
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, DEFAULT_USER_ID));
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   if (!user) {
     res.status(404).json({ error: "User not found" });
     return;
@@ -35,13 +36,16 @@ router.get("/users/me", async (req, res): Promise<void> => {
 });
 
 router.patch("/users/me", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
   const { username, displayName, avatarColor } = req.body as { username?: string; displayName?: string; avatarColor?: string };
   const updates: Partial<typeof usersTable.$inferInsert> = {};
   if (username != null) updates.username = username;
   if (displayName != null) updates.displayName = displayName;
   if (avatarColor != null) updates.avatarColor = avatarColor;
 
-  const [user] = await db.update(usersTable).set(updates).where(eq(usersTable.id, DEFAULT_USER_ID)).returning();
+  const [user] = await db.update(usersTable).set(updates).where(eq(usersTable.id, userId)).returning();
   if (!user) {
     res.status(404).json({ error: "User not found" });
     return;
@@ -50,7 +54,10 @@ router.patch("/users/me", async (req, res): Promise<void> => {
 });
 
 router.get("/users/me/stats", async (req, res): Promise<void> => {
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, DEFAULT_USER_ID));
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   if (!user) {
     res.status(404).json({ error: "User not found" });
     return;
@@ -58,14 +65,14 @@ router.get("/users/me/stats", async (req, res): Promise<void> => {
 
   const today = new Date().toISOString().split("T")[0];
   const todayTasks = await db.select().from(tasksTable)
-    .where(and(eq(tasksTable.userId, DEFAULT_USER_ID), eq(tasksTable.dueDate, today)));
+    .where(and(eq(tasksTable.userId, userId), eq(tasksTable.dueDate, today)));
 
   const todayCompleted = todayTasks.filter((t) => t.completed);
   const todayPoints = todayCompleted.reduce((sum, t) => sum + t.points, 0);
   const allDayBonusEarned = todayTasks.length > 0 && todayCompleted.length === todayTasks.length;
 
   const recentActivity = await db.select().from(activityTable)
-    .where(eq(activityTable.userId, DEFAULT_USER_ID))
+    .where(eq(activityTable.userId, userId))
     .orderBy(desc(activityTable.createdAt))
     .limit(10);
 
@@ -96,9 +103,11 @@ router.get("/users/me/stats", async (req, res): Promise<void> => {
 });
 
 router.get("/users/me/xp-history", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
   const days = Math.min(90, Math.max(1, parseInt(String(req.query.days ?? "7"), 10) || 7));
 
-  // Build the last `days` date strings in order (oldest first)
   const today = new Date();
   const dateSlots: { date: string; label: string }[] = [];
   for (let i = days - 1; i >= 0; i--) {
@@ -112,13 +121,11 @@ router.get("/users/me/xp-history", async (req, res): Promise<void> => {
   const earliest = dateSlots[0].date;
   const cutoff = new Date(earliest + "T00:00:00.000Z");
 
-  // Fetch all activity rows with points > 0 in the window
   const rows = await db
     .select()
     .from(activityTable)
-    .where(and(eq(activityTable.userId, DEFAULT_USER_ID), gte(activityTable.createdAt, cutoff), gt(activityTable.points, 0)));
+    .where(and(eq(activityTable.userId, userId), gte(activityTable.createdAt, cutoff), gt(activityTable.points, 0)));
 
-  // Group by local date string (YYYY-MM-DD of createdAt in UTC)
   const xpByDate = new Map<string, number>();
   for (const row of rows) {
     const d = row.createdAt.toISOString().split("T")[0];
@@ -135,22 +142,18 @@ router.get("/users/me/xp-history", async (req, res): Promise<void> => {
 });
 
 router.get("/users/search", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
   const q = String(req.query.q ?? "").trim();
   if (!q) {
     res.json([]);
     return;
   }
-  const users = await db.select().from(usersTable)
-    .where(
-      and(
-        // Simple LIKE search using raw SQL
-      )
-    );
 
-  // Do a manual filter since drizzle LIKE requires sql template
   const allUsers = await db.select().from(usersTable);
   const matched = allUsers.filter(
-    (u) => u.username.toLowerCase().includes(q.toLowerCase()) && u.id !== DEFAULT_USER_ID
+    (u) => u.username.toLowerCase().includes(q.toLowerCase()) && u.id !== userId
   ).slice(0, 10);
 
   res.json(matched.map((u) => {
@@ -172,7 +175,10 @@ const FREEZE_COST = 50;
 const FREEZE_MAX = 1;
 
 router.post("/users/me/streak-freeze/buy", async (req, res): Promise<void> => {
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, DEFAULT_USER_ID));
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
 
   if (user.streakFreezes >= FREEZE_MAX) {
@@ -188,11 +194,11 @@ router.post("/users/me/streak-freeze/buy", async (req, res): Promise<void> => {
   const newWeekly = Math.max(0, user.weeklyPoints - FREEZE_COST);
   const [updated] = await db.update(usersTable)
     .set({ totalPoints: newTotal, weeklyPoints: newWeekly, streakFreezes: user.streakFreezes + 1 })
-    .where(eq(usersTable.id, DEFAULT_USER_ID))
+    .where(eq(usersTable.id, userId))
     .returning();
 
   await db.insert(activityTable).values({
-    userId: DEFAULT_USER_ID,
+    userId,
     type: "streak_freeze_bought",
     description: `Bought a Streak Freeze for ${FREEZE_COST} XP`,
     points: -FREEZE_COST,

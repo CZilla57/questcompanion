@@ -3,7 +3,6 @@ import { eq } from "drizzle-orm";
 import { db, badgesTable, userBadgesTable } from "@workspace/db";
 
 const router: IRouter = Router();
-const DEFAULT_USER_ID = 1;
 
 router.get("/badges", async (_req, res): Promise<void> => {
   const badges = await db.select().from(badgesTable);
@@ -17,7 +16,10 @@ router.get("/badges", async (_req, res): Promise<void> => {
   })));
 });
 
-router.get("/users/me/badges", async (_req, res): Promise<void> => {
+router.get("/users/me/badges", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
   const userBadges = await db.select({
     id: badgesTable.id,
     name: badgesTable.name,
@@ -28,7 +30,7 @@ router.get("/users/me/badges", async (_req, res): Promise<void> => {
     earnedAt: userBadgesTable.earnedAt,
   }).from(userBadgesTable)
     .innerJoin(badgesTable, eq(userBadgesTable.badgeId, badgesTable.id))
-    .where(eq(userBadgesTable.userId, DEFAULT_USER_ID));
+    .where(eq(userBadgesTable.userId, userId));
 
   res.json(userBadges.map((ub) => ({
     badge: {

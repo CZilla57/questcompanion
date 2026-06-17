@@ -5,7 +5,6 @@ import { assignPoints } from "../lib/auto-points";
 import { getHabitStreak, EMPTY_STREAK } from "../lib/habit-streaks";
 
 const router: IRouter = Router();
-const DEFAULT_USER_ID = 1;
 
 function parseDays(raw: string): number[] {
   return raw
@@ -39,16 +38,22 @@ async function formatRecurring(r: typeof recurringTasksTable.$inferSelect) {
   };
 }
 
-router.get("/recurring-tasks", async (_req, res): Promise<void> => {
+router.get("/recurring-tasks", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
   const tasks = await db
     .select()
     .from(recurringTasksTable)
-    .where(eq(recurringTasksTable.userId, DEFAULT_USER_ID));
+    .where(eq(recurringTasksTable.userId, userId));
   const formatted = await Promise.all(tasks.map(formatRecurring));
   res.json(formatted);
 });
 
 router.post("/recurring-tasks", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
   const {
     title,
     description,
@@ -75,7 +80,7 @@ router.post("/recurring-tasks", async (req, res): Promise<void> => {
   const [task] = await db
     .insert(recurringTasksTable)
     .values({
-      userId: DEFAULT_USER_ID,
+      userId,
       title,
       description,
       priority,
@@ -91,6 +96,9 @@ router.post("/recurring-tasks", async (req, res): Promise<void> => {
 });
 
 router.get("/recurring-tasks/:id", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
@@ -98,13 +106,16 @@ router.get("/recurring-tasks/:id", async (req, res): Promise<void> => {
   const [task] = await db
     .select()
     .from(recurringTasksTable)
-    .where(and(eq(recurringTasksTable.id, id), eq(recurringTasksTable.userId, DEFAULT_USER_ID)));
+    .where(and(eq(recurringTasksTable.id, id), eq(recurringTasksTable.userId, userId)));
   if (!task) { res.status(404).json({ error: "Not found" }); return; }
 
   res.json(await formatRecurring(task));
 });
 
 router.patch("/recurring-tasks/:id", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
@@ -142,7 +153,7 @@ router.patch("/recurring-tasks/:id", async (req, res): Promise<void> => {
   const [task] = await db
     .update(recurringTasksTable)
     .set(updates)
-    .where(and(eq(recurringTasksTable.id, id), eq(recurringTasksTable.userId, DEFAULT_USER_ID)))
+    .where(and(eq(recurringTasksTable.id, id), eq(recurringTasksTable.userId, userId)))
     .returning();
   if (!task) { res.status(404).json({ error: "Not found" }); return; }
 
@@ -150,23 +161,25 @@ router.patch("/recurring-tasks/:id", async (req, res): Promise<void> => {
 });
 
 router.delete("/recurring-tasks/:id", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
-  // Clean up streak record first
   await db
     .delete(habitStreaksTable)
     .where(
       and(
-        eq(habitStreaksTable.userId, DEFAULT_USER_ID),
+        eq(habitStreaksTable.userId, userId),
         eq(habitStreaksTable.recurringTaskId, id),
       ),
     );
 
   const [task] = await db
     .delete(recurringTasksTable)
-    .where(and(eq(recurringTasksTable.id, id), eq(recurringTasksTable.userId, DEFAULT_USER_ID)))
+    .where(and(eq(recurringTasksTable.id, id), eq(recurringTasksTable.userId, userId)))
     .returning();
   if (!task) { res.status(404).json({ error: "Not found" }); return; }
 
@@ -174,6 +187,9 @@ router.delete("/recurring-tasks/:id", async (req, res): Promise<void> => {
 });
 
 router.post("/recurring-tasks/:id/toggle", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
@@ -181,7 +197,7 @@ router.post("/recurring-tasks/:id/toggle", async (req, res): Promise<void> => {
   const [existing] = await db
     .select()
     .from(recurringTasksTable)
-    .where(and(eq(recurringTasksTable.id, id), eq(recurringTasksTable.userId, DEFAULT_USER_ID)));
+    .where(and(eq(recurringTasksTable.id, id), eq(recurringTasksTable.userId, userId)));
   if (!existing) { res.status(404).json({ error: "Not found" }); return; }
 
   const [task] = await db
@@ -193,7 +209,7 @@ router.post("/recurring-tasks/:id/toggle", async (req, res): Promise<void> => {
   res.json(await formatRecurring(task));
 });
 
-/** Called by the scheduler — creates today's tasks from active recurring templates */
+/** Called by the scheduler — creates today's tasks from active recurring templates for all users */
 export async function spawnRecurringTasksForToday(): Promise<number> {
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
@@ -202,7 +218,7 @@ export async function spawnRecurringTasksForToday(): Promise<number> {
   const templates = await db
     .select()
     .from(recurringTasksTable)
-    .where(and(eq(recurringTasksTable.userId, DEFAULT_USER_ID), eq(recurringTasksTable.isActive, true)));
+    .where(eq(recurringTasksTable.isActive, true));
 
   let created = 0;
   for (const tmpl of templates) {
@@ -211,13 +227,12 @@ export async function spawnRecurringTasksForToday(): Promise<number> {
     if (tmpl.startDate > todayStr) continue;
     if (tmpl.endDate && tmpl.endDate < todayStr) continue;
 
-    // Skip if task already exists for this template today
     const existing = await db
       .select()
       .from(tasksTable)
       .where(
         and(
-          eq(tasksTable.userId, DEFAULT_USER_ID),
+          eq(tasksTable.userId, tmpl.userId),
           eq(tasksTable.dueDate, todayStr),
           eq(tasksTable.recurringTaskId, tmpl.id),
         ),
@@ -226,7 +241,7 @@ export async function spawnRecurringTasksForToday(): Promise<number> {
 
     const ap = assignPoints(tmpl.title, tmpl.priority);
     await db.insert(tasksTable).values({
-      userId: DEFAULT_USER_ID,
+      userId: tmpl.userId,
       recurringTaskId: tmpl.id,
       title: tmpl.title,
       description: tmpl.description,

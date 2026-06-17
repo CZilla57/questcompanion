@@ -4,13 +4,15 @@ import { db, pushSubscriptionsTable } from "@workspace/db";
 import { vapidPublicKey } from "../lib/push-notifications";
 
 const router: IRouter = Router();
-const DEFAULT_USER_ID = 1;
 
 router.get("/notifications/vapid-key", (_req, res): void => {
   res.json({ publicKey: vapidPublicKey });
 });
 
 router.post("/notifications/subscribe", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
   const { endpoint, keys } = req.body as {
     endpoint?: string;
     keys?: { p256dh?: string; auth?: string };
@@ -21,13 +23,12 @@ router.post("/notifications/subscribe", async (req, res): Promise<void> => {
     return;
   }
 
-  // Upsert — delete existing and re-insert
   await db.delete(pushSubscriptionsTable).where(
-    and(eq(pushSubscriptionsTable.userId, DEFAULT_USER_ID), eq(pushSubscriptionsTable.endpoint, endpoint)),
+    and(eq(pushSubscriptionsTable.userId, userId), eq(pushSubscriptionsTable.endpoint, endpoint)),
   );
 
   await db.insert(pushSubscriptionsTable).values({
-    userId: DEFAULT_USER_ID,
+    userId,
     endpoint,
     p256dh: keys.p256dh,
     auth: keys.auth,
@@ -37,6 +38,9 @@ router.post("/notifications/subscribe", async (req, res): Promise<void> => {
 });
 
 router.delete("/notifications/subscribe", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
   const { endpoint } = req.body as { endpoint?: string };
   if (!endpoint) {
     res.status(400).json({ error: "endpoint is required" });
@@ -44,15 +48,18 @@ router.delete("/notifications/subscribe", async (req, res): Promise<void> => {
   }
 
   await db.delete(pushSubscriptionsTable).where(
-    and(eq(pushSubscriptionsTable.userId, DEFAULT_USER_ID), eq(pushSubscriptionsTable.endpoint, endpoint)),
+    and(eq(pushSubscriptionsTable.userId, userId), eq(pushSubscriptionsTable.endpoint, endpoint)),
   );
 
   res.json({ success: true });
 });
 
-router.get("/notifications/subscribed", async (_req, res): Promise<void> => {
+router.get("/notifications/subscribed", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
   const subs = await db.select().from(pushSubscriptionsTable)
-    .where(eq(pushSubscriptionsTable.userId, DEFAULT_USER_ID));
+    .where(eq(pushSubscriptionsTable.userId, userId));
   res.json({ subscribed: subs.length > 0, count: subs.length });
 });
 

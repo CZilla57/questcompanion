@@ -8,7 +8,6 @@ import { advanceHabitStreak } from "../lib/habit-streaks";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
-const DEFAULT_USER_ID = 1;
 
 function formatTask(task: typeof tasksTable.$inferSelect) {
   return {
@@ -33,9 +32,12 @@ router.get("/tasks/suggest-points", (req, res): void => {
 });
 
 router.get("/tasks", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
   const { date, completed } = req.query;
 
-  const conditions = [eq(tasksTable.userId, DEFAULT_USER_ID)];
+  const conditions = [eq(tasksTable.userId, userId)];
   if (date && typeof date === "string") {
     conditions.push(eq(tasksTable.dueDate, date));
   }
@@ -51,7 +53,10 @@ router.get("/tasks", async (req, res): Promise<void> => {
 });
 
 router.post("/tasks", async (req, res): Promise<void> => {
-  const { title, description, points = 10, dueDate, priority = "medium" } = req.body as {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  const { title, description, dueDate, priority = "medium" } = req.body as {
     title?: string;
     description?: string;
     points?: number;
@@ -67,7 +72,7 @@ router.post("/tasks", async (req, res): Promise<void> => {
   const autoPoint = assignPoints(title, priority);
 
   const [task] = await db.insert(tasksTable).values({
-    userId: DEFAULT_USER_ID,
+    userId,
     title,
     description,
     points: autoPoint.points,
@@ -79,17 +84,23 @@ router.post("/tasks", async (req, res): Promise<void> => {
 });
 
 router.get("/tasks/:id", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
-  const [task] = await db.select().from(tasksTable).where(and(eq(tasksTable.id, id), eq(tasksTable.userId, DEFAULT_USER_ID)));
+  const [task] = await db.select().from(tasksTable).where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)));
   if (!task) { res.status(404).json({ error: "Task not found" }); return; }
 
   res.json(formatTask(task));
 });
 
 router.patch("/tasks/:id", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
@@ -110,7 +121,7 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
   if (priority != null) updates.priority = priority;
 
   const [task] = await db.update(tasksTable).set(updates)
-    .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, DEFAULT_USER_ID)))
+    .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)))
     .returning();
   if (!task) { res.status(404).json({ error: "Task not found" }); return; }
 
@@ -118,12 +129,15 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
 });
 
 router.delete("/tasks/:id", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
   const [task] = await db.delete(tasksTable)
-    .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, DEFAULT_USER_ID)))
+    .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)))
     .returning();
   if (!task) { res.status(404).json({ error: "Task not found" }); return; }
 
@@ -131,16 +145,18 @@ router.delete("/tasks/:id", async (req, res): Promise<void> => {
 });
 
 router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
   const [task] = await db.select().from(tasksTable)
-    .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, DEFAULT_USER_ID)));
+    .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)));
   if (!task) { res.status(404).json({ error: "Task not found" }); return; }
   if (task.completed) {
-    // Return current state without changes
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, DEFAULT_USER_ID));
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
     const lvl = getLevelInfo(user!.totalPoints);
     res.json({
       task: formatTask(task),
@@ -163,27 +179,23 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     .where(eq(tasksTable.id, id))
     .returning();
 
-  // Advance per-template habit streak if this task came from a recurring template
   let habitBadges: typeof badgesTable.$inferSelect[] = [];
   if (task.recurringTaskId) {
     const completionDate = now.toISOString().split("T")[0];
-    const result = await advanceHabitStreak(DEFAULT_USER_ID, task.recurringTaskId, completionDate);
+    const result = await advanceHabitStreak(userId, task.recurringTaskId, completionDate);
     habitBadges = result.newBadges;
   }
 
-  // Award points to user
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, DEFAULT_USER_ID));
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
 
   const oldLevel = getLevelInfo(user.totalPoints);
 
-  // Apply streak difficulty multiplier (rewards sustained consistency)
   const { totalPoints: boostedBase, streakBonus, multiplierInfo } = applyMultiplier(task.points, user.streakDays);
   let pointsToAdd = boostedBase;
 
-  // Log activity (includes streak bonus embedded in the points value)
   await db.insert(activityTable).values({
-    userId: DEFAULT_USER_ID,
+    userId,
     type: "task_completed",
     description: streakBonus > 0
       ? `Completed "${task.title}" (${multiplierInfo.label})`
@@ -191,18 +203,16 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     points: boostedBase,
   });
 
-  // Check if all tasks for today are done after this completion
   const today = now.toISOString().split("T")[0];
   const todayTasks = await db.select().from(tasksTable)
-    .where(and(eq(tasksTable.userId, DEFAULT_USER_ID), eq(tasksTable.dueDate, today)));
+    .where(and(eq(tasksTable.userId, userId), eq(tasksTable.dueDate, today)));
 
   const allDone = todayTasks.every((t) => t.id === id || t.completed);
   let bonusAwarded = false;
 
   if (allDone && todayTasks.length > 0) {
-    // Check if we already gave the bonus today
     const recentBonus = await db.select().from(activityTable)
-      .where(and(eq(activityTable.userId, DEFAULT_USER_ID), eq(activityTable.type, "all_day_bonus")))
+      .where(and(eq(activityTable.userId, userId), eq(activityTable.type, "all_day_bonus")))
       .orderBy(desc(activityTable.createdAt))
       .limit(1);
 
@@ -213,7 +223,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       bonusAwarded = true;
       pointsToAdd += DAILY_BONUS_POINTS;
       await db.insert(activityTable).values({
-        userId: DEFAULT_USER_ID,
+        userId,
         type: "all_day_bonus",
         description: "Completed all tasks for today! Daily bonus earned.",
         points: DAILY_BONUS_POINTS,
@@ -221,7 +231,6 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     }
   }
 
-  // Update streak
   const lastActive = user.lastActiveDate;
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
@@ -231,14 +240,10 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
   let freezeConsumed = false;
   if (lastActive !== today) {
     if (lastActive === yesterdayStr) {
-      // Active yesterday — extend streak
       newStreak = user.streakDays + 1;
     } else if (user.streakFreezes > 0) {
-      // Streak would break — auto-consume freeze to protect it
       freezeConsumed = true;
-      // Keep current streak length; don't extend (freeze = preserve, not advance)
     } else {
-      // No freeze — streak resets
       newStreak = 1;
     }
   }
@@ -257,11 +262,11 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     longestStreak: newLongestStreak,
     lastActiveDate: today,
     ...(freezeConsumed ? { streakFreezes: user.streakFreezes - 1 } : {}),
-  }).where(eq(usersTable.id, DEFAULT_USER_ID));
+  }).where(eq(usersTable.id, userId));
 
   if (freezeConsumed) {
     await db.insert(activityTable).values({
-      userId: DEFAULT_USER_ID,
+      userId,
       type: "streak_freeze_used",
       description: `Streak Freeze activated! Your ${user.streakDays}-day streak is safe.`,
       points: 0,
@@ -270,30 +275,28 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
 
   if (leveledUp) {
     await db.insert(activityTable).values({
-      userId: DEFAULT_USER_ID,
+      userId,
       type: "level_up",
       description: `Reached Level ${newLevel.level}: ${newLevel.name}!`,
       points: 0,
     });
   }
 
-  // Check streak milestone
   if (newStreak > user.streakDays && (newStreak === 3 || newStreak === 7 || newStreak === 14 || newStreak === 30 || newStreak % 30 === 0)) {
     await db.insert(activityTable).values({
-      userId: DEFAULT_USER_ID,
+      userId,
       type: "streak_milestone",
       description: `${newStreak}-day streak! Keep it up!`,
       points: 0,
     });
   }
 
-  // Check for new badges
   const allBadges = await db.select().from(badgesTable);
-  const earnedBadgeIds = (await db.select().from(userBadgesTable).where(eq(userBadgesTable.userId, DEFAULT_USER_ID))).map((ub) => ub.badgeId);
+  const earnedBadgeIds = (await db.select().from(userBadgesTable).where(eq(userBadgesTable.userId, userId))).map((ub) => ub.badgeId);
 
   const updatedUser = { ...user, totalPoints: newTotalPoints, streakDays: newStreak };
   const totalCompleted = (await db.select().from(tasksTable)
-    .where(and(eq(tasksTable.userId, DEFAULT_USER_ID), eq(tasksTable.completed, true)))).length;
+    .where(and(eq(tasksTable.userId, userId), eq(tasksTable.completed, true)))).length;
 
   const newBadges: typeof badgesTable.$inferSelect[] = [];
   for (const badge of allBadges) {
@@ -304,9 +307,9 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     if (badge.category === "points" && newTotalPoints >= badge.requirement) qualifies = true;
     if (badge.category === "level" && newLevel.level >= badge.requirement) qualifies = true;
     if (qualifies) {
-      await db.insert(userBadgesTable).values({ userId: DEFAULT_USER_ID, badgeId: badge.id });
+      await db.insert(userBadgesTable).values({ userId, badgeId: badge.id });
       await db.insert(activityTable).values({
-        userId: DEFAULT_USER_ID,
+        userId,
         type: "badge_earned",
         description: `Earned badge: ${badge.name}`,
         points: 0,
@@ -315,11 +318,12 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     }
   }
 
+  void updatedUser;
   const allNewBadges = [...newBadges, ...habitBadges];
 
   res.json({
     task: formatTask(completedTask),
-    pointsAwarded: pointsToAdd,  // total: base + streak bonus + all-day bonus
+    pointsAwarded: pointsToAdd,
     bonusAwarded,
     bonusPoints: bonusAwarded ? DAILY_BONUS_POINTS : 0,
     streakBonus,
@@ -339,22 +343,24 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
 });
 
 router.post("/tasks/:id/uncomplete", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
   const [task] = await db.select().from(tasksTable)
-    .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, DEFAULT_USER_ID)));
+    .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)));
   if (!task) { res.status(404).json({ error: "Task not found" }); return; }
 
   if (task.completed) {
-    // Deduct points
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, DEFAULT_USER_ID));
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
     if (user) {
       await db.update(usersTable).set({
         totalPoints: Math.max(0, user.totalPoints - task.points),
         weeklyPoints: Math.max(0, user.weeklyPoints - task.points),
-      }).where(eq(usersTable.id, DEFAULT_USER_ID));
+      }).where(eq(usersTable.id, userId));
     }
   }
 

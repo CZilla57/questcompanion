@@ -1,0 +1,2 @@
+- [Replit Auth integration](replit-auth-integration.md) — sessions table + replitId on usersTable links OIDC sub to game user integer id; SessionData extends with gameUserId.
+- [DB push TTY issue](db-push-tty.md) — drizzle-kit push requires interactive TTY; use executeSql code_execution callback for non-interactive schema changes.
