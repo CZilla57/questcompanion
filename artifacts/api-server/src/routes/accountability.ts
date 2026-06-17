@@ -98,7 +98,11 @@ router.post("/accountability/partners/:id/accept", async (req, res): Promise<voi
 
   const [p] = await db.update(partnershipsTable)
     .set({ status: "accepted" })
-    .where(and(eq(partnershipsTable.id, id), eq(partnershipsTable.recipientId, userId)))
+    .where(and(
+      eq(partnershipsTable.id, id),
+      eq(partnershipsTable.recipientId, userId),
+      eq(partnershipsTable.status, "pending"),
+    ))
     .returning();
   if (!p) { res.status(404).json({ error: "Partnership not found" }); return; }
 
