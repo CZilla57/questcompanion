@@ -200,12 +200,33 @@ router.get("/callback", async (req: Request, res: Response) => {
   res.redirect(returnTo);
 });
 
-router.get("/logout", async (req: Request, res: Response) => {
-  const config = await getOidcConfig();
+router.post("/logout", async (req: Request, res: Response) => {
   const origin = getOrigin(req);
 
+  const reqOrigin = req.headers["origin"];
+  const reqReferer = req.headers["referer"];
+
+  if (reqOrigin) {
+    if (reqOrigin !== origin) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+  } else if (reqReferer) {
+    if (reqReferer !== origin && !reqReferer.startsWith(`${origin}/`)) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+  } else {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const config = await getOidcConfig();
+
   const sid = getSessionId(req);
-  await clearSession(res, sid);
+  if (sid) {
+    await clearSession(res, sid);
+  }
 
   const endSessionUrl = oidc.buildEndSessionUrl(config, {
     client_id: process.env.REPL_ID!,
