@@ -9,6 +9,45 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
   webPush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 }
 
+/**
+ * Allowlisted push-service hostname suffixes.
+ * Only endpoints hosted at these origins are accepted; anything else is
+ * rejected at subscription time and skipped at delivery time to prevent
+ * the server from being used as an outbound-request primitive against
+ * attacker-controlled infrastructure.
+ */
+const ALLOWED_PUSH_HOSTS: readonly string[] = [
+  "fcm.googleapis.com",            // Chrome / Chromium
+  "push.services.mozilla.com",     // Firefox
+  "updates.push.services.mozilla.com",
+  "notify.windows.com",            // Edge / Windows
+  "push.apple.com",                // Safari
+  "web.push.apple.com",
+];
+
+function hostIsAllowed(hostname: string): boolean {
+  return ALLOWED_PUSH_HOSTS.some(
+    (allowed) => hostname === allowed || hostname.endsWith("." + allowed),
+  );
+}
+
+/**
+ * Returns true when the supplied string is a well-formed HTTPS URL whose
+ * hostname belongs to a known Web Push delivery service.  Rejects anything
+ * that could steer server-side notification delivery to attacker-chosen
+ * infrastructure.
+ */
+export function isValidPushEndpoint(endpoint: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(endpoint);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:") return false;
+  return hostIsAllowed(url.hostname);
+}
+
 export interface PushPayload {
   title: string;
   body: string;
@@ -31,6 +70,12 @@ export async function sendPushNotification(
     logger.warn("VAPID keys not configured — skipping push notification");
     return false;
   }
+
+  if (!isValidPushEndpoint(subscription.endpoint)) {
+    logger.warn({ endpoint: subscription.endpoint }, "Refusing to deliver to non-allowlisted push endpoint");
+    return false;
+  }
+
   try {
     await webPush.sendNotification(
       {

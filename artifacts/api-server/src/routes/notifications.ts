@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
 import { db, pushSubscriptionsTable } from "@workspace/db";
-import { vapidPublicKey } from "../lib/push-notifications";
+import { vapidPublicKey, isValidPushEndpoint } from "../lib/push-notifications";
 
 const router: IRouter = Router();
 
@@ -20,6 +20,11 @@ router.post("/notifications/subscribe", async (req, res): Promise<void> => {
 
   if (!endpoint || !keys?.p256dh || !keys?.auth) {
     res.status(400).json({ error: "Invalid subscription object" });
+    return;
+  }
+
+  if (!isValidPushEndpoint(endpoint)) {
+    res.status(400).json({ error: "Invalid push endpoint" });
     return;
   }
 
