@@ -227,20 +227,12 @@ export async function spawnRecurringTasksForToday(): Promise<number> {
     if (tmpl.startDate > todayStr) continue;
     if (tmpl.endDate && tmpl.endDate < todayStr) continue;
 
-    const existing = await db
-      .select()
-      .from(tasksTable)
-      .where(
-        and(
-          eq(tasksTable.userId, tmpl.userId),
-          eq(tasksTable.dueDate, todayStr),
-          eq(tasksTable.recurringTaskId, tmpl.id),
-        ),
-      );
-    if (existing.length > 0) continue;
-
     const ap = assignPoints(tmpl.title, tmpl.priority);
-    await db.insert(tasksTable).values({
+    // The unique constraint on (user_id, recurring_task_id, due_date) is the authoritative
+    // guard against duplicates across concurrent scheduler instances.  onConflictDoNothing
+    // turns a constraint violation into a silent no-op so the scheduler never errors out
+    // when two instances race on the same template.
+    const [inserted] = await db.insert(tasksTable).values({
       userId: tmpl.userId,
       recurringTaskId: tmpl.id,
       title: tmpl.title,
@@ -248,8 +240,8 @@ export async function spawnRecurringTasksForToday(): Promise<number> {
       points: ap.points,
       dueDate: todayStr,
       priority: tmpl.priority,
-    });
-    created++;
+    }).onConflictDoNothing().returning({ id: tasksTable.id });
+    if (inserted) created++;
   }
 
   return created;

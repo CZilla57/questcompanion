@@ -45,40 +45,76 @@ router.post("/gear/:id/buy", async (req, res): Promise<void> => {
   const [item] = await db.select().from(gearItemsTable).where(eq(gearItemsTable.id, gearId));
   if (!item) { res.status(404).json({ error: "Item not found" }); return; }
 
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
-  if (!user) { res.status(404).json({ error: "User not found" }); return; }
+  // All economy checks and the write happen inside a single transaction with a row-level
+  // lock on the user row.  This prevents concurrent purchase requests from reading a stale
+  // XP balance and both passing the affordability check against the same pool of points.
+  type BuyOutcome =
+    | { status: "insufficient_level" }
+    | { status: "insufficient_xp" }
+    | { status: "already_owned" }
+    | { status: "ok"; newPoints: number };
 
-  const levelInfo = getLevelInfo(user.totalPoints);
-  if (levelInfo.level < item.levelRequired) {
+  let outcome: BuyOutcome;
+  try {
+    outcome = await db.transaction(async (tx): Promise<BuyOutcome> => {
+      // Lock the user row so concurrent purchases serialize here.
+      const [user] = await tx.select().from(usersTable)
+        .where(eq(usersTable.id, userId))
+        .for("update");
+      if (!user) return { status: "insufficient_xp" };
+
+      const levelInfo = getLevelInfo(user.totalPoints);
+      if (levelInfo.level < item.levelRequired) return { status: "insufficient_level" };
+      if (user.totalPoints < item.costXp) return { status: "insufficient_xp" };
+
+      // Re-check ownership inside the transaction to prevent duplicate rows from a
+      // concurrent purchase of the same item (the unique constraint is the hard guard;
+      // this check provides a clean 409 error message before the insert).
+      const existing = await tx.select({ id: userGearTable.id })
+        .from(userGearTable)
+        .where(and(eq(userGearTable.userId, userId), eq(userGearTable.gearItemId, gearId)));
+      if (existing.length > 0) return { status: "already_owned" };
+
+      // Deduct XP relative to the current locked balance (not a stale pre-read value).
+      const newPoints = user.totalPoints - item.costXp;
+      const newLevel = getLevelInfo(newPoints).level;
+
+      await tx.update(usersTable)
+        .set({ totalPoints: newPoints, currentLevel: newLevel })
+        .where(eq(usersTable.id, userId));
+
+      // The unique constraint on (user_id, gear_item_id) is the last-resort guard; the
+      // onConflictDoNothing ensures we never surface a DB error if two requests somehow
+      // both reach the insert despite the ownership check above.
+      await tx.insert(userGearTable)
+        .values({ userId, gearItemId: gearId })
+        .onConflictDoNothing();
+
+      await tx.insert(activityTable).values({
+        userId,
+        type: "task_completed",
+        description: `Purchased ${item.name} from the Gear Store`,
+        points: -item.costXp,
+      });
+
+      return { status: "ok", newPoints };
+    });
+  } catch {
+    res.status(500).json({ error: "Purchase failed" });
+    return;
+  }
+
+  if (outcome.status === "insufficient_level") {
     res.status(403).json({ error: `Requires level ${item.levelRequired}` }); return;
   }
-  if (user.totalPoints < item.costXp) {
+  if (outcome.status === "insufficient_xp") {
     res.status(403).json({ error: "Not enough XP" }); return;
   }
-
-  const existing = await db.select().from(userGearTable)
-    .where(and(eq(userGearTable.userId, userId), eq(userGearTable.gearItemId, gearId)));
-  if (existing.length > 0) {
+  if (outcome.status === "already_owned") {
     res.status(409).json({ error: "Already owned" }); return;
   }
 
-  const newPoints = user.totalPoints - item.costXp;
-  const newLevel = getLevelInfo(newPoints).level;
-
-  await db.transaction(async (tx) => {
-    await tx.update(usersTable)
-      .set({ totalPoints: newPoints, currentLevel: newLevel })
-      .where(eq(usersTable.id, userId));
-    await tx.insert(userGearTable).values({ userId, gearItemId: gearId });
-    await tx.insert(activityTable).values({
-      userId,
-      type: "task_completed",
-      description: `Purchased ${item.name} from the Gear Store`,
-      points: -item.costXp,
-    });
-  });
-
-  res.json({ success: true, xpSpent: item.costXp, remainingXp: newPoints, item });
+  res.json({ success: true, xpSpent: item.costXp, remainingXp: outcome.newPoints, item });
 });
 
 router.post("/gear/:id/equip", async (req, res): Promise<void> => {
@@ -107,9 +143,12 @@ router.post("/gear/:id/equip", async (req, res): Promise<void> => {
       .where(eq(userGearTable.id, g.userGear.id));
   }
 
+  // Equip by the specific row ID (owned[0].id) rather than by (userId, gearItemId) to avoid
+  // accidentally equipping any stale duplicate rows that existed before the unique constraint
+  // was applied.
   await db.update(userGearTable)
     .set({ equipped: true })
-    .where(and(eq(userGearTable.userId, userId), eq(userGearTable.gearItemId, gearId)));
+    .where(eq(userGearTable.id, owned[0].id));
 
   res.json({ success: true });
 });

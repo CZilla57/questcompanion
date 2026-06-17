@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and, desc } from "drizzle-orm";
 import { applyMultiplier } from "../lib/xp-multiplier";
-import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable } from "@workspace/db";
+import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, DAILY_BONUS_POINTS } from "../lib/gamification";
 import { assignPoints } from "../lib/auto-points";
 import { advanceHabitStreak, reverseHabitStreak, type HabitStreakPreviousState } from "../lib/habit-streaks";
@@ -430,12 +430,19 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     }
   }
 
-  // Append badge IDs and habit-streak snapshot to the task row so /uncomplete can reverse them.
+  // Collect gear item IDs awarded during this completion so /uncomplete can revoke them.
+  const gearGrantedItemIds: number[] = [];
+  if (accountGearReward) gearGrantedItemIds.push(accountGearReward.gearItemId);
+  if (habitGearReward) gearGrantedItemIds.push(habitGearReward.gearItemId);
+
+  // Append badge IDs, habit-streak snapshot, and gear grants to the task row so
+  // /uncomplete can reverse them all.
   await db.update(tasksTable).set({
     badgesGrantedIds: newBadgeIds.length > 0 ? JSON.stringify(newBadgeIds) : null,
     habitStreakSnapshot: habitStreakPreviousState
       ? JSON.stringify(habitStreakPreviousState)
       : null,
+    gearGrantedIds: gearGrantedItemIds.length > 0 ? JSON.stringify(gearGrantedItemIds) : null,
   }).where(eq(tasksTable.id, id));
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -570,6 +577,7 @@ router.post("/tasks/:id/uncomplete", async (req, res): Promise<void> => {
         freezeConsumedOnComplete: false,
         badgesGrantedIds: null,
         habitStreakSnapshot: null,
+        gearGrantedIds: null,
       })
       .where(and(eq(tasksTable.id, id), eq(tasksTable.completed, true)))
       .returning();
@@ -596,6 +604,17 @@ router.post("/tasks/:id/uncomplete", async (req, res): Promise<void> => {
   if (taskPre.recurringTaskId && taskPre.habitStreakSnapshot) {
     const previousState = JSON.parse(taskPre.habitStreakSnapshot) as HabitStreakPreviousState;
     await reverseHabitStreak(userId, taskPre.recurringTaskId, previousState);
+  }
+
+  // Revoke any gear that was awarded as a side effect of this completion.
+  // Without this, a user could complete → receive gear → uncomplete → complete again
+  // to cross the same streak/habit milestone repeatedly and farm unlimited equipment.
+  if (taskPre.gearGrantedIds) {
+    const gearItemIds = JSON.parse(taskPre.gearGrantedIds) as number[];
+    for (const gearItemId of gearItemIds) {
+      await db.delete(userGearTable)
+        .where(and(eq(userGearTable.userId, userId), eq(userGearTable.gearItemId, gearItemId)));
+    }
   }
   // ─────────────────────────────────────────────────────────────────────────────
 
