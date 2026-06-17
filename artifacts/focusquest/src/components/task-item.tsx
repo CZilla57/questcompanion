@@ -1,6 +1,6 @@
-import { Check, Clock, Edit2, Flame, Plus, Trash2 } from "lucide-react";
+import { Check, Clock, Edit2, Flame, Trash2, Zap } from "lucide-react";
 import { format } from "date-fns";
-import { Task, TaskPriority, useCompleteTask, useDeleteTask, useUncompleteTask } from "@workspace/api-client-react";
+import { Task, TaskPriority, useCompleteTask, useDeleteTask, useUncompleteTask, useGetMyStats } from "@workspace/api-client-react";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -18,10 +18,34 @@ const priorityColors: Record<TaskPriority, string> = {
   [TaskPriority.high]: "bg-red-500/20 text-red-400 border-red-500/30",
 };
 
+interface MultiplierDisplay {
+  label: string;
+  pct: number;
+  tier: "warming" | "focused" | "driven" | "elite";
+}
+
+function getMultiplierDisplay(streakDays: number): MultiplierDisplay | null {
+  if (streakDays >= 30) return { label: "1.15×", pct: 15, tier: "elite" };
+  if (streakDays >= 21) return { label: "1.10×", pct: 10, tier: "driven" };
+  if (streakDays >= 14) return { label: "1.08×", pct: 8,  tier: "focused" };
+  if (streakDays >= 7)  return { label: "1.05×", pct: 5,  tier: "warming" };
+  return null;
+}
+
+const tierStyles: Record<NonNullable<MultiplierDisplay["tier"]>, string> = {
+  warming: "bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-[0_0_6px_rgba(0,255,255,0.2)]",
+  focused: "bg-cyan-400/15 border-cyan-400/40 text-cyan-300 shadow-[0_0_8px_rgba(0,255,255,0.3)]",
+  driven:  "bg-violet-500/15 border-violet-400/40 text-violet-300 shadow-[0_0_8px_rgba(139,92,246,0.35)]",
+  elite:   "bg-amber-500/15 border-amber-400/40 text-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.4)]",
+};
+
 export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
+  const { data: stats } = useGetMyStats();
+  const multiplier = !task.completed && stats ? getMultiplierDisplay(stats.streakDays) : null;
+
   const completeMutation = useCompleteTask();
   const uncompleteMutation = useUncompleteTask();
   const deleteMutation = useDeleteTask();
@@ -78,7 +102,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
       relative group flex items-center gap-4 p-4 rounded-xl border transition-all duration-300
       ${task.completed ? "bg-muted/30 border-muted opacity-60" : "bg-card border-border hover:border-primary/50 hover:shadow-[0_0_15px_rgba(0,255,255,0.1)]"}
     `}>
-      <button 
+      <button
         onClick={handleToggle}
         disabled={completeMutation.isPending || uncompleteMutation.isPending}
         className={`
@@ -96,15 +120,28 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
         {task.description && (
           <p className="text-sm text-muted-foreground truncate">{task.description}</p>
         )}
-        <div className="flex items-center gap-3 mt-2">
+        <div className="flex items-center gap-3 mt-2 flex-wrap">
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Clock className="w-3 h-3" />
             <span>{format(new Date(task.dueDate), 'MMM d, yyyy')}</span>
           </div>
-          <div className="flex items-center gap-1 text-xs font-bold text-primary">
-            <Flame className="w-3 h-3" />
-            <span>{task.points} XP</span>
+
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 text-xs font-bold text-primary">
+              <Flame className="w-3 h-3" />
+              <span>{task.points} XP</span>
+            </div>
+            {multiplier && (
+              <span
+                title={`${multiplier.pct}% streak difficulty curve active`}
+                className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full border transition-all ${tierStyles[multiplier.tier]}`}
+              >
+                <Zap className="w-2.5 h-2.5" />
+                {multiplier.label}
+              </span>
+            )}
           </div>
+
           <span className={`text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-wider font-bold ${priorityColors[task.priority]}`}>
             {task.priority}
           </span>
