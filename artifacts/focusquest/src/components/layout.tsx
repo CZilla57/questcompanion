@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation } from "wouter";
 import { Link } from "wouter";
-import { Home, CheckSquare, BarChart2, Users, Trophy, X, Zap, Bell, BellOff, Repeat, Menu, User } from "lucide-react";
+import { Home, CheckSquare, BarChart2, Users, Trophy, X, Zap, Bell, BellOff, Repeat, Menu, User, LogOut } from "lucide-react";
 import { Button } from "./ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
@@ -80,6 +80,28 @@ function NotificationBell() {
   );
 }
 
+function LogoutButton({ iconOnly = false }: { iconOnly?: boolean }) {
+  return (
+    <form method="POST" action="/api/logout">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="submit"
+            variant="ghost"
+            size={iconOnly ? "icon" : "sm"}
+            aria-label="Sign out"
+            className={`text-muted-foreground hover:text-foreground hover:bg-muted ${iconOnly ? "" : "w-full justify-start gap-3 px-4 py-3 rounded-lg border border-transparent"}`}
+          >
+            <LogOut className="w-5 h-5 flex-shrink-0" />
+            {!iconOnly && <span className="font-medium">Sign out</span>}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side={iconOnly ? "bottom" : "right"}>Sign out</TooltipContent>
+      </Tooltip>
+    </form>
+  );
+}
+
 // All nav items — sidebar always shows all; mobile bottom bar shows mobileShow:true only
 const allNavItems = [
   { href: "/",            label: "Home",       icon: Home,        mobileShow: true },
@@ -107,6 +129,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
         <div className="flex items-center gap-1">
           <NotificationBell />
+          <TooltipProvider>
+            <LogoutButton iconOnly />
+          </TooltipProvider>
           <Button
             variant="ghost"
             size="icon"
@@ -165,6 +190,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
+
+        <div className="px-4 pb-6 pt-2 border-t border-border mt-2">
+          <TooltipProvider>
+            <LogoutButton />
+          </TooltipProvider>
+        </div>
       </aside>
 
       {/* ── Sidebar overlay (mobile) ─────────────────────── */}
