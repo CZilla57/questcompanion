@@ -6,6 +6,7 @@ import { getLevelInfo, getPointsToNextLevel, DAILY_BONUS_POINTS } from "../lib/g
 import { assignPoints } from "../lib/auto-points";
 import { advanceHabitStreak, reverseHabitStreak, type HabitStreakPreviousState } from "../lib/habit-streaks";
 import { awardStreakGear, getStreakGearRarity, type GearRewardInfo } from "../lib/gear-rewards";
+import { rollSurpriseReward, type SurpriseRewardResult } from "../lib/surprise-rewards";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -430,10 +431,13 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     }
   }
 
+  const surpriseReward: SurpriseRewardResult = await rollSurpriseReward(userId, newLevel.level);
+
   // Collect gear item IDs awarded during this completion so /uncomplete can revoke them.
   const gearGrantedItemIds: number[] = [];
   if (accountGearReward) gearGrantedItemIds.push(accountGearReward.gearItemId);
   if (habitGearReward) gearGrantedItemIds.push(habitGearReward.gearItemId);
+  if (surpriseReward?.type === "gear") gearGrantedItemIds.push(surpriseReward.gear.gearItemId);
 
   // Append badge IDs, habit-streak snapshot, and gear grants to the task row so
   // /uncomplete can reverse them all.
@@ -447,6 +451,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
   // ─────────────────────────────────────────────────────────────────────────────
 
   const allNewBadges = [...newBadges, ...habitBadges];
+  const finalTotalPoints = newTotalPoints + (surpriseReward?.type === "xp" ? surpriseReward.xpAmount : 0);
 
   // Surface the best gear reward (highest rarity wins; habit over account if tied)
   const RARITY_RANK: Record<string, number> = { common: 1, rare: 2, epic: 3, legendary: 4 };
@@ -467,7 +472,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     bonusPoints: bonusAwarded ? DAILY_BONUS_POINTS : 0,
     streakBonus,
     xpMultiplier: multiplierValue,
-    newTotalPoints,
+    newTotalPoints: finalTotalPoints,
     newLevel: newLevel.level,
     leveledUp,
     newBadges: allNewBadges.map((b) => ({
@@ -479,6 +484,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       requirement: b.requirement,
     })),
     gearReward,
+    surpriseReward: surpriseReward ?? null,
   });
 });
 

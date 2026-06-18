@@ -1079,6 +1079,28 @@ components:
           oneOf:
             - $ref: "#/components/schemas/GearRewardInfo"
             - type: "null"
+        surpriseReward:
+          oneOf:
+            - $ref: "#/components/schemas/SurpriseReward"
+            - type: "null"
+          description: Random bonus reward triggered on ~12% of completions
+
+    SurpriseReward:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [xp, gear]
+          description: "xp: bonus XP awarded; gear: free item added to inventory"
+        xpAmount:
+          type: integer
+          description: Bonus XP (present when type=xp)
+        gear:
+          oneOf:
+            - $ref: "#/components/schemas/GearRewardInfo"
+            - type: "null"
+          description: Gear item awarded (present when type=gear)
 
     GearRewardInfo:
       type: object

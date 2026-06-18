@@ -7,6 +7,7 @@
  */
 import type { Badge } from './badge';
 import type { GearRewardInfo } from './gearRewardInfo';
+import type { SurpriseReward } from './surpriseReward';
 import type { Task } from './task';
 
 export interface TaskCompletionResult {
@@ -25,4 +26,6 @@ export interface TaskCompletionResult {
   leveledUp: boolean;
   newBadges: Badge[];
   gearReward?: GearRewardInfo | null;
+  /** Random bonus reward triggered on ~12% of completions */
+  surpriseReward?: SurpriseReward | null;
 }

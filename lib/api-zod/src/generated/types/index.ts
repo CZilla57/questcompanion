@@ -59,6 +59,8 @@ export * from './recurringTaskUpdatePriority';
 export * from './searchUsersParams';
 export * from './streakFreezeResult';
 export * from './successEnvelope';
+export * from './surpriseReward';
+export * from './surpriseRewardType';
 export * from './task';
 export * from './taskCompletionResult';
 export * from './taskInput';

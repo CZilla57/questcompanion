@@ -251,6 +251,26 @@ export interface GearRewardInfo {
   icon: string;
 }
 
+/**
+ * xp: bonus XP awarded; gear: free item added to inventory
+ */
+export type SurpriseRewardType = typeof SurpriseRewardType[keyof typeof SurpriseRewardType];
+
+
+export const SurpriseRewardType = {
+  xp: 'xp',
+  gear: 'gear',
+} as const;
+
+export interface SurpriseReward {
+  /** xp: bonus XP awarded; gear: free item added to inventory */
+  type: SurpriseRewardType;
+  /** Bonus XP (present when type=xp) */
+  xpAmount?: number;
+  /** Gear item awarded (present when type=gear) */
+  gear?: GearRewardInfo | null;
+}
+
 export interface TaskCompletionResult {
   task: Task;
   /** Total XP awarded (base + streak bonus + all-day bonus) */
@@ -267,6 +287,8 @@ export interface TaskCompletionResult {
   leveledUp: boolean;
   newBadges: Badge[];
   gearReward?: GearRewardInfo | null;
+  /** Random bonus reward triggered on ~12% of completions */
+  surpriseReward?: SurpriseReward | null;
 }
 
 export type RecurringTaskPriority = typeof RecurringTaskPriority[keyof typeof RecurringTaskPriority];

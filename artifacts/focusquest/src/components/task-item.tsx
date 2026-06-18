@@ -95,6 +95,29 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
             });
           }
 
+          if (res.surpriseReward) {
+            if (res.surpriseReward.type === "xp") {
+              toast({
+                title: `✨ Surprise! +${res.surpriseReward.xpAmount} Bonus XP`,
+                description: "A lucky drop from completing your quest!",
+                className: "border-yellow-400 bg-yellow-500/10 text-yellow-300",
+              });
+            } else if (res.surpriseReward.type === "gear" && res.surpriseReward.gear) {
+              const rarityStyles: Record<string, string> = {
+                legendary: "border-amber-400 bg-amber-500/10 text-amber-300",
+                epic:      "border-violet-400 bg-violet-500/10 text-violet-300",
+                rare:      "border-blue-400 bg-blue-500/10 text-blue-300",
+                common:    "border-slate-400 bg-slate-500/10 text-slate-300",
+              };
+              const g = res.surpriseReward.gear;
+              toast({
+                title: `🎲 Surprise Drop! ${g.icon} ${g.name}`,
+                description: `A random ${g.rarity} item appeared — check your Hero page!`,
+                className: `border ${rarityStyles[g.rarity] ?? rarityStyles.common}`,
+              });
+            }
+          }
+
           if (res.leveledUp || (res.newBadges && res.newBadges.length > 0)) {
             onLevelUp?.(res);
           }

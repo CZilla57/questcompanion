@@ -341,7 +341,19 @@ export const CompleteTaskResponse = zod.object({
   "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
   "statPower": zod.number(),
   "icon": zod.string()
-}),zod.null()]).optional()
+}),zod.null()]).optional(),
+  "surpriseReward": zod.union([zod.object({
+  "type": zod.enum(['xp', 'gear']).describe('xp: bonus XP awarded; gear: free item added to inventory'),
+  "xpAmount": zod.number().optional().describe('Bonus XP (present when type=xp)'),
+  "gear": zod.union([zod.object({
+  "gearItemId": zod.number(),
+  "name": zod.string(),
+  "slot": zod.enum(['weapon', 'helmet', 'armor', 'boots', 'accessory']),
+  "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
+  "statPower": zod.number(),
+  "icon": zod.string()
+}),zod.null()]).optional().describe('Gear item awarded (present when type=gear)')
+}),zod.null()]).optional().describe('Random bonus reward triggered on ~12% of completions')
 })
 
 
