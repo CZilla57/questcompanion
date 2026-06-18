@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Check, Clock, Edit2, Flame, Shield, Timer, Trash2, Zap } from "lucide-react";
+import { Check, Clock, Edit2, Flame, Pin, PinOff, Shield, Timer, Trash2, Zap } from "lucide-react";
 import { format } from "date-fns";
-import { Task, TaskPriority, useCompleteTask, useDeleteTask, useUncompleteTask, useUpdateTask, useGetMyStats } from "@workspace/api-client-react";
+import { Task, TaskPriority, useCompleteTask, useDeleteTask, usePatchTaskFocus, useUncompleteTask, useUpdateTask, useGetMyStats } from "@workspace/api-client-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -62,6 +62,26 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
   const uncompleteMutation = useUncompleteTask();
   const deleteMutation = useDeleteTask();
   const updateMutation = useUpdateTask();
+  const focusMutation = usePatchTaskFocus();
+
+  const todayStr = new Date().toISOString().split("T")[0];
+  const isPinned = task.isDailyFocus && task.focusDate === todayStr;
+
+  const handleToggleFocus = () => {
+    focusMutation.mutate({ id: task.id, data: { pin: !isPinned } }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+        toast({
+          title: isPinned ? "Quest unpinned" : "Quest pinned to Today's Focus",
+          className: isPinned ? "" : "border-primary bg-primary/10",
+        });
+      },
+      onError: (err: any) => {
+        const msg = err?.response?.data?.error ?? err?.message ?? "Could not update focus";
+        toast({ title: msg, variant: "destructive" });
+      },
+    });
+  };
 
   const handleToggle = () => {
     if (task.completed) {
@@ -84,6 +104,9 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
           }
           if (res.bonusAwarded) {
             descParts.push(`All tasks done! +${res.bonusPoints} bonus`);
+          }
+          if (res.focusBonusAwarded) {
+            descParts.push(`All focus quests done! +${res.focusBonusPoints} focus bonus`);
           }
           const description = descParts.length > 0 ? descParts.join(" · ") : task.title;
 
@@ -293,6 +316,19 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
 
       {/* Actions — always visible on mobile, hover-reveal on desktop */}
       <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5">
+        {!task.completed && (
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={isPinned ? "Unpin from Today's Focus" : "Pin to Today's Focus"}
+            title={isPinned ? "Unpin from Today's Focus" : "Pin to Today's Focus"}
+            className={`h-9 w-9 cursor-pointer ${isPinned ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
+            onClick={handleToggleFocus}
+            disabled={focusMutation.isPending}
+          >
+            {isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+          </Button>
+        )}
         {task.completed && !loggingTime && (
           <Button
             variant="ghost"

@@ -519,6 +519,37 @@ paths:
               schema:
                 $ref: "#/components/schemas/Task"
 
+  /tasks/{id}/focus:
+    patch:
+      operationId: patchTaskFocus
+      tags: [tasks]
+      summary: Pin or unpin a task as a daily focus quest
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FocusToggleInput"
+      responses:
+        "200":
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          description: Validation error (e.g. already 3 focus quests today)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /badges:
     get:
       operationId: getBadges
@@ -1112,6 +1143,19 @@ components:
         actualMinutes:
           type: ["integer", "null"]
           description: Time the user actually spent on the quest (in minutes)
+        isDailyFocus:
+          type: boolean
+          description: Whether this quest is pinned as a daily focus
+        focusDate:
+          type: ["string", "null"]
+          description: The date (YYYY-MM-DD) this quest was pinned as focus
+
+    FocusToggleInput:
+      type: object
+      required: [pin]
+      properties:
+        pin:
+          type: boolean
 
     TaskInput:
       type: object
@@ -1206,6 +1250,12 @@ components:
             - $ref: "#/components/schemas/SurpriseReward"
             - type: "null"
           description: Random bonus reward triggered on ~12% of completions
+        focusBonusAwarded:
+          type: boolean
+          description: Whether the all-3-focus-quests bonus was awarded
+        focusBonusPoints:
+          type: integer
+          description: XP awarded for completing all 3 focus quests
 
     SurpriseReward:
       type: object

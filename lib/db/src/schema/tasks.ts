@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, boolean, timestamp, unique } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, boolean, timestamp, date, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
@@ -26,6 +26,9 @@ export const tasksTable = pgTable("tasks", {
 
   estimatedMinutes: integer("estimated_minutes"),
   actualMinutes: integer("actual_minutes"),
+
+  isDailyFocus: boolean("is_daily_focus").notNull().default(false),
+  focusDate: date("focus_date"),
 
   completed: boolean("completed").notNull().default(false),
   completedAt: timestamp("completed_at"),

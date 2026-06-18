@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, count } from "drizzle-orm";
 import { applyMultiplier } from "../lib/xp-multiplier";
 import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, DAILY_BONUS_POINTS } from "../lib/gamification";
@@ -10,6 +10,8 @@ import { rollSurpriseReward, type SurpriseRewardResult } from "../lib/surprise-r
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
+
+const FOCUS_BONUS_POINTS = 10;
 
 function formatTask(task: typeof tasksTable.$inferSelect) {
   return {
@@ -25,6 +27,8 @@ function formatTask(task: typeof tasksTable.$inferSelect) {
     createdAt: task.createdAt.toISOString(),
     estimatedMinutes: task.estimatedMinutes ?? null,
     actualMinutes: task.actualMinutes ?? null,
+    isDailyFocus: task.isDailyFocus,
+    focusDate: task.focusDate ?? null,
   };
 }
 
@@ -330,6 +334,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
         boostedBase: number;
         pointsToAdd: number;
         bonusAwarded: boolean;
+        focusBonusAwarded: boolean;
         streakBonus: number;
         multiplierLabel: string;
         multiplierValue: number;
@@ -385,6 +390,26 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       }
     }
 
+    // Focus quest bonus: award 10 XP once per day when all 3 pinned focus tasks are done.
+    let focusBonusAwarded = false;
+    if (task.isDailyFocus && task.focusDate === today) {
+      const focusTasks = await tx.select().from(tasksTable)
+        .where(and(eq(tasksTable.userId, userId), eq(tasksTable.isDailyFocus, true), eq(tasksTable.focusDate, today)));
+      const allThreeDone = focusTasks.length === 3 && focusTasks.every((t) => t.id === id || t.completed);
+      if (allThreeDone) {
+        const recentFocusBonus = await tx.select().from(activityTable)
+          .where(and(eq(activityTable.userId, userId), eq(activityTable.type, "focus_all_bonus")))
+          .orderBy(desc(activityTable.createdAt))
+          .limit(1);
+        const alreadyGaveFocusBonus = recentFocusBonus.length > 0 &&
+          recentFocusBonus[0].createdAt.toISOString().split("T")[0] === today;
+        if (!alreadyGaveFocusBonus) {
+          focusBonusAwarded = true;
+          pointsToAdd += FOCUS_BONUS_POINTS;
+        }
+      }
+    }
+
     // Streak computation.
     const streakDaysBefore = user.streakDays;
     const longestStreakBefore = user.longestStreak;
@@ -435,6 +460,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       boostedBase,
       pointsToAdd,
       bonusAwarded,
+      focusBonusAwarded,
       streakBonus,
       multiplierLabel: multiplierInfo.label,
       multiplierValue: multiplierInfo.multiplier,
@@ -471,7 +497,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     return;
   }
 
-  const { task, boostedBase, pointsToAdd, bonusAwarded, streakBonus, multiplierLabel, multiplierValue,
+  const { task, boostedBase, pointsToAdd, bonusAwarded, focusBonusAwarded, streakBonus, multiplierLabel, multiplierValue,
     newTotalPoints, newLevel, leveledUp, newStreak, oldStreak, freezeConsumed } = outcome;
 
   // ─── Post-transaction side effects ───────────────────────────────────────────
@@ -506,6 +532,15 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       type: "all_day_bonus",
       description: "Completed all tasks for today! Daily bonus earned.",
       points: DAILY_BONUS_POINTS,
+    });
+  }
+
+  if (focusBonusAwarded) {
+    await db.insert(activityTable).values({
+      userId,
+      type: "focus_all_bonus",
+      description: "Completed all 3 daily focus quests! Focus bonus earned.",
+      points: FOCUS_BONUS_POINTS,
     });
   }
 
@@ -635,6 +670,8 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     })),
     gearReward,
     surpriseReward: surpriseReward ?? null,
+    focusBonusAwarded,
+    focusBonusPoints: focusBonusAwarded ? FOCUS_BONUS_POINTS : 0,
   });
 });
 
@@ -775,6 +812,50 @@ router.post("/tasks/:id/uncomplete", async (req, res): Promise<void> => {
   // ─────────────────────────────────────────────────────────────────────────────
 
   res.json(formatTask(updatedTask));
+});
+
+router.patch("/tasks/:id/focus", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const id = parseInt(raw, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const pin: unknown = req.body?.pin;
+  if (typeof pin !== "boolean") {
+    res.status(400).json({ error: "pin must be a boolean" });
+    return;
+  }
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const [task] = await db.select()
+    .from(tasksTable)
+    .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)));
+  if (!task) { res.status(404).json({ error: "Task not found" }); return; }
+  if (task.completed) { res.status(400).json({ error: "Cannot pin a completed quest" }); return; }
+
+  if (pin) {
+    const [countResult] = await db.select({ total: count() })
+      .from(tasksTable)
+      .where(and(eq(tasksTable.userId, userId), eq(tasksTable.isDailyFocus, true), eq(tasksTable.focusDate, today)));
+    if ((countResult?.total ?? 0) >= 3) {
+      res.status(400).json({ error: "You already have 3 quests in focus today." });
+      return;
+    }
+    const [updated] = await db.update(tasksTable)
+      .set({ isDailyFocus: true, focusDate: today })
+      .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)))
+      .returning();
+    res.json(formatTask(updated));
+  } else {
+    const [updated] = await db.update(tasksTable)
+      .set({ isDailyFocus: false, focusDate: null })
+      .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)))
+      .returning();
+    res.json(formatTask(updated));
+  }
 });
 
 void getPointsToNextLevel;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Clock, Plus, Filter, Zap, Info, Sparkles, X, RefreshCw, ChevronRight } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Plus, Filter, Target, Zap, Info, Sparkles, X, RefreshCw, ChevronRight } from "lucide-react";
 import { Task, useGetTasks, useCreateTask, useUpdateTask, TaskPriority } from "@workspace/api-client-react";
 import { TaskItem } from "@/components/task-item";
 import { Button } from "@/components/ui/button";
@@ -392,6 +392,37 @@ export default function Tasks() {
           </Button>
         )}
       </div>
+
+      {/* Today's Focus section */}
+      {(() => {
+        const todayStr = format(new Date(), 'yyyy-MM-dd');
+        const focusTasks = (tasks ?? []).filter(
+          (t) => t.isDailyFocus && t.focusDate === todayStr && !t.completed
+        );
+        if (focusTasks.length === 0) return null;
+        const completedFocus = (tasks ?? []).filter(
+          (t) => t.isDailyFocus && t.focusDate === todayStr && t.completed
+        );
+        const totalPinned = focusTasks.length + completedFocus.length;
+        return (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Target className="w-4 h-4 text-primary" />
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-primary">Today's Focus</h2>
+              </div>
+              <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-full bg-muted border border-border">
+                {completedFocus.length} / {totalPinned} done · {3 - totalPinned} slot{3 - totalPinned !== 1 ? "s" : ""} left
+              </span>
+            </div>
+            <div className="space-y-2 pl-1 border-l-2 border-primary/30">
+              {focusTasks.map(task => (
+                <TaskItem key={task.id} task={task} onEdit={handleOpenEdit} />
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="space-y-4">
         {isLoading ? (

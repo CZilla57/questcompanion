@@ -53,6 +53,7 @@ import type {
   SearchUsersParams,
   StreakFreezeResult,
   SuccessEnvelope,
+  FocusToggleInput,
   Task,
   TaskCompletionResult,
   TaskInput,
@@ -3337,4 +3338,37 @@ export const useDeleteDopamineReward = <TError = ErrorType<ErrorEnvelope>, TCont
   options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof deleteDopamineReward>>, TError, { id: number }, TContext>, request?: SecondParameter<typeof customFetch> }
 ): UseMutationResult<Awaited<ReturnType<typeof deleteDopamineReward>>, TError, { id: number }, TContext> => {
   return useMutation(getDeleteDopamineRewardMutationOptions(options));
+};
+
+export const getPatchTaskFocusUrl = (id: number) => `/api/tasks/${id}/focus`;
+
+export const patchTaskFocus = async (id: number, focusToggleInput: FocusToggleInput, options?: RequestInit): Promise<Task> => {
+  return customFetch<Task>(getPatchTaskFocusUrl(id), {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(focusToggleInput),
+  });
+};
+
+export const getPatchTaskFocusMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof patchTaskFocus>>, TError, { id: number; data: FocusToggleInput }, TContext>, request?: SecondParameter<typeof customFetch> }
+): UseMutationOptions<Awaited<ReturnType<typeof patchTaskFocus>>, TError, { id: number; data: FocusToggleInput }, TContext> => {
+  const { mutation: mutationOptions, request: requestOptions } = options ?? {};
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchTaskFocus>>, { id: number; data: FocusToggleInput }> =
+    (props) => {
+      const { id, data } = props ?? {};
+      return patchTaskFocus(id, data, requestOptions);
+    };
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PatchTaskFocusMutationResult = NonNullable<Awaited<ReturnType<typeof patchTaskFocus>>>;
+export type PatchTaskFocusMutationBody = FocusToggleInput;
+export type PatchTaskFocusMutationError = ErrorType<unknown>;
+
+export const usePatchTaskFocus = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof patchTaskFocus>>, TError, { id: number; data: FocusToggleInput }, TContext>, request?: SecondParameter<typeof customFetch> }
+): UseMutationResult<Awaited<ReturnType<typeof patchTaskFocus>>, TError, { id: number; data: FocusToggleInput }, TContext> => {
+  return useMutation(getPatchTaskFocusMutationOptions(options));
 };
