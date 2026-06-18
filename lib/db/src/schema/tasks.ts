@@ -24,6 +24,9 @@ export const tasksTable = pgTable("tasks", {
   // Stored so /uncomplete can revoke exactly the gear that was granted.
   gearGrantedIds: text("gear_granted_ids"),
 
+  estimatedMinutes: integer("estimated_minutes"),
+  actualMinutes: integer("actual_minutes"),
+
   completed: boolean("completed").notNull().default(false),
   completedAt: timestamp("completed_at"),
   dueDate: text("due_date").notNull(),

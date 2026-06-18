@@ -18,4 +18,9 @@ export interface TaskInput {
   points?: number;
   dueDate: string;
   priority?: TaskInputPriority;
+  /**
+     * @minimum 1
+     * @maximum 1440
+     */
+  estimatedMinutes?: number;
 }

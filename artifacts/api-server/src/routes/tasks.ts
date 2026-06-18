@@ -23,6 +23,8 @@ function formatTask(task: typeof tasksTable.$inferSelect) {
     dueDate: task.dueDate,
     priority: task.priority,
     createdAt: task.createdAt.toISOString(),
+    estimatedMinutes: task.estimatedMinutes ?? null,
+    actualMinutes: task.actualMinutes ?? null,
   };
 }
 
@@ -58,11 +60,12 @@ router.post("/tasks", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;
 
-  const { title, description, dueDate, priority = "medium" } = req.body as {
+  const { title, description, dueDate, priority = "medium", estimatedMinutes } = req.body as {
     title?: string;
     description?: string;
     dueDate?: string;
     priority?: string;
+    estimatedMinutes?: number;
   };
 
   if (!title || !dueDate) {
@@ -79,6 +82,7 @@ router.post("/tasks", async (req, res): Promise<void> => {
     points: autoPoint.points,
     dueDate,
     priority,
+    estimatedMinutes: estimatedMinutes ?? null,
   }).returning();
 
   res.status(201).json(formatTask(task));
@@ -106,26 +110,45 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
   const id = parseInt(raw, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
-  // Fetch task upfront to enforce ownership and block edits on completed tasks.
+  // Fetch task upfront to enforce ownership.
   const [existing] = await db.select({ completed: tasksTable.completed })
     .from(tasksTable)
     .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)));
   if (!existing) { res.status(404).json({ error: "Task not found" }); return; }
-  if (existing.completed) { res.status(409).json({ error: "Cannot edit a completed task" }); return; }
 
   // Points are server-assigned by auto-points logic and are not client-editable.
-  const { title, description, dueDate, priority } = req.body as {
+  const { title, description, dueDate, priority, estimatedMinutes, actualMinutes } = req.body as {
     title?: string;
     description?: string;
     dueDate?: string;
     priority?: string;
+    estimatedMinutes?: number;
+    actualMinutes?: number;
   };
 
   const updates: Partial<typeof tasksTable.$inferInsert> = {};
+
+  if (existing.completed) {
+    // On a completed task, only actualMinutes may be updated.
+    if (actualMinutes != null) updates.actualMinutes = actualMinutes;
+    if (Object.keys(updates).length === 0) {
+      res.status(409).json({ error: "Cannot edit a completed task (only actualMinutes is allowed)" });
+      return;
+    }
+    const [task] = await db.update(tasksTable).set(updates)
+      .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)))
+      .returning();
+    if (!task) { res.status(404).json({ error: "Task not found" }); return; }
+    res.json(formatTask(task));
+    return;
+  }
+
+  // Incomplete task: allow full edit.
   if (title != null) updates.title = title;
   if (description != null) updates.description = description;
   if (dueDate != null) updates.dueDate = dueDate;
   if (priority != null) updates.priority = priority;
+  if (estimatedMinutes != null) updates.estimatedMinutes = estimatedMinutes;
 
   // The WHERE clause re-checks completed=false as a safety guard against a race
   // between the read above and this write.

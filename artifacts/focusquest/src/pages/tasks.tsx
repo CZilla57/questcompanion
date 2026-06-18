@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Plus, Filter, Zap, Info } from "lucide-react";
-import { Task, useGetTasks, useCreateTask, TaskPriority } from "@workspace/api-client-react";
+import { Calendar as CalendarIcon, Clock, Plus, Filter, Zap, Info } from "lucide-react";
+import { Task, useGetTasks, useCreateTask, useUpdateTask, TaskPriority } from "@workspace/api-client-react";
 import { TaskItem } from "@/components/task-item";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -43,6 +43,40 @@ function usePointPreview(title: string, priority: string): PointPreview | null {
   return preview;
 }
 
+function formatMinutes(minutes: number | null | undefined): string {
+  if (!minutes) return "";
+  if (minutes < 60) return `${minutes}m`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
+function TimeInput({
+  value,
+  onChange,
+  placeholder = "e.g. 30",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <div className="relative">
+      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+      <Input
+        type="number"
+        min={1}
+        max={1440}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="pl-9 border-primary/20 focus:border-primary"
+      />
+      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">min</span>
+    </div>
+  );
+}
+
 export default function Tasks() {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [filter, setFilter] = useState<string>("all");
@@ -50,6 +84,13 @@ export default function Tasks() {
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDesc, setNewTaskDesc] = useState("");
   const [newTaskPriority, setNewTaskPriority] = useState<TaskPriority>(TaskPriority.medium);
+  const [newTaskEstimate, setNewTaskEstimate] = useState("");
+
+  const [editTask, setEditTask] = useState<Task | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editPriority, setEditPriority] = useState<TaskPriority>(TaskPriority.medium);
+  const [editEstimate, setEditEstimate] = useState("");
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -60,11 +101,14 @@ export default function Tasks() {
   });
 
   const createMutation = useCreateTask();
+  const updateMutation = useUpdateTask();
   const pointPreview = usePointPreview(newTaskTitle, newTaskPriority);
 
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskTitle.trim() || !date) return;
+
+    const estimatedMinutes = newTaskEstimate ? parseInt(newTaskEstimate, 10) : undefined;
 
     createMutation.mutate({
       data: {
@@ -72,6 +116,7 @@ export default function Tasks() {
         description: newTaskDesc,
         priority: newTaskPriority as any,
         dueDate: format(date, 'yyyy-MM-dd'),
+        ...(estimatedMinutes && estimatedMinutes > 0 ? { estimatedMinutes } : {}),
       }
     }, {
       onSuccess: (task) => {
@@ -80,20 +125,49 @@ export default function Tasks() {
           description: `Category: ${task.title}`,
           className: "border-primary bg-primary/10",
         });
-        setIsCreateOpen(false);
-        setNewTaskTitle("");
-        setNewTaskDesc("");
-        setNewTaskPriority(TaskPriority.medium);
+        handleCloseCreate();
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
       }
     });
   };
 
-  const handleClose = () => {
+  const handleCloseCreate = () => {
     setIsCreateOpen(false);
     setNewTaskTitle("");
     setNewTaskDesc("");
     setNewTaskPriority(TaskPriority.medium);
+    setNewTaskEstimate("");
+  };
+
+  const handleOpenEdit = (task: Task) => {
+    setEditTask(task);
+    setEditTitle(task.title);
+    setEditDesc(task.description ?? "");
+    setEditPriority((task.priority as TaskPriority) ?? TaskPriority.medium);
+    setEditEstimate(task.estimatedMinutes ? String(task.estimatedMinutes) : "");
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTask || !editTitle.trim()) return;
+
+    const estimatedMinutes = editEstimate ? parseInt(editEstimate, 10) : undefined;
+
+    updateMutation.mutate({
+      id: editTask.id,
+      data: {
+        title: editTitle,
+        description: editDesc,
+        priority: editPriority as any,
+        ...(estimatedMinutes && estimatedMinutes > 0 ? { estimatedMinutes } : {}),
+      }
+    }, {
+      onSuccess: () => {
+        toast({ title: "Quest updated", className: "border-primary bg-primary/10" });
+        setEditTask(null);
+        queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+      }
+    });
   };
 
   return (
@@ -147,7 +221,7 @@ export default function Tasks() {
           ))
         ) : tasks && tasks.length > 0 ? (
           tasks.map(task => (
-            <TaskItem key={task.id} task={task} onEdit={() => {}} />
+            <TaskItem key={task.id} task={task} onEdit={handleOpenEdit} />
           ))
         ) : (
           <div className="text-center py-20 border-2 border-dashed border-muted rounded-xl bg-card/50">
@@ -157,7 +231,8 @@ export default function Tasks() {
         )}
       </div>
 
-      <Dialog open={isCreateOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
+      {/* Create dialog */}
+      <Dialog open={isCreateOpen} onOpenChange={(open) => { if (!open) handleCloseCreate(); }}>
         <DialogContent className="sm:max-w-md bg-card border-primary/30">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-primary">New Quest</DialogTitle>
@@ -217,29 +292,100 @@ export default function Tasks() {
               />
             </div>
 
-            <div>
-              <label className="text-sm font-medium text-foreground mb-1 block">Priority</label>
-              <Select value={newTaskPriority} onValueChange={(val: TaskPriority) => setNewTaskPriority(val)}>
-                <SelectTrigger className="border-primary/20">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1">Priority adjusts XP up or down based on urgency.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1 block">Priority</label>
+                <Select value={newTaskPriority} onValueChange={(val: TaskPriority) => setNewTaskPriority(val)}>
+                  <SelectTrigger className="border-primary/20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1 block">
+                  Est. Time <span className="text-muted-foreground font-normal">(optional)</span>
+                </label>
+                <TimeInput value={newTaskEstimate} onChange={setNewTaskEstimate} />
+              </div>
             </div>
+            <p className="text-xs text-muted-foreground -mt-2">Priority adjusts XP. Time estimate is for your own tracking.</p>
 
             <div className="pt-4 flex justify-end gap-3">
-              <Button type="button" variant="ghost" onClick={handleClose}>Cancel</Button>
+              <Button type="button" variant="ghost" onClick={handleCloseCreate}>Cancel</Button>
               <Button
                 type="submit"
                 disabled={!newTaskTitle.trim() || createMutation.isPending}
                 className="bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 {createMutation.isPending ? "Adding..." : "Add to Log"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit dialog (incomplete tasks only) */}
+      <Dialog open={!!editTask && !editTask.completed} onOpenChange={(open) => { if (!open) setEditTask(null); }}>
+        <DialogContent className="sm:max-w-md bg-card border-primary/30">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-primary">Edit Quest</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSaveEdit} className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">Objective</label>
+              <Input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="border-primary/20 focus:border-primary"
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">Details (Optional)</label>
+              <Textarea
+                value={editDesc}
+                onChange={(e) => setEditDesc(e.target.value)}
+                placeholder="Add some context..."
+                className="border-primary/20 focus:border-primary"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1 block">Priority</label>
+                <Select value={editPriority} onValueChange={(val: TaskPriority) => setEditPriority(val)}>
+                  <SelectTrigger className="border-primary/20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1 block">
+                  Est. Time <span className="text-muted-foreground font-normal">(optional)</span>
+                </label>
+                <TimeInput value={editEstimate} onChange={setEditEstimate} />
+              </div>
+            </div>
+
+            <div className="pt-4 flex justify-end gap-3">
+              <Button type="button" variant="ghost" onClick={() => setEditTask(null)}>Cancel</Button>
+              <Button
+                type="submit"
+                disabled={!editTitle.trim() || updateMutation.isPending}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                {updateMutation.isPending ? "Saving..." : "Save Changes"}
               </Button>
             </div>
           </form>

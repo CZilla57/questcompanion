@@ -18,4 +18,14 @@ export interface TaskUpdate {
   points?: number;
   dueDate?: string;
   priority?: TaskUpdatePriority;
+  /**
+     * @minimum 1
+     * @maximum 1440
+     */
+  estimatedMinutes?: number;
+  /**
+     * @minimum 1
+     * @maximum 1440
+     */
+  actualMinutes?: number;
 }

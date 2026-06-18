@@ -1,7 +1,9 @@
-import { Check, Clock, Edit2, Flame, Shield, Trash2, Zap } from "lucide-react";
+import { useState } from "react";
+import { Check, Clock, Edit2, Flame, Shield, Timer, Trash2, Zap } from "lucide-react";
 import { format } from "date-fns";
-import { Task, TaskPriority, useCompleteTask, useDeleteTask, useUncompleteTask, useGetMyStats } from "@workspace/api-client-react";
+import { Task, TaskPriority, useCompleteTask, useDeleteTask, useUncompleteTask, useUpdateTask, useGetMyStats } from "@workspace/api-client-react";
 import { Button } from "./ui/button";
+import { Input } from "./ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetTasksQueryKey, getGetMyStatsQueryKey } from "@workspace/api-client-react";
@@ -39,9 +41,18 @@ const tierStyles: Record<NonNullable<MultiplierDisplay["tier"]>, string> = {
   elite:   "bg-amber-500/15 border-amber-400/40 text-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.4)]",
 };
 
+function formatMinutes(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
 export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [loggingTime, setLoggingTime] = useState(false);
+  const [actualInput, setActualInput] = useState(task.actualMinutes ? String(task.actualMinutes) : "");
 
   const { data: stats } = useGetMyStats();
   const multiplier = !task.completed && stats ? getMultiplierDisplay(stats.streakDays) : null;
@@ -49,6 +60,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
   const completeMutation = useCompleteTask();
   const uncompleteMutation = useUncompleteTask();
   const deleteMutation = useDeleteTask();
+  const updateMutation = useUpdateTask();
 
   const handleToggle = () => {
     if (task.completed) {
@@ -135,13 +147,31 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
     });
   };
 
+  const handleSaveActualTime = () => {
+    const mins = parseInt(actualInput, 10);
+    if (!actualInput || isNaN(mins) || mins < 1) {
+      setLoggingTime(false);
+      return;
+    }
+    updateMutation.mutate({ id: task.id, data: { actualMinutes: mins } }, {
+      onSuccess: () => {
+        toast({ title: `⏱ Time logged: ${formatMinutes(mins)}`, className: "border-primary bg-primary/10" });
+        setLoggingTime(false);
+        queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+      }
+    });
+  };
+
   const isBusy = completeMutation.isPending || uncompleteMutation.isPending;
+
+  const hasEstimate = !!task.estimatedMinutes;
+  const hasActual = !!task.actualMinutes;
 
   return (
     <div className={`
-      relative group flex items-center gap-4 p-4 rounded-xl border transition-all duration-300
+      relative group flex items-start gap-4 p-4 rounded-xl border transition-all duration-300
       ${task.completed
-        ? "bg-muted/30 border-muted opacity-60"
+        ? "bg-muted/30 border-muted opacity-70"
         : "bg-card border-border hover:border-primary/50 hover:shadow-[0_0_15px_rgba(0,255,255,0.1)]"}
     `}>
       {/* Complete toggle */}
@@ -150,7 +180,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
         disabled={isBusy}
         aria-label={task.completed ? "Mark quest incomplete" : "Complete quest"}
         className={`
-          flex-shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center
+          flex-shrink-0 w-10 h-10 mt-0.5 rounded-full border-2 flex items-center justify-center
           transition-all duration-300 cursor-pointer
           ${task.completed
             ? "bg-primary border-primary text-background neon-glow"
@@ -168,6 +198,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
         {task.description && (
           <p className="text-sm text-muted-foreground truncate">{task.description}</p>
         )}
+
         <div className="flex items-center gap-3 mt-2 flex-wrap">
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Clock className="w-3 h-3" />
@@ -193,12 +224,85 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
           <span className={`text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-wider font-bold ${priorityColors[task.priority]}`}>
             {task.priority}
           </span>
+
+          {/* Time badges */}
+          {!task.completed && hasEstimate && (
+            <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border border-sky-500/30 bg-sky-500/10 text-sky-400 font-medium">
+              <Timer className="w-2.5 h-2.5" />
+              ~{formatMinutes(task.estimatedMinutes!)}
+            </span>
+          )}
+
+          {task.completed && (
+            <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-medium">
+              <Timer className="w-2.5 h-2.5" />
+              {hasActual && hasEstimate
+                ? `${formatMinutes(task.actualMinutes!)} / ~${formatMinutes(task.estimatedMinutes!)}`
+                : hasActual
+                  ? formatMinutes(task.actualMinutes!)
+                  : hasEstimate
+                    ? `~${formatMinutes(task.estimatedMinutes!)}`
+                    : "No time logged"}
+            </span>
+          )}
         </div>
+
+        {/* Log actual time — inline input for completed tasks */}
+        {task.completed && loggingTime && (
+          <div className="mt-3 flex items-center gap-2">
+            <div className="relative flex-1 max-w-[160px]">
+              <Timer className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+              <Input
+                type="number"
+                min={1}
+                max={1440}
+                value={actualInput}
+                onChange={(e) => setActualInput(e.target.value)}
+                placeholder="minutes"
+                className="pl-8 pr-10 h-8 text-sm border-primary/30 focus:border-primary"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSaveActualTime();
+                  if (e.key === "Escape") setLoggingTime(false);
+                }}
+              />
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">min</span>
+            </div>
+            <Button
+              size="sm"
+              className="h-8 px-3 text-xs bg-primary hover:bg-primary/90"
+              onClick={handleSaveActualTime}
+              disabled={updateMutation.isPending}
+            >
+              {updateMutation.isPending ? "..." : "Save"}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 px-2 text-xs"
+              onClick={() => setLoggingTime(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Actions — always visible on mobile, hover-reveal on desktop */}
-      <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-        {onEdit && (
+      <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5">
+        {task.completed && !loggingTime && (
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Log actual time"
+            title={hasActual ? "Edit logged time" : "Log how long this took"}
+            className="h-9 w-9 cursor-pointer"
+            onClick={() => { setActualInput(task.actualMinutes ? String(task.actualMinutes) : ""); setLoggingTime(true); }}
+          >
+            <Timer className="w-4 h-4 text-sky-400" />
+          </Button>
+        )}
+        {onEdit && !task.completed && (
           <Button
             variant="ghost"
             size="icon"

@@ -212,7 +212,9 @@ export const GetTasksResponseItem = zod.object({
   "completedAt": zod.string().nullish(),
   "dueDate": zod.string(),
   "priority": zod.enum(['low', 'medium', 'high']),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "estimatedMinutes": zod.number().nullish(),
+  "actualMinutes": zod.number().nullish()
 })
 export const GetTasksResponse = zod.array(GetTasksResponseItem)
 
@@ -226,12 +228,15 @@ export const createTaskBodyPointsMax = 100;
 
 export const createTaskBodyPriorityDefault = `medium`;
 
+export const createTaskBodyEstimatedMinutesMax = 1440;
+
 export const CreateTaskBody = zod.object({
   "title": zod.string().min(1),
   "description": zod.string().optional(),
   "points": zod.number().min(1).max(createTaskBodyPointsMax).default(createTaskBodyPointsDefault),
   "dueDate": zod.string(),
-  "priority": zod.enum(['low', 'medium', 'high']).default(createTaskBodyPriorityDefault)
+  "priority": zod.enum(['low', 'medium', 'high']).default(createTaskBodyPriorityDefault),
+  "estimatedMinutes": zod.number().min(1).max(createTaskBodyEstimatedMinutesMax).optional()
 })
 
 
@@ -252,7 +257,9 @@ export const GetTaskResponse = zod.object({
   "completedAt": zod.string().nullish(),
   "dueDate": zod.string(),
   "priority": zod.enum(['low', 'medium', 'high']),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "estimatedMinutes": zod.number().nullish(),
+  "actualMinutes": zod.number().nullish()
 })
 
 
@@ -268,12 +275,17 @@ export const updateTaskBodyPointsMax = 100;
 
 
 
+export const updateTaskBodyEstimatedMinutesMax = 1440;
+export const updateTaskBodyActualMinutesMax = 1440;
+
 export const UpdateTaskBody = zod.object({
   "title": zod.string().min(1).optional(),
   "description": zod.string().optional(),
   "points": zod.number().min(1).max(updateTaskBodyPointsMax).optional(),
   "dueDate": zod.string().optional(),
-  "priority": zod.enum(['low', 'medium', 'high']).optional()
+  "priority": zod.enum(['low', 'medium', 'high']).optional(),
+  "estimatedMinutes": zod.number().min(1).max(updateTaskBodyEstimatedMinutesMax).optional(),
+  "actualMinutes": zod.number().min(1).max(updateTaskBodyActualMinutesMax).optional()
 })
 
 export const UpdateTaskResponse = zod.object({
@@ -286,7 +298,9 @@ export const UpdateTaskResponse = zod.object({
   "completedAt": zod.string().nullish(),
   "dueDate": zod.string(),
   "priority": zod.enum(['low', 'medium', 'high']),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "estimatedMinutes": zod.number().nullish(),
+  "actualMinutes": zod.number().nullish()
 })
 
 

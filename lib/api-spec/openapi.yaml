@@ -1005,6 +1005,12 @@ components:
           enum: [low, medium, high]
         createdAt:
           type: string
+        estimatedMinutes:
+          type: ["integer", "null"]
+          description: Time the user estimated the quest would take (in minutes)
+        actualMinutes:
+          type: ["integer", "null"]
+          description: Time the user actually spent on the quest (in minutes)
 
     TaskInput:
       type: object
@@ -1026,6 +1032,11 @@ components:
           type: string
           enum: [low, medium, high]
           default: medium
+        estimatedMinutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+          description: Optional time estimate in minutes
 
     TaskUpdate:
       type: object
@@ -1044,6 +1055,16 @@ components:
         priority:
           type: string
           enum: [low, medium, high]
+        estimatedMinutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+          description: Time estimate (only updatable on incomplete tasks)
+        actualMinutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+          description: Actual time spent (updatable on completed tasks too)
 
     TaskCompletionResult:
       type: object

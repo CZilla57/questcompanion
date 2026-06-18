@@ -154,6 +154,10 @@ export interface Task {
   dueDate: string;
   priority: TaskPriority;
   createdAt: string;
+  /** @nullable */
+  estimatedMinutes?: number | null;
+  /** @nullable */
+  actualMinutes?: number | null;
 }
 
 export type TaskInputPriority = typeof TaskInputPriority[keyof typeof TaskInputPriority];
@@ -176,6 +180,11 @@ export interface TaskInput {
   points?: number;
   dueDate: string;
   priority?: TaskInputPriority;
+  /**
+     * @minimum 1
+     * @maximum 1440
+     */
+  estimatedMinutes?: number;
 }
 
 export type TaskUpdatePriority = typeof TaskUpdatePriority[keyof typeof TaskUpdatePriority];
@@ -198,6 +207,16 @@ export interface TaskUpdate {
   points?: number;
   dueDate?: string;
   priority?: TaskUpdatePriority;
+  /**
+     * @minimum 1
+     * @maximum 1440
+     */
+  estimatedMinutes?: number;
+  /**
+     * @minimum 1
+     * @maximum 1440
+     */
+  actualMinutes?: number;
 }
 
 export type BadgeCategory = typeof BadgeCategory[keyof typeof BadgeCategory];

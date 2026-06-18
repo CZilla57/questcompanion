@@ -20,4 +20,8 @@ export interface Task {
   dueDate: string;
   priority: TaskPriority;
   createdAt: string;
+  /** @nullable */
+  estimatedMinutes?: number | null;
+  /** @nullable */
+  actualMinutes?: number | null;
 }
