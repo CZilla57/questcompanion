@@ -1,18 +1,21 @@
 import { useState } from "react";
 import { format, differenceInDays, parseISO } from "date-fns";
-import { ActivityItem, useGetMyStats, useGetTasks, useBuyStreakFreeze } from "@workspace/api-client-react";
+import { ActivityItem, Task, TaskPriority, useGetMyStats, useGetTasks, useBuyStreakFreeze, useUpdateTask } from "@workspace/api-client-react";
 import { TaskItem } from "@/components/task-item";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Flame, Trophy, Target, Award, Zap, Check,
-  Shield, ShieldCheck, ShieldOff, AlertTriangle, X, TrendingDown,
+  Shield, ShieldCheck, ShieldOff, AlertTriangle, X, TrendingDown, Clock,
 } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useQueryClient } from "@tanstack/react-query";
-import { getGetMyStatsQueryKey } from "@workspace/api-client-react";
+import { getGetMyStatsQueryKey, getGetTasksQueryKey } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 
 const FREEZE_COST = 50;
@@ -84,9 +87,45 @@ export default function Dashboard() {
 
   const [levelUpData, setLevelUpData] = useState<any | null>(null);
   const [decayDismissed, setDecayDismissed] = useState(false);
+  const [editTask, setEditTask] = useState<Task | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editPriority, setEditPriority] = useState<TaskPriority>(TaskPriority.medium);
+  const [editEstimate, setEditEstimate] = useState("");
+
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const buyFreezeMutation = useBuyStreakFreeze();
+  const updateMutation = useUpdateTask();
+
+  const handleOpenEdit = (task: Task) => {
+    setEditTask(task);
+    setEditTitle(task.title);
+    setEditDesc(task.description ?? "");
+    setEditPriority((task.priority as TaskPriority) ?? TaskPriority.medium);
+    setEditEstimate(task.estimatedMinutes ? String(task.estimatedMinutes) : "");
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTask || !editTitle.trim()) return;
+    const estimatedMinutes = editEstimate ? parseInt(editEstimate, 10) : undefined;
+    updateMutation.mutate({
+      id: editTask.id,
+      data: {
+        title: editTitle,
+        description: editDesc,
+        priority: editPriority as any,
+        ...(estimatedMinutes && estimatedMinutes > 0 ? { estimatedMinutes } : {}),
+      }
+    }, {
+      onSuccess: () => {
+        toast({ title: "Quest updated", className: "border-primary bg-primary/10" });
+        setEditTask(null);
+        queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+      }
+    });
+  };
 
   if (statsLoading || tasksLoading) {
     return <DashboardSkeleton />;
@@ -336,7 +375,7 @@ export default function Dashboard() {
             )}
 
             {pendingTasks.map(task => (
-              <TaskItem key={task.id} task={task} onLevelUp={setLevelUpData} />
+              <TaskItem key={task.id} task={task} onEdit={handleOpenEdit} onLevelUp={setLevelUpData} />
             ))}
 
             {completedTasks.length > 0 && (
@@ -346,7 +385,7 @@ export default function Dashboard() {
                 </h3>
                 <div className="opacity-60 space-y-3">
                   {completedTasks.map(task => (
-                    <TaskItem key={task.id} task={task} />
+                    <TaskItem key={task.id} task={task} onLevelUp={setLevelUpData} />
                   ))}
                 </div>
               </>
@@ -394,6 +433,81 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
+
+      {/* ── Edit quest dialog ─────────────────────────────── */}
+      <Dialog open={!!editTask && !editTask.completed} onOpenChange={(open) => { if (!open) setEditTask(null); }}>
+        <DialogContent className="sm:max-w-md bg-card border-primary/30">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-primary">Edit Quest</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSaveEdit} className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">Objective</label>
+              <Input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="border-primary/20 focus:border-primary"
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">Details (Optional)</label>
+              <Textarea
+                value={editDesc}
+                onChange={(e) => setEditDesc(e.target.value)}
+                placeholder="Add some context..."
+                className="border-primary/20 focus:border-primary"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1 block">Priority</label>
+                <Select value={editPriority} onValueChange={(val: TaskPriority) => setEditPriority(val)}>
+                  <SelectTrigger className="border-primary/20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1 block">
+                  Est. Time <span className="text-muted-foreground font-normal">(optional)</span>
+                </label>
+                <div className="relative">
+                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    type="number"
+                    min={1}
+                    max={1440}
+                    value={editEstimate}
+                    onChange={(e) => setEditEstimate(e.target.value)}
+                    placeholder="e.g. 30"
+                    className="pl-9 border-primary/20 focus:border-primary"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">min</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 flex justify-end gap-3">
+              <Button type="button" variant="ghost" onClick={() => setEditTask(null)}>Cancel</Button>
+              <Button
+                type="submit"
+                disabled={!editTitle.trim() || updateMutation.isPending}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                {updateMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Level-up dialog ───────────────────────────────── */}
       <Dialog open={!!levelUpData} onOpenChange={() => setLevelUpData(null)}>
