@@ -3253,7 +3253,7 @@ export const useEnterBattle = <TError = ErrorType<ErrorEnvelope>,
 export const getDopamineRewards = (
   options?: SecondParameter<typeof customFetch>,
 ) => {
-  return customFetch<DopamineReward[]>(`/dopamine-rewards`, {
+  return customFetch<DopamineReward[]>(`/api/dopamine-rewards`, {
     ...options,
     method: 'GET',
   });
@@ -3280,7 +3280,7 @@ export const createDopamineReward = (
   dopamineRewardInput: BodyType<DopamineRewardInput>,
   options?: SecondParameter<typeof customFetch>,
 ) => {
-  return customFetch<DopamineReward>(`/dopamine-rewards`, {
+  return customFetch<DopamineReward>(`/api/dopamine-rewards`, {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -3313,7 +3313,7 @@ export const deleteDopamineReward = (
   id: number,
   options?: SecondParameter<typeof customFetch>,
 ) => {
-  return customFetch<SuccessEnvelope>(`/dopamine-rewards/${id}`, {
+  return customFetch<SuccessEnvelope>(`/api/dopamine-rewards/${id}`, {
     ...options,
     method: 'DELETE',
   });
