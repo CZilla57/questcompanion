@@ -698,10 +698,14 @@ export const SearchUsersResponse = zod.array(SearchUsersResponseItem)
 /**
  * @summary Get the current user's avatar profile and equipped gear
  */
+
+
+
 export const GetAvatarResponse = zod.object({
   "avatarColor": zod.string(),
   "avatarClass": zod.enum(['fighter', 'mage', 'ranger', 'healer']),
   "avatarSkin": zod.enum(['light', 'tan', 'brown', 'dark', 'green', 'blue']),
+  "level": zod.number().min(1),
   "battlePower": zod.number(),
   "equippedGear": zod.array(zod.object({
   "id": zod.number(),
@@ -726,10 +730,14 @@ export const UpdateAvatarBody = zod.object({
   "avatarSkin": zod.enum(['light', 'tan', 'brown', 'dark', 'green', 'blue']).optional()
 })
 
+
+
+
 export const UpdateAvatarResponse = zod.object({
   "avatarColor": zod.string(),
   "avatarClass": zod.enum(['fighter', 'mage', 'ranger', 'healer']),
   "avatarSkin": zod.enum(['light', 'tan', 'brown', 'dark', 'green', 'blue']),
+  "level": zod.number().min(1),
   "battlePower": zod.number(),
   "equippedGear": zod.array(zod.object({
   "id": zod.number(),

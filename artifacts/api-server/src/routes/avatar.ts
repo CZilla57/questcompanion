@@ -31,6 +31,7 @@ async function buildAvatarResponse(userId: number) {
     avatarColor:      user.avatarColor,
     avatarClass:      user.avatarClass,
     avatarSkin:       user.avatarSkin ?? "light",
+    level:            levelInfo.level,
     battlePower:      calcBattlePower(levelInfo.level, equippedPower),
     equippedGear:     equipped.map(g => ({
       id:        g.gear.id,

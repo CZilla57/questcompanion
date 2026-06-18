@@ -15,6 +15,7 @@ interface AvatarRendererProps {
   skin?: AvatarSkin;
   avatarClass: AvatarClass;
   equipped?: EquippedSlot[];
+  level?: number;
   size?: number;
   showGlow?: boolean;
 }
@@ -42,31 +43,27 @@ const CLASS_ACCENTS: Record<AvatarClass, string> = {
   healer:  "#f59e0b",
 };
 
-// ── Colour utilities ────────────────────────────────────────────────────────
+// ── Color utilities ──────────────────────────────────────────────────────────
 
 function hexToHsl(hex: string): [number, number, number] {
-  const r = parseInt(hex.slice(1, 3), 16) / 255;
-  const g = parseInt(hex.slice(3, 5), 16) / 255;
-  const b = parseInt(hex.slice(5, 7), 16) / 255;
-  const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  const l = (max + min) / 2;
-  const d = max - min;
-  const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
-  let h = 0;
-  if (d !== 0) {
-    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
-    else if (max === g) h = ((b - r) / d + 2) / 6;
-    else h = ((r - g) / d + 4) / 6;
+  const r = parseInt(hex.slice(1,3),16)/255;
+  const g = parseInt(hex.slice(3,5),16)/255;
+  const b = parseInt(hex.slice(5,7),16)/255;
+  const max=Math.max(r,g,b), min=Math.min(r,g,b);
+  const l=(max+min)/2, d=max-min;
+  const s=d===0?0:d/(1-Math.abs(2*l-1));
+  let h=0;
+  if(d!==0){
+    if(max===r) h=((g-b)/d+(g<b?6:0))/6;
+    else if(max===g) h=((b-r)/d+2)/6;
+    else h=((r-g)/d+4)/6;
   }
-  return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+  return [Math.round(h*360),Math.round(s*100),Math.round(l*100)];
 }
-
 function adjustL(hex: string, delta: number): string {
-  const [h, s, l] = hexToHsl(hex);
-  return `hsl(${h},${s}%,${Math.min(Math.max(l + delta, 5), 92)}%)`;
+  const [h,s,l]=hexToHsl(hex);
+  return `hsl(${h},${s}%,${Math.min(Math.max(l+delta,5),92)}%)`;
 }
-
-// ── Colour map ──────────────────────────────────────────────────────────────
 
 type ColorMap = Record<string, string>;
 
@@ -74,27 +71,39 @@ function buildColorMap(avatarColor: string, skin: AvatarSkin, accent: string): C
   const { base: S, dark: s } = SKIN_PALETTES[skin] ?? SKIN_PALETTES.light;
   return {
     S, s,
-    H:  adjustL(avatarColor, -22),
-    h:  adjustL(avatarColor, -35),
-    A:  avatarColor,
-    a:  adjustL(avatarColor, -18),
-    L:  adjustL(avatarColor,  22),
-    W:  "#ffffff",
-    E:  "#111827",
-    P:  "#374151",
-    p:  "#1f2937",
-    B:  "#1e293b",
-    b:  "#334155",
-    X:  accent,
-    x:  adjustL(accent, -18),
-    G:  "#f59e0b",
-    g:  "#d97706",
-    M:  "#9ca3af",
-    m:  "#6b7280",
-    C:  "#dbeafe",
-    c:  "#93c5fd",
-    R:  "#ef4444",
-    N:  "#0f172a",
+    H: adjustL(avatarColor, -25),   // hair (dark from avatarColor)
+    h: adjustL(avatarColor, -12),   // hair highlight
+    A: avatarColor,                  // armor/robe primary
+    a: adjustL(avatarColor, -20),   // armor shadow
+    L: adjustL(avatarColor,  25),   // armor highlight
+    X: accent,                       // class accent
+    x: adjustL(accent, -18),
+    Y: adjustL(accent,  28),        // accent glow
+    K: "#e2e8f0",                    // bright steel
+    T: "#94a3b8",                    // steel main
+    t: "#64748b",                    // steel shadow
+    D: "#334155",                    // dark plate
+    d: "#1e293b",                    // very dark
+    G: "#f59e0b",                    // gold
+    g: "#d97706",                    // gold shadow
+    V: "#92634a",                    // leather
+    v: "#5c3d24",                    // leather dark
+    W: "#f8fafc",                    // white
+    w: "#e2e8f0",                    // white shadow
+    U: "#f0ece0",                    // cloth
+    u: "#d6cfc0",                    // cloth shadow
+    P: "#475569",                    // pants
+    p: "#64748b",                    // pants lighter
+    R: "#dc2626",                    // red (holy cross)
+    r: "#ef4444",                    // lip/red light
+    Z: "#bfdbfe",                    // glow blue
+    z: "#93c5fd",
+    B: "#0f172a",                    // black
+    J: "#92400e",                    // wood (staff)
+    j: "#b45309",                    // wood highlight
+    Q: "#c4b5a5",                    // rope/string
+    E: "#1e40af",                    // eyes
+    N: "#1e3a5f",                    // deep navy
   };
 }
 
@@ -102,305 +111,614 @@ function fill(key: string, cm: ColorMap): string {
   return cm[key] ?? (key.startsWith("#") ? key : "transparent");
 }
 
-// ── Pixel block type ────────────────────────────────────────────────────────
-// [x, y, width, height, colorKey]
-type PB = [number, number, number, number, string];
+// ── Types ────────────────────────────────────────────────────────────────────
+type PB = [number, number, number, number, string];  // x, y, w, h, colorKey
 
-// ── FIGHTER sprite ──────────────────────────────────────────────────────────
-// Stocky armored warrior with shield emblem on chest
-const FIGHTER_BODY: PB[] = [
-  // Hair
-  [5,0,10,2,"H"], [4,2,1,5,"H"], [15,2,1,5,"H"],
-  // Face
-  [5,2,10,7,"S"],
-  // Neck
-  [8,9,4,1,"S"],
-  // Collar
-  [6,10,8,1,"A"],
-  // Shoulders (wide, 14 px)
-  [3,11,14,1,"A"], [3,11,2,1,"L"], [15,11,2,1,"L"],
-  // Arms
-  [3,12,2,4,"A"], [15,12,2,4,"A"],
-  [3,12,1,1,"L"], [16,12,1,1,"L"],
-  [4,15,1,1,"a"], [15,15,1,1,"a"],
-  // Torso
-  [5,12,10,5,"A"], [5,12,1,5,"L"], [14,12,1,5,"a"],
-  // Shield emblem (class X)
-  [8,13,4,1,"X"], [8,16,4,1,"X"],
-  [8,13,1,4,"X"], [11,13,1,4,"X"],
-  [9,14,2,2,"x"], [9,14,2,1,"G"],
-  // Belt (gold)
-  [4,17,12,1,"G"], [5,17,1,1,"g"], [14,17,1,1,"g"],
-  // Legs
-  [5,18,3,5,"P"], [12,18,3,5,"P"],
-  [5,18,1,1,"p"], [12,18,1,1,"p"],
-  // Boots (wide, 5 px each)
-  [4,23,5,3,"B"], [11,23,5,3,"B"],
-  [4,23,1,1,"b"], [11,23,1,1,"b"],
-  [4,25,5,1,"b"], [11,25,5,1,"b"],
-];
-const FIGHTER_FACE: PB[] = [
-  [5,3,3,2,"W"], [12,3,3,2,"W"],
-  [6,4,1,1,"E"], [13,4,1,1,"E"],
-  [8,7,4,1,"s"],
-];
+interface TierSprite {
+  back:   PB[];   // quiver / cape — rendered first (behind body)
+  body:   PB[];   // skin, hair, head shape
+  armor:  PB[];   // clothing / armor over body
+  helm:   PB[];   // head gear (drawn over hair)
+  weapon: PB[];   // weapon
+  face:   PB[];   // eyes + facial detail — ALWAYS rendered last
+}
 
-// ── MAGE sprite ─────────────────────────────────────────────────────────────
-// Robed wizard with tall pointed hat; staff on right
-const MAGE_BODY: PB[] = [
-  // Hat (pointed, 5 rows narrowing to tip)
-  [9,0,2,1,"A"], [8,1,4,1,"A"], [7,2,6,1,"A"], [6,3,8,1,"A"], [5,4,10,1,"A"],
-  [5,4,1,1,"L"], [9,0,1,1,"L"],
-  // Hat band (accent, 2 rows, wider than hat)
-  [4,5,12,2,"X"], [4,5,1,1,"x"],
-  // Face (8 px wide)
-  [6,7,8,6,"S"],
-  // Neck
-  [9,13,2,1,"S"],
-  // Collar
-  [7,14,6,1,"A"],
-  // Sleeves
-  [5,15,2,6,"A"], [13,15,2,6,"A"],
-  // Hands
-  [5,21,2,1,"S"], [13,21,2,1,"S"],
-  // Robe body: narrows then widens
-  [7,15,6,3,"A"], [8,18,4,3,"A"],
-  [6,21,8,2,"A"], [5,23,10,3,"A"],
-  // Robe shading
-  [7,15,1,9,"L"], [12,15,1,9,"a"],
-  // Magic emblem (gold cross / orb on chest)
-  [10,16,1,5,"G"], [8,18,4,1,"G"], [9,17,2,1,"X"],
-  // Staff (right of character)
-  [17,13,1,13,"M"], [15,12,4,2,"G"],
-  [16,11,2,2,"X"], [16,11,1,1,"W"],
-];
-const MAGE_FACE: PB[] = [
-  [7,8,2,2,"W"], [11,8,2,2,"W"],
-  [8,9,1,1,"E"], [12,9,1,1,"E"],
-  [9,11,2,1,"s"],
-];
+function getTier(level: number): 0|1|2|3 {
+  if (level >= 31) return 3;
+  if (level >= 16) return 2;
+  if (level >= 6)  return 1;
+  return 0;
+}
 
-// ── RANGER sprite ───────────────────────────────────────────────────────────
-// Hooded archer with quiver and target emblem; slim build, knee-high boots
-const RANGER_BODY: PB[] = [
-  // Hood
-  [8,0,4,1,"H"], [7,1,6,1,"H"], [6,2,8,5,"H"], [6,7,8,1,"H"],
-  [6,2,1,5,"h"], [13,2,1,5,"h"],
-  // Face (visible inside hood, 6 px wide)
-  [7,2,6,5,"S"],
-  // Neck
-  [9,8,2,1,"S"],
-  // Quiver (left, accent coloured)
-  [4,7,1,7,"X"], [3,6,2,4,"H"],
-  [3,6,1,1,"G"], [3,7,1,1,"G"], [3,8,1,1,"G"],
-  // Dark collar
-  [7,9,6,1,"H"],
-  // Torso (slim)
-  [7,10,6,8,"A"], [7,10,1,8,"L"], [12,10,1,8,"a"],
-  // Arms (1 px slim)
-  [6,10,1,7,"A"], [13,10,1,7,"A"],
-  // Hands
-  [5,17,2,1,"S"], [13,17,2,1,"S"],
-  // Target emblem (concentric pixel rings)
-  [9,12,2,1,"G"],
-  [8,13,4,1,"G"], [8,15,4,1,"G"],
-  [9,16,2,1,"G"],
-  [8,13,1,3,"G"], [11,13,1,3,"G"],
-  [9,14,2,1,"X"],
-  // Belt
-  [7,18,6,1,"G"],
-  // Legs (slim)
-  [7,19,3,3,"P"], [10,19,3,3,"P"],
-  // Knee-high boots
-  [6,22,4,4,"B"], [10,22,4,4,"B"],
-  [6,22,1,1,"b"], [10,22,1,1,"b"],
-  [6,25,4,1,"b"], [10,25,4,1,"b"],
-];
-const RANGER_FACE: PB[] = [
-  [7,3,2,1,"W"], [11,3,2,1,"W"],
-  [8,3,1,1,"E"], [12,3,1,1,"E"],
-  [8,5,4,1,"s"],
-];
-
-// ── HEALER sprite ───────────────────────────────────────────────────────────
-// White-robed cleric with wide hair, big red cross, gold trim
-const HEALER_BODY: PB[] = [
-  // Hair (wide and flowing — wider than other classes)
-  [4,0,12,2,"H"],
-  [4,2,1,7,"H"], [15,2,1,7,"H"],
-  [3,3,1,5,"H"], [16,3,1,5,"H"],
-  // Face (10 px wide)
-  [5,2,10,7,"S"],
-  // Neck
-  [9,9,2,1,"S"],
-  // Gold collar
-  [6,10,8,1,"G"], [6,10,1,1,"g"],
-  // White robe torso
-  [7,11,6,7,"C"], [7,11,1,7,"W"], [12,11,1,7,"c"],
-  // Sleeves
-  [5,11,2,6,"C"], [13,11,2,6,"C"],
-  [5,11,1,1,"W"], [14,11,1,1,"W"],
-  // Hands
-  [5,17,2,1,"S"], [13,17,2,1,"S"],
-  // Red cross (prominent!)
-  [9,12,2,6,"R"], [7,14,6,2,"R"], [9,12,1,1,"W"],
-  // Gold trim band
-  [7,18,6,1,"G"],
-  // Wide skirt
-  [6,19,8,5,"C"], [5,22,10,4,"C"],
-  [6,19,1,5,"W"], [13,19,1,5,"c"],
-  // Gold hem
-  [5,25,10,1,"G"],
-];
-const HEALER_FACE: PB[] = [
-  [5,3,3,2,"W"], [12,3,3,2,"W"],
-  [6,4,1,1,"E"], [13,4,1,1,"E"],
-  [5,3,1,1,"W"], [12,3,1,1,"W"],
-  [7,7,6,1,"s"],
+// ──────────────────────────────────────────────────────────────────────────────
+// FIGHTER  –  broad, armored warrior
+// Torso x=4-15 · weapon right x=16-19 · shield left x=0-3
+// ──────────────────────────────────────────────────────────────────────────────
+const FIGHTER: TierSprite[] = [
+  // T0 – Novice: leather jerkin, dagger at hip, visible hair
+  {
+    back: [],
+    body: [
+      [5,0,10,2,"H"],[4,2,2,5,"H"],[14,2,2,5,"H"],
+      [5,2,10,6,"S"],[8,8,4,2,"S"],
+    ],
+    armor: [
+      [4,9,12,1,"V"],[4,9,1,1,"v"],[15,9,1,1,"v"],
+      [3,10,2,8,"V"],[15,10,2,8,"V"],[3,10,1,8,"v"],[16,10,1,8,"v"],
+      [5,10,10,8,"V"],[5,10,1,8,"v"],[14,10,1,8,"v"],
+      [6,12,8,1,"v"],[6,15,8,1,"v"],
+      [5,18,10,1,"G"],
+      [5,19,4,4,"P"],[11,19,4,4,"P"],[5,19,1,4,"p"],[14,19,1,4,"p"],
+      [4,23,5,5,"v"],[11,23,5,5,"v"],[4,23,5,1,"V"],[11,23,5,1,"V"],[4,27,5,1,"B"],[11,27,5,1,"B"],
+    ],
+    helm: [],
+    weapon: [
+      [16,14,2,1,"v"],[15,15,4,1,"G"],[16,16,1,6,"T"],[17,16,1,6,"K"],
+    ],
+    face: [
+      [6,2,2,1,"H"],[12,2,2,1,"H"],
+      [6,3,2,2,"W"],[12,3,2,2,"W"],[7,4,1,1,"E"],[13,4,1,1,"E"],
+      [9,5,2,1,"s"],[8,7,4,1,"s"],[9,7,2,1,"r"],
+    ],
+  },
+  // T1 – Knight Recruit: chainmail coif, surcoat, longsword raised
+  {
+    back: [],
+    body: [[5,0,10,9,"S"],[8,9,4,2,"S"]],
+    armor: [
+      [2,9,4,3,"T"],[14,9,4,3,"T"],[2,9,4,1,"K"],[14,9,4,1,"K"],
+      [3,10,2,8,"T"],[15,10,2,8,"T"],[3,10,1,8,"t"],[16,10,1,8,"t"],
+      [5,10,10,8,"A"],[5,10,1,8,"L"],[14,10,1,8,"a"],[7,14,6,1,"a"],
+      [5,18,10,2,"T"],[5,18,10,1,"K"],
+      [5,20,4,4,"T"],[11,20,4,4,"T"],[5,20,4,1,"K"],[11,20,4,1,"K"],
+      [4,24,5,4,"v"],[11,24,5,4,"v"],[5,25,3,1,"G"],[12,25,3,1,"G"],
+    ],
+    helm: [
+      [4,0,12,8,"T"],[4,0,12,1,"K"],[4,0,1,8,"t"],[15,0,1,8,"t"],
+      [5,1,10,6,"D"],
+      [6,2,8,6,"S"],[6,2,1,6,"t"],[13,2,1,6,"t"],
+      [5,8,10,1,"T"],
+    ],
+    weapon: [
+      [17,1,1,1,"K"],[17,2,1,7,"T"],[18,2,1,7,"K"],
+      [15,9,5,1,"G"],[17,10,1,4,"v"],[17,14,2,2,"T"],
+    ],
+    face: [
+      [6,3,2,1,"H"],[12,3,2,1,"H"],
+      [6,4,2,2,"W"],[12,4,2,2,"W"],[7,5,1,1,"E"],[13,5,1,1,"E"],
+      [9,6,2,1,"s"],[8,7,4,1,"s"],[9,7,2,1,"r"],
+    ],
+  },
+  // T2 – Battle Warrior: full plate helm + T-visor, shield, broadsword
+  {
+    back: [
+      [0,10,3,9,"A"],[0,10,3,1,"L"],[0,10,1,9,"L"],[2,10,1,9,"a"],
+      [1,14,1,1,"G"],[0,14,3,1,"G"],[1,12,1,3,"G"],
+    ],
+    body: [[5,0,10,10,"S"],[8,9,4,2,"S"]],
+    armor: [
+      [1,9,5,4,"T"],[14,9,5,4,"T"],[1,9,5,1,"K"],[14,9,5,1,"K"],[1,10,1,3,"K"],[18,10,1,3,"K"],
+      [3,10,2,8,"T"],[15,10,2,8,"T"],[3,10,1,8,"K"],[16,10,1,8,"K"],
+      [5,10,10,8,"T"],[5,10,10,1,"K"],
+      [6,11,8,1,"A"],[6,14,8,1,"A"],[6,17,8,1,"A"],[9,10,2,8,"a"],
+      [5,18,10,2,"D"],[5,18,10,1,"T"],
+      [3,18,3,2,"T"],[14,18,3,2,"T"],[3,18,3,1,"K"],[14,18,3,1,"K"],
+      [5,20,4,4,"T"],[11,20,4,4,"T"],[5,20,4,1,"K"],[11,20,4,1,"K"],
+      [4,24,5,4,"T"],[11,24,5,4,"T"],[4,24,5,1,"K"],[11,24,5,1,"K"],[4,27,5,1,"D"],[11,27,5,1,"D"],
+    ],
+    helm: [
+      [4,0,12,8,"T"],[4,0,12,1,"K"],[4,0,1,8,"t"],[15,0,1,8,"t"],
+      [8,2,4,5,"D"],[9,3,2,3,"d"],[8,3,1,3,"d"],[11,3,1,3,"d"],
+      [9,0,2,2,"K"],
+      [4,7,12,1,"G"],
+    ],
+    weapon: [
+      [17,1,1,1,"K"],[17,2,1,7,"T"],[18,2,2,7,"K"],
+      [15,9,5,1,"G"],[15,10,5,1,"g"],
+      [17,11,1,4,"v"],[16,15,3,2,"T"],[16,15,3,1,"K"],
+    ],
+    face: [
+      [9,4,4,2,"Y"],[9,4,2,2,"X"],
+    ],
+  },
+  // T3 – Champion: crested ornate plate, glowing greatsword, gold sabatons
+  {
+    back: [],
+    body: [[5,0,10,10,"S"],[8,9,4,2,"S"]],
+    armor: [
+      [0,8,5,6,"T"],[15,8,5,6,"T"],[0,8,5,1,"K"],[15,8,5,1,"K"],[0,9,1,5,"K"],[19,9,1,5,"K"],
+      [1,11,2,1,"G"],[17,11,2,1,"G"],[1,13,2,1,"G"],[17,13,2,1,"G"],
+      [3,10,2,8,"T"],[15,10,2,8,"T"],[3,10,1,8,"K"],[16,10,1,8,"K"],
+      [3,14,2,1,"G"],[15,14,2,1,"G"],
+      [5,10,10,8,"T"],[5,10,10,1,"K"],
+      [5,11,10,1,"G"],[5,14,10,1,"G"],[5,17,10,1,"G"],
+      [8,12,4,4,"A"],[9,12,1,4,"L"],[8,13,4,1,"G"],[9,13,2,2,"Y"],
+      [2,18,4,2,"T"],[14,18,4,2,"T"],[2,18,4,1,"K"],[14,18,4,1,"K"],
+      [3,18,2,1,"G"],[15,18,2,1,"G"],
+      [5,20,4,4,"T"],[11,20,4,4,"T"],[5,20,4,1,"K"],[11,20,4,1,"K"],
+      [5,21,4,1,"G"],[11,21,4,1,"G"],
+      [4,24,5,4,"G"],[11,24,5,4,"G"],[4,24,5,1,"g"],[11,24,5,1,"g"],
+    ],
+    helm: [
+      [4,0,12,8,"T"],[4,0,12,1,"K"],[4,0,1,8,"t"],[15,0,1,8,"t"],
+      [8,0,4,2,"G"],[9,0,2,1,"K"],
+      [7,0,6,1,"X"],
+      [5,3,10,1,"G"],[5,5,10,1,"G"],[9,1,2,6,"d"],
+      [4,7,12,1,"G"],
+    ],
+    weapon: [
+      [16,0,2,1,"Y"],[16,1,2,1,"Z"],
+      [16,2,2,12,"T"],[17,2,1,12,"K"],[16,2,1,12,"Y"],
+      [16,5,1,1,"X"],[16,8,1,1,"X"],[16,11,1,1,"X"],
+      [14,14,5,1,"G"],[14,15,5,1,"g"],[15,15,1,1,"G"],[18,15,1,1,"G"],
+      [16,16,2,5,"v"],[16,16,2,1,"G"],[16,18,2,1,"G"],[16,20,2,1,"G"],
+      [16,21,2,2,"T"],[16,21,2,1,"K"],
+    ],
+    face: [
+      [9,4,5,2,"Y"],[9,4,3,2,"X"],
+    ],
+  },
 ];
 
-const SPRITE_BODY: Record<AvatarClass, PB[]> = {
-  fighter: FIGHTER_BODY,
-  mage:    MAGE_BODY,
-  ranger:  RANGER_BODY,
-  healer:  HEALER_BODY,
+// ──────────────────────────────────────────────────────────────────────────────
+// MAGE  –  slim robed spellcaster with hat + staff
+// Body x=6-13 · staff right x=17 · hat extends above head
+// ──────────────────────────────────────────────────────────────────────────────
+const MAGE: TierSprite[] = [
+  // T0 – Apprentice: tied hair, simple robes, plain wooden staff
+  {
+    back: [],
+    body: [
+      [7,0,6,2,"H"],[6,2,2,4,"H"],[14,2,2,4,"H"],[6,0,2,2,"H"],[12,0,2,2,"H"],
+      [7,2,6,6,"S"],[9,8,2,2,"S"],
+    ],
+    armor: [
+      [7,10,6,1,"A"],
+      [5,11,10,1,"A"],[5,12,2,9,"A"],[13,12,2,9,"A"],[5,12,1,9,"L"],[14,12,1,9,"a"],
+      [6,21,2,1,"S"],[12,21,2,1,"S"],
+      [7,12,6,14,"A"],[7,12,1,14,"L"],[12,12,1,14,"a"],[8,19,4,1,"a"],
+    ],
+    helm: [],
+    weapon: [
+      [16,9,3,1,"J"],[17,10,1,16,"J"],[17,10,1,1,"j"],
+    ],
+    face: [
+      [7,3,2,1,"H"],[11,3,2,1,"H"],
+      [7,4,2,2,"W"],[11,4,2,2,"W"],[8,5,1,1,"E"],[12,5,1,1,"E"],
+      [9,6,2,1,"s"],[8,7,3,1,"s"],[9,7,2,1,"r"],
+    ],
+  },
+  // T1 – Conjurer: wide-brim hat, emblem robes, crystal-top staff
+  {
+    back: [],
+    body: [[7,4,6,6,"S"],[9,10,2,2,"S"]],
+    armor: [
+      [6,12,8,1,"A"],[5,13,10,1,"A"],
+      [4,14,2,9,"A"],[14,14,2,9,"A"],[4,14,1,9,"L"],[15,14,1,9,"a"],
+      [6,23,2,1,"S"],[12,23,2,1,"S"],
+      [6,14,8,12,"A"],[6,14,1,12,"L"],[13,14,1,12,"a"],
+      [9,16,2,1,"G"],[10,15,1,3,"G"],[9,17,2,1,"G"],
+    ],
+    helm: [
+      [5,0,10,4,"A"],[5,0,1,4,"L"],[14,0,1,4,"a"],
+      [4,4,12,2,"a"],[4,4,12,1,"A"],
+      [3,5,14,2,"A"],[3,6,14,1,"a"],
+    ],
+    weapon: [
+      [17,7,2,3,"G"],[17,7,1,3,"g"],[18,6,1,3,"Z"],[17,9,2,1,"G"],
+      [17,10,1,16,"J"],
+    ],
+    face: [
+      [7,5,2,1,"H"],[11,5,2,1,"H"],
+      [7,6,2,2,"W"],[11,6,2,2,"W"],[8,7,1,1,"E"],[12,7,1,1,"E"],
+      [9,8,2,1,"s"],[8,9,4,1,"s"],[9,9,2,1,"r"],
+    ],
+  },
+  // T2 – Wizard: pointed hat w/ star, arcane robes, glowing orb staff
+  {
+    back: [],
+    body: [[7,5,6,6,"S"],[9,11,2,2,"S"]],
+    armor: [
+      [6,13,8,1,"A"],[5,14,10,1,"A"],
+      [4,15,2,9,"A"],[14,15,2,9,"A"],[4,15,1,9,"L"],[15,15,1,9,"a"],
+      [6,24,2,1,"S"],[12,24,2,1,"S"],
+      [6,15,8,11,"A"],[6,15,1,11,"L"],[13,15,1,11,"a"],
+      [9,17,2,5,"a"],[7,19,6,1,"a"],
+      [9,17,2,1,"X"],[8,19,4,1,"X"],[9,20,2,1,"X"],[9,18,2,1,"G"],
+    ],
+    helm: [
+      [9,0,2,1,"A"],[8,1,4,1,"A"],[7,2,6,1,"A"],[6,3,8,1,"A"],[5,4,10,2,"A"],
+      [5,4,1,2,"L"],[14,4,1,2,"a"],
+      [4,6,12,1,"X"],[4,7,12,1,"x"],[4,6,1,1,"Y"],
+      [8,3,1,1,"G"],[10,3,1,1,"G"],
+    ],
+    weapon: [
+      [17,5,2,4,"X"],[17,5,1,4,"Y"],
+      [17,6,2,3,"W"],[17,6,1,3,"Z"],
+      [16,7,1,2,"X"],[19,7,1,2,"X"],
+      [17,9,1,1,"G"],[17,10,1,16,"J"],
+    ],
+    face: [
+      [7,6,2,1,"H"],[11,6,2,1,"H"],
+      [7,7,2,2,"W"],[11,7,2,2,"W"],[8,8,1,1,"E"],[12,8,1,1,"E"],
+      [9,9,2,1,"s"],[8,10,4,1,"s"],[9,10,2,1,"r"],
+    ],
+  },
+  // T3 – Archmage: tall peaked hat, arcane vestments, massive floating power orb
+  {
+    back: [],
+    body: [[7,7,6,6,"S"],[9,13,2,2,"S"]],
+    armor: [
+      [6,15,8,1,"A"],[4,16,12,1,"A"],
+      [3,17,2,9,"A"],[15,17,2,9,"A"],[3,17,1,9,"L"],[16,17,1,9,"a"],
+      [6,26,2,1,"S"],[12,26,2,1,"S"],
+      [6,17,8,10,"A"],[6,17,1,10,"L"],[13,17,1,10,"a"],
+      [7,19,1,1,"G"],[10,19,2,1,"G"],[13,19,1,1,"G"],
+      [7,21,1,1,"G"],[10,22,2,1,"G"],[13,21,1,1,"G"],
+      [8,19,2,1,"X"],[11,21,2,1,"X"],[9,20,4,1,"X"],[9,20,2,1,"Y"],
+    ],
+    helm: [
+      [9,0,2,1,"A"],[8,1,4,1,"A"],[7,2,6,1,"A"],[6,3,8,1,"A"],[5,4,10,1,"A"],[5,5,10,2,"A"],
+      [5,4,1,3,"L"],[14,4,1,3,"a"],
+      [4,7,12,1,"X"],[4,8,12,1,"x"],[4,7,1,2,"Y"],
+      [9,1,2,1,"G"],[8,2,1,1,"G"],[11,2,1,1,"G"],
+      [10,0,1,1,"Y"],
+    ],
+    weapon: [
+      [15,4,5,6,"X"],[16,4,4,6,"Z"],[16,5,3,4,"W"],[16,5,2,4,"Z"],[17,5,1,4,"Y"],
+      [15,7,1,1,"Y"],[19,7,1,1,"Y"],[17,4,1,1,"Y"],[17,10,1,1,"Y"],
+      [17,11,1,1,"G"],[17,12,1,14,"J"],[16,14,2,1,"G"],[16,17,2,1,"G"],
+    ],
+    face: [
+      [7,8,2,1,"H"],[11,8,2,1,"H"],
+      [7,9,2,2,"W"],[11,9,2,2,"W"],[8,10,1,1,"E"],[12,10,1,1,"E"],
+      [9,11,2,1,"s"],[8,12,4,1,"s"],[9,12,2,1,"r"],
+    ],
+  },
+];
+
+// ──────────────────────────────────────────────────────────────────────────────
+// RANGER  –  agile hooded archer
+// Hood x=6-13 · quiver back-left x=2-4 · bow right x=16-18
+// ──────────────────────────────────────────────────────────────────────────────
+const RANGER: TierSprite[] = [
+  // T0 – Scout: simple hood, leather vest, hunting bow, small quiver
+  {
+    back: [
+      [3,7,2,10,"v"],[3,7,2,1,"V"],[3,15,2,1,"V"],
+      [3,8,1,1,"G"],[3,10,1,1,"G"],[3,12,1,1,"G"],
+    ],
+    body: [
+      [7,0,6,2,"H"],[6,2,8,6,"H"],[6,2,1,6,"h"],[13,2,1,6,"h"],
+      [7,2,6,5,"S"],[9,8,2,2,"S"],
+    ],
+    armor: [
+      [7,10,6,1,"V"],
+      [5,11,2,7,"V"],[13,11,2,7,"V"],[5,11,1,7,"v"],[14,11,1,7,"v"],
+      [6,11,8,7,"V"],[6,11,1,7,"v"],[13,11,1,7,"v"],[7,14,6,1,"v"],
+      [6,18,3,1,"S"],[11,18,3,1,"S"],
+      [5,18,10,1,"G"],
+      [6,19,3,4,"P"],[11,19,3,4,"P"],
+      [5,23,4,5,"v"],[11,23,4,5,"v"],[5,23,4,1,"V"],[11,23,4,1,"V"],
+    ],
+    helm: [],
+    weapon: [
+      [16,5,1,16,"J"],
+      [15,5,1,1,"J"],[17,5,1,1,"J"],[15,20,1,1,"J"],[17,20,1,1,"J"],
+      [16,7,1,1,"Q"],[16,10,1,1,"Q"],[16,13,1,1,"Q"],[16,16,1,1,"Q"],
+    ],
+    face: [
+      [7,3,2,1,"H"],[11,3,2,1,"H"],
+      [7,4,2,2,"W"],[11,4,2,2,"W"],[8,5,1,1,"E"],[12,5,1,1,"E"],
+      [9,6,2,1,"s"],[8,7,4,1,"s"],[9,7,2,1,"r"],
+    ],
+  },
+  // T1 – Archer: hood w/ feather, studded leather, longbow drawn
+  {
+    back: [
+      [3,6,2,12,"v"],[3,6,2,1,"V"],[3,16,2,1,"V"],
+      [3,7,1,1,"G"],[3,9,1,1,"G"],[3,11,1,1,"G"],[3,13,1,1,"G"],
+    ],
+    body: [
+      [7,0,6,2,"H"],[5,2,10,7,"H"],[5,2,1,7,"h"],[14,2,1,7,"h"],
+      [7,2,6,5,"S"],[9,9,2,2,"S"],
+    ],
+    armor: [
+      [7,11,6,1,"A"],
+      [5,12,10,1,"V"],[4,13,2,7,"V"],[14,13,2,7,"V"],[4,13,1,7,"v"],[15,13,1,7,"v"],
+      [6,13,8,7,"V"],[6,13,1,7,"v"],[13,13,1,7,"v"],[7,16,6,1,"v"],
+      [7,14,1,1,"G"],[9,14,1,1,"G"],[11,14,1,1,"G"],
+      [7,17,1,1,"G"],[9,17,1,1,"G"],[11,17,1,1,"G"],
+      [6,20,3,1,"S"],[11,20,3,1,"S"],
+      [5,20,10,1,"G"],
+      [6,21,3,3,"P"],[11,21,3,3,"P"],
+      [5,24,4,4,"v"],[11,24,4,4,"v"],[6,25,2,1,"G"],[12,25,2,1,"G"],
+    ],
+    helm: [
+      [10,0,2,3,"X"],[10,0,1,3,"Y"],
+    ],
+    weapon: [
+      [16,3,1,18,"J"],
+      [15,3,1,1,"J"],[17,3,1,1,"J"],[15,20,1,1,"J"],[17,20,1,1,"J"],
+      [14,7,1,1,"Q"],[15,9,1,1,"Q"],[16,11,1,1,"Q"],[15,13,1,1,"Q"],
+    ],
+    face: [
+      [7,3,2,1,"H"],[11,3,2,1,"H"],
+      [7,4,2,2,"W"],[11,4,2,2,"W"],[8,5,1,1,"E"],[12,5,1,1,"E"],
+      [9,6,2,1,"s"],[8,7,4,1,"s"],[9,7,2,1,"r"],
+    ],
+  },
+  // T2 – Ranger: forest armor (avatarColor), hooded cloak, composite bow, twin daggers
+  {
+    back: [
+      [3,5,2,14,"v"],[3,5,2,1,"V"],[3,18,2,1,"V"],
+      [3,6,1,1,"G"],[3,8,1,1,"G"],[3,10,1,1,"G"],[3,12,1,1,"G"],[3,14,1,1,"G"],
+    ],
+    body: [
+      [6,0,8,2,"H"],[5,2,10,7,"H"],[5,2,1,7,"h"],[14,2,1,7,"h"],
+      [6,0,1,6,"h"],[13,0,1,6,"h"],
+      [7,2,6,5,"S"],[9,9,2,2,"S"],
+    ],
+    armor: [
+      [7,11,6,1,"A"],[5,12,10,1,"A"],
+      [4,13,2,8,"A"],[14,13,2,8,"A"],[4,13,1,8,"L"],[15,13,1,8,"a"],
+      [6,13,8,8,"A"],[6,13,1,8,"L"],[13,13,1,8,"a"],
+      [7,14,2,1,"L"],[10,14,2,1,"L"],[7,16,2,1,"L"],[10,16,2,1,"L"],[7,18,2,1,"L"],[10,18,2,1,"L"],
+      [6,21,3,1,"S"],[11,21,3,1,"S"],
+      [5,21,10,1,"G"],
+      [5,22,1,2,"G"],[5,23,1,3,"T"],
+      [13,22,1,2,"G"],[13,23,1,3,"T"],
+      [6,22,3,3,"P"],[11,22,3,3,"P"],
+      [4,25,4,3,"v"],[12,25,4,3,"v"],[5,26,2,1,"G"],[13,26,2,1,"G"],
+    ],
+    helm: [
+      [6,0,8,2,"A"],[5,1,10,1,"A"],
+      [11,0,2,3,"X"],[11,0,1,3,"Y"],
+    ],
+    weapon: [
+      [16,2,1,1,"T"],[17,2,1,1,"K"],
+      [16,3,2,17,"J"],[16,3,1,17,"j"],
+      [15,3,1,1,"J"],[15,19,1,1,"J"],
+      [15,7,1,1,"G"],[15,14,1,1,"G"],
+      [14,9,1,1,"Q"],[14,10,1,1,"Q"],[14,11,1,1,"Q"],[14,12,1,1,"Q"],
+    ],
+    face: [
+      [7,3,2,1,"H"],[11,3,2,1,"H"],
+      [7,4,2,2,"W"],[11,4,2,2,"W"],[8,5,1,1,"E"],[12,5,1,1,"E"],
+      [9,6,2,1,"s"],[8,7,4,1,"s"],[9,7,2,1,"r"],
+    ],
+  },
+  // T3 – Warden: enchanted armor, ornate hood emblem, magical glowing bow
+  {
+    back: [
+      [2,5,3,15,"v"],[2,5,3,1,"G"],[2,19,3,1,"G"],
+      [3,6,1,1,"Y"],[3,8,1,1,"Y"],[3,10,1,1,"Y"],[3,12,1,1,"Y"],[3,14,1,1,"Y"],
+    ],
+    body: [
+      [6,0,8,2,"H"],[4,2,12,7,"H"],[4,2,1,7,"h"],[15,2,1,7,"h"],
+      [7,2,6,5,"S"],[9,9,2,2,"S"],
+    ],
+    armor: [
+      [5,11,10,1,"A"],[6,12,8,1,"A"],
+      [3,13,3,8,"A"],[14,13,3,8,"A"],[3,13,1,8,"L"],[16,13,1,8,"a"],
+      [6,13,8,8,"A"],[6,13,1,8,"L"],[13,13,1,8,"a"],
+      [7,15,1,3,"L"],[9,14,1,4,"L"],[11,15,1,3,"L"],
+      [8,16,1,1,"G"],[10,16,1,1,"G"],
+      [7,19,1,1,"Y"],[10,19,1,1,"Y"],[12,19,1,1,"Y"],
+      [6,21,3,1,"S"],[11,21,3,1,"S"],
+      [5,21,10,1,"G"],
+      [4,22,2,2,"G"],[14,22,2,2,"G"],[4,24,2,3,"T"],[14,24,2,3,"T"],
+      [6,22,3,3,"P"],[11,22,3,3,"P"],
+      [4,25,4,3,"v"],[12,25,4,3,"v"],
+    ],
+    helm: [
+      [5,0,10,3,"A"],[5,0,1,3,"L"],[14,0,1,3,"a"],
+      [7,0,6,1,"G"],[8,0,4,1,"X"],[9,0,2,1,"Y"],
+    ],
+    weapon: [
+      [17,1,1,1,"Y"],[17,2,1,1,"Z"],
+      [16,3,2,17,"J"],[16,3,1,17,"j"],
+      [16,19,1,1,"Y"],[16,20,1,1,"Z"],
+      [16,6,2,1,"G"],[16,13,2,1,"G"],
+      [15,4,1,1,"X"],[15,18,1,1,"X"],
+      [14,5,1,1,"Y"],[14,7,1,1,"Y"],[14,9,1,1,"Y"],[14,11,1,1,"Y"],[14,13,1,1,"Y"],[14,15,1,1,"Y"],[14,17,1,1,"Y"],
+    ],
+    face: [
+      [7,3,2,1,"H"],[11,3,2,1,"H"],
+      [7,4,2,2,"W"],[11,4,2,2,"W"],[8,5,1,1,"E"],[12,5,1,1,"E"],
+      [9,6,2,1,"s"],[8,7,4,1,"s"],[9,7,2,1,"r"],
+    ],
+  },
+];
+
+// ──────────────────────────────────────────────────────────────────────────────
+// HEALER  –  wide flowing robes, prominent holy symbol, staff right
+// Hair wide x=3-16 · robes widen toward bottom · staff x=16-17
+// ──────────────────────────────────────────────────────────────────────────────
+const HEALER: TierSprite[] = [
+  // T0 – Initiate: simple white robes, wooden staff w/ cross, small holy symbol
+  {
+    back: [],
+    body: [
+      [5,0,10,2,"H"],[4,2,2,6,"H"],[14,2,2,6,"H"],[3,3,1,5,"H"],[16,3,1,5,"H"],
+      [5,2,10,6,"S"],[8,8,4,2,"S"],
+    ],
+    armor: [
+      [7,10,6,1,"G"],
+      [5,11,10,1,"U"],[4,12,2,9,"U"],[14,12,2,9,"U"],[4,12,1,9,"W"],[15,12,1,9,"u"],
+      [6,12,8,14,"U"],[6,12,1,14,"W"],[13,12,1,14,"u"],
+      [9,13,2,5,"R"],[7,15,6,2,"R"],[9,13,1,1,"W"],
+      [6,26,8,1,"G"],
+    ],
+    helm: [],
+    weapon: [
+      [16,4,3,1,"J"],[17,3,1,4,"J"],
+      [17,7,1,1,"j"],[17,8,1,18,"J"],
+    ],
+    face: [
+      [5,3,3,2,"W"],[12,3,3,2,"W"],[6,4,1,1,"E"],[13,4,1,1,"E"],
+      [9,5,2,1,"s"],[8,6,4,1,"s"],[9,6,2,1,"r"],
+    ],
+  },
+  // T1 – Cleric: embroidered robes w/ avatarColor trim, ornate staff, gold emblem
+  {
+    back: [],
+    body: [
+      [5,0,10,2,"H"],[4,2,2,6,"H"],[14,2,2,6,"H"],[3,3,1,5,"H"],[16,3,1,5,"H"],
+      [5,2,10,6,"S"],[8,8,4,2,"S"],
+    ],
+    armor: [
+      [7,10,6,1,"G"],
+      [5,11,10,2,"U"],[5,11,1,2,"W"],[14,11,1,2,"u"],[5,11,10,1,"A"],
+      [4,13,2,9,"U"],[14,13,2,9,"U"],[4,13,1,9,"W"],[15,13,1,9,"u"],
+      [6,13,8,13,"U"],[6,13,1,13,"W"],[13,13,1,13,"u"],
+      [7,13,1,13,"A"],[12,13,1,13,"A"],
+      [9,14,2,7,"G"],[7,17,6,2,"G"],[9,14,1,1,"g"],[10,17,1,1,"g"],
+      [6,26,8,1,"G"],[5,26,10,1,"g"],
+    ],
+    helm: [],
+    weapon: [
+      [16,3,4,2,"G"],[16,3,1,2,"g"],[17,2,2,2,"G"],[18,3,1,2,"G"],
+      [18,4,1,1,"G"],[16,4,1,1,"G"],[17,5,1,1,"G"],
+      [17,6,1,1,"j"],[17,7,1,19,"J"],
+    ],
+    face: [
+      [5,3,3,2,"W"],[12,3,3,2,"W"],[6,4,1,1,"E"],[13,4,1,1,"E"],
+      [9,5,2,1,"s"],[8,6,4,1,"s"],[9,6,2,1,"r"],
+    ],
+  },
+  // T2 – Priest: rich vestments (avatarColor), mace, holy shield, radiant emblem
+  {
+    back: [
+      [0,11,3,10,"A"],[0,11,3,1,"L"],[0,11,1,10,"L"],[2,11,1,10,"a"],
+      [1,15,1,1,"G"],[0,15,3,1,"G"],[1,13,1,3,"G"],
+      [0,13,1,1,"Y"],[2,13,1,1,"Y"],
+    ],
+    body: [
+      [5,0,10,2,"H"],[4,2,2,6,"H"],[14,2,2,6,"H"],[3,3,1,5,"H"],[16,3,1,5,"H"],
+      [5,2,10,6,"S"],[8,8,4,2,"S"],
+    ],
+    armor: [
+      [7,10,6,1,"G"],
+      [4,11,12,2,"A"],[4,11,1,2,"L"],[15,11,1,2,"a"],
+      [4,13,2,9,"A"],[14,13,2,9,"A"],[4,13,1,9,"L"],[15,13,1,9,"a"],
+      [6,13,8,13,"A"],[6,13,1,13,"L"],[13,13,1,13,"a"],
+      [7,11,1,15,"G"],[12,11,1,15,"G"],
+      [9,14,2,8,"G"],[6,18,8,2,"G"],
+      [8,15,4,1,"Y"],[8,19,4,1,"Y"],[9,14,2,2,"Y"],[9,20,2,2,"Y"],
+      [6,25,8,1,"G"],[5,25,10,1,"g"],
+    ],
+    helm: [],
+    weapon: [
+      [16,7,3,3,"T"],[16,7,3,1,"K"],[17,7,1,3,"G"],[16,8,3,1,"G"],[16,10,3,1,"G"],
+      [17,10,1,1,"j"],[17,11,1,15,"J"],
+    ],
+    face: [
+      [5,3,3,2,"W"],[12,3,3,2,"W"],[6,4,1,1,"E"],[13,4,1,1,"E"],
+      [9,5,2,1,"s"],[8,6,4,1,"s"],[9,6,2,1,"r"],
+    ],
+  },
+  // T3 – High Priest: divine vestments w/ glow, blessed warhammer, giant radiant symbol
+  {
+    back: [
+      [0,10,4,12,"A"],[0,10,4,1,"L"],[0,10,1,12,"L"],[3,10,1,12,"a"],
+      [1,15,2,1,"G"],[0,15,4,1,"G"],[1,12,1,5,"G"],
+      [0,14,1,1,"Y"],[3,14,1,1,"Y"],[1,14,2,2,"Y"],
+    ],
+    body: [
+      [5,0,10,2,"H"],[4,2,2,6,"H"],[14,2,2,6,"H"],[3,3,1,5,"H"],[16,3,1,5,"H"],
+      [5,2,10,6,"S"],[8,8,4,2,"S"],
+      [5,0,10,1,"Y"],[4,1,12,1,"Z"],
+    ],
+    armor: [
+      [7,10,6,1,"G"],
+      [3,11,14,2,"A"],[3,11,1,2,"L"],[16,11,1,2,"a"],
+      [3,13,3,9,"A"],[14,13,3,9,"A"],[3,13,1,9,"L"],[16,13,1,9,"a"],
+      [6,13,8,13,"A"],[6,13,1,13,"L"],[13,13,1,13,"a"],
+      [7,11,1,15,"G"],[12,11,1,15,"G"],
+      [4,13,1,9,"Y"],[15,13,1,9,"Y"],
+      [9,14,2,9,"G"],[6,18,8,3,"G"],
+      [9,14,2,3,"Y"],[9,21,2,2,"Y"],[7,18,6,1,"Y"],[7,20,6,1,"Y"],
+      [9,14,2,1,"W"],[9,21,2,1,"W"],[7,19,6,1,"W"],
+      [5,25,10,1,"G"],
+      [6,15,1,8,"Y"],[13,15,1,8,"Y"],
+    ],
+    helm: [],
+    weapon: [
+      [15,5,4,5,"G"],[15,5,4,1,"g"],
+      [15,6,4,4,"T"],[15,6,1,4,"K"],
+      [16,5,2,1,"Y"],[17,9,1,1,"Y"],
+      [16,5,3,1,"G"],[16,8,3,1,"G"],
+      [17,10,1,1,"j"],[17,11,1,15,"J"],
+      [16,14,2,1,"G"],[16,17,2,1,"G"],
+    ],
+    face: [
+      [5,3,3,2,"W"],[12,3,3,2,"W"],[6,4,1,1,"E"],[13,4,1,1,"E"],
+      [9,5,2,1,"s"],[8,6,4,1,"s"],[9,6,2,1,"r"],
+    ],
+  },
+];
+
+// ── Sprite lookup ─────────────────────────────────────────────────────────────
+const CLASS_TIERS: Record<AvatarClass, TierSprite[]> = {
+  fighter: FIGHTER,
+  mage:    MAGE,
+  ranger:  RANGER,
+  healer:  HEALER,
 };
-const SPRITE_FACE: Record<AvatarClass, PB[]> = {
-  fighter: FIGHTER_FACE,
-  mage:    MAGE_FACE,
-  ranger:  RANGER_FACE,
-  healer:  HEALER_FACE,
+
+// ── Gear overlay (rarity border around each equipped slot zone) ───────────────
+type GearBlock = [number, number, number, number, string];
+
+const SLOT_ZONES: Record<string, [number,number,number,number]> = {
+  helmet:    [5,  0, 10, 8],
+  armor:     [4, 10, 12, 9],
+  weapon:    [15, 3,  5,16],
+  boots:     [4, 23, 12, 5],
+  accessory: [0, 10,  4, 7],
 };
 
-// ── Gear overlays ───────────────────────────────────────────────────────────
-
-type GearBlock = [number, number, number, number, string]; // x,y,w,h,hexColor
-
-function helmetBlocks(cls: AvatarClass, rc: string): GearBlock[] {
-  const regions: Record<AvatarClass, [number,number,number,number]> = {
-    fighter: [5, 0, 10, 6],
-    mage:    [4, 5, 12, 2],
-    ranger:  [6, 0,  8, 7],
-    healer:  [5, 0, 10, 6],
-  };
-  const [x, y, w, h] = regions[cls];
+function gearOverlay(slot: string, rarity: string): GearBlock[] {
+  const rc = RARITY_COLORS[rarity];
+  if (!rc) return [];
+  const z = SLOT_ZONES[slot];
+  if (!z) return [];
+  const [x,y,w,h] = z;
   return [
-    [x,   y,   w,   h,   "#1a1f2e"],
-    [x,   y,   w,   1,   rc],
-    [x,   y+h-1, w, 1,   rc],
-    [x,   y,   1,   h,   rc],
-    [x+w-1, y, 1,   h,   rc],
-    [x+1, y+1, w-2, h-2, "#0d1220"],
-    ...(h > 2 ? [
-      [x+2, y+2,         w-4, 1, rc]       as GearBlock,
-      [x+Math.floor(w/2)-1, y+1, 2, 1, "#f59e0b"] as GearBlock,
-    ] : []),
+    [x,y,w,1,rc],[x,y+h-1,w,1,rc],[x,y,1,h,rc],[x+w-1,y,1,h,rc],
   ];
 }
 
-function armorBlocks(cls: AvatarClass, rc: string): GearBlock[] {
-  const regions: Record<AvatarClass, [number,number,number,number]> = {
-    fighter: [5, 12, 10, 5],
-    mage:    [7, 15,  6, 5],
-    ranger:  [7, 10,  6, 7],
-    healer:  [7, 11,  6, 7],
-  };
-  const [x, y, w, h] = regions[cls];
-  return [
-    [x,   y,   w, 1, rc],
-    [x,   y+h-1, w, 1, rc],
-    [x,   y,   1, h, rc],
-    [x+w-1, y, 1, h, rc],
-    [x+1, y+2, w-2, 1, rc],
-    [x+1, y+4, w-2, 1, rc],
-  ];
-}
-
-function weaponBlocks(cls: AvatarClass, rc: string): GearBlock[] {
-  if (cls === "mage") {
-    return [
-      [16, 10, 2, 3, rc],
-      [17, 13, 1, 12, rc],
-      [15, 12, 4,  2, "#f59e0b"],
-    ];
-  }
-  const sx = 17;
-  return [
-    [sx,   10, 1, 2, "#f59e0b"],
-    [sx,   12, 1, 9, rc],
-    [sx-1, 16, 3, 1, "#f59e0b"],
-    [sx,   21, 1, 1, rc],
-    [sx,   22, 1, 2, "#6b7280"],
-  ];
-}
-
-function bootsBlocks(cls: AvatarClass, rc: string): GearBlock[] {
-  const regions: Record<AvatarClass, [[number,number,number,number],[number,number,number,number]]> = {
-    fighter: [[4,23,5,3], [11,23,5,3]],
-    mage:    [[7,21,3,5], [10,21,3,5]],
-    ranger:  [[6,22,4,4], [10,22,4,4]],
-    healer:  [[7,22,3,4], [10,22,3,4]],
-  };
-  const [L, R] = regions[cls];
-  const edge = (r: [number,number,number,number]): GearBlock[] => [
-    [r[0], r[1], r[2], 1, rc],
-    [r[0], r[1]+r[3]-1, r[2], 1, rc],
-    [r[0], r[1], 1, r[3], rc],
-    [r[0]+r[2]-1, r[1], 1, r[3], rc],
-    [r[0], r[1], r[2], r[3], "#1a1f2e"],
-  ];
-  return [...edge(L), ...edge(R),
-    [L[0], L[1], L[2], 1, rc],
-    [R[0], R[1], R[2], 1, rc],
-    [L[0], L[1]+L[3]-1, L[2], 1, rc],
-    [R[0], R[1]+R[3]-1, R[2], 1, rc],
-  ];
-}
-
-function accessoryBlocks(rc: string): GearBlock[] {
-  return [
-    [1, 12, 3, 5, "#0f1523"],
-    [1, 12, 3, 1, rc], [1, 16, 3, 1, rc],
-    [1, 12, 1, 5, rc], [3, 12, 1, 5, rc],
-    [2, 13, 1, 1, "#f59e0b"],
-    [2, 15, 1, 1, "#ffffff"],
-  ];
-}
-
-// ── Main component ──────────────────────────────────────────────────────────
+// ── Main component ────────────────────────────────────────────────────────────
 
 export function AvatarRenderer({
   color,
   skin = "light",
   avatarClass,
   equipped = [],
+  level = 1,
   size = 200,
   showGlow = true,
 }: AvatarRendererProps) {
   const accent = CLASS_ACCENTS[avatarClass] ?? "#6366f1";
   const cm = buildColorMap(color, skin, accent);
+  const tier = getTier(level);
+  const sprite = CLASS_TIERS[avatarClass]?.[tier] ?? CLASS_TIERS.fighter[0];
 
-  const equippedMap = new Map(equipped.map(e => [e.slot, e]));
-
-  const gearBlocks: GearBlock[] = [];
-  const helmet  = equippedMap.get("helmet");
-  const armor   = equippedMap.get("armor");
-  const weapon  = equippedMap.get("weapon");
-  const boots   = equippedMap.get("boots");
-  const accessory = equippedMap.get("accessory");
-
-  if (helmet)    gearBlocks.push(...helmetBlocks(avatarClass, RARITY_COLORS[helmet.rarity]));
-  if (armor)     gearBlocks.push(...armorBlocks(avatarClass, RARITY_COLORS[armor.rarity]));
-  if (weapon)    gearBlocks.push(...weaponBlocks(avatarClass, RARITY_COLORS[weapon.rarity]));
-  if (boots)     gearBlocks.push(...bootsBlocks(avatarClass, RARITY_COLORS[boots.rarity]));
-  if (accessory) gearBlocks.push(...accessoryBlocks(RARITY_COLORS[accessory.rarity]));
-
-  const bodyBlocks = SPRITE_BODY[avatarClass] ?? [];
-  const faceBlocks = SPRITE_FACE[avatarClass] ?? [];
+  const overlayBlocks: GearBlock[] = equipped.flatMap(e => gearOverlay(e.slot, e.rarity));
 
   const glowFilter = showGlow
     ? `drop-shadow(0 0 ${Math.max(3, size / 24)}px ${color}99)`
     : undefined;
+
+  const layers: [PB[], string][] = [
+    [sprite.back,   "q"],
+    [sprite.body,   "b"],
+    [sprite.armor,  "a"],
+    [sprite.helm,   "h"],
+    [sprite.weapon, "w"],
+    [sprite.face,   "f"],
+  ];
 
   return (
     <svg
@@ -410,22 +728,16 @@ export function AvatarRenderer({
       xmlns="http://www.w3.org/2000/svg"
       shapeRendering="crispEdges"
       role="img"
-      aria-label={`${avatarClass} avatar`}
+      aria-label={`${avatarClass} avatar tier ${tier + 1}`}
       style={{ filter: glowFilter, imageRendering: "pixelated" }}
     >
-      {/* Body layer */}
-      {bodyBlocks.map(([x, y, w, h, key], i) => (
-        <rect key={`b${i}`} x={x} y={y} width={w} height={h} fill={fill(key, cm)} />
-      ))}
-
-      {/* Gear overlay layer */}
-      {gearBlocks.map(([x, y, w, h, hexColor], i) => (
-        <rect key={`g${i}`} x={x} y={y} width={w} height={h} fill={hexColor} />
-      ))}
-
-      {/* Face layer (always on top so gear doesn't cover eyes) */}
-      {faceBlocks.map(([x, y, w, h, key], i) => (
-        <rect key={`f${i}`} x={x} y={y} width={w} height={h} fill={fill(key, cm)} />
+      {layers.map(([blocks, prefix]) =>
+        blocks.map(([x,y,w,h,key], i) => (
+          <rect key={`${prefix}${i}`} x={x} y={y} width={w} height={h} fill={fill(key, cm)} />
+        ))
+      )}
+      {overlayBlocks.map(([x,y,w,h,hexColor], i) => (
+        <rect key={`o${i}`} x={x} y={y} width={w} height={h} fill={hexColor} />
       ))}
     </svg>
   );

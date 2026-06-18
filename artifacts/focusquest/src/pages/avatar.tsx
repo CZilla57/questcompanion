@@ -541,6 +541,7 @@ export default function AvatarPage() {
                 skin={currentSkin}
                 avatarClass={currentClass}
                 equipped={equippedSlots}
+                level={avatarData?.level ?? 1}
                 size={160}
                 showGlow
               />

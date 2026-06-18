@@ -13,6 +13,8 @@ export interface AvatarProfile {
   avatarColor: string;
   avatarClass: AvatarProfileAvatarClass;
   avatarSkin: AvatarProfileAvatarSkin;
+  /** @minimum 1 */
+  level: number;
   battlePower: number;
   equippedGear: EquippedGearItem[];
   availableColors: string[];

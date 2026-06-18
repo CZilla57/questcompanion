@@ -1318,7 +1318,7 @@ components:
 
     AvatarProfile:
       type: object
-      required: [avatarColor, avatarClass, avatarSkin, battlePower, equippedGear, availableColors, availableClasses, availableSkins]
+      required: [avatarColor, avatarClass, avatarSkin, level, battlePower, equippedGear, availableColors, availableClasses, availableSkins]
       properties:
         avatarColor:
           type: string
@@ -1328,6 +1328,9 @@ components:
         avatarSkin:
           type: string
           enum: [light, tan, brown, dark, green, blue]
+        level:
+          type: integer
+          minimum: 1
         battlePower:
           type: integer
         equippedGear:
