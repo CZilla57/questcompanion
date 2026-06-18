@@ -54,7 +54,7 @@ export function AvatarRenderer({
   showGlow = true,
 }: AvatarRendererProps) {
   const tier = getTier(level);
-  const src = `/avatars/${avatarClass}-t${tier}.png`;
+  const src = `/avatars/${avatarClass}-t${tier}.png?v=2`;
 
   const highestRarity = equipped.length > 0
     ? RARITY_ORDER.find(r => equipped.some(e => e.rarity === r)) ?? null
