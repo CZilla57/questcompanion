@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-FocusQuest is a gamified task and habit tracker with a React frontend and an Express API backed by PostgreSQL. The production security boundary is the `/api` server in `artifacts/api-server/src/`; the browser client and service worker are untrusted, and all state-changing behavior must be enforced server-side. The mockup sandbox is development-only and out of scope unless shared code becomes reachable from production. The current deployment visibility is `private`, so platform access controls limit network reachability, but any viewer who can reach the deployment and any authenticated app user must still be treated as untrusted with respect to application data and state.
+FocusQuest is a gamified task and habit tracker with a React frontend and an Express API backed by PostgreSQL. The production security boundary is the `/api` server in `artifacts/api-server/src/`; the browser client and service worker are untrusted, and all state-changing behavior must be enforced server-side. The mockup sandbox is development-only and out of scope unless shared code becomes reachable from production. The current deployment visibility is `public` on an autoscaled deployment, so any internet client can reach public routes and attackers may deliberately induce concurrent requests or additional live instances around time-based jobs.
 
 ## Assets
 
@@ -19,15 +19,15 @@ FocusQuest is a gamified task and habit tracker with a React frontend and an Exp
 - **API to PostgreSQL** — the API has broad authority over user records, tasks, partnerships, activity, badges, and push subscriptions; broken access control here becomes direct data compromise.
 - **API to external push endpoints** — the notification subsystem makes outbound requests using VAPID credentials to subscription endpoints stored in the database.
 - **Per-instance scheduler to shared database** — recurring-task spawning and push reminders run inside the API process. In an autoscaled deployment, multiple instances can execute the same scheduler logic concurrently unless the database enforces uniqueness or the app uses a distributed lock.
-- **Public vs authenticated surface** — health and possibly leaderboard-style endpoints may be public, but user profile, tasks, recurring tasks, badges, notifications, and partnership state are authenticated user surfaces and must be bound to the caller’s identity.
-- **Deployment viewer vs app user** — because the deployment is private, some routes may only be reachable by approved deployment viewers, but that platform gate does not replace in-app authorization or privacy controls for data exposed to those viewers.
+- **Public vs authenticated surface** — health and intentionally public leaderboard-style endpoints are internet-reachable, but user profile, tasks, recurring tasks, badges, notifications, and partnership state are authenticated user surfaces and must be bound to the caller’s identity.
+- **Internet client vs app user** — because the deployment is public, platform-level access controls do not narrow the attack surface. Unauthenticated clients can probe public endpoints directly, and authenticated users can deliberately race state-changing endpoints from multiple concurrent clients.
 - **Production vs dev-only artifacts** — `artifacts/mockup-sandbox/` is non-production and should not drive findings unless shared code creates a production path.
 
 ## Scan Anchors
 
 - Production API entry points: `artifacts/api-server/src/index.ts`, `artifacts/api-server/src/app.ts`, `artifacts/api-server/src/routes/`.
 - Highest-risk code areas: user-scoped route handlers, XP/gear/battle reward flows, notification subscription/delivery flow, and recurring-task scheduler.
-- Public surface: `/api/healthz` and any intentionally public leaderboard/search functionality.
+- Public surface: `/api/healthz`, `/api/leaderboard`, and browser auth entry points.
 - Authenticated surface: `/api/users/me*`, `/api/tasks*`, `/api/recurring-tasks*`, `/api/accountability/*`, `/api/notifications/*`, `/api/users/me/badges`.
 - Usually ignore: `artifacts/mockup-sandbox/`, generated API client code, and build outputs under `dist/`.
 
@@ -39,7 +39,7 @@ The API must derive caller identity from a verified session or bearer token on e
 
 ### Tampering
 
-Task state, recurring schedules, XP totals, streaks, badges, gear inventory, battle outcomes, and partnership state are all high-value mutable records. The server must ensure that only the owning user can create, update, complete, or delete their own records, and that user-visible progression is computed server-side from authorized actions rather than from caller-supplied identity or trusted client state. Completion and uncompletion flows must also be idempotent and fully reversible, because partial or non-atomic reward logic lets users mint XP, bonuses, badges, or inventory without corresponding work. Any scheduler-generated rows must be protected against cross-instance duplication in autoscaled production.
+Task state, recurring schedules, XP totals, streaks, badges, gear inventory, battle outcomes, and partnership state are all high-value mutable records. The server must ensure that only the owning user can create, update, complete, or delete their own records, and that user-visible progression is computed server-side from authorized actions rather than from caller-supplied identity or trusted client state. Completion and uncompletion flows must also be idempotent and fully reversible, because partial or non-atomic reward logic lets users mint XP, bonuses, badges, or inventory without corresponding work. One-per-period game actions such as weekly battles, and one-per-slot equipment rules, also need transactional or schema-level enforcement so concurrent requests cannot bypass intended progression limits. Any scheduler-generated rows must be protected against cross-instance duplication in autoscaled production.
 
 ### Information Disclosure
 
@@ -47,7 +47,7 @@ User task content, activity history, and partner relationship data can expose pe
 
 ### Denial of Service
 
-Publicly reachable endpoints that create tasks, recurring schedules, partnership requests, or push subscriptions can be abused to create database churn or force repeated scheduler work. Any endpoint that triggers persistent storage or downstream notification work should assume hostile traffic and bound request volume and payload size.
+Publicly reachable endpoints that create tasks, recurring schedules, partnership requests, or push subscriptions can be abused to create database churn or force repeated scheduler work. Any endpoint that triggers persistent storage or downstream notification work should assume hostile traffic and bound request volume and payload size. In autoscaled production, time-based jobs also need cross-instance deduplication so attackers cannot abuse scale-out to multiply externally visible side effects such as push delivery.
 
 ### Elevation of Privilege
 
