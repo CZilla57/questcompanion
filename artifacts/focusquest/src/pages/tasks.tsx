@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Clock, Plus, Filter, Zap, Info } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Plus, Filter, Zap, Info, Sparkles, X, RefreshCw, ChevronRight } from "lucide-react";
 import { Task, useGetTasks, useCreateTask, useUpdateTask, TaskPriority } from "@workspace/api-client-react";
 import { TaskItem } from "@/components/task-item";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,125 @@ interface PointPreview {
   points: number;
   category: string;
   categoryLabel: string;
+}
+
+interface Recommendation {
+  task: Task | null;
+  reason: string;
+  category?: string;
+  categoryLabel?: string;
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  health:    "text-green-400  bg-green-400/10  border-green-400/30",
+  deep_work: "text-blue-400   bg-blue-400/10   border-blue-400/30",
+  learning:  "text-purple-400 bg-purple-400/10 border-purple-400/30",
+  finance:   "text-yellow-400 bg-yellow-400/10 border-yellow-400/30",
+  admin:     "text-orange-400 bg-orange-400/10 border-orange-400/30",
+  household: "text-emerald-400 bg-emerald-400/10 border-emerald-400/30",
+  social:    "text-pink-400   bg-pink-400/10   border-pink-400/30",
+  creative:  "text-fuchsia-400 bg-fuchsia-400/10 border-fuchsia-400/30",
+  default:   "text-muted-foreground bg-muted/20 border-border",
+};
+
+function RecommendCard({
+  rec,
+  onDismiss,
+  onAnother,
+  loading,
+}: {
+  rec: Recommendation;
+  onDismiss: () => void;
+  onAnother: () => void;
+  loading: boolean;
+}) {
+  if (!rec.task) {
+    return (
+      <div className="rounded-xl border border-primary/20 bg-card p-5 flex items-center gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+        <Sparkles className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+        <p className="text-sm text-muted-foreground flex-1">{rec.reason}</p>
+        <Button variant="ghost" size="icon" onClick={onDismiss} className="text-muted-foreground flex-shrink-0">
+          <X className="w-4 h-4" />
+        </Button>
+      </div>
+    );
+  }
+
+  const catStyle = CATEGORY_COLORS[rec.category ?? "default"] ?? CATEGORY_COLORS.default!;
+  const priorityColor = rec.task.priority === "high" ? "text-red-400" : rec.task.priority === "medium" ? "text-yellow-400" : "text-muted-foreground";
+
+  return (
+    <div className="rounded-xl border border-primary/50 bg-primary/5 shadow-[0_0_20px_rgba(0,255,255,0.08)] animate-in fade-in slide-in-from-top-2 duration-300">
+      {/* Header strip */}
+      <div className="flex items-center justify-between px-4 pt-3 pb-0">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-3.5 h-3.5 text-primary" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-primary">
+            What's Next
+          </span>
+        </div>
+        <Button variant="ghost" size="icon" onClick={onDismiss} className="h-6 w-6 text-muted-foreground hover:text-foreground -mr-1">
+          <X className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+
+      {/* Body */}
+      <div className="px-4 py-3">
+        <h3 className="text-lg font-bold text-foreground leading-snug mb-2">
+          {rec.task.title}
+        </h3>
+
+        {/* Badges */}
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          {rec.categoryLabel && (
+            <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${catStyle}`}>
+              {rec.categoryLabel}
+            </span>
+          )}
+          <span className={`text-xs font-medium capitalize ${priorityColor}`}>
+            {rec.task.priority} priority
+          </span>
+          {rec.task.estimatedMinutes && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {rec.task.estimatedMinutes < 60
+                ? `${rec.task.estimatedMinutes}m`
+                : `${Math.floor(rec.task.estimatedMinutes / 60)}h${rec.task.estimatedMinutes % 60 ? ` ${rec.task.estimatedMinutes % 60}m` : ""}`}
+            </span>
+          )}
+        </div>
+
+        {/* Reason */}
+        <p className="text-xs text-muted-foreground leading-relaxed mb-4 italic">
+          "{rec.reason}"
+        </p>
+
+        {/* Actions */}
+        <div className="flex items-center justify-between">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onAnother}
+            disabled={loading}
+            className="text-muted-foreground hover:text-foreground h-8 px-2 gap-1.5 text-xs"
+          >
+            {loading
+              ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              : <RefreshCw className="w-3.5 h-3.5" />}
+            Try another
+          </Button>
+          <Button
+            size="sm"
+            onClick={onDismiss}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground h-8 px-4 gap-1.5 text-xs shadow-[0_0_10px_rgba(0,255,255,0.25)]"
+          >
+            Got it
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 const PRIORITY_LABEL: Record<string, string> = {
@@ -92,8 +211,45 @@ export default function Tasks() {
   const [editPriority, setEditPriority] = useState<TaskPriority>(TaskPriority.medium);
   const [editEstimate, setEditEstimate] = useState("");
 
+  const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
+  const [excludedIds, setExcludedIds] = useState<number[]>([]);
+  const [isRecommending, setIsRecommending] = useState(false);
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const fetchRecommendation = async (exclude: number[]) => {
+    setIsRecommending(true);
+    try {
+      const params = exclude.length ? `?exclude=${exclude.join(",")}` : "";
+      const res = await fetch(`/api/tasks/recommend${params}`);
+      if (!res.ok) throw new Error("Failed to fetch recommendation");
+      const data: Recommendation = await res.json();
+      setRecommendation(data);
+    } catch {
+      toast({ title: "Couldn't load recommendation", variant: "destructive" });
+    } finally {
+      setIsRecommending(false);
+    }
+  };
+
+  const handleWhatsNext = () => {
+    setExcludedIds([]);
+    fetchRecommendation([]);
+  };
+
+  const handleTryAnother = () => {
+    const newExcluded = recommendation?.task
+      ? [...excludedIds, recommendation.task.id]
+      : excludedIds;
+    setExcludedIds(newExcluded);
+    fetchRecommendation(newExcluded);
+  };
+
+  const handleDismissRecommendation = () => {
+    setRecommendation(null);
+    setExcludedIds([]);
+  };
 
   const { data: tasks, isLoading } = useGetTasks({
     date: date ? format(date, 'yyyy-MM-dd') : undefined,
@@ -177,10 +333,33 @@ export default function Tasks() {
           <h1 className="text-3xl font-bold text-foreground">Quest Log</h1>
           <p className="text-muted-foreground mt-1">Manage your active and completed objectives.</p>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_15px_rgba(0,255,255,0.3)]">
-          <Plus className="w-5 h-5 mr-2" /> New Quest
-        </Button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <Button
+            variant="outline"
+            onClick={handleWhatsNext}
+            disabled={isRecommending}
+            className="border-primary/40 text-primary hover:bg-primary/10 hover:border-primary gap-2"
+          >
+            {isRecommending
+              ? <RefreshCw className="w-4 h-4 animate-spin" />
+              : <Sparkles className="w-4 h-4" />}
+            What's Next?
+          </Button>
+          <Button onClick={() => setIsCreateOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_15px_rgba(0,255,255,0.3)]">
+            <Plus className="w-5 h-5 mr-2" /> New Quest
+          </Button>
+        </div>
       </div>
+
+      {/* Recommendation card */}
+      {recommendation && (
+        <RecommendCard
+          rec={recommendation}
+          onDismiss={handleDismissRecommendation}
+          onAnother={handleTryAnother}
+          loading={isRecommending}
+        />
+      )}
 
       <div className="flex flex-col sm:flex-row gap-4 items-center bg-card p-4 rounded-xl border border-border">
         <Popover>

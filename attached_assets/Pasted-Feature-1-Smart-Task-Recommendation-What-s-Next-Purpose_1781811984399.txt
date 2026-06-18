@@ -1,0 +1,36 @@
+Feature 1: Smart Task Recommendation ("What's Next?")
+
+Purpose
+
+ADHD users frequently experience decision paralysis when looking at a full quest log. This feature reduces that friction to a single tap by surfacing one recommended quest based on lightweight scoring logic.
+
+User-Facing Behavior
+
+A "What's Next?" button appears prominently on the Quest Log screen. When tapped, it highlights or surfaces a single quest as the recommended next action. The user can dismiss the recommendation and tap again for a different suggestion if they want.
+
+Recommendation Logic (Backend)
+
+Score each incomplete quest using the following weighted factors, then return the highest-scoring one:
+
+
+Time of day — Morning (6am–11am): boost Deep Work and Health category quests. Afternoon (11am–5pm): neutral. Evening (5pm–9pm): boost lighter categories like Learning or Finance.
+Days in queue — Add a small score boost for each day the quest has been sitting incomplete (cap at 7 days to prevent stale tasks from always winning).
+Category balance — Check which categories the user has completed today. Boost quests from categories not yet completed today to encourage variety.
+Time estimate — If time estimate data is available, give a slight boost to quests with shorter estimates during evening hours.
+
+
+No machine learning needed — this is purely rule-based scoring on existing data fields.
+
+Schema Changes
+
+None required. All scoring uses existing quest fields (category, created_at, estimated_time, completed_at).
+
+API
+
+GET /api/quests/recommend
+
+Returns a single quest object. Uses the scoring logic above. If the user passes an optional exclude query param (an array of quest IDs they've already dismissed), those are removed from the candidate pool before scoring.
+
+UI Notes
+
+The recommended quest should be visually distinct — a highlighted card or pinned position at the top of the list. Include a "Not feeling it — show me another" secondary action that calls the endpoint again with the current quest ID in the exclude param.

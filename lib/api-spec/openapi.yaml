@@ -259,6 +259,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/InsightsResponse"
 
+  /tasks/recommend:
+    get:
+      operationId: getTaskRecommendation
+      tags: [tasks]
+      summary: Get a recommended next task using scoring logic
+      parameters:
+        - name: exclude
+          in: query
+          schema:
+            type: string
+          description: Comma-separated task IDs to exclude from consideration
+      responses:
+        "200":
+          description: Recommended task or null
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskRecommendation"
+
   /tasks:
     get:
       operationId: getTasks
@@ -1480,6 +1499,21 @@ components:
           type: integer
         remainingXp:
           type: integer
+
+    TaskRecommendation:
+      type: object
+      required: [reason]
+      properties:
+        task:
+          oneOf:
+            - $ref: "#/components/schemas/Task"
+            - type: "null"
+        reason:
+          type: string
+        category:
+          type: string
+        categoryLabel:
+          type: string
 
     InsightsCategoryBreakdown:
       type: object
