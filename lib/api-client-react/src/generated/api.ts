@@ -33,8 +33,10 @@ import type {
   ErrorEnvelope,
   GearStoreResponse,
   GetLeaderboardParams,
+  GetMyInsightsParams,
   GetMyXpHistoryParams,
   GetTasksParams,
+  InsightsResponse,
   HandleBrowserLoginCallbackParams,
   HealthStatus,
   LeaderboardEntry,
@@ -985,6 +987,41 @@ export function useGetMyXpHistory<TData = Awaited<ReturnType<typeof getMyXpHisto
 
 
 
+
+export const getGetMyInsightsUrl = (params?: GetMyInsightsParams) => {
+  const normalizedParams = new URLSearchParams();
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) normalizedParams.append(key, value === null ? 'null' : value.toString());
+  });
+  const stringifiedParams = normalizedParams.toString();
+  return stringifiedParams.length > 0 ? `/api/users/me/insights?${stringifiedParams}` : `/api/users/me/insights`;
+}
+
+export const getMyInsights = async (params?: GetMyInsightsParams, options?: RequestInit): Promise<InsightsResponse> => {
+  return customFetch<InsightsResponse>(getGetMyInsightsUrl(params), { ...options, method: 'GET' });
+}
+
+export const getGetMyInsightsQueryKey = (params?: GetMyInsightsParams) => {
+  return [`/api/users/me/insights`, ...(params ? [params] : [])] as const;
+}
+
+export const getGetMyInsightsQueryOptions = <TData = Awaited<ReturnType<typeof getMyInsights>>, TError = ErrorType<unknown>>(params?: GetMyInsightsParams, options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof getMyInsights>>, TError, TData>, request?: SecondParameter<typeof customFetch>}) => {
+  const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGetMyInsightsQueryKey(params);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyInsights>>> = ({ signal }) => getMyInsights(params, { signal, ...requestOptions });
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<Awaited<ReturnType<typeof getMyInsights>>, TError, TData> & { queryKey: QueryKey };
+}
+
+export type GetMyInsightsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyInsights>>>
+export type GetMyInsightsQueryError = ErrorType<unknown>
+
+export function useGetMyInsights<TData = Awaited<ReturnType<typeof getMyInsights>>, TError = ErrorType<unknown>>(
+  params?: GetMyInsightsParams, options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof getMyInsights>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMyInsightsQueryOptions(params, options);
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 export const getGetTasksUrl = (params?: GetTasksParams,) => {
   const normalizedParams = new URLSearchParams();

@@ -674,3 +674,43 @@ export type SearchUsersParams = {
 q: string;
 };
 
+export interface InsightsCategoryBreakdown {
+  category: string;
+  label: string;
+  completed: number;
+  total: number;
+  xpEarned: number;
+}
+
+export interface InsightsDowStat {
+  day: number;
+  label: string;
+  completed: number;
+  total: number;
+}
+
+export interface InsightsPeriodStat {
+  key: string;
+  label: string;
+  range: string;
+  completed: number;
+}
+
+export interface InsightsXpPoint {
+  date: string;
+  label: string;
+  xp: number;
+}
+
+export interface InsightsResponse {
+  days: number;
+  xpHistory: InsightsXpPoint[];
+  categoryBreakdown: InsightsCategoryBreakdown[];
+  dayOfWeekStats: InsightsDowStat[];
+  periodStats: InsightsPeriodStat[];
+}
+
+export type GetMyInsightsParams = {
+  days?: number;
+};
+

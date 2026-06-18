@@ -12,6 +12,7 @@ import { Swords, Trophy } from "lucide-react";
 import Dashboard from "@/pages/dashboard";
 import Tasks from "@/pages/tasks";
 import Progress from "@/pages/progress";
+import Insights from "@/pages/insights";
 import Partners from "@/pages/partners";
 import Leaderboard from "@/pages/leaderboard";
 import Recurring from "@/pages/recurring";
@@ -149,6 +150,7 @@ function Router() {
         <Route path="/tasks" component={Tasks} />
         <Route path="/recurring" component={Recurring} />
         <Route path="/progress" component={Progress} />
+        <Route path="/insights" component={Insights} />
         <Route path="/partners" component={Partners} />
         <Route path="/leaderboard" component={Leaderboard} />
         <Route path="/avatar" component={AvatarPage} />

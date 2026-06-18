@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, and, gte, gt, desc } from "drizzle-orm";
 import { db, usersTable, tasksTable, activityTable } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel } from "../lib/gamification";
+import { assignPoints } from "../lib/auto-points";
 
 const router: IRouter = Router();
 
@@ -143,6 +144,110 @@ router.get("/users/me/xp-history", async (req, res): Promise<void> => {
       xp: xpByDate.get(date) ?? 0,
     })),
   );
+});
+
+router.get("/users/me/insights", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  const days = Math.min(90, Math.max(7, parseInt(String(req.query.days ?? "30"), 10) || 30));
+
+  const today = new Date();
+  const cutoff = new Date(today);
+  cutoff.setDate(cutoff.getDate() - (days - 1));
+  cutoff.setUTCHours(0, 0, 0, 0);
+
+  // ── XP history (reuse same logic as xp-history endpoint) ─────────────────
+  const dateSlots: { date: string; label: string }[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split("T")[0]!;
+    const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    dateSlots.push({ date: dateStr, label });
+  }
+
+  const activityRows = await db
+    .select()
+    .from(activityTable)
+    .where(and(eq(activityTable.userId, userId), gte(activityTable.createdAt, cutoff), gt(activityTable.points, 0)));
+
+  const xpByDate = new Map<string, number>();
+  for (const row of activityRows) {
+    const d = row.createdAt.toISOString().split("T")[0]!;
+    xpByDate.set(d, (xpByDate.get(d) ?? 0) + row.points);
+  }
+  const xpHistory = dateSlots.map(({ date, label }) => ({ date, label, xp: xpByDate.get(date) ?? 0 }));
+
+  // ── Fetch tasks for the period ────────────────────────────────────────────
+  const allTasks = await db
+    .select()
+    .from(tasksTable)
+    .where(and(eq(tasksTable.userId, userId), gte(tasksTable.createdAt, cutoff)));
+
+  // ── Category breakdown ────────────────────────────────────────────────────
+  type CatStat = { category: string; label: string; completed: number; total: number; xpEarned: number };
+  const catMap = new Map<string, CatStat>();
+  for (const task of allTasks) {
+    const ap = assignPoints(task.title, task.priority);
+    const key = ap.category;
+    if (!catMap.has(key)) {
+      catMap.set(key, { category: key, label: ap.categoryLabel, completed: 0, total: 0, xpEarned: 0 });
+    }
+    const stat = catMap.get(key)!;
+    stat.total++;
+    if (task.completed) {
+      stat.completed++;
+      stat.xpEarned += task.pointsAwarded ?? ap.points;
+    }
+  }
+  const categoryBreakdown = Array.from(catMap.values())
+    .filter(s => s.total > 0)
+    .sort((a, b) => b.completed - a.completed);
+
+  // ── Day-of-week stats (0=Sun … 6=Sat, using dueDate) ────────────────────
+  const DOW_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+  const dowStats = DOW_LABELS.map((label, day) => ({ day, label, completed: 0, total: 0 }));
+  for (const task of allTasks) {
+    const dow = new Date(task.dueDate + "T12:00:00Z").getUTCDay();
+    dowStats[dow]!.total++;
+    if (task.completed) dowStats[dow]!.completed++;
+  }
+
+  // ── Hourly stats (hour 0–23 from completedAt, UTC) ───────────────────────
+  const hourStats: { hour: number; label: string; completed: number }[] = Array.from({ length: 24 }, (_, h) => ({
+    hour: h,
+    label: h === 0 ? "12am" : h < 12 ? `${h}am` : h === 12 ? "12pm" : `${h - 12}pm`,
+    completed: 0,
+  }));
+  for (const task of allTasks) {
+    if (task.completed && task.completedAt) {
+      const h = task.completedAt.getUTCHours();
+      hourStats[h]!.completed++;
+    }
+  }
+
+  // ── Period-of-day summary (group hours into 4 buckets) ───────────────────
+  const periods = [
+    { key: "morning",   label: "Morning",   range: "6am–12pm",  hours: [6,7,8,9,10,11] },
+    { key: "afternoon", label: "Afternoon", range: "12pm–5pm",  hours: [12,13,14,15,16] },
+    { key: "evening",   label: "Evening",   range: "5pm–9pm",   hours: [17,18,19,20] },
+    { key: "night",     label: "Night",     range: "9pm–6am",   hours: [21,22,23,0,1,2,3,4,5] },
+  ];
+  const periodStats = periods.map(p => ({
+    key: p.key,
+    label: p.label,
+    range: p.range,
+    completed: p.hours.reduce((sum, h) => sum + (hourStats[h]?.completed ?? 0), 0),
+  }));
+
+  res.json({
+    days,
+    xpHistory,
+    categoryBreakdown,
+    dayOfWeekStats: dowStats,
+    periodStats,
+  });
 });
 
 router.get("/users/search", async (req, res): Promise<void> => {

@@ -240,6 +240,25 @@ paths:
                 items:
                   $ref: "#/components/schemas/XpDataPoint"
 
+  /users/me/insights:
+    get:
+      operationId: getMyInsights
+      tags: [users]
+      summary: Get pattern insights for the current user
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 30
+      responses:
+        "200":
+          description: Insights data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InsightsResponse"
+
   /tasks:
     get:
       operationId: getTasks
@@ -1461,6 +1480,81 @@ components:
           type: integer
         remainingXp:
           type: integer
+
+    InsightsCategoryBreakdown:
+      type: object
+      required: [category, label, completed, total, xpEarned]
+      properties:
+        category:
+          type: string
+        label:
+          type: string
+        completed:
+          type: integer
+        total:
+          type: integer
+        xpEarned:
+          type: integer
+
+    InsightsDowStat:
+      type: object
+      required: [day, label, completed, total]
+      properties:
+        day:
+          type: integer
+        label:
+          type: string
+        completed:
+          type: integer
+        total:
+          type: integer
+
+    InsightsPeriodStat:
+      type: object
+      required: [key, label, range, completed]
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        range:
+          type: string
+        completed:
+          type: integer
+
+    InsightsXpPoint:
+      type: object
+      required: [date, label, xp]
+      properties:
+        date:
+          type: string
+        label:
+          type: string
+        xp:
+          type: integer
+
+    InsightsResponse:
+      type: object
+      required: [days, xpHistory, categoryBreakdown, dayOfWeekStats, periodStats]
+      properties:
+        days:
+          type: integer
+        xpHistory:
+          type: array
+          items:
+            $ref: "#/components/schemas/InsightsXpPoint"
+        categoryBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/InsightsCategoryBreakdown"
+        dayOfWeekStats:
+          type: array
+          items:
+            $ref: "#/components/schemas/InsightsDowStat"
+        periodStats:
+          type: array
+          items:
+            $ref: "#/components/schemas/InsightsPeriodStat"
 
     BattleStatus:
       type: object

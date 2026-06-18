@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation } from "wouter";
 import { Link } from "wouter";
-import { Home, CheckSquare, BarChart2, Users, Trophy, X, Zap, Bell, BellOff, Repeat, Menu, User, LogOut } from "lucide-react";
+import { Home, CheckSquare, BarChart2, BarChart3, Users, Trophy, X, Zap, Bell, BellOff, Repeat, Menu, User, LogOut } from "lucide-react";
 import { Button } from "./ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
@@ -108,6 +108,7 @@ const allNavItems = [
   { href: "/tasks",       label: "Quests",     icon: CheckSquare, mobileShow: true },
   { href: "/recurring",   label: "Recurring",  icon: Repeat,      mobileShow: false },
   { href: "/progress",    label: "Progress",   icon: BarChart2,   mobileShow: true },
+  { href: "/insights",    label: "Insights",   icon: BarChart3,   mobileShow: false },
   { href: "/avatar",      label: "Hero",       icon: User,        mobileShow: true },
   { href: "/partners",    label: "Allies",     icon: Users,       mobileShow: true },
   { href: "/leaderboard", label: "Board",      icon: Trophy,      mobileShow: false },
