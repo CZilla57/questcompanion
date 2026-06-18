@@ -11,6 +11,7 @@ import recurringTasksRouter from "./recurring-tasks";
 import avatarRouter from "./avatar";
 import gearRouter from "./gear";
 import battleRouter from "./battle";
+import dopamineRewardsRouter from "./dopamine-rewards";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(notificationsRouter);
 router.use(avatarRouter);
 router.use(gearRouter);
 router.use(battleRouter);
+router.use(dopamineRewardsRouter);
 
 export default router;

@@ -827,6 +827,69 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
 
+  /dopamine-rewards:
+    get:
+      operationId: getDopamineRewards
+      tags: [users]
+      summary: Get all dopamine rewards for the current user
+      responses:
+        "200":
+          description: List of dopamine rewards
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DopamineReward"
+    post:
+      operationId: createDopamineReward
+      tags: [users]
+      summary: Create a new dopamine reward
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DopamineRewardInput"
+      responses:
+        "201":
+          description: Created reward
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DopamineReward"
+        "400":
+          description: Validation error or limit reached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /dopamine-rewards/{id}:
+    delete:
+      operationId: deleteDopamineReward
+      tags: [users]
+      summary: Delete a dopamine reward
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessEnvelope"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
 components:
   parameters:
     AuthorizationSessionHeader:
@@ -1633,3 +1696,27 @@ components:
           type: integer
         weekKey:
           type: string
+
+    DopamineReward:
+      type: object
+      required: [id, userId, rewardText, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        rewardText:
+          type: string
+          maxLength: 100
+        createdAt:
+          type: string
+          format: date-time
+
+    DopamineRewardInput:
+      type: object
+      required: [rewardText]
+      properties:
+        rewardText:
+          type: string
+          minLength: 1
+          maxLength: 100

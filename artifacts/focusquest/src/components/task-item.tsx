@@ -7,6 +7,7 @@ import { Input } from "./ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetTasksQueryKey, getGetMyStatsQueryKey } from "@workspace/api-client-react";
+import { dispatchQuestCompleted } from "./dopamine-overlay";
 
 interface TaskItemProps {
   task: Task;
@@ -133,6 +134,8 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
           if (res.leveledUp || (res.newBadges && res.newBadges.length > 0)) {
             onLevelUp?.(res);
           }
+
+          dispatchQuestCompleted();
         }
       });
     }

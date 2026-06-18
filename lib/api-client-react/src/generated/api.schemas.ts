@@ -714,3 +714,15 @@ export type GetMyInsightsParams = {
   days?: number;
 };
 
+export interface DopamineReward {
+  id: number;
+  userId: number;
+  rewardText: string;
+  createdAt: string;
+}
+
+export interface DopamineRewardInput {
+  /** @minLength 1 */
+  rewardText: string;
+}
+

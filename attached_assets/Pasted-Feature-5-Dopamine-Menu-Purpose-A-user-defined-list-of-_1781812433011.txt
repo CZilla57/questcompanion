@@ -1,0 +1,38 @@
+Feature 5: Dopamine Menu
+
+Purpose
+
+A user-defined list of small, healthy rewards they allow themselves after completing quests. This is a well-established ADHD coaching tool for reinforcing task completion with immediate positive feedback. It is entirely separate from the XP and leaderboard system — no scores, no rankings, no gaming potential.
+
+User-Facing Behavior
+
+Users manage their Dopamine Menu from a settings or profile page. They add short reward entries (e.g., "Make a cup of coffee," "5 minutes of YouTube," "Quick walk around the block"). After completing any quest, a dismissible card or modal appears showing one randomly selected reward from their list with the prompt: "You earned a reward — how about this?" The user can dismiss it, mark it as used (no tracking needed — this is purely a UX acknowledgment), or shuffle for a different option.
+
+If the user has not yet added any rewards to their menu, the post-completion card is not shown. Optionally, show a one-time prompt on first quest completion: "Want to set up your Dopamine Menu? Adding personal rewards makes completing quests feel even better."
+
+Schema Changes
+
+New table: dopamine_rewards
+
+
+id — uuid, primary key
+user_id — foreign key to users table
+reward_text — text, max 100 characters
+created_at — timestamp
+
+
+No additional fields needed. There is no usage tracking, no XP linkage, and no per-reward analytics.
+
+API
+
+GET /api/dopamine-rewards — returns all rewards for the authenticated user.
+
+POST /api/dopamine-rewards — creates a new reward. Request body: { reward_text: string }. Enforce a max of 20 rewards per user to keep the list manageable.
+
+DELETE /api/dopamine-rewards/:id — removes a reward.
+
+Random selection of which reward to show happens client-side using the full list returned by the GET endpoint. No backend randomization endpoint is needed.
+
+UI Notes
+
+The Dopamine Menu management screen should be simple — a plain list of saved rewards, an add field, and a delete action per item. The post-completion reward card should feel celebratory but brief — it should not block the user from immediately starting their next quest. A subtle animation and auto-dismiss after 8–10 seconds (with a manual dismiss option) keeps it rewarding without becoming friction.

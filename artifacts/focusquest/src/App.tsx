@@ -17,6 +17,7 @@ import Partners from "@/pages/partners";
 import Leaderboard from "@/pages/leaderboard";
 import Recurring from "@/pages/recurring";
 import AvatarPage from "@/pages/avatar";
+import DopamineMenu from "@/pages/dopamine-menu";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -154,6 +155,7 @@ function Router() {
         <Route path="/partners" component={Partners} />
         <Route path="/leaderboard" component={Leaderboard} />
         <Route path="/avatar" component={AvatarPage} />
+        <Route path="/dopamine-menu" component={DopamineMenu} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
