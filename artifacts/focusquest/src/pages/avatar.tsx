@@ -14,7 +14,7 @@ import {
   getGetBattleCurrentQueryKey,
 } from "@workspace/api-client-react";
 import type { GearStoreItem } from "@workspace/api-client-react";
-import { AvatarRenderer, SKIN_PALETTES, type AvatarClass, type AvatarSkin, type EquippedSlot } from "@/components/avatar-renderer";
+import { AvatarRenderer, type AvatarClass, type EquippedSlot } from "@/components/avatar-renderer";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -408,12 +408,11 @@ export default function AvatarPage() {
   const [activeTab, setActiveTab] = useState<"store" | "battle">("store");
   const [slotFilter, setSlotFilter] = useState<SlotFilter>("all");
   const [pendingColor, setPendingColor] = useState<string | null>(null);
-  const [pendingSkin,  setPendingSkin]  = useState<AvatarSkin | null>(null);
+
   const [busyGearId, setBusyGearId] = useState<number | null>(null);
 
   const currentColor = pendingColor ?? avatarData?.avatarColor ?? "#6366f1";
   const currentClass = (avatarData?.avatarClass ?? "fighter") as AvatarClass;
-  const currentSkin  = pendingSkin  ?? ((avatarData as any)?.avatarSkin as AvatarSkin | undefined) ?? "light";
 
   const equippedSlots: EquippedSlot[] = (avatarData?.equippedGear ?? []).map(g => ({
     slot: g.slot as EquippedSlot["slot"],
@@ -442,16 +441,6 @@ export default function AvatarPage() {
     }
   }
 
-  async function handleSkinSelect(skin: AvatarSkin) {
-    setPendingSkin(skin);
-    try {
-      await updateAvatar.mutateAsync({ data: { avatarSkin: skin } as any });
-      await qc.invalidateQueries({ queryKey: getGetAvatarQueryKey() });
-    } catch {
-      setPendingSkin(null);
-      toast({ title: "Failed to update skin", variant: "destructive" });
-    }
-  }
 
   async function handleBuy(id: number) {
     setBusyGearId(id);
@@ -538,7 +527,7 @@ export default function AvatarPage() {
             ) : (
               <AvatarRenderer
                 color={currentColor}
-                skin={currentSkin}
+
                 avatarClass={currentClass}
                 equipped={equippedSlots}
                 level={avatarData?.level ?? 1}
@@ -574,31 +563,6 @@ export default function AvatarPage() {
               </div>
             </div>
 
-            {/* Skin tone picker */}
-            <div className="w-full space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Skin</p>
-              <div className="grid grid-cols-3 gap-2">
-                {(Object.entries(SKIN_PALETTES) as [AvatarSkin, typeof SKIN_PALETTES[AvatarSkin]][]).map(([key, palette]) => (
-                  <button
-                    key={key}
-                    onClick={() => handleSkinSelect(key)}
-                    disabled={updateAvatar.isPending}
-                    className={`
-                      flex items-center gap-2 px-2 py-1.5 rounded-lg border text-xs font-medium transition-all
-                      ${currentSkin === key
-                        ? "border-primary/60 bg-primary/10 text-foreground"
-                        : "border-border text-muted-foreground hover:border-muted-foreground"}
-                    `}
-                  >
-                    <span
-                      className="w-4 h-4 rounded-full flex-shrink-0 border border-white/20"
-                      style={{ backgroundColor: palette.base }}
-                    />
-                    {palette.label}
-                  </button>
-                ))}
-              </div>
-            </div>
 
             {/* Palette (armor + hair color) */}
             <div className="w-full space-y-2">
