@@ -213,12 +213,68 @@ async function main() {
     console.log(`✓ hair ${ourStyle} (6 colors)`);
   }
 
-  // --- SPIKE manifest (fighter t0 + sword). Expanded in Tasks 2–3. ---
-  await buildOutfit("fighter", 0, [
-    { def: "feet/shoes/feet_shoes_basic.json", variant: "brown" },
-    { def: "legs/pants/legs_pants.json", variant: "brown" },
-    { def: "torso/shirts/longsleeve/torso_clothes_longsleeve.json" },
-  ]);
+  // --- Full class-outfit manifest (16 outfits × 2 builds = 32 sprites). ---
+  //
+  // Helper constructors return PartRef with verified defs. All variant names below were
+  // confirmed to exist (both builds, exact filename) by listing the GitHub spritesheets dirs
+  // for each def's male/female prefix — see task-2-report.md for the full verification table.
+  const feetShoes = (v) => ({ def: "feet/shoes/feet_shoes_basic.json", variant: v });
+  const feetSandals = (v) => ({ def: "feet/feet_sandals.json", variant: v });
+  const feetArmour = () => ({ def: "feet/feet_armour.json" });
+  const feetBoots = (v) => ({ def: "feet/boots/feet_boots_basic.json", variant: v });
+  const pants = (v) => ({ def: "legs/pants/legs_pants.json", variant: v });
+  const legsArmour = () => ({ def: "legs/legs_armour.json" });
+  const robeLegs = (v) => ({ def: "legs/pants/legs_pantaloons.json", variant: v });
+  const torsoLeather = () => ({ def: "torso/armour/torso_armour_leather.json" });
+  const torsoChainmail = () => ({ def: "torso/torso_chainmail.json" });
+  const torsoPlate = () => ({ def: "torso/armour/torso_armour_plate.json" });
+  // Base-tier cloth shirt (fighter/ranger t0). torso_clothes_tunic is female-only and its
+  // suggested male fallback in the plan (…verify…) doesn't exist; per Ambiguity Resolution #1
+  // we instead use the longsleeve def, which is a *recolor* def (no variants) covering both
+  // builds off one base sheet. The requested color intent (v) is accepted but intentionally
+  // unused — class identity for fighter/ranger comes from the armor tiers (t1-t3), not t0 cloth.
+  const shirt = (v) => ({ def: "torso/shirts/longsleeve/torso_clothes_longsleeve.json" });
+  // Robe (mage/healer, all tiers). torso_clothes_robe is female-only, so the male build uses
+  // the frock coat (torso/jacket/torso_jacket_frock.json) as a robe-like substitute — it has
+  // every color name we need natively. The female robe def's palette is narrower (10 colors);
+  // where our requested color has no exact match we substitute the nearest hue: navy→blue,
+  // lavender→purple, sky→blue. The male frock side needs no substitution.
+  const ROBE_FEMALE_VARIANT = { blue: "blue", navy: "blue", purple: "purple", lavender: "purple", white: "white", gray: "light_gray", sky: "blue" };
+  const robe = (v) => ({
+    male: { def: "torso/jacket/torso_jacket_frock.json", variant: v },
+    female: { def: "torso/shirts/torso_clothes_robe.json", variant: ROBE_FEMALE_VARIANT[v] },
+  });
+
+  const OUTFITS = {
+    fighter: {
+      0: [feetShoes("brown"), pants("brown"), shirt("brown")],
+      1: [feetArmour(), legsArmour(), torsoLeather()],
+      2: [feetArmour(), legsArmour(), torsoChainmail()],
+      3: [feetArmour(), legsArmour(), torsoPlate()],
+    },
+    ranger: {
+      0: [feetShoes("forest"), pants("forest"), shirt("forest")],
+      1: [feetBoots("brown"), pants("brown"), torsoLeather()],
+      2: [feetBoots("brown"), legsArmour(), torsoLeather()],
+      3: [feetBoots("walnut"), legsArmour(), torsoLeather()],
+    },
+    mage: {
+      0: [feetShoes("blue"), pants("blue"), robe("blue")],
+      1: [feetShoes("blue"), pants("navy"), robe("navy")],
+      2: [feetSandals("purple"), robeLegs("purple"), robe("purple")],
+      3: [feetSandals("lavender"), robeLegs("lavender"), robe("lavender")],
+    },
+    healer: {
+      0: [feetShoes("white"), pants("white"), robe("white")],
+      1: [feetShoes("white"), pants("gray"), robe("gray")],
+      2: [feetSandals("sky"), robeLegs("sky"), robe("sky")],
+      3: [feetSandals("lavender"), robeLegs("lavender"), robe("lavender")],
+    },
+  };
+  for (const [cls, tiers] of Object.entries(OUTFITS))
+    for (const [tier, parts] of Object.entries(tiers))
+      await buildOutfit(cls, Number(tier), parts);
+
   await buildGear("sword", "weapon", { def: "weapons/sword/weapon_sword_arming.json", variant: "steel" });
 
   // catalog.ts
