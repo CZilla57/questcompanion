@@ -2,6 +2,7 @@ import { useState } from "react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { ActivityItem, Task, TaskPriority, useGetMyStats, useGetTasks, useBuyStreakFreeze, useUpdateTask } from "@workspace/api-client-react";
 import { TaskItem } from "@/components/task-item";
+import { ActivityHeatmap } from "@/components/activity-heatmap";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -255,6 +256,9 @@ export default function Dashboard() {
           <Progress value={progressPercent} className="h-3 bg-muted" />
         </CardContent>
       </Card>
+
+      {/* ── Quest Activity Heatmap ────────────────────────── */}
+      <ActivityHeatmap />
 
       {/* ── XP Decay Warning ──────────────────────────────── */}
       {showDecayWarning && (
