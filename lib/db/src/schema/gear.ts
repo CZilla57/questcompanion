@@ -14,6 +14,7 @@ export const gearItemsTable = pgTable("gear_items", {
   costXp: integer("cost_xp").notNull(),
   levelRequired: integer("level_required").notNull().default(1),
   icon: text("icon").notNull(),
+  spriteId: text("sprite_id"),
 });
 
 export const userGearTable = pgTable("user_gear", {
