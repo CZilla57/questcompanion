@@ -24,6 +24,18 @@ export const CATEGORY_COLORS: Record<string, string> = {
   default:   "text-muted-foreground bg-muted/20 border-border",
 };
 
+export const CATEGORY_HEX_COLORS: Record<string, string> = {
+  health:    "#4ade80",
+  deep_work: "#60a5fa",
+  learning:  "#c084fc",
+  finance:   "#facc15",
+  admin:     "#fb923c",
+  household: "#34d399",
+  social:    "#f472b6",
+  creative:  "#e879f9",
+  default:   "#a1a1aa",
+};
+
 export const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
   CATEGORIES.map((c) => [c.slug, c.label]),
 );

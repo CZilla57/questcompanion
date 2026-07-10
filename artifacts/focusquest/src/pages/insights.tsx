@@ -10,7 +10,7 @@ import {
   TrendingUp, Zap, Calendar, Clock, Target, Trophy,
   Flame, BarChart3, Sun, Sunset, Moon, Sunrise,
 } from "lucide-react";
-import { CATEGORY_COLORS } from "@/lib/categories";
+import { CATEGORY_HEX_COLORS } from "@/lib/categories";
 
 const TIME_RANGES = [
   { label: "30d", days: 30 },
@@ -163,7 +163,7 @@ function CategoryChart({ data }: { data: InsightsCategoryBreakdown[] }) {
   const chartData = data.map(d => ({
     ...d,
     rate: completionRate(d.completed, d.total),
-    fill: CATEGORY_COLORS[d.category] ?? CATEGORY_COLORS.default,
+    fill: CATEGORY_HEX_COLORS[d.category] ?? CATEGORY_HEX_COLORS.default,
   }));
 
   return (
@@ -465,7 +465,7 @@ export default function Insights() {
                 <div key={c.category} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <span
                     className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    style={{ background: CATEGORY_COLORS[c.category] ?? CATEGORY_COLORS.default }}
+                    style={{ background: CATEGORY_HEX_COLORS[c.category] ?? CATEGORY_HEX_COLORS.default }}
                   />
                   {c.label}
                   <span className="text-muted-foreground/50">({c.xpEarned} XP)</span>

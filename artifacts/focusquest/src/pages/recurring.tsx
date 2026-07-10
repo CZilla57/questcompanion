@@ -24,6 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { CATEGORIES, CATEGORY_COLORS, CATEGORY_LABEL } from "@/lib/categories";
 
 const DAYS = [
   { value: 0, short: "Su", label: "Sunday" },
@@ -138,6 +139,7 @@ interface TaskFormState {
   title: string;
   description: string;
   priority: string;
+  category: string;
   daysOfWeek: number[];
   timeOfDay: string;
   startDate: Date;
@@ -150,6 +152,7 @@ function getDefaultForm(): TaskFormState {
     title: "",
     description: "",
     priority: "medium",
+    category: "",
     daysOfWeek: [1, 2, 3, 4, 5],
     timeOfDay: "08:00",
     startDate: new Date(),
@@ -212,6 +215,25 @@ function RecurringTaskForm({
             <SelectItem value="low">Low</SelectItem>
             <SelectItem value="medium">Medium</SelectItem>
             <SelectItem value="high">High</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <label className="text-sm font-medium text-foreground mb-1 block">Category</label>
+        <Select value={form.category || "default"} onValueChange={(v) => set("category", v)}>
+          <SelectTrigger className="border-primary/20">
+            <SelectValue placeholder="Select category" />
+          </SelectTrigger>
+          <SelectContent>
+            {CATEGORIES.map((c) => (
+              <SelectItem key={c.slug} value={c.slug}>
+                <span className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${CATEGORY_COLORS[c.slug]?.split(" ")[0]}`} />
+                  {c.label}
+                </span>
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -347,6 +369,7 @@ function RecurringTaskCard({ task }: { task: RecurringTask }) {
         timeOfDay: form.timeOfDay,
         startDate: format(form.startDate, "yyyy-MM-dd"),
         endDate: form.hasEndDate && form.endDate ? format(form.endDate, "yyyy-MM-dd") : null,
+        ...(form.category ? { category: form.category as any } : {}),
       } as Parameters<typeof updateMutation.mutate>[0]["data"],
     }, {
       onSuccess: () => { invalidate(); setEditing(false); toast({ title: "Template updated" }); },
@@ -358,6 +381,7 @@ function RecurringTaskCard({ task }: { task: RecurringTask }) {
       title: task.title,
       description: task.description ?? "",
       priority: task.priority,
+      category: task.category ?? "default",
       daysOfWeek: task.daysOfWeek,
       timeOfDay: task.timeOfDay,
       startDate: parseISO(task.startDate),
@@ -423,8 +447,13 @@ function RecurringTaskCard({ task }: { task: RecurringTask }) {
             </span>
             <span className="flex items-center gap-1 text-primary font-bold">
               <Zap className="w-3 h-3" />
-              {task.estimatedPoints} XP · {task.categoryLabel}
+              {task.estimatedPoints} XP
             </span>
+            {task.category && task.category !== "default" && (
+              <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${CATEGORY_COLORS[task.category] ?? CATEGORY_COLORS.default}`}>
+                {task.categoryLabel}
+              </span>
+            )}
           </div>
 
           {/* Streak row */}
@@ -548,6 +577,7 @@ export default function Recurring() {
         timeOfDay: form.timeOfDay,
         startDate: format(form.startDate, "yyyy-MM-dd"),
         endDate: form.hasEndDate && form.endDate ? format(form.endDate, "yyyy-MM-dd") : undefined,
+        ...(form.category ? { category: form.category as any } : {}),
       },
     }, {
       onSuccess: () => {
