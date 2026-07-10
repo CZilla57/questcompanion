@@ -3,7 +3,7 @@ import { eq, and, desc, count } from "drizzle-orm";
 import { applyMultiplier } from "../lib/xp-multiplier";
 import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, DAILY_BONUS_POINTS } from "../lib/gamification";
-import { assignPoints } from "../lib/auto-points";
+import { assignPoints, CATEGORY_LABELS, VALID_CATEGORIES } from "../lib/auto-points";
 import { advanceHabitStreak, reverseHabitStreak, type HabitStreakPreviousState } from "../lib/habit-streaks";
 import { awardStreakGear, getStreakGearRarity, type GearRewardInfo } from "../lib/gear-rewards";
 import { rollSurpriseReward, type SurpriseRewardResult } from "../lib/surprise-rewards";
@@ -24,6 +24,8 @@ function formatTask(task: typeof tasksTable.$inferSelect) {
     completedAt: task.completedAt ? task.completedAt.toISOString() : null,
     dueDate: task.dueDate,
     priority: task.priority,
+    category: task.category,
+    categoryLabel: CATEGORY_LABELS[task.category] ?? CATEGORY_LABELS.default,
     createdAt: task.createdAt.toISOString(),
     estimatedMinutes: task.estimatedMinutes ?? null,
     actualMinutes: task.actualMinutes ?? null,
@@ -170,7 +172,7 @@ router.get("/tasks", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;
 
-  const { date, completed } = req.query;
+  const { date, completed, category } = req.query;
 
   const conditions = [eq(tasksTable.userId, userId)];
   if (date && typeof date === "string") {
@@ -178,6 +180,9 @@ router.get("/tasks", async (req, res): Promise<void> => {
   }
   if (completed !== undefined && completed !== null) {
     conditions.push(eq(tasksTable.completed, completed === "true"));
+  }
+  if (category && typeof category === "string" && VALID_CATEGORIES.has(category)) {
+    conditions.push(eq(tasksTable.category, category));
   }
 
   const tasks = await db.select().from(tasksTable)
@@ -191,12 +196,13 @@ router.post("/tasks", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;
 
-  const { title, description, dueDate, priority = "medium", estimatedMinutes } = req.body as {
+  const { title, description, dueDate, priority = "medium", estimatedMinutes, category } = req.body as {
     title?: string;
     description?: string;
     dueDate?: string;
     priority?: string;
     estimatedMinutes?: number;
+    category?: string;
   };
 
   if (!title || !dueDate) {
@@ -205,6 +211,7 @@ router.post("/tasks", async (req, res): Promise<void> => {
   }
 
   const autoPoint = assignPoints(title, priority);
+  const resolvedCategory = category && VALID_CATEGORIES.has(category) ? category : autoPoint.category;
 
   const [task] = await db.insert(tasksTable).values({
     userId,
@@ -213,6 +220,7 @@ router.post("/tasks", async (req, res): Promise<void> => {
     points: autoPoint.points,
     dueDate,
     priority,
+    category: resolvedCategory,
     estimatedMinutes: estimatedMinutes ?? null,
   }).returning();
 
@@ -248,13 +256,14 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
   if (!existing) { res.status(404).json({ error: "Task not found" }); return; }
 
   // Points are server-assigned by auto-points logic and are not client-editable.
-  const { title, description, dueDate, priority, estimatedMinutes, actualMinutes } = req.body as {
+  const { title, description, dueDate, priority, estimatedMinutes, actualMinutes, category } = req.body as {
     title?: string;
     description?: string;
     dueDate?: string;
     priority?: string;
     estimatedMinutes?: number;
     actualMinutes?: number;
+    category?: string;
   };
 
   const updates: Partial<typeof tasksTable.$inferInsert> = {};
@@ -280,6 +289,7 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
   if (dueDate != null) updates.dueDate = dueDate;
   if (priority != null) updates.priority = priority;
   if (estimatedMinutes != null) updates.estimatedMinutes = estimatedMinutes;
+  if (category != null && VALID_CATEGORIES.has(category)) updates.category = category;
 
   // The WHERE clause re-checks completed=false as a safety guard against a race
   // between the read above and this write.

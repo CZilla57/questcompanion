@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
 import { db, recurringTasksTable, tasksTable, habitStreaksTable } from "@workspace/db";
-import { assignPoints } from "../lib/auto-points";
+import { assignPoints, CATEGORY_LABELS, VALID_CATEGORIES } from "../lib/auto-points";
 import { getHabitStreak, EMPTY_STREAK } from "../lib/habit-streaks";
 
 const router: IRouter = Router();
@@ -23,13 +23,14 @@ async function formatRecurring(r: typeof recurringTasksTable.$inferSelect) {
     title: r.title,
     description: r.description,
     priority: r.priority,
+    category: r.category,
+    categoryLabel: CATEGORY_LABELS[r.category] ?? CATEGORY_LABELS.default,
     daysOfWeek: days,
     timeOfDay: r.timeOfDay,
     startDate: r.startDate,
     endDate: r.endDate,
     isActive: r.isActive,
     estimatedPoints: ap.points,
-    categoryLabel: ap.categoryLabel,
     currentStreak: streak?.currentStreak ?? EMPTY_STREAK.currentStreak,
     longestStreak: streak?.longestStreak ?? EMPTY_STREAK.longestStreak,
     totalCompletions: streak?.totalCompletions ?? EMPTY_STREAK.totalCompletions,
@@ -62,6 +63,7 @@ router.post("/recurring-tasks", async (req, res): Promise<void> => {
     timeOfDay = "08:00",
     startDate,
     endDate,
+    category,
   } = req.body as {
     title?: string;
     description?: string;
@@ -70,12 +72,16 @@ router.post("/recurring-tasks", async (req, res): Promise<void> => {
     timeOfDay?: string;
     startDate?: string;
     endDate?: string;
+    category?: string;
   };
 
   if (!title || !daysOfWeek?.length || !startDate) {
     res.status(400).json({ error: "title, daysOfWeek, and startDate are required" });
     return;
   }
+
+  const autoPoint = assignPoints(title, priority);
+  const resolvedCategory = category && VALID_CATEGORIES.has(category) ? category : autoPoint.category;
 
   const [task] = await db
     .insert(recurringTasksTable)
@@ -84,6 +90,7 @@ router.post("/recurring-tasks", async (req, res): Promise<void> => {
       title,
       description,
       priority,
+      category: resolvedCategory,
       daysOfWeek: daysOfWeek.join(","),
       timeOfDay,
       startDate,
@@ -129,6 +136,7 @@ router.patch("/recurring-tasks/:id", async (req, res): Promise<void> => {
     startDate,
     endDate,
     isActive,
+    category,
   } = req.body as {
     title?: string;
     description?: string;
@@ -138,6 +146,7 @@ router.patch("/recurring-tasks/:id", async (req, res): Promise<void> => {
     startDate?: string;
     endDate?: string | null;
     isActive?: boolean;
+    category?: string;
   };
 
   const updates: Partial<typeof recurringTasksTable.$inferInsert> = {};
@@ -149,6 +158,7 @@ router.patch("/recurring-tasks/:id", async (req, res): Promise<void> => {
   if (startDate != null) updates.startDate = startDate;
   if ("endDate" in req.body) updates.endDate = endDate ?? null;
   if (isActive != null) updates.isActive = isActive;
+  if (category != null && VALID_CATEGORIES.has(category)) updates.category = category;
 
   const [task] = await db
     .update(recurringTasksTable)
@@ -240,6 +250,7 @@ export async function spawnRecurringTasksForToday(): Promise<number> {
       points: ap.points,
       dueDate: todayStr,
       priority: tmpl.priority,
+      category: tmpl.category,
     }).onConflictDoNothing().returning({ id: tasksTable.id });
     if (inserted) created++;
   }

@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, and, gte, gt, desc } from "drizzle-orm";
 import { db, usersTable, tasksTable, activityTable } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel } from "../lib/gamification";
-import { assignPoints } from "../lib/auto-points";
+import { CATEGORY_LABELS } from "../lib/auto-points";
 
 const router: IRouter = Router();
 
@@ -189,16 +189,15 @@ router.get("/users/me/insights", async (req, res): Promise<void> => {
   type CatStat = { category: string; label: string; completed: number; total: number; xpEarned: number };
   const catMap = new Map<string, CatStat>();
   for (const task of allTasks) {
-    const ap = assignPoints(task.title, task.priority);
-    const key = ap.category;
+    const key = task.category;
     if (!catMap.has(key)) {
-      catMap.set(key, { category: key, label: ap.categoryLabel, completed: 0, total: 0, xpEarned: 0 });
+      catMap.set(key, { category: key, label: CATEGORY_LABELS[key] ?? CATEGORY_LABELS.default, completed: 0, total: 0, xpEarned: 0 });
     }
     const stat = catMap.get(key)!;
     stat.total++;
     if (task.completed) {
       stat.completed++;
-      stat.xpEarned += task.pointsAwarded ?? ap.points;
+      stat.xpEarned += task.pointsAwarded ?? task.points;
     }
   }
   const categoryBreakdown = Array.from(catMap.values())
