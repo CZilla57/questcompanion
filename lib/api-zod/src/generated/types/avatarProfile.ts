@@ -13,6 +13,10 @@ export interface AvatarProfile {
   avatarColor: string;
   avatarClass: AvatarProfileAvatarClass;
   avatarSkin: AvatarProfileAvatarSkin;
+  avatarHairStyle?: string;
+  avatarHairColor?: string;
+  avatarBodyBuild?: string;
+  avatarFace?: string;
   /** @minimum 1 */
   level: number;
   battlePower: number;
@@ -20,4 +24,8 @@ export interface AvatarProfile {
   availableColors: string[];
   availableClasses: string[];
   availableSkins: string[];
+  availableHairStyles?: string[];
+  availableHairColors?: string[];
+  availableBuilds?: string[];
+  availableFaces?: string[];
 }

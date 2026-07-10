@@ -8,6 +8,10 @@ const router: IRouter = Router();
 const AVATAR_CLASSES = ["fighter", "mage", "ranger", "healer"] as const;
 const AVATAR_SKINS   = ["light", "tan", "brown", "dark", "green", "blue"] as const;
 const AVATAR_COLORS  = ["#00FFFF", "#A855F7", "#F97316", "#22C55E", "#EC4899", "#EAB308", "#6366F1", "#F43F5E"];
+const AVATAR_HAIR_STYLES = ["bald", "short", "long", "ponytail", "mohawk"] as const;
+const AVATAR_HAIR_COLORS = ["brown", "black", "blonde", "red", "white", "blue"] as const;
+const AVATAR_BUILDS      = ["slim", "average", "broad"] as const;
+const AVATAR_FACES       = ["neutral", "stern", "smile"] as const;
 
 function calcBattlePower(level: number, equippedPower: number): number {
   return 30 + level * 5 + equippedPower;
@@ -31,6 +35,10 @@ async function buildAvatarResponse(userId: number) {
     avatarColor:      user.avatarColor,
     avatarClass:      user.avatarClass,
     avatarSkin:       user.avatarSkin ?? "light",
+    avatarHairStyle:  user.avatarHairStyle  ?? "short",
+    avatarHairColor:  user.avatarHairColor  ?? "brown",
+    avatarBodyBuild:  user.avatarBodyBuild  ?? "average",
+    avatarFace:       user.avatarFace       ?? "neutral",
     level:            levelInfo.level,
     battlePower:      calcBattlePower(levelInfo.level, equippedPower),
     equippedGear:     equipped.map(g => ({
@@ -40,10 +48,15 @@ async function buildAvatarResponse(userId: number) {
       rarity:    g.gear.rarity,
       statPower: g.gear.statPower,
       icon:      g.gear.icon,
+      spriteId:  g.gear.spriteId ?? null,
     })),
     availableColors:  AVATAR_COLORS,
     availableClasses: [...AVATAR_CLASSES],
     availableSkins:   [...AVATAR_SKINS],
+    availableHairStyles: [...AVATAR_HAIR_STYLES],
+    availableHairColors: [...AVATAR_HAIR_COLORS],
+    availableBuilds:     [...AVATAR_BUILDS],
+    availableFaces:      [...AVATAR_FACES],
   };
 }
 
@@ -58,10 +71,11 @@ router.patch("/avatar", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;
 
-  const { avatarColor, avatarClass, avatarSkin } = req.body as {
-    avatarColor?: string;
-    avatarClass?: string;
-    avatarSkin?: string;
+  const { avatarColor, avatarClass, avatarSkin,
+          avatarHairStyle, avatarHairColor, avatarBodyBuild, avatarFace } = req.body as {
+    avatarColor?: string; avatarClass?: string; avatarSkin?: string;
+    avatarHairStyle?: string; avatarHairColor?: string;
+    avatarBodyBuild?: string; avatarFace?: string;
   };
   const updates: Partial<typeof usersTable.$inferInsert> = {};
 
@@ -82,6 +96,30 @@ router.patch("/avatar", async (req, res): Promise<void> => {
       res.status(400).json({ error: "Invalid avatar skin" }); return;
     }
     updates.avatarSkin = avatarSkin;
+  }
+  if (avatarHairStyle != null) {
+    if (!(AVATAR_HAIR_STYLES as readonly string[]).includes(avatarHairStyle)) {
+      res.status(400).json({ error: "Invalid hair style" }); return;
+    }
+    updates.avatarHairStyle = avatarHairStyle;
+  }
+  if (avatarHairColor != null) {
+    if (!(AVATAR_HAIR_COLORS as readonly string[]).includes(avatarHairColor)) {
+      res.status(400).json({ error: "Invalid hair color" }); return;
+    }
+    updates.avatarHairColor = avatarHairColor;
+  }
+  if (avatarBodyBuild != null) {
+    if (!(AVATAR_BUILDS as readonly string[]).includes(avatarBodyBuild)) {
+      res.status(400).json({ error: "Invalid body build" }); return;
+    }
+    updates.avatarBodyBuild = avatarBodyBuild;
+  }
+  if (avatarFace != null) {
+    if (!(AVATAR_FACES as readonly string[]).includes(avatarFace)) {
+      res.status(400).json({ error: "Invalid face" }); return;
+    }
+    updates.avatarFace = avatarFace;
   }
 
   if (Object.keys(updates).length === 0) {

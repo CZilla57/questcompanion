@@ -1559,6 +1559,9 @@ components:
           type: integer
         icon:
           type: string
+        spriteId:
+          type: string
+          nullable: true
 
     AvatarProfile:
       type: object
@@ -1572,6 +1575,14 @@ components:
         avatarSkin:
           type: string
           enum: [light, tan, brown, dark, green, blue]
+        avatarHairStyle:
+          type: string
+        avatarHairColor:
+          type: string
+        avatarBodyBuild:
+          type: string
+        avatarFace:
+          type: string
         level:
           type: integer
           minimum: 1
@@ -1593,6 +1604,22 @@ components:
           type: array
           items:
             type: string
+        availableHairStyles:
+          type: array
+          items:
+            type: string
+        availableHairColors:
+          type: array
+          items:
+            type: string
+        availableBuilds:
+          type: array
+          items:
+            type: string
+        availableFaces:
+          type: array
+          items:
+            type: string
 
     AvatarUpdateInput:
       type: object
@@ -1605,6 +1632,14 @@ components:
         avatarSkin:
           type: string
           enum: [light, tan, brown, dark, green, blue]
+        avatarHairStyle:
+          type: string
+        avatarHairColor:
+          type: string
+        avatarBodyBuild:
+          type: string
+        avatarFace:
+          type: string
 
     GearStoreItem:
       type: object

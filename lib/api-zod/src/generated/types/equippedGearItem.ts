@@ -15,4 +15,5 @@ export interface EquippedGearItem {
   rarity: EquippedGearItemRarity;
   statPower: number;
   icon: string;
+  spriteId?: string | null;
 }
