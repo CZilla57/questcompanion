@@ -1049,3 +1049,22 @@ export const DeleteDopamineRewardResponse = zod.object({
 })
 
 
+/**
+ * @summary Get completion heatmap data for the last N days
+ */
+export const getCalendarHeatmapQueryDaysDefault = 90;
+
+export const GetCalendarHeatmapQueryParams = zod.object({
+  "days": zod.coerce.number().default(getCalendarHeatmapQueryDaysDefault).describe('Number of days to return (default 90)')
+})
+
+export const GetCalendarHeatmapResponse = zod.object({
+  "days": zod.array(zod.object({
+  "date": zod.string().describe('Date in YYYY-MM-DD format'),
+  "totalTasks": zod.number(),
+  "completedTasks": zod.number(),
+  "xpEarned": zod.number()
+}))
+})
+
+
