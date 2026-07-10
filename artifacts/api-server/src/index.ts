@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { startScheduler } from "./lib/notification-scheduler";
+import { pool } from "@workspace/db";
 
 const rawPort = process.env["PORT"];
 
@@ -16,7 +17,7 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-app.listen(port, (err) => {
+const server = app.listen(port, (err) => {
   if (err) {
     logger.error({ err }, "Error listening on port");
     process.exit(1);
@@ -25,3 +26,15 @@ app.listen(port, (err) => {
   logger.info({ port }, "Server listening");
   startScheduler();
 });
+
+function shutdown() {
+  logger.info("Shutting down...");
+  server.close(async () => {
+    await pool.end();
+    process.exit(0);
+  });
+  setTimeout(() => process.exit(1), 10_000);
+}
+
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);

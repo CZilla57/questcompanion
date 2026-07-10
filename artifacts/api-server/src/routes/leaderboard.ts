@@ -9,7 +9,7 @@ router.get("/leaderboard", async (req, res): Promise<void> => {
   const period = req.query.period === "weekly" ? "weekly" : "alltime";
 
   const users = await db.select().from(usersTable)
-    .where(isNotNull(usersTable.replitId))
+    .where(isNotNull(usersTable.externalId))
     .orderBy(period === "weekly" ? desc(usersTable.weeklyPoints) : desc(usersTable.totalPoints));
 
   const entries = await Promise.all(users.map(async (u, idx) => {

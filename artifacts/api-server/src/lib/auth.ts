@@ -5,7 +5,7 @@ import { db, sessionsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import type { AuthUser } from "@workspace/api-zod";
 
-export const ISSUER_URL = process.env.ISSUER_URL ?? "https://replit.com/oidc";
+export const ISSUER_URL = process.env.ISSUER_URL ?? "https://accounts.google.com";
 export const SESSION_COOKIE = "sid";
 export const SESSION_TTL = 7 * 24 * 60 * 60 * 1000;
 
@@ -23,7 +23,8 @@ export async function getOidcConfig(): Promise<client.Configuration> {
   if (!oidcConfig) {
     oidcConfig = await client.discovery(
       new URL(ISSUER_URL),
-      process.env.REPL_ID!,
+      process.env.OAUTH_CLIENT_ID!,
+      process.env.OAUTH_CLIENT_SECRET,
     );
   }
   return oidcConfig;

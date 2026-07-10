@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import { Layout } from "@/components/layout";
-import { useAuth } from "@workspace/replit-auth-web";
+import { useAuth } from "@workspace/auth-web";
 import { useGetMyStats, useUpdateMe, getGetMyStatsQueryKey } from "@workspace/api-client-react";
 import { Swords, Trophy } from "lucide-react";
 

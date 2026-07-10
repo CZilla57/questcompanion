@@ -1,0 +1,10 @@
+node_modules
+.git
+.env
+.env.local
+dist
+*.tsbuildinfo
+.agents
+.replit
+.replitignore
+attached_assets

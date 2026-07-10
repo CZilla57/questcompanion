@@ -1,4 +1,5 @@
 import express, { type Express } from "express";
+import path from "path";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
@@ -9,7 +10,7 @@ import { authMiddleware } from "./middlewares/authMiddleware";
 const app: Express = express();
 
 const allowedOrigins: Set<string> = new Set(
-  (process.env.REPLIT_DOMAINS ?? "")
+  (process.env.ALLOWED_ORIGINS ?? "")
     .split(",")
     .map((d) => d.trim())
     .filter(Boolean)
@@ -57,5 +58,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(authMiddleware);
 
 app.use("/api", router);
+
+if (process.env.NODE_ENV === "production") {
+  const staticDir = path.resolve(import.meta.dirname, "public");
+  app.use(express.static(staticDir));
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(staticDir, "index.html"));
+  });
+}
 
 export default app;

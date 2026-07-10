@@ -67,12 +67,12 @@ function generateUsername(claims: Record<string, unknown>): string {
 }
 
 async function upsertGameUser(claims: Record<string, unknown>): Promise<{ id: number }> {
-  const replitId = String(claims.sub);
+  const externalId = String(claims.sub);
 
   const [existing] = await db
     .select({ id: usersTable.id })
     .from(usersTable)
-    .where(eq(usersTable.replitId, replitId));
+    .where(eq(usersTable.externalId, externalId));
 
   if (existing) {
     return existing;
@@ -92,7 +92,7 @@ async function upsertGameUser(claims: Record<string, unknown>): Promise<{ id: nu
 
   const [created] = await db
     .insert(usersTable)
-    .values({ replitId, username })
+    .values({ externalId, username })
     .returning({ id: usersTable.id });
 
   return created;
@@ -229,7 +229,7 @@ router.post("/logout", async (req: Request, res: Response) => {
   }
 
   const endSessionUrl = oidc.buildEndSessionUrl(config, {
-    client_id: process.env.REPL_ID!,
+    client_id: process.env.OAUTH_CLIENT_ID!,
     post_logout_redirect_uri: origin,
   });
 

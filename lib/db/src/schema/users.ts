@@ -4,7 +4,7 @@ import { z } from "zod/v4";
 
 export const usersTable = pgTable("users", {
   id: serial("id").primaryKey(),
-  replitId: varchar("replit_id").unique(),
+  externalId: varchar("external_id").unique(),
   username: text("username").notNull().unique(),
   displayName: text("display_name"),
   avatarColor: text("avatar_color").notNull().default("#6366f1"),
