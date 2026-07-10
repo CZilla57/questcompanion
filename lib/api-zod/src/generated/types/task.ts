@@ -20,8 +20,21 @@ export interface Task {
   dueDate: string;
   priority: TaskPriority;
   createdAt: string;
-  /** @nullable */
+  /**
+     * Time the user estimated the quest would take (in minutes)
+     * @nullable
+     */
   estimatedMinutes?: number | null;
-  /** @nullable */
+  /**
+     * Time the user actually spent on the quest (in minutes)
+     * @nullable
+     */
   actualMinutes?: number | null;
+  /** Whether this quest is pinned as a daily focus */
+  isDailyFocus?: boolean;
+  /**
+     * The date (YYYY-MM-DD) this quest was pinned as focus
+     * @nullable
+     */
+  focusDate?: string | null;
 }

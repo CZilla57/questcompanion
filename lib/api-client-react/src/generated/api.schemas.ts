@@ -154,13 +154,27 @@ export interface Task {
   dueDate: string;
   priority: TaskPriority;
   createdAt: string;
-  /** @nullable */
+  /**
+     * Time the user estimated the quest would take (in minutes)
+     * @nullable
+     */
   estimatedMinutes?: number | null;
-  /** @nullable */
+  /**
+     * Time the user actually spent on the quest (in minutes)
+     * @nullable
+     */
   actualMinutes?: number | null;
-  isDailyFocus: boolean;
-  /** @nullable */
+  /** Whether this quest is pinned as a daily focus */
+  isDailyFocus?: boolean;
+  /**
+     * The date (YYYY-MM-DD) this quest was pinned as focus
+     * @nullable
+     */
   focusDate?: string | null;
+}
+
+export interface FocusToggleInput {
+  pin: boolean;
 }
 
 export type TaskInputPriority = typeof TaskInputPriority[keyof typeof TaskInputPriority];
@@ -184,6 +198,7 @@ export interface TaskInput {
   dueDate: string;
   priority?: TaskInputPriority;
   /**
+     * Optional time estimate in minutes
      * @minimum 1
      * @maximum 1440
      */
@@ -211,11 +226,13 @@ export interface TaskUpdate {
   dueDate?: string;
   priority?: TaskUpdatePriority;
   /**
+     * Time estimate (only updatable on incomplete tasks)
      * @minimum 1
      * @maximum 1440
      */
   estimatedMinutes?: number;
   /**
+     * Actual time spent (updatable on completed tasks too)
      * @minimum 1
      * @maximum 1440
      */
@@ -315,10 +332,6 @@ export interface TaskCompletionResult {
   focusBonusAwarded?: boolean;
   /** XP awarded for completing all 3 focus quests */
   focusBonusPoints?: number;
-}
-
-export interface FocusToggleInput {
-  pin: boolean;
 }
 
 export type RecurringTaskPriority = typeof RecurringTaskPriority[keyof typeof RecurringTaskPriority];
@@ -586,6 +599,49 @@ export interface BuyGearResult {
   remainingXp: number;
 }
 
+export interface TaskRecommendation {
+  task?: Task | null;
+  reason: string;
+  category?: string;
+  categoryLabel?: string;
+}
+
+export interface InsightsCategoryBreakdown {
+  category: string;
+  label: string;
+  completed: number;
+  total: number;
+  xpEarned: number;
+}
+
+export interface InsightsDowStat {
+  day: number;
+  label: string;
+  completed: number;
+  total: number;
+}
+
+export interface InsightsPeriodStat {
+  key: string;
+  label: string;
+  range: string;
+  completed: number;
+}
+
+export interface InsightsXpPoint {
+  date: string;
+  label: string;
+  xp: number;
+}
+
+export interface InsightsResponse {
+  days: number;
+  xpHistory: InsightsXpPoint[];
+  categoryBreakdown: InsightsCategoryBreakdown[];
+  dayOfWeekStats: InsightsDowStat[];
+  periodStats: InsightsPeriodStat[];
+}
+
 /**
  * @nullable
  */
@@ -631,6 +687,22 @@ export interface BattleResult {
   weekKey: string;
 }
 
+export interface DopamineReward {
+  id: number;
+  userId: number;
+  /** @maxLength 100 */
+  rewardText: string;
+  createdAt: string;
+}
+
+export interface DopamineRewardInput {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  rewardText: string;
+}
+
 /**
  * Opaque session token — `Bearer <sid>`.
  */
@@ -655,6 +727,17 @@ export type BuyStreakFreeze400 = {
 
 export type GetMyXpHistoryParams = {
 days?: number;
+};
+
+export type GetMyInsightsParams = {
+days?: number;
+};
+
+export type GetTaskRecommendationParams = {
+/**
+ * Comma-separated task IDs to exclude from consideration
+ */
+exclude?: string;
 };
 
 export type GetTasksParams = {
@@ -684,56 +767,4 @@ export const GetLeaderboardPeriod = {
 export type SearchUsersParams = {
 q: string;
 };
-
-export interface InsightsCategoryBreakdown {
-  category: string;
-  label: string;
-  completed: number;
-  total: number;
-  xpEarned: number;
-}
-
-export interface InsightsDowStat {
-  day: number;
-  label: string;
-  completed: number;
-  total: number;
-}
-
-export interface InsightsPeriodStat {
-  key: string;
-  label: string;
-  range: string;
-  completed: number;
-}
-
-export interface InsightsXpPoint {
-  date: string;
-  label: string;
-  xp: number;
-}
-
-export interface InsightsResponse {
-  days: number;
-  xpHistory: InsightsXpPoint[];
-  categoryBreakdown: InsightsCategoryBreakdown[];
-  dayOfWeekStats: InsightsDowStat[];
-  periodStats: InsightsPeriodStat[];
-}
-
-export type GetMyInsightsParams = {
-  days?: number;
-};
-
-export interface DopamineReward {
-  id: number;
-  userId: number;
-  rewardText: string;
-  createdAt: string;
-}
-
-export interface DopamineRewardInput {
-  /** @minLength 1 */
-  rewardText: string;
-}
 

@@ -19,6 +19,7 @@ export interface TaskInput {
   dueDate: string;
   priority?: TaskInputPriority;
   /**
+     * Optional time estimate in minutes
      * @minimum 1
      * @maximum 1440
      */

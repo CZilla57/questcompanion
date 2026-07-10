@@ -33,14 +33,16 @@ import type {
   DopamineReward,
   DopamineRewardInput,
   ErrorEnvelope,
+  FocusToggleInput,
   GearStoreResponse,
   GetLeaderboardParams,
   GetMyInsightsParams,
   GetMyXpHistoryParams,
+  GetTaskRecommendationParams,
   GetTasksParams,
-  InsightsResponse,
   HandleBrowserLoginCallbackParams,
   HealthStatus,
+  InsightsResponse,
   LeaderboardEntry,
   LogoutSuccess,
   MobileTokenExchangeRequest,
@@ -53,10 +55,10 @@ import type {
   SearchUsersParams,
   StreakFreezeResult,
   SuccessEnvelope,
-  FocusToggleInput,
   Task,
   TaskCompletionResult,
   TaskInput,
+  TaskRecommendation,
   TaskUpdate,
   User,
   UserBadge,
@@ -991,40 +993,173 @@ export function useGetMyXpHistory<TData = Awaited<ReturnType<typeof getMyXpHisto
 
 
 
-export const getGetMyInsightsUrl = (params?: GetMyInsightsParams) => {
+export const getGetMyInsightsUrl = (params?: GetMyInsightsParams,) => {
   const normalizedParams = new URLSearchParams();
+
   Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) normalizedParams.append(key, value === null ? 'null' : value.toString());
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
   });
+
   const stringifiedParams = normalizedParams.toString();
-  return stringifiedParams.length > 0 ? `/api/users/me/insights?${stringifiedParams}` : `/api/users/me/insights`;
+
+  return stringifiedParams.length > 0 ? `/api/users/me/insights?${stringifiedParams}` : `/api/users/me/insights`
 }
 
+/**
+ * @summary Get pattern insights for the current user
+ */
 export const getMyInsights = async (params?: GetMyInsightsParams, options?: RequestInit): Promise<InsightsResponse> => {
-  return customFetch<InsightsResponse>(getGetMyInsightsUrl(params), { ...options, method: 'GET' });
-}
 
-export const getGetMyInsightsQueryKey = (params?: GetMyInsightsParams) => {
-  return [`/api/users/me/insights`, ...(params ? [params] : [])] as const;
-}
+  return customFetch<InsightsResponse>(getGetMyInsightsUrl(params),
+  {
+    ...options,
+    method: 'GET'
 
-export const getGetMyInsightsQueryOptions = <TData = Awaited<ReturnType<typeof getMyInsights>>, TError = ErrorType<unknown>>(params?: GetMyInsightsParams, options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof getMyInsights>>, TError, TData>, request?: SecondParameter<typeof customFetch>}) => {
-  const {query: queryOptions, request: requestOptions} = options ?? {};
-  const queryKey = queryOptions?.queryKey ?? getGetMyInsightsQueryKey(params);
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyInsights>>> = ({ signal }) => getMyInsights(params, { signal, ...requestOptions });
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<Awaited<ReturnType<typeof getMyInsights>>, TError, TData> & { queryKey: QueryKey };
+
+  }
+);}
+
+
+
+
+
+export const getGetMyInsightsQueryKey = (params?: GetMyInsightsParams,) => {
+    return [
+    `/api/users/me/insights`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMyInsightsQueryOptions = <TData = Awaited<ReturnType<typeof getMyInsights>>, TError = ErrorType<unknown>>(params?: GetMyInsightsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyInsights>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyInsightsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyInsights>>> = ({ signal }) => getMyInsights(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyInsights>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetMyInsightsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyInsights>>>
 export type GetMyInsightsQueryError = ErrorType<unknown>
 
+
+/**
+ * @summary Get pattern insights for the current user
+ */
+
 export function useGetMyInsights<TData = Awaited<ReturnType<typeof getMyInsights>>, TError = ErrorType<unknown>>(
-  params?: GetMyInsightsParams, options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof getMyInsights>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetMyInsightsQueryOptions(params, options);
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+ params?: GetMyInsightsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyInsights>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyInsightsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+
+
+
+
+
+
+export const getGetTaskRecommendationUrl = (params?: GetTaskRecommendationParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/tasks/recommend?${stringifiedParams}` : `/api/tasks/recommend`
+}
+
+/**
+ * @summary Get a recommended next task using scoring logic
+ */
+export const getTaskRecommendation = async (params?: GetTaskRecommendationParams, options?: RequestInit): Promise<TaskRecommendation> => {
+
+  return customFetch<TaskRecommendation>(getGetTaskRecommendationUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTaskRecommendationQueryKey = (params?: GetTaskRecommendationParams,) => {
+    return [
+    `/api/tasks/recommend`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetTaskRecommendationQueryOptions = <TData = Awaited<ReturnType<typeof getTaskRecommendation>>, TError = ErrorType<unknown>>(params?: GetTaskRecommendationParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTaskRecommendation>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTaskRecommendationQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTaskRecommendation>>> = ({ signal }) => getTaskRecommendation(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTaskRecommendation>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTaskRecommendationQueryResult = NonNullable<Awaited<ReturnType<typeof getTaskRecommendation>>>
+export type GetTaskRecommendationQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get a recommended next task using scoring logic
+ */
+
+export function useGetTaskRecommendation<TData = Awaited<ReturnType<typeof getTaskRecommendation>>, TError = ErrorType<unknown>>(
+ params?: GetTaskRecommendationParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTaskRecommendation>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTaskRecommendationQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetTasksUrl = (params?: GetTasksParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -1975,6 +2110,78 @@ export const useUncompleteTask = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUncompleteTaskMutationOptions(options));
+    }
+
+export const getPatchTaskFocusUrl = (id: number,) => {
+
+
+
+
+  return `/api/tasks/${id}/focus`
+}
+
+/**
+ * @summary Pin or unpin a task as a daily focus quest
+ */
+export const patchTaskFocus = async (id: number,
+    focusToggleInput: FocusToggleInput, options?: RequestInit): Promise<Task> => {
+
+  return customFetch<Task>(getPatchTaskFocusUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      focusToggleInput,)
+  }
+);}
+
+
+
+
+export const getPatchTaskFocusMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchTaskFocus>>, TError,{id: number;data: BodyType<FocusToggleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof patchTaskFocus>>, TError,{id: number;data: BodyType<FocusToggleInput>}, TContext> => {
+
+const mutationKey = ['patchTaskFocus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchTaskFocus>>, {id: number;data: BodyType<FocusToggleInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  patchTaskFocus(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PatchTaskFocusMutationResult = NonNullable<Awaited<ReturnType<typeof patchTaskFocus>>>
+    export type PatchTaskFocusMutationBody = BodyType<FocusToggleInput>
+    export type PatchTaskFocusMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Pin or unpin a task as a daily focus quest
+ */
+export const usePatchTaskFocus = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchTaskFocus>>, TError,{id: number;data: BodyType<FocusToggleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof patchTaskFocus>>,
+        TError,
+        {id: number;data: BodyType<FocusToggleInput>},
+        TContext
+      > => {
+      return useMutation(getPatchTaskFocusMutationOptions(options));
     }
 
 export const getGetBadgesUrl = () => {
@@ -3246,129 +3453,221 @@ export const useEnterBattle = <TError = ErrorType<ErrorEnvelope>,
       return useMutation(getEnterBattleMutationOptions(options));
     }
 
+export const getGetDopamineRewardsUrl = () => {
 
 
-// ─── Dopamine Rewards ─────────────────────────────────────────────────────────
 
-export const getDopamineRewards = (
-  options?: SecondParameter<typeof customFetch>,
-) => {
-  return customFetch<DopamineReward[]>(`/api/dopamine-rewards`, {
+
+  return `/api/dopamine-rewards`
+}
+
+/**
+ * @summary Get all dopamine rewards for the current user
+ */
+export const getDopamineRewards = async ( options?: RequestInit): Promise<DopamineReward[]> => {
+
+  return customFetch<DopamineReward[]>(getGetDopamineRewardsUrl(),
+  {
     ...options,
-    method: 'GET',
-  });
-};
+    method: 'GET'
 
-export const getGetDopamineRewardsQueryKey = () => ['/dopamine-rewards'] as const;
 
-export type GetDopamineRewardsQueryResult = NonNullable<Awaited<ReturnType<typeof getDopamineRewards>>>;
-export type GetDopamineRewardsQueryError = ErrorType<ErrorEnvelope>;
+  }
+);}
 
-export const useGetDopamineRewards = <TData = Awaited<ReturnType<typeof getDopamineRewards>>, TError = ErrorType<ErrorEnvelope>>(
-  options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof getDopamineRewards>>, TError, TData>, request?: SecondParameter<typeof customFetch> }
-): UseQueryResult<TData, TError> & { queryKey: QueryKey } => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
-  const queryKey = queryOptions?.queryKey ?? getGetDopamineRewardsQueryKey();
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getDopamineRewards>>> = ({ signal }) =>
-    getDopamineRewards({ signal, ...requestOptions });
-  const query = useQuery({ queryKey, queryFn, ...queryOptions }) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
-  query.queryKey = queryKey;
-  return query;
-};
 
-export const createDopamineReward = (
-  dopamineRewardInput: BodyType<DopamineRewardInput>,
-  options?: SecondParameter<typeof customFetch>,
+
+
+
+export const getGetDopamineRewardsQueryKey = () => {
+    return [
+    `/api/dopamine-rewards`
+    ] as const;
+    }
+
+
+export const getGetDopamineRewardsQueryOptions = <TData = Awaited<ReturnType<typeof getDopamineRewards>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDopamineRewards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
-  return customFetch<DopamineReward>(`/api/dopamine-rewards`, {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDopamineRewardsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDopamineRewards>>> = ({ signal }) => getDopamineRewards({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDopamineRewards>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDopamineRewardsQueryResult = NonNullable<Awaited<ReturnType<typeof getDopamineRewards>>>
+export type GetDopamineRewardsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get all dopamine rewards for the current user
+ */
+
+export function useGetDopamineRewards<TData = Awaited<ReturnType<typeof getDopamineRewards>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDopamineRewards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDopamineRewardsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateDopamineRewardUrl = () => {
+
+
+
+
+  return `/api/dopamine-rewards`
+}
+
+/**
+ * @summary Create a new dopamine reward
+ */
+export const createDopamineReward = async (dopamineRewardInput: DopamineRewardInput, options?: RequestInit): Promise<DopamineReward> => {
+
+  return customFetch<DopamineReward>(getCreateDopamineRewardUrl(),
+  {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(dopamineRewardInput),
-  });
-};
-
-export const getCreateDopamineRewardMutationOptions = <TError = ErrorType<ErrorEnvelope>, TContext = unknown>(
-  options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof createDopamineReward>>, TError, { data: BodyType<DopamineRewardInput> }, TContext>, request?: SecondParameter<typeof customFetch> }
-): UseMutationOptions<Awaited<ReturnType<typeof createDopamineReward>>, TError, { data: BodyType<DopamineRewardInput> }, TContext> => {
-  const { mutation: mutationOptions, request: requestOptions } = options ?? {};
-  const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDopamineReward>>, { data: BodyType<DopamineRewardInput> }> =
-    (props) => {
-      const { data } = props ?? {};
-      return createDopamineReward(data, requestOptions);
-    };
-  return { mutationFn, ...mutationOptions };
-};
-
-export type CreateDopamineRewardMutationResult = NonNullable<Awaited<ReturnType<typeof createDopamineReward>>>;
-export type CreateDopamineRewardMutationError = ErrorType<ErrorEnvelope>;
-
-export const useCreateDopamineReward = <TError = ErrorType<ErrorEnvelope>, TContext = unknown>(
-  options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof createDopamineReward>>, TError, { data: BodyType<DopamineRewardInput> }, TContext>, request?: SecondParameter<typeof customFetch> }
-): UseMutationResult<Awaited<ReturnType<typeof createDopamineReward>>, TError, { data: BodyType<DopamineRewardInput> }, TContext> => {
-  return useMutation(getCreateDopamineRewardMutationOptions(options));
-};
-
-export const deleteDopamineReward = (
-  id: number,
-  options?: SecondParameter<typeof customFetch>,
-) => {
-  return customFetch<SuccessEnvelope>(`/api/dopamine-rewards/${id}`, {
-    ...options,
-    method: 'DELETE',
-  });
-};
-
-export const getDeleteDopamineRewardMutationOptions = <TError = ErrorType<ErrorEnvelope>, TContext = unknown>(
-  options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof deleteDopamineReward>>, TError, { id: number }, TContext>, request?: SecondParameter<typeof customFetch> }
-): UseMutationOptions<Awaited<ReturnType<typeof deleteDopamineReward>>, TError, { id: number }, TContext> => {
-  const { mutation: mutationOptions, request: requestOptions } = options ?? {};
-  const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteDopamineReward>>, { id: number }> =
-    (props) => {
-      const { id } = props ?? {};
-      return deleteDopamineReward(id, requestOptions);
-    };
-  return { mutationFn, ...mutationOptions };
-};
-
-export type DeleteDopamineRewardMutationResult = NonNullable<Awaited<ReturnType<typeof deleteDopamineReward>>>;
-export type DeleteDopamineRewardMutationError = ErrorType<ErrorEnvelope>;
-
-export const useDeleteDopamineReward = <TError = ErrorType<ErrorEnvelope>, TContext = unknown>(
-  options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof deleteDopamineReward>>, TError, { id: number }, TContext>, request?: SecondParameter<typeof customFetch> }
-): UseMutationResult<Awaited<ReturnType<typeof deleteDopamineReward>>, TError, { id: number }, TContext> => {
-  return useMutation(getDeleteDopamineRewardMutationOptions(options));
-};
-
-export const getPatchTaskFocusUrl = (id: number) => `/api/tasks/${id}/focus`;
-
-export const patchTaskFocus = async (id: number, focusToggleInput: FocusToggleInput, options?: RequestInit): Promise<Task> => {
-  return customFetch<Task>(getPatchTaskFocusUrl(id), {
-    ...options,
-    method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(focusToggleInput),
-  });
-};
+    body: JSON.stringify(
+      dopamineRewardInput,)
+  }
+);}
 
-export const getPatchTaskFocusMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(
-  options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof patchTaskFocus>>, TError, { id: number; data: FocusToggleInput }, TContext>, request?: SecondParameter<typeof customFetch> }
-): UseMutationOptions<Awaited<ReturnType<typeof patchTaskFocus>>, TError, { id: number; data: FocusToggleInput }, TContext> => {
-  const { mutation: mutationOptions, request: requestOptions } = options ?? {};
-  const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchTaskFocus>>, { id: number; data: FocusToggleInput }> =
-    (props) => {
-      const { id, data } = props ?? {};
-      return patchTaskFocus(id, data, requestOptions);
-    };
-  return { mutationFn, ...mutationOptions };
-};
 
-export type PatchTaskFocusMutationResult = NonNullable<Awaited<ReturnType<typeof patchTaskFocus>>>;
-export type PatchTaskFocusMutationBody = FocusToggleInput;
-export type PatchTaskFocusMutationError = ErrorType<unknown>;
 
-export const usePatchTaskFocus = <TError = ErrorType<unknown>, TContext = unknown>(
-  options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof patchTaskFocus>>, TError, { id: number; data: FocusToggleInput }, TContext>, request?: SecondParameter<typeof customFetch> }
-): UseMutationResult<Awaited<ReturnType<typeof patchTaskFocus>>, TError, { id: number; data: FocusToggleInput }, TContext> => {
-  return useMutation(getPatchTaskFocusMutationOptions(options));
-};
+
+export const getCreateDopamineRewardMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDopamineReward>>, TError,{data: BodyType<DopamineRewardInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createDopamineReward>>, TError,{data: BodyType<DopamineRewardInput>}, TContext> => {
+
+const mutationKey = ['createDopamineReward'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDopamineReward>>, {data: BodyType<DopamineRewardInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createDopamineReward(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateDopamineRewardMutationResult = NonNullable<Awaited<ReturnType<typeof createDopamineReward>>>
+    export type CreateDopamineRewardMutationBody = BodyType<DopamineRewardInput>
+    export type CreateDopamineRewardMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Create a new dopamine reward
+ */
+export const useCreateDopamineReward = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDopamineReward>>, TError,{data: BodyType<DopamineRewardInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createDopamineReward>>,
+        TError,
+        {data: BodyType<DopamineRewardInput>},
+        TContext
+      > => {
+      return useMutation(getCreateDopamineRewardMutationOptions(options));
+    }
+
+export const getDeleteDopamineRewardUrl = (id: number,) => {
+
+
+
+
+  return `/api/dopamine-rewards/${id}`
+}
+
+/**
+ * @summary Delete a dopamine reward
+ */
+export const deleteDopamineReward = async (id: number, options?: RequestInit): Promise<SuccessEnvelope> => {
+
+  return customFetch<SuccessEnvelope>(getDeleteDopamineRewardUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteDopamineRewardMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDopamineReward>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteDopamineReward>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteDopamineReward'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteDopamineReward>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteDopamineReward(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteDopamineRewardMutationResult = NonNullable<Awaited<ReturnType<typeof deleteDopamineReward>>>
+
+    export type DeleteDopamineRewardMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Delete a dopamine reward
+ */
+export const useDeleteDopamineReward = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDopamineReward>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteDopamineReward>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteDopamineRewardMutationOptions(options));
+    }
+

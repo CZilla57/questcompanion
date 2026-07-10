@@ -19,11 +19,13 @@ export interface TaskUpdate {
   dueDate?: string;
   priority?: TaskUpdatePriority;
   /**
+     * Time estimate (only updatable on incomplete tasks)
      * @minimum 1
      * @maximum 1440
      */
   estimatedMinutes?: number;
   /**
+     * Actual time spent (updatable on completed tasks too)
      * @minimum 1
      * @maximum 1440
      */

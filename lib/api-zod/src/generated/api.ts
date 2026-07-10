@@ -195,6 +195,74 @@ export const GetMyXpHistoryResponse = zod.array(GetMyXpHistoryResponseItem)
 
 
 /**
+ * @summary Get pattern insights for the current user
+ */
+export const getMyInsightsQueryDaysDefault = 30;
+
+export const GetMyInsightsQueryParams = zod.object({
+  "days": zod.coerce.number().default(getMyInsightsQueryDaysDefault)
+})
+
+export const GetMyInsightsResponse = zod.object({
+  "days": zod.number(),
+  "xpHistory": zod.array(zod.object({
+  "date": zod.string(),
+  "label": zod.string(),
+  "xp": zod.number()
+})),
+  "categoryBreakdown": zod.array(zod.object({
+  "category": zod.string(),
+  "label": zod.string(),
+  "completed": zod.number(),
+  "total": zod.number(),
+  "xpEarned": zod.number()
+})),
+  "dayOfWeekStats": zod.array(zod.object({
+  "day": zod.number(),
+  "label": zod.string(),
+  "completed": zod.number(),
+  "total": zod.number()
+})),
+  "periodStats": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "range": zod.string(),
+  "completed": zod.number()
+}))
+})
+
+
+/**
+ * @summary Get a recommended next task using scoring logic
+ */
+export const GetTaskRecommendationQueryParams = zod.object({
+  "exclude": zod.coerce.string().optional().describe('Comma-separated task IDs to exclude from consideration')
+})
+
+export const GetTaskRecommendationResponse = zod.object({
+  "task": zod.union([zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "points": zod.number(),
+  "completed": zod.boolean(),
+  "completedAt": zod.string().nullish(),
+  "dueDate": zod.string(),
+  "priority": zod.enum(['low', 'medium', 'high']),
+  "createdAt": zod.string(),
+  "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
+  "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
+  "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
+  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus')
+}),zod.null()]).optional(),
+  "reason": zod.string(),
+  "category": zod.string().optional(),
+  "categoryLabel": zod.string().optional()
+})
+
+
+/**
  * @summary List tasks for the current user
  */
 export const GetTasksQueryParams = zod.object({
@@ -213,8 +281,10 @@ export const GetTasksResponseItem = zod.object({
   "dueDate": zod.string(),
   "priority": zod.enum(['low', 'medium', 'high']),
   "createdAt": zod.string(),
-  "estimatedMinutes": zod.number().nullish(),
-  "actualMinutes": zod.number().nullish()
+  "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
+  "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
+  "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
+  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus')
 })
 export const GetTasksResponse = zod.array(GetTasksResponseItem)
 
@@ -227,8 +297,9 @@ export const createTaskBodyPointsDefault = 10;
 export const createTaskBodyPointsMax = 100;
 
 export const createTaskBodyPriorityDefault = `medium`;
-
 export const createTaskBodyEstimatedMinutesMax = 1440;
+
+
 
 export const CreateTaskBody = zod.object({
   "title": zod.string().min(1),
@@ -236,7 +307,7 @@ export const CreateTaskBody = zod.object({
   "points": zod.number().min(1).max(createTaskBodyPointsMax).default(createTaskBodyPointsDefault),
   "dueDate": zod.string(),
   "priority": zod.enum(['low', 'medium', 'high']).default(createTaskBodyPriorityDefault),
-  "estimatedMinutes": zod.number().min(1).max(createTaskBodyEstimatedMinutesMax).optional()
+  "estimatedMinutes": zod.number().min(1).max(createTaskBodyEstimatedMinutesMax).optional().describe('Optional time estimate in minutes')
 })
 
 
@@ -258,8 +329,10 @@ export const GetTaskResponse = zod.object({
   "dueDate": zod.string(),
   "priority": zod.enum(['low', 'medium', 'high']),
   "createdAt": zod.string(),
-  "estimatedMinutes": zod.number().nullish(),
-  "actualMinutes": zod.number().nullish()
+  "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
+  "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
+  "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
+  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus')
 })
 
 
@@ -273,10 +346,11 @@ export const UpdateTaskParams = zod.object({
 
 export const updateTaskBodyPointsMax = 100;
 
-
-
 export const updateTaskBodyEstimatedMinutesMax = 1440;
+
 export const updateTaskBodyActualMinutesMax = 1440;
+
+
 
 export const UpdateTaskBody = zod.object({
   "title": zod.string().min(1).optional(),
@@ -284,8 +358,8 @@ export const UpdateTaskBody = zod.object({
   "points": zod.number().min(1).max(updateTaskBodyPointsMax).optional(),
   "dueDate": zod.string().optional(),
   "priority": zod.enum(['low', 'medium', 'high']).optional(),
-  "estimatedMinutes": zod.number().min(1).max(updateTaskBodyEstimatedMinutesMax).optional(),
-  "actualMinutes": zod.number().min(1).max(updateTaskBodyActualMinutesMax).optional()
+  "estimatedMinutes": zod.number().min(1).max(updateTaskBodyEstimatedMinutesMax).optional().describe('Time estimate (only updatable on incomplete tasks)'),
+  "actualMinutes": zod.number().min(1).max(updateTaskBodyActualMinutesMax).optional().describe('Actual time spent (updatable on completed tasks too)')
 })
 
 export const UpdateTaskResponse = zod.object({
@@ -299,8 +373,10 @@ export const UpdateTaskResponse = zod.object({
   "dueDate": zod.string(),
   "priority": zod.enum(['low', 'medium', 'high']),
   "createdAt": zod.string(),
-  "estimatedMinutes": zod.number().nullish(),
-  "actualMinutes": zod.number().nullish()
+  "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
+  "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
+  "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
+  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus')
 })
 
 
@@ -330,7 +406,11 @@ export const CompleteTaskResponse = zod.object({
   "completedAt": zod.string().nullish(),
   "dueDate": zod.string(),
   "priority": zod.enum(['low', 'medium', 'high']),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
+  "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
+  "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
+  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus')
 }),
   "pointsAwarded": zod.number().describe('Total XP awarded (base + streak bonus + all-day bonus)'),
   "bonusAwarded": zod.boolean(),
@@ -367,7 +447,9 @@ export const CompleteTaskResponse = zod.object({
   "statPower": zod.number(),
   "icon": zod.string()
 }),zod.null()]).optional().describe('Gear item awarded (present when type=gear)')
-}),zod.null()]).optional().describe('Random bonus reward triggered on ~12% of completions')
+}),zod.null()]).optional().describe('Random bonus reward triggered on ~12% of completions'),
+  "focusBonusAwarded": zod.boolean().optional().describe('Whether the all-3-focus-quests bonus was awarded'),
+  "focusBonusPoints": zod.number().optional().describe('XP awarded for completing all 3 focus quests')
 })
 
 
@@ -537,7 +619,40 @@ export const UncompleteTaskResponse = zod.object({
   "completedAt": zod.string().nullish(),
   "dueDate": zod.string(),
   "priority": zod.enum(['low', 'medium', 'high']),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
+  "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
+  "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
+  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus')
+})
+
+
+/**
+ * @summary Pin or unpin a task as a daily focus quest
+ */
+export const PatchTaskFocusParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const PatchTaskFocusBody = zod.object({
+  "pin": zod.boolean()
+})
+
+export const PatchTaskFocusResponse = zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "points": zod.number(),
+  "completed": zod.boolean(),
+  "completedAt": zod.string().nullish(),
+  "dueDate": zod.string(),
+  "priority": zod.enum(['low', 'medium', 'high']),
+  "createdAt": zod.string(),
+  "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
+  "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
+  "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
+  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus')
 })
 
 
@@ -868,6 +983,46 @@ export const EnterBattleResponse = zod.object({
   "yourPower": zod.number(),
   "roll": zod.number(),
   "weekKey": zod.string()
+})
+
+
+/**
+ * @summary Get all dopamine rewards for the current user
+ */
+export const getDopamineRewardsResponseRewardTextMax = 100;
+
+
+
+export const GetDopamineRewardsResponseItem = zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "rewardText": zod.string().max(getDopamineRewardsResponseRewardTextMax),
+  "createdAt": zod.coerce.date()
+})
+export const GetDopamineRewardsResponse = zod.array(GetDopamineRewardsResponseItem)
+
+
+/**
+ * @summary Create a new dopamine reward
+ */
+export const createDopamineRewardBodyRewardTextMax = 100;
+
+
+
+export const CreateDopamineRewardBody = zod.object({
+  "rewardText": zod.string().min(1).max(createDopamineRewardBodyRewardTextMax)
+})
+
+
+/**
+ * @summary Delete a dopamine reward
+ */
+export const DeleteDopamineRewardParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteDopamineRewardResponse = zod.object({
+  "success": zod.boolean()
 })
 
 
