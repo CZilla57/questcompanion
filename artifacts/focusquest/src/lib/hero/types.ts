@@ -1,4 +1,4 @@
-export type Build = "slim" | "average" | "broad";
+export type Build = "male" | "female"; // LPC body base (male/female)
 export type Skin = "light" | "tan" | "brown" | "dark" | "green" | "blue";
 export type HairStyle = "bald" | "short" | "long" | "ponytail" | "mohawk";
 export type HairColor = "brown" | "black" | "blonde" | "red" | "white" | "blue";
@@ -15,7 +15,7 @@ export interface CatalogEntry {
   id: string;
   category: LayerCategory;
   zIndex: number;
-  file: string;        // absolute public path, e.g. "/lpc/body/average_light.png"
+  file: string;        // absolute public path, e.g. "/lpc/body/male_light.png"
   author: string;
   license: string;
   sourceUrl: string;

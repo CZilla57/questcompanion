@@ -11,16 +11,16 @@ const base = (id: string, category: CatalogEntry["category"], zIndex: number): C
 });
 
 const look: HeroLook = {
-  skin: "light", build: "average", hairStyle: "short", hairColor: "brown",
+  skin: "light", build: "male", hairStyle: "short", hairColor: "brown",
   face: "neutral", avatarClass: "fighter", tier: 0, equipped: [],
 };
 
 const baseEntries: CatalogEntry[] = [
-  base("body:average:light", "body", 10),
+  base("body:male:light", "body", 10),
   base("face:neutral", "face", 20),
   base("hair:short:brown", "hair", 30),
-  base("outfit:fighter:t0:average", "outfit", 40),
-  base("gear:iron-helm:average", "helmet", 70),
+  base("outfit:fighter:t0:male", "outfit", 40),
+  base("gear:iron-helm:male", "helmet", 70),
 ];
 
 const fullCatalog = cat(baseEntries);
@@ -29,10 +29,10 @@ describe("resolveLayers", () => {
   it("returns body, face, hair, outfit ordered by zIndex for an ungeared hero", () => {
     const layers = resolveLayers(look, fullCatalog);
     expect(layers.map((l) => l.file)).toEqual([
-      "/lpc/body:average:light.png",
+      "/lpc/body:male:light.png",
       "/lpc/face:neutral.png",
       "/lpc/hair:short:brown.png",
-      "/lpc/outfit:fighter:t0:average.png",
+      "/lpc/outfit:fighter:t0:male.png",
     ]);
   });
 
@@ -65,9 +65,9 @@ describe("resolveLayers", () => {
 
   it("skips missing catalog ids and warns", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const sparse = cat([base("body:average:light", "body", 10)]);
+    const sparse = cat([base("body:male:light", "body", 10)]);
     const layers = resolveLayers(look, sparse);
-    expect(layers.map((l) => l.file)).toEqual(["/lpc/body:average:light.png"]);
+    expect(layers.map((l) => l.file)).toEqual(["/lpc/body:male:light.png"]);
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
   });
@@ -79,24 +79,24 @@ describe("resolveLayers", () => {
     // `.sort()` call, this would still return layers in insertion order
     // (body, face, hair, outfit) and the assertion below would fail.
     const scrambledCatalog = cat([
-      base("body:average:light", "body", 40),
+      base("body:male:light", "body", 40),
       base("face:neutral", "face", 20),
       base("hair:short:brown", "hair", 30),
-      base("outfit:fighter:t0:average", "outfit", 10),
+      base("outfit:fighter:t0:male", "outfit", 10),
     ]);
     const layers = resolveLayers(look, scrambledCatalog);
     expect(layers.map((l) => l.file)).toEqual([
-      "/lpc/outfit:fighter:t0:average.png", // zIndex 10
+      "/lpc/outfit:fighter:t0:male.png", // zIndex 10
       "/lpc/face:neutral.png",              // zIndex 20
       "/lpc/hair:short:brown.png",          // zIndex 30
-      "/lpc/body:average:light.png",        // zIndex 40
+      "/lpc/body:male:light.png",        // zIndex 40
     ]);
   });
 
   it("applies each equipped gear item's own tint independently and leaves non-gear layers untinted", () => {
     const multiGearCatalog = cat([
       ...baseEntries,
-      base("gear:steel-boots:average", "boots", 50),
+      base("gear:steel-boots:male", "boots", 50),
     ]);
     const geared: HeroLook = {
       ...look,

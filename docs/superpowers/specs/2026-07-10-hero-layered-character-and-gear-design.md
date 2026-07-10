@@ -64,7 +64,7 @@ Input: a `HeroLook` descriptor (physical attributes + class + tier + equipped ge
 |--------|------|---------|-------|
 | `avatarHairStyle` | text | `"short"` | LPC hair style id |
 | `avatarHairColor` | text | `"brown"` | LPC hair color variant id |
-| `avatarBodyBuild` | text | `"average"` | maps to an LPC body base |
+| `avatarBodyBuild` | text | `"male"` | LPC body base: male / female |
 | `avatarFace` | text | `"neutral"` | face/eye variant id |
 | `avatarEyeColor` | text | `"brown"` | optional; eye color variant |
 
@@ -100,7 +100,7 @@ Accept and validate the new fields against their allowed-value lists (same guard
 
 - **Class = base outfit** (fighter=tunic, mage=robe, ranger=leathers, healer=vestments), selected from LPC clothing that reads as each class.
 - **Outfit upgrades per tier:** each class has **4 tier outfits** (t0–t3), chosen by level. The outfit shows through empty slots; equipped gear draws over it.
-- **Gear → LPC layers** via `spriteId`. **Body build maps to an LPC body type, and LPC equipment sheets are body-type-specific** — so a gear item's on-body sprite differs per build. This is handled at **build-time, not runtime**: the catalog resolves an equipped item by `(spriteId, build)` to the correct pre-exported PNG, so the runtime compositor stays a simple lookup and gear never multiplies combinatorially at runtime. The cost is a bounded build-time authoring/export step. To keep that step small, the **supported build set is deliberately limited** (target 2–3 builds), and every gear item must have an exported sprite for each supported build before it can ship (enforced by the catalog-integrity test).
+- **Gear → LPC layers** via `spriteId`. **Body build maps to an LPC body type, and LPC equipment sheets are body-type-specific** — so a gear item's on-body sprite differs per build. This is handled at **build-time, not runtime**: the catalog resolves an equipped item by `(spriteId, build)` to the correct pre-exported PNG, so the runtime compositor stays a simple lookup and gear never multiplies combinatorially at runtime. The cost is a bounded build-time authoring/export step. The build set is just **two (male / female)**, and every gear item must have an exported sprite for each build before it can ship (enforced by the catalog-integrity test).
 
 ## UI (Hero page — `pages/avatar.tsx`)
 
@@ -149,6 +149,6 @@ Accept and validate the new fields against their allowed-value lists (same guard
 - No runtime WebGL/CPU palette-swap engine (pick-a-variant + rarity tint only).
 - No animated poses/walk cycles — single standing frame (plus CSS idle bob).
 - No embedding of the LPC generator runtime or its catalog code.
-- No large body-build menu — the supported build set is capped small (2–3) precisely because LPC gear is exported per build.
+- No body-build slider — exactly two body types (male / female), because LPC gear is exported per body type.
 - No 3D.
 - Battle mechanics, gear economy, and rewards are unchanged.

@@ -46,7 +46,7 @@
 **Naming conventions (locked here so every task is deterministic):**
 - Catalog id scheme: `body:{build}:{skin}`, `hair:{style}:{color}`, `face:{face}`, `outfit:{class}:t{tier}:{build}`, `gear:{spriteId}:{build}`.
 - File path scheme under `public/lpc/`: `body/{build}_{skin}.png`, `hair/{style}_{color}.png`, `face/{face}.png`, `outfit/{class}_t{tier}_{build}.png`, `gear/{spriteId}_{build}.png`.
-- Enum values: `build ∈ {slim, average, broad}`; `skin ∈ {light, tan, brown, dark, green, blue}`; `hairStyle ∈ {bald, short, long, ponytail, mohawk}`; `hairColor ∈ {brown, black, blonde, red, white, blue}`; `face ∈ {neutral, stern, smile}`; `class ∈ {fighter, mage, ranger, healer}`; `tier ∈ {0,1,2,3}`.
+- Enum values: `build ∈ {male, female}`; `skin ∈ {light, tan, brown, dark, green, blue}`; `hairStyle ∈ {bald, short, long, ponytail, mohawk}`; `hairColor ∈ {brown, black, blonde, red, white, blue}`; `face ∈ {neutral, stern, smile}`; `class ∈ {fighter, mage, ranger, healer}`; `tier ∈ {0,1,2,3}`.
 - z-index (back→front): aura 0, body 10, face 20, hair 30, outfit 40, boots 50, armor 60, helmet 70, weapon 80, accessory 90.
 
 ---
@@ -149,7 +149,7 @@ git commit -m "chore(focusquest): add vitest test runner"
 Create `artifacts/focusquest/src/lib/hero/types.ts`:
 
 ```typescript
-export type Build = "slim" | "average" | "broad";
+export type Build = "male" | "female";
 export type Skin = "light" | "tan" | "brown" | "dark" | "green" | "blue";
 export type HairStyle = "bald" | "short" | "long" | "ponytail" | "mohawk";
 export type HairColor = "brown" | "black" | "blonde" | "red" | "white" | "blue";
@@ -166,7 +166,7 @@ export interface CatalogEntry {
   id: string;
   category: LayerCategory;
   zIndex: number;
-  file: string;        // absolute public path, e.g. "/lpc/body/average_light.png"
+  file: string;        // absolute public path, e.g. "/lpc/body/male_light.png"
   author: string;
   license: string;
   sourceUrl: string;
@@ -229,26 +229,26 @@ const base = (id: string, category: CatalogEntry["category"], zIndex: number): C
 });
 
 const look: HeroLook = {
-  skin: "light", build: "average", hairStyle: "short", hairColor: "brown",
+  skin: "light", build: "male", hairStyle: "short", hairColor: "brown",
   face: "neutral", avatarClass: "fighter", tier: 0, equipped: [],
 };
 
 const fullCatalog = cat([
-  base("body:average:light", "body", 10),
+  base("body:male:light", "body", 10),
   base("face:neutral", "face", 20),
   base("hair:short:brown", "hair", 30),
-  base("outfit:fighter:t0:average", "outfit", 40),
-  base("gear:iron-helm:average", "helmet", 70),
+  base("outfit:fighter:t0:male", "outfit", 40),
+  base("gear:iron-helm:male", "helmet", 70),
 ]);
 
 describe("resolveLayers", () => {
   it("returns body, face, hair, outfit ordered by zIndex for an ungeared hero", () => {
     const layers = resolveLayers(look, fullCatalog);
     expect(layers.map((l) => l.file)).toEqual([
-      "/lpc/body:average:light.png",
+      "/lpc/body:male:light.png",
       "/lpc/face:neutral.png",
       "/lpc/hair:short:brown.png",
-      "/lpc/outfit:fighter:t0:average.png",
+      "/lpc/outfit:fighter:t0:male.png",
     ]);
   });
 
@@ -281,9 +281,9 @@ describe("resolveLayers", () => {
 
   it("skips missing catalog ids and warns", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const sparse = cat([base("body:average:light", "body", 10)]);
+    const sparse = cat([base("body:male:light", "body", 10)]);
     const layers = resolveLayers(look, sparse);
-    expect(layers.map((l) => l.file)).toEqual(["/lpc/body:average:light.png"]);
+    expect(layers.map((l) => l.file)).toEqual(["/lpc/body:male:light.png"]);
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
   });
@@ -389,10 +389,10 @@ git commit -m "feat(hero): add HeroLook types and pure resolveLayers"
 
 Using the LPC generator (https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/ or the local repo), export the **single south-facing standing frame** (row/col of the walk/idle "down" pose), cropped to 64×64, as PNGs. **Prefer CC0 / CC-BY / OGA-BY assets.** Save with the exact file-path scheme (`public/lpc/{category}/{...}.png`). Starter matrix:
 
-- **Bodies** — `body/{build}_{skin}.png` for `build ∈ {slim, average, broad}` × `skin ∈ {light, tan, brown, dark, green, blue}` = 18 files. (Map `slim/average/broad` to the closest LPC body bases you selected; record the mapping in a comment in `catalog.ts`.)
+- **Bodies** — `body/{build}_{skin}.png` for `build ∈ {male, female}` × `skin ∈ {light, tan, brown, dark, green, blue}` = 12 files. (Each build maps directly to the matching LPC body base.)
 - **Hair** — `hair/{style}_{color}.png` for `style ∈ {short, long, ponytail, mohawk}` × `color ∈ {brown, black, blonde, red, white, blue}` = 24 files. (`bald` needs no file.)
 - **Face** — `face/{face}.png` for `face ∈ {neutral, stern, smile}` = 3 files.
-- **Outfits** — `outfit/{class}_t{tier}_{build}.png` for `class ∈ {fighter, mage, ranger, healer}` × `tier ∈ {0,1,2,3}` × `build ∈ {slim, average, broad}` = 48 files. Pick LPC clothing that reads as each class, escalating in fanciness per tier.
+- **Outfits** — `outfit/{class}_t{tier}_{build}.png` for `class ∈ {fighter, mage, ranger, healer}` × `tier ∈ {0,1,2,3}` × `build ∈ {male, female}` = 32 files. Pick LPC clothing that reads as each class, escalating in fanciness per tier.
 
 Also download the generator's **credits** for exactly these assets and save as `public/lpc/CREDITS.csv`.
 
@@ -402,7 +402,7 @@ Run:
 ```bash
 find artifacts/focusquest/public/lpc -name '*.png' | wc -l
 ```
-Expected: `93` (18 + 24 + 3 + 48). If some LPC combinations are unavailable, adjust the catalog in Step 3 to match what was actually exported — the integrity test (Task 4) is the source of truth.
+Expected: `71` (12 + 24 + 3 + 32). If some LPC combinations are unavailable, adjust the catalog in Step 3 to match what was actually exported — the integrity test (Task 4) is the source of truth.
 
 - [ ] **Step 3: Write the catalog module**
 
@@ -411,7 +411,7 @@ Create `artifacts/focusquest/src/lib/hero/catalog.ts`. Generate one `CatalogEntr
 ```typescript
 import type { CatalogEntry } from "./types";
 
-// build mapping (LPC base → our build): slim=teen, average=male, broad=muscular (adjust to your export)
+// build maps directly to the LPC body base (male / female)
 const Z = {
   body: 10, face: 20, hair: 30, outfit: 40,
   boots: 50, armor: 60, helmet: 70, weapon: 80, accessory: 90,
@@ -419,8 +419,8 @@ const Z = {
 
 export const CATALOG: CatalogEntry[] = [
   // ── bodies ──
-  { id: "body:average:light", category: "body", zIndex: Z.body,
-    file: "/lpc/body/average_light.png",
+  { id: "body:male:light", category: "body", zIndex: Z.body,
+    file: "/lpc/body/male_light.png",
     author: "Benjamin K. Smith (BenCreating)", license: "CC-BY-SA 4.0",
     sourceUrl: "https://opengameart.org/content/lpc-character-bases" },
   // ...one entry per body file (18 total)...
@@ -439,8 +439,8 @@ export const CATALOG: CatalogEntry[] = [
   // ...
 
   // ── outfits (48) ──
-  { id: "outfit:fighter:t0:average", category: "outfit", zIndex: Z.outfit,
-    file: "/lpc/outfit/fighter_t0_average.png",
+  { id: "outfit:fighter:t0:male", category: "outfit", zIndex: Z.outfit,
+    file: "/lpc/outfit/fighter_t0_male.png",
     author: "...", license: "...", sourceUrl: "..." },
   // ...
 ];
@@ -663,7 +663,7 @@ Expected: no errors.
 
 - [ ] **Step 4: Visual verification in the preview**
 
-Temporarily render `<PixelHero look={{ skin:"light", build:"average", hairStyle:"short", hairColor:"brown", face:"neutral", avatarClass:"fighter", tier:0, equipped:[] }} />` on the Hero page (or a scratch route). Start the dev server via the preview tooling, load the Hero page, and confirm a composed character renders (body + face + hair + outfit stacked, crisp pixels). Screenshot for the record, then remove the temporary render.
+Temporarily render `<PixelHero look={{ skin:"light", build:"male", hairStyle:"short", hairColor:"brown", face:"neutral", avatarClass:"fighter", tier:0, equipped:[] }} />` on the Hero page (or a scratch route). Start the dev server via the preview tooling, load the Hero page, and confirm a composed character renders (body + face + hair + outfit stacked, crisp pixels). Screenshot for the record, then remove the temporary render.
 
 - [ ] **Step 5: Commit**
 
@@ -691,7 +691,7 @@ In `lib/db/src/schema/users.ts`, inside `usersTable`, after `avatarSkin`:
 ```typescript
   avatarHairStyle: text("avatar_hair_style").notNull().default("short"),
   avatarHairColor: text("avatar_hair_color").notNull().default("brown"),
-  avatarBodyBuild: text("avatar_body_build").notNull().default("average"),
+  avatarBodyBuild: text("avatar_body_build").notNull().default("male"),
   avatarFace: text("avatar_face").notNull().default("neutral"),
 ```
 
@@ -741,7 +741,7 @@ In `artifacts/api-server/src/routes/avatar.ts`, after the existing `AVATAR_SKINS
 ```typescript
 const AVATAR_HAIR_STYLES = ["bald", "short", "long", "ponytail", "mohawk"] as const;
 const AVATAR_HAIR_COLORS = ["brown", "black", "blonde", "red", "white", "blue"] as const;
-const AVATAR_BUILDS      = ["slim", "average", "broad"] as const;
+const AVATAR_BUILDS      = ["male", "female"] as const;
 const AVATAR_FACES       = ["neutral", "stern", "smile"] as const;
 ```
 
@@ -750,7 +750,7 @@ In `buildAvatarResponse`, extend the returned object with (place beside the exis
 ```typescript
     avatarHairStyle:  user.avatarHairStyle  ?? "short",
     avatarHairColor:  user.avatarHairColor  ?? "brown",
-    avatarBodyBuild:  user.avatarBodyBuild  ?? "average",
+    avatarBodyBuild:  user.avatarBodyBuild  ?? "male",
     avatarFace:       user.avatarFace       ?? "neutral",
     availableHairStyles: [...AVATAR_HAIR_STYLES],
     availableHairColors: [...AVATAR_HAIR_COLORS],
@@ -864,7 +864,7 @@ Where the avatar renders today, compute:
 ```tsx
 const heroLook: HeroLook = {
   skin: (avatarData?.avatarSkin ?? "light") as Skin,
-  build: (avatarData?.avatarBodyBuild ?? "average") as Build,
+  build: (avatarData?.avatarBodyBuild ?? "male") as Build,
   hairStyle: (avatarData?.avatarHairStyle ?? "short") as HairStyle,
   hairColor: (avatarData?.avatarHairColor ?? "brown") as HairColor,
   face: (avatarData?.avatarFace ?? "neutral") as FaceId,
@@ -911,7 +911,7 @@ And render pill selectors for each attribute using the `available*` arrays from 
         onClick={() => handleAttrSelect({ avatarBodyBuild: b })}
         disabled={updateAvatar.isPending}
         className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
-          (avatarData?.avatarBodyBuild ?? "average") === b
+          (avatarData?.avatarBodyBuild ?? "male") === b
             ? "bg-primary text-primary-foreground border-primary"
             : "border-border text-muted-foreground hover:border-muted-foreground"
         }`}

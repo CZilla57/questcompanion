@@ -20,7 +20,7 @@ export const usersTable = pgTable("users", {
   avatarSkin: text("avatar_skin").notNull().default("light"),
   avatarHairStyle: text("avatar_hair_style").notNull().default("short"),
   avatarHairColor: text("avatar_hair_color").notNull().default("brown"),
-  avatarBodyBuild: text("avatar_body_build").notNull().default("average"),
+  avatarBodyBuild: text("avatar_body_build").notNull().default("male"),
   avatarFace: text("avatar_face").notNull().default("neutral"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

@@ -10,7 +10,7 @@ const AVATAR_SKINS   = ["light", "tan", "brown", "dark", "green", "blue"] as con
 const AVATAR_COLORS  = ["#00FFFF", "#A855F7", "#F97316", "#22C55E", "#EC4899", "#EAB308", "#6366F1", "#F43F5E"];
 const AVATAR_HAIR_STYLES = ["bald", "short", "long", "ponytail", "mohawk"] as const;
 const AVATAR_HAIR_COLORS = ["brown", "black", "blonde", "red", "white", "blue"] as const;
-const AVATAR_BUILDS      = ["slim", "average", "broad"] as const;
+const AVATAR_BUILDS      = ["male", "female"] as const;
 const AVATAR_FACES       = ["neutral", "stern", "smile"] as const;
 
 function calcBattlePower(level: number, equippedPower: number): number {
@@ -37,7 +37,7 @@ async function buildAvatarResponse(userId: number) {
     avatarSkin:       user.avatarSkin ?? "light",
     avatarHairStyle:  user.avatarHairStyle  ?? "short",
     avatarHairColor:  user.avatarHairColor  ?? "brown",
-    avatarBodyBuild:  user.avatarBodyBuild  ?? "average",
+    avatarBodyBuild:  user.avatarBodyBuild  ?? "male",
     avatarFace:       user.avatarFace       ?? "neutral",
     level:            levelInfo.level,
     battlePower:      calcBattlePower(levelInfo.level, equippedPower),
