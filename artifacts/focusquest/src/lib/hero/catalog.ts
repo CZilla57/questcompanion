@@ -332,7 +332,7 @@ export const CATALOG: CatalogEntry[] = [
     "category": "outfit",
     "zIndex": 40,
     "file": "/lpc/outfit/fighter_t0_male.png",
-    "author": "JaidynReiman; bluecarrot16; Johannes Sjölund (wulax); ElizaWy; Matthew Krohn (makrohn); Stephen Challener (Redshrike)",
+    "author": "JaidynReiman; bluecarrot16; Johannes Sjölund (wulax); Joe White; ElizaWy; Matthew Krohn (makrohn); Stephen Challener (Redshrike)",
     "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
     "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
   },
@@ -341,7 +341,7 @@ export const CATALOG: CatalogEntry[] = [
     "category": "outfit",
     "zIndex": 40,
     "file": "/lpc/outfit/fighter_t0_female.png",
-    "author": "JaidynReiman; bluecarrot16; Johannes Sjölund (wulax); ElizaWy; Matthew Krohn (makrohn); Stephen Challener (Redshrike)",
+    "author": "JaidynReiman; bluecarrot16; Johannes Sjölund (wulax); Joe White; ElizaWy; Matthew Krohn (makrohn); Stephen Challener (Redshrike)",
     "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
     "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
   },

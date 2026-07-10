@@ -42,8 +42,11 @@ async function fetchDef(defPath) {
   return defCache.get(defPath);
 }
 const defCredit = (def) => {
-  const c = def.credits?.[0] ?? {};
-  return { author: (c.authors ?? []).join("; "), license: (c.licenses ?? []).join(", "), sourceUrl: (c.urls ?? [])[0] ?? "" };
+  const cs = def.credits ?? [];
+  const authors = [...new Set(cs.flatMap((c) => c.authors ?? []))];
+  const licenses = [...new Set(cs.flatMap((c) => c.licenses ?? []))];
+  const sourceUrl = cs.flatMap((c) => c.urls ?? [])[0] ?? "";
+  return { author: authors.join("; "), license: licenses.join(", "), sourceUrl };
 };
 
 // Curated ULPC attribution (from sheet_definitions credit fields + the LPC base/hair OGA collections).
