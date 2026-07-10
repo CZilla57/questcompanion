@@ -24,9 +24,10 @@
 
 ## LPC path model (reference for Tasks 1–3)
 
-A `sheet_definitions/**/*.json` def has one or more `layer_N` objects. Each carries a `zPos` and per-body-type path prefixes (`male`/`female`/`teen`), e.g. `"torso/chainmail/male/"`. The PNG resolves as:
-- **Variant-based def** (has a `variants: string[]` of color names, e.g. tunic): `spritesheets/{prefix}{variant}/walk.png`.
-- **Palette/recolor def** (no `variants`, has `recolors`, e.g. chainmail metal): `spritesheets/{prefix}walk.png` (single base sheet).
+A `sheet_definitions/**/*.json` def has one or more `layer_N` objects. Each carries a `zPos` and per-body-type path prefixes (`male`/`female`/`teen`), e.g. `"torso/chainmail/male/"`. The PNG resolves as (**corrected empirically in Task 1 — `loadDefFrame` already implements this**):
+- **Variant-based def** (has a `variants: string[]` of color names, e.g. tunic): `spritesheets/{prefix}walk/{variant}.png` — note `walk` is a *directory* and the pre-colored sheet is named by variant. (NOT `{prefix}{variant}/walk.png`, which 404s.)
+- **Palette/recolor def** (no `variants`, has `recolors`, e.g. chainmail metal / longsleeve): `spritesheets/{prefix}walk.png` (single base sheet).
+- Attribution: `defCredit` unions **all** `credits[]` blocks of a def (Task 1 fix), so asymmetric per-body-type credits are never omitted.
 
 Two known wrinkles the spike (Task 1) must confirm empirically:
 1. A def may have **only one** body-type key (e.g. `torso_clothes_tunic` is female-only) — the resolver must throw a clear error so the manifest can supply a per-build override.
