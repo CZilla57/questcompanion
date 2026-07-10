@@ -6,6 +6,7 @@ import {
   addDays,
   getDay,
   isSameDay,
+  differenceInCalendarDays,
 } from "date-fns";
 import {
   useGetCalendarHeatmap,
@@ -37,19 +38,18 @@ function getGlow(day: HeatmapDay | undefined): string {
   return "";
 }
 
-function buildGrid(): Date[] {
+function buildGrid(): { dates: Date[]; gridStart: Date } {
   const today = new Date();
-  const end = today;
-  const startRaw = subDays(end, DAYS_TO_SHOW - 1);
-  const start = startOfWeek(startRaw, { weekStartsOn: 1 });
+  const startRaw = subDays(today, DAYS_TO_SHOW - 1);
+  const gridStart = startOfWeek(startRaw, { weekStartsOn: 1 });
 
   const dates: Date[] = [];
-  let current = start;
-  while (current <= end) {
+  let current = gridStart;
+  while (current <= today) {
     dates.push(current);
     current = addDays(current, 1);
   }
-  return dates;
+  return { dates, gridStart };
 }
 
 function groupByWeek(dates: Date[]): Date[][] {
@@ -163,11 +163,6 @@ function DetailPanel({
                   {task.categoryLabel ?? task.category}
                 </span>
               )}
-              {task.completed && task.points != null && (
-                <span className="text-xs text-primary font-semibold ml-auto flex-shrink-0">
-                  +{task.points} XP
-                </span>
-              )}
             </div>
           ))}
         </div>
@@ -177,14 +172,15 @@ function DetailPanel({
 }
 
 export function ActivityHeatmap() {
-  const { data, isLoading } = useGetCalendarHeatmap({ days: DAYS_TO_SHOW });
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const dates = buildGrid();
+  const { dates, gridStart } = buildGrid();
+  const today = new Date();
+  const apiDays = differenceInCalendarDays(today, gridStart) + 1;
+  const { data, isLoading } = useGetCalendarHeatmap({ days: apiDays });
   const weeks = groupByWeek(dates);
   const monthLabels = getMonthLabels(weeks);
-  const today = new Date();
 
   const dayMap = new Map<string, HeatmapDay>();
   if (data?.days) {
@@ -241,7 +237,7 @@ export function ActivityHeatmap() {
       <CardContent>
         <div
           ref={scrollRef}
-          className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
+          className="overflow-x-auto"
         >
           <div
             style={{

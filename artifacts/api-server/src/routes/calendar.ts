@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, gte, sql, count } from "drizzle-orm";
+import { eq, and, gte, lte, sql, count } from "drizzle-orm";
 import { db, tasksTable } from "@workspace/db";
 
 const router: IRouter = Router();
@@ -12,9 +12,11 @@ router.get("/calendar/heatmap", async (req, res): Promise<void> => {
   const userId = req.gameUserId;
   const days = Math.min(Math.max(Number(req.query.days) || 90, 1), 365);
 
-  const cutoff = new Date();
+  const now = new Date();
+  const cutoff = new Date(now);
   cutoff.setDate(cutoff.getDate() - (days - 1));
   const startDate = cutoff.toISOString().split("T")[0];
+  const endDate = now.toISOString().split("T")[0];
 
   const rows = await db
     .select({
@@ -26,7 +28,7 @@ router.get("/calendar/heatmap", async (req, res): Promise<void> => {
       xpEarned: sql<number>`COALESCE(SUM(CASE WHEN ${tasksTable.completed} = true THEN ${tasksTable.pointsAwarded} ELSE 0 END), 0)`,
     })
     .from(tasksTable)
-    .where(and(eq(tasksTable.userId, userId), gte(tasksTable.dueDate, startDate)))
+    .where(and(eq(tasksTable.userId, userId), gte(tasksTable.dueDate, startDate), lte(tasksTable.dueDate, endDate)))
     .groupBy(tasksTable.dueDate)
     .orderBy(tasksTable.dueDate);
 
