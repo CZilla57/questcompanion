@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { resolveLayers } from "./resolve-layers";
 import type { CatalogEntry, HeroLook } from "./types";
 
@@ -17,7 +17,6 @@ const look: HeroLook = {
 
 const baseEntries: CatalogEntry[] = [
   base("body:male:light", "body", 10),
-  base("face:neutral", "face", 20),
   base("hair:short:brown", "hair", 30),
   base("outfit:fighter:t0:male", "outfit", 40),
   base("gear:iron-helm:male", "helmet", 70),
@@ -26,14 +25,18 @@ const baseEntries: CatalogEntry[] = [
 const fullCatalog = cat(baseEntries);
 
 describe("resolveLayers", () => {
-  it("returns body, face, hair, outfit ordered by zIndex for an ungeared hero", () => {
+  it("returns body, hair, outfit ordered by zIndex for an ungeared hero (face baked into body)", () => {
     const layers = resolveLayers(look, fullCatalog);
     expect(layers.map((l) => l.file)).toEqual([
       "/lpc/body:male:light.png",
-      "/lpc/face:neutral.png",
       "/lpc/hair:short:brown.png",
       "/lpc/outfit:fighter:t0:male.png",
     ]);
+  });
+
+  it("does not emit a face layer even when one exists in the catalog (face is part of the body sprite)", () => {
+    const layers = resolveLayers(look, cat([...baseEntries, base("face:neutral", "face", 20)]));
+    expect(layers.some((l) => l.file.includes("face"))).toBe(false);
   });
 
   it("omits hair when style is bald", () => {
@@ -50,7 +53,6 @@ describe("resolveLayers", () => {
     const helm = layers.find((l) => l.file.includes("iron-helm"));
     expect(helm).toBeDefined();
     expect(helm!.tint).toBe("#a855f7");
-    // helmet zIndex 70 is last (after outfit 40)
     expect(layers[layers.length - 1].file).toContain("iron-helm");
   });
 
@@ -63,32 +65,25 @@ describe("resolveLayers", () => {
     expect(helm!.tint).toBeUndefined();
   });
 
-  it("skips missing catalog ids and warns", () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  it("skips catalog ids that are not present (e.g. unbuilt outfits/gear)", () => {
     const sparse = cat([base("body:male:light", "body", 10)]);
     const layers = resolveLayers(look, sparse);
     expect(layers.map((l) => l.file)).toEqual(["/lpc/body:male:light.png"]);
-    expect(warn).toHaveBeenCalled();
-    warn.mockRestore();
   });
 
   it("sorts final layers by zIndex, not by collection/insertion order", () => {
-    // collectIds() always emits body, face, hair, outfit in that order. Here the
-    // catalog assigns zIndex so the correct render order is the REVERSE of that
-    // insertion order (outfit=10 ... body=40). If resolveLayers ever dropped its
-    // `.sort()` call, this would still return layers in insertion order
-    // (body, face, hair, outfit) and the assertion below would fail.
+    // collectIds() emits body, hair, outfit in that order. Here the catalog assigns zIndex so the
+    // correct render order is the REVERSE of insertion order (outfit=10 ... body=40). If
+    // resolveLayers ever dropped its `.sort()`, this would return insertion order and fail.
     const scrambledCatalog = cat([
       base("body:male:light", "body", 40),
-      base("face:neutral", "face", 20),
       base("hair:short:brown", "hair", 30),
       base("outfit:fighter:t0:male", "outfit", 10),
     ]);
     const layers = resolveLayers(look, scrambledCatalog);
     expect(layers.map((l) => l.file)).toEqual([
       "/lpc/outfit:fighter:t0:male.png", // zIndex 10
-      "/lpc/face:neutral.png",              // zIndex 20
-      "/lpc/hair:short:brown.png",          // zIndex 30
+      "/lpc/hair:short:brown.png",       // zIndex 30
       "/lpc/body:male:light.png",        // zIndex 40
     ]);
   });
@@ -117,7 +112,7 @@ describe("resolveLayers", () => {
     const nonGear = layers.filter(
       (l) => !l.file.includes("iron-helm") && !l.file.includes("steel-boots"),
     );
-    expect(nonGear.length).toBe(4); // body, face, hair, outfit
+    expect(nonGear.length).toBe(3); // body, hair, outfit
     for (const l of nonGear) {
       expect(l.tint).toBeUndefined();
     }

@@ -13,8 +13,9 @@ import {
   getGetGearStoreQueryKey,
   getGetBattleCurrentQueryKey,
 } from "@workspace/api-client-react";
-import type { GearStoreItem } from "@workspace/api-client-react";
-import { AvatarRenderer, type AvatarClass, type EquippedSlot } from "@/components/avatar-renderer";
+import type { GearStoreItem, AvatarUpdateInput } from "@workspace/api-client-react";
+import { PixelHero } from "@/components/pixel-hero";
+import type { AvatarClass, HeroLook, Build, Skin, HairStyle, HairColor, FaceId } from "@/lib/hero/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -88,6 +89,60 @@ function PowerBar({ value, max, color }: { value: number; max: number; color: st
         className="h-full rounded-full transition-all duration-700"
         style={{ width: `${pct}%`, backgroundColor: color, boxShadow: `0 0 6px ${color}88` }}
       />
+    </div>
+  );
+}
+
+type EquippedSlot = {
+  slot: "weapon" | "helmet" | "armor" | "boots" | "accessory";
+  rarity: "common" | "rare" | "epic" | "legendary";
+  name: string;
+  statPower: number;
+};
+
+const SKIN_SWATCH: Record<string, string> = {
+  light: "#FDBCB4", tan: "#D4956A", brown: "#8D5524", dark: "#4A2512", green: "#7BC47F", blue: "#89C4E1",
+};
+const HAIR_SWATCH: Record<string, string> = {
+  brown: "#5b3a1e", black: "#242424", blonde: "#E6C35C", red: "#a83232", white: "#e8e8ea", blue: "#3a4a9e",
+};
+
+function PickerRow({ label, options, value, onSelect, disabled, swatch }: {
+  label: string;
+  options: string[];
+  value: string;
+  onSelect: (v: string) => void;
+  disabled?: boolean;
+  swatch?: Record<string, string>;
+}) {
+  return (
+    <div className="w-full space-y-2">
+      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
+      <div className="flex flex-wrap gap-2">
+        {options.map((opt) => {
+          const active = value === opt;
+          return swatch ? (
+            <button
+              key={opt}
+              onClick={() => onSelect(opt)}
+              disabled={disabled}
+              title={opt}
+              aria-label={`${label} ${opt}`}
+              className={`w-8 h-8 rounded-full border-2 transition-all ${active ? "scale-110" : "hover:scale-105"}`}
+              style={{ backgroundColor: swatch[opt] ?? "#888", borderColor: active ? "white" : "transparent", boxShadow: active ? `0 0 8px ${swatch[opt] ?? "#888"}` : undefined }}
+            />
+          ) : (
+            <button
+              key={opt}
+              onClick={() => onSelect(opt)}
+              disabled={disabled}
+              className={`px-3 py-1 rounded-full text-xs font-medium border capitalize transition-all ${active ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-muted-foreground"}`}
+            >
+              {opt}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -414,6 +469,17 @@ export default function AvatarPage() {
   const currentColor = pendingColor ?? avatarData?.avatarColor ?? "#6366f1";
   const currentClass = (avatarData?.avatarClass ?? "fighter") as AvatarClass;
 
+  const heroLook: HeroLook = {
+    skin: (avatarData?.avatarSkin ?? "light") as Skin,
+    build: (avatarData?.avatarBodyBuild ?? "male") as Build,
+    hairStyle: (avatarData?.avatarHairStyle ?? "short") as HairStyle,
+    hairColor: (avatarData?.avatarHairColor ?? "brown") as HairColor,
+    face: (avatarData?.avatarFace ?? "neutral") as FaceId,
+    avatarClass: currentClass,
+    tier: Math.min(3, Math.floor(((avatarData?.level ?? 1) - 1) / 10)) as 0 | 1 | 2 | 3,
+    equipped: [], // gear-on-body is Phase 2; gear spriteIds not backfilled yet
+  };
+
   const equippedSlots: EquippedSlot[] = (avatarData?.equippedGear ?? []).map(g => ({
     slot: g.slot as EquippedSlot["slot"],
     rarity: g.rarity as EquippedSlot["rarity"],
@@ -438,6 +504,17 @@ export default function AvatarPage() {
       await qc.invalidateQueries({ queryKey: getGetAvatarQueryKey() });
     } catch {
       toast({ title: "Failed to update class", variant: "destructive" });
+    }
+  }
+
+  async function handleAttrSelect(patch: Record<string, string>) {
+    try {
+      // The generated body types some fields as string-literal unions; our pickers only ever pass
+      // the server-provided option strings, and the server re-validates every field, so cast here.
+      await updateAvatar.mutateAsync({ data: patch as AvatarUpdateInput });
+      await qc.invalidateQueries({ queryKey: getGetAvatarQueryKey() });
+    } catch {
+      toast({ title: "Failed to update character", variant: "destructive" });
     }
   }
 
@@ -523,17 +600,9 @@ export default function AvatarPage() {
         <div className="space-y-4">
           <div className="rounded-xl border border-border bg-card/50 p-4 flex flex-col items-center gap-4">
             {avatarLoading ? (
-              <div className="w-[160px] h-[192px] rounded-lg bg-muted/30 animate-pulse" />
+              <div className="w-[160px] h-[160px] rounded-lg bg-muted/30 animate-pulse" />
             ) : (
-              <AvatarRenderer
-                color={currentColor}
-
-                avatarClass={currentClass}
-                equipped={equippedSlots}
-                level={avatarData?.level ?? 1}
-                size={160}
-                showGlow
-              />
+              <PixelHero look={heroLook} size={160} />
             )}
 
             {/* Class selector */}
@@ -563,10 +632,19 @@ export default function AvatarPage() {
               </div>
             </div>
 
+            {/* Physical customization */}
+            <PickerRow label="Body Type" options={avatarData?.availableBuilds ?? []} value={heroLook.build}
+              onSelect={(v) => handleAttrSelect({ avatarBodyBuild: v })} disabled={updateAvatar.isPending} />
+            <PickerRow label="Skin" options={avatarData?.availableSkins ?? []} value={heroLook.skin}
+              onSelect={(v) => handleAttrSelect({ avatarSkin: v })} disabled={updateAvatar.isPending} swatch={SKIN_SWATCH} />
+            <PickerRow label="Hair" options={avatarData?.availableHairStyles ?? []} value={heroLook.hairStyle}
+              onSelect={(v) => handleAttrSelect({ avatarHairStyle: v })} disabled={updateAvatar.isPending} />
+            <PickerRow label="Hair Color" options={avatarData?.availableHairColors ?? []} value={heroLook.hairColor}
+              onSelect={(v) => handleAttrSelect({ avatarHairColor: v })} disabled={updateAvatar.isPending} swatch={HAIR_SWATCH} />
 
-            {/* Palette (armor + hair color) */}
+            {/* Accent color (profile / leaderboard) */}
             <div className="w-full space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Palette</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Accent</p>
               <div className="flex flex-wrap gap-2">
                 {AVATAR_COLORS.map(color => (
                   <button

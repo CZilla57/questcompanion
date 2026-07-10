@@ -4,10 +4,10 @@ import type {
 import { RARITY_TINT, isGearCategory } from "./types";
 
 function collectIds(look: HeroLook): string[] {
-  const ids: string[] = [
-    `body:${look.build}:${look.skin}`,
-    `face:${look.face}`,
-  ];
+  // NB: the face is baked into the body sprite (LPC head + default eyes are composited into the
+  // body asset at build time). `HeroLook.face` / `avatarFace` stay reserved for a future dedicated
+  // face layer, but no `face:*` layer is emitted in v1.
+  const ids: string[] = [`body:${look.build}:${look.skin}`];
   if (look.hairStyle !== "bald") {
     ids.push(`hair:${look.hairStyle}:${look.hairColor}`);
   }
@@ -45,10 +45,9 @@ export function resolveLayers(
 
   for (const id of collectIds(look)) {
     const entry = catalogById.get(id);
-    if (!entry) {
-      console.warn(`[hero] missing catalog asset: ${id}`);
-      continue;
-    }
+    // Not in the catalog (e.g. outfits/gear that aren't built yet) → skip silently. Required
+    // assets are guarded at build time by the catalog-integrity test, not at runtime.
+    if (!entry) continue;
     const layer: ResolvedLayer = { file: entry.file, zIndex: entry.zIndex };
     if (isGearCategory(entry.category)) {
       const tint = tints.get(entry.category);
