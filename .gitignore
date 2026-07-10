@@ -52,3 +52,6 @@ Thumbs.db
 # Replit (legacy)
 .cache/
 .local/
+
+# Superpowers brainstorming visual companion
+.superpowers/
