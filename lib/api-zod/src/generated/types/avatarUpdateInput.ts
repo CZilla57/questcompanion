@@ -12,4 +12,8 @@ export interface AvatarUpdateInput {
   avatarColor?: string;
   avatarClass?: AvatarUpdateInputAvatarClass;
   avatarSkin?: AvatarUpdateInputAvatarSkin;
+  avatarHairStyle?: string;
+  avatarHairColor?: string;
+  avatarBodyBuild?: string;
+  avatarFace?: string;
 }

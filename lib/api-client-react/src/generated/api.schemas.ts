@@ -590,6 +590,7 @@ export interface EquippedGearItem {
   rarity: EquippedGearItemRarity;
   statPower: number;
   icon: string;
+  spriteId?: string | null;
 }
 
 export type AvatarProfileAvatarClass = typeof AvatarProfileAvatarClass[keyof typeof AvatarProfileAvatarClass];
@@ -618,6 +619,10 @@ export interface AvatarProfile {
   avatarColor: string;
   avatarClass: AvatarProfileAvatarClass;
   avatarSkin: AvatarProfileAvatarSkin;
+  avatarHairStyle?: string;
+  avatarHairColor?: string;
+  avatarBodyBuild?: string;
+  avatarFace?: string;
   /** @minimum 1 */
   level: number;
   battlePower: number;
@@ -625,6 +630,10 @@ export interface AvatarProfile {
   availableColors: string[];
   availableClasses: string[];
   availableSkins: string[];
+  availableHairStyles?: string[];
+  availableHairColors?: string[];
+  availableBuilds?: string[];
+  availableFaces?: string[];
 }
 
 export type AvatarUpdateInputAvatarClass = typeof AvatarUpdateInputAvatarClass[keyof typeof AvatarUpdateInputAvatarClass];
@@ -653,6 +662,10 @@ export interface AvatarUpdateInput {
   avatarColor?: string;
   avatarClass?: AvatarUpdateInputAvatarClass;
   avatarSkin?: AvatarUpdateInputAvatarSkin;
+  avatarHairStyle?: string;
+  avatarHairColor?: string;
+  avatarBodyBuild?: string;
+  avatarFace?: string;
 }
 
 export type GearStoreItemSlot = typeof GearStoreItemSlot[keyof typeof GearStoreItemSlot];

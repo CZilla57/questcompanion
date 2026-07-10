@@ -5,7 +5,11 @@
   "type": "module",
   "scripts": {
     "hello": "tsx ./src/hello.ts",
+    "build-lpc": "tsx ./src/build-lpc-assets.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "pngjs": "^7.0.0"
   },
   "devDependencies": {
     "@types/node": "catalog:",
