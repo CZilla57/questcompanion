@@ -5,6 +5,7 @@
  * FocusQuest API - ADHD gamified task tracker
  * OpenAPI spec version: 0.1.0
  */
+import type { RecurringTaskUpdateCategory } from './recurringTaskUpdateCategory';
 import type { RecurringTaskUpdatePriority } from './recurringTaskUpdatePriority';
 
 export interface RecurringTaskUpdate {
@@ -18,4 +19,5 @@ export interface RecurringTaskUpdate {
   /** @nullable */
   endDate?: string | null;
   isActive?: boolean;
+  category?: RecurringTaskUpdateCategory;
 }

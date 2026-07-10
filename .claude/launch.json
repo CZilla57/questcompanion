@@ -4,12 +4,8 @@
     {
       "name": "api",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["--enable-source-maps", "artifacts/api-server/dist/index.mjs"],
-      "port": 8080,
-      "env": {
-        "PORT": "8080",
-        "NODE_ENV": "development"
-      }
+      "runtimeArgs": ["--env-file=.env", "--enable-source-maps", "artifacts/api-server/dist/index.mjs"],
+      "port": 8080
     },
     {
       "name": "frontend",

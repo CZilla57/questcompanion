@@ -293,6 +293,12 @@ paths:
           in: query
           schema:
             type: ["boolean", "null"]
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [health, deep_work, learning, finance, admin, household, social, creative, default]
+          description: Filter by category
       responses:
         "200":
           description: Task list
@@ -548,7 +554,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorEnvelope"
 
   /badges:
     get:
@@ -1114,7 +1120,7 @@ components:
 
     Task:
       type: object
-      required: [id, userId, title, points, completed, dueDate, priority, createdAt]
+      required: [id, userId, title, points, completed, dueDate, priority, createdAt, category, categoryLabel]
       properties:
         id:
           type: integer
@@ -1135,6 +1141,11 @@ components:
         priority:
           type: string
           enum: [low, medium, high]
+        category:
+          type: string
+          enum: [health, deep_work, learning, finance, admin, household, social, creative, default]
+        categoryLabel:
+          type: string
         createdAt:
           type: string
         estimatedMinutes:
@@ -1182,6 +1193,10 @@ components:
           minimum: 1
           maximum: 1440
           description: Optional time estimate in minutes
+        category:
+          type: string
+          enum: [health, deep_work, learning, finance, admin, household, social, creative, default]
+          description: Optional category override. Auto-detected from title if omitted.
 
     TaskUpdate:
       type: object
@@ -1210,6 +1225,9 @@ components:
           minimum: 1
           maximum: 1440
           description: Actual time spent (updatable on completed tasks too)
+        category:
+          type: string
+          enum: [health, deep_work, learning, finance, admin, household, social, creative, default]
 
     TaskCompletionResult:
       type: object
@@ -1295,7 +1313,7 @@ components:
 
     RecurringTask:
       type: object
-      required: [id, userId, title, priority, daysOfWeek, timeOfDay, startDate, isActive, createdAt, currentStreak, longestStreak, totalCompletions]
+      required: [id, userId, title, priority, daysOfWeek, timeOfDay, startDate, isActive, createdAt, currentStreak, longestStreak, totalCompletions, category, categoryLabel]
       properties:
         id:
           type: integer
@@ -1324,6 +1342,9 @@ components:
           type: boolean
         estimatedPoints:
           type: integer
+        category:
+          type: string
+          enum: [health, deep_work, learning, finance, admin, household, social, creative, default]
         categoryLabel:
           type: string
         currentStreak:
@@ -1361,6 +1382,10 @@ components:
           type: string
         endDate:
           type: string
+        category:
+          type: string
+          enum: [health, deep_work, learning, finance, admin, household, social, creative, default]
+          description: Optional category override. Auto-detected from title if omitted.
 
     RecurringTaskUpdate:
       type: object
@@ -1385,6 +1410,9 @@ components:
           type: ["string", "null"]
         isActive:
           type: boolean
+        category:
+          type: string
+          enum: [health, deep_work, learning, finance, admin, household, social, creative, default]
 
     Badge:
       type: object

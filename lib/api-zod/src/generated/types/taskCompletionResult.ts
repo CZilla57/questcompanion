@@ -28,4 +28,8 @@ export interface TaskCompletionResult {
   gearReward?: GearRewardInfo | null;
   /** Random bonus reward triggered on ~12% of completions */
   surpriseReward?: SurpriseReward | null;
+  /** Whether the all-3-focus-quests bonus was awarded */
+  focusBonusAwarded?: boolean;
+  /** XP awarded for completing all 3 focus quests */
+  focusBonusPoints?: number;
 }

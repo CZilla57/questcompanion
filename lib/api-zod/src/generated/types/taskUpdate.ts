@@ -5,6 +5,7 @@
  * FocusQuest API - ADHD gamified task tracker
  * OpenAPI spec version: 0.1.0
  */
+import type { TaskUpdateCategory } from './taskUpdateCategory';
 import type { TaskUpdatePriority } from './taskUpdatePriority';
 
 export interface TaskUpdate {
@@ -19,13 +20,16 @@ export interface TaskUpdate {
   dueDate?: string;
   priority?: TaskUpdatePriority;
   /**
+     * Time estimate (only updatable on incomplete tasks)
      * @minimum 1
      * @maximum 1440
      */
   estimatedMinutes?: number;
   /**
+     * Actual time spent (updatable on completed tasks too)
      * @minimum 1
      * @maximum 1440
      */
   actualMinutes?: number;
+  category?: TaskUpdateCategory;
 }

@@ -228,7 +228,7 @@ const PRIORITY_MODIFIER: Record<string, number> = {
   low: -5,
 };
 
-const CATEGORY_LABELS: Record<string, string> = {
+export const CATEGORY_LABELS: Record<string, string> = {
   health: "Health",
   deep_work: "Deep Work",
   learning: "Learning",
@@ -239,6 +239,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   creative: "Creative",
   default: "General",
 };
+
+export const VALID_CATEGORIES = new Set(Object.keys(CATEGORY_LABELS));
 
 export interface AutoPointResult {
   points: number;

@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetTasksQueryKey, getGetMyStatsQueryKey } from "@workspace/api-client-react";
 import { dispatchQuestCompleted } from "./dopamine-overlay";
+import { CATEGORY_COLORS, CATEGORY_LABEL } from "@/lib/categories";
 
 interface TaskItemProps {
   task: Task;
@@ -250,6 +251,12 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
           <span className={`text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-wider font-bold ${priorityColors[task.priority]}`}>
             {task.priority}
           </span>
+
+          {task.category && task.category !== "default" && (
+            <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${CATEGORY_COLORS[task.category] ?? CATEGORY_COLORS.default}`}>
+              {CATEGORY_LABEL[task.category] ?? "General"}
+            </span>
+          )}
 
           {/* Time badges */}
           {!task.completed && hasEstimate && (

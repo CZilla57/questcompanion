@@ -5,6 +5,7 @@
  * FocusQuest API - ADHD gamified task tracker
  * OpenAPI spec version: 0.1.0
  */
+import type { GetTasksCategory } from './getTasksCategory';
 
 export type GetTasksParams = {
 /**
@@ -16,4 +17,8 @@ date?: string | null;
  * @nullable
  */
 completed?: boolean | null;
+/**
+ * Filter by category
+ */
+category?: GetTasksCategory;
 };

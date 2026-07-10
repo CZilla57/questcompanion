@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetTasksQueryKey } from "@workspace/api-client-react";
+import { CATEGORIES, CATEGORY_COLORS, CATEGORY_HEX_COLORS } from "@/lib/categories";
 
 interface PointPreview {
   points: number;
@@ -26,18 +27,6 @@ interface Recommendation {
   category?: string;
   categoryLabel?: string;
 }
-
-const CATEGORY_COLORS: Record<string, string> = {
-  health:    "text-green-400  bg-green-400/10  border-green-400/30",
-  deep_work: "text-blue-400   bg-blue-400/10   border-blue-400/30",
-  learning:  "text-purple-400 bg-purple-400/10 border-purple-400/30",
-  finance:   "text-yellow-400 bg-yellow-400/10 border-yellow-400/30",
-  admin:     "text-orange-400 bg-orange-400/10 border-orange-400/30",
-  household: "text-emerald-400 bg-emerald-400/10 border-emerald-400/30",
-  social:    "text-pink-400   bg-pink-400/10   border-pink-400/30",
-  creative:  "text-fuchsia-400 bg-fuchsia-400/10 border-fuchsia-400/30",
-  default:   "text-muted-foreground bg-muted/20 border-border",
-};
 
 function RecommendCard({
   rec,
@@ -199,17 +188,21 @@ function TimeInput({
 export default function Tasks() {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [filter, setFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDesc, setNewTaskDesc] = useState("");
   const [newTaskPriority, setNewTaskPriority] = useState<TaskPriority>(TaskPriority.medium);
   const [newTaskEstimate, setNewTaskEstimate] = useState("");
+  const [newTaskCategory, setNewTaskCategory] = useState("");
+  const [categoryManuallySet, setCategoryManuallySet] = useState(false);
 
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [editPriority, setEditPriority] = useState<TaskPriority>(TaskPriority.medium);
   const [editEstimate, setEditEstimate] = useState("");
+  const [editCategory, setEditCategory] = useState("");
 
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [excludedIds, setExcludedIds] = useState<number[]>([]);
@@ -253,12 +246,19 @@ export default function Tasks() {
 
   const { data: tasks, isLoading } = useGetTasks({
     date: date ? format(date, 'yyyy-MM-dd') : undefined,
-    completed: filter === "completed" ? true : filter === "pending" ? false : undefined
+    completed: filter === "completed" ? true : filter === "pending" ? false : undefined,
+    category: categoryFilter !== "all" ? (categoryFilter as any) : undefined,
   });
 
   const createMutation = useCreateTask();
   const updateMutation = useUpdateTask();
   const pointPreview = usePointPreview(newTaskTitle, newTaskPriority);
+
+  useEffect(() => {
+    if (pointPreview && !categoryManuallySet) {
+      setNewTaskCategory(pointPreview.category);
+    }
+  }, [pointPreview, categoryManuallySet]);
 
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault();
@@ -273,12 +273,13 @@ export default function Tasks() {
         priority: newTaskPriority as any,
         dueDate: format(date, 'yyyy-MM-dd'),
         ...(estimatedMinutes && estimatedMinutes > 0 ? { estimatedMinutes } : {}),
+        ...(newTaskCategory ? { category: newTaskCategory as any } : {}),
       }
     }, {
       onSuccess: (task) => {
         toast({
           title: `Quest added — ${task.points} XP`,
-          description: `Category: ${task.title}`,
+          description: `Category: ${task.categoryLabel}`,
           className: "border-primary bg-primary/10",
         });
         handleCloseCreate();
@@ -293,6 +294,8 @@ export default function Tasks() {
     setNewTaskDesc("");
     setNewTaskPriority(TaskPriority.medium);
     setNewTaskEstimate("");
+    setNewTaskCategory("");
+    setCategoryManuallySet(false);
   };
 
   const handleOpenEdit = (task: Task) => {
@@ -301,6 +304,7 @@ export default function Tasks() {
     setEditDesc(task.description ?? "");
     setEditPriority((task.priority as TaskPriority) ?? TaskPriority.medium);
     setEditEstimate(task.estimatedMinutes ? String(task.estimatedMinutes) : "");
+    setEditCategory(task.category ?? "default");
   };
 
   const handleSaveEdit = (e: React.FormEvent) => {
@@ -316,6 +320,7 @@ export default function Tasks() {
         description: editDesc,
         priority: editPriority as any,
         ...(estimatedMinutes && estimatedMinutes > 0 ? { estimatedMinutes } : {}),
+        category: editCategory as any,
       }
     }, {
       onSuccess: () => {
@@ -383,6 +388,18 @@ export default function Tasks() {
             <SelectItem value="all">All Quests</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
             <SelectItem value="completed">Completed</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue placeholder="Filter by category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {CATEGORIES.map((c) => (
+              <SelectItem key={c.slug} value={c.slug}>{c.label}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
 
@@ -493,6 +510,31 @@ export default function Tasks() {
             </div>
 
             <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">Category</label>
+              <Select
+                value={newTaskCategory || "default"}
+                onValueChange={(val) => {
+                  setNewTaskCategory(val);
+                  setCategoryManuallySet(true);
+                }}
+              >
+                <SelectTrigger className="border-primary/20">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map((c) => (
+                    <SelectItem key={c.slug} value={c.slug}>
+                      <span className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CATEGORY_HEX_COLORS[c.slug] }} />
+                        {c.label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
               <label className="text-sm font-medium text-foreground mb-1 block">Details (Optional)</label>
               <Textarea
                 value={newTaskDesc}
@@ -564,6 +606,25 @@ export default function Tasks() {
                 placeholder="Add some context..."
                 className="border-primary/20 focus:border-primary"
               />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">Category</label>
+              <Select value={editCategory} onValueChange={setEditCategory}>
+                <SelectTrigger className="border-primary/20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map((c) => (
+                    <SelectItem key={c.slug} value={c.slug}>
+                      <span className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CATEGORY_HEX_COLORS[c.slug] }} />
+                        {c.label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

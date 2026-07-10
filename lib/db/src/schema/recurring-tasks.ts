@@ -7,6 +7,7 @@ export const recurringTasksTable = pgTable("recurring_tasks", {
   title: text("title").notNull(),
   description: text("description"),
   priority: text("priority").notNull().default("medium"),
+  category: text("category").notNull().default("default"),
   daysOfWeek: text("days_of_week").notNull().default("1,2,3,4,5"),
   timeOfDay: text("time_of_day").notNull().default("08:00"),
   startDate: text("start_date").notNull(),

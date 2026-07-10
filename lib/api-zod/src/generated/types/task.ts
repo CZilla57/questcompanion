@@ -5,6 +5,7 @@
  * FocusQuest API - ADHD gamified task tracker
  * OpenAPI spec version: 0.1.0
  */
+import type { TaskCategory } from './taskCategory';
 import type { TaskPriority } from './taskPriority';
 
 export interface Task {
@@ -19,9 +20,24 @@ export interface Task {
   completedAt?: string | null;
   dueDate: string;
   priority: TaskPriority;
+  category: TaskCategory;
+  categoryLabel: string;
   createdAt: string;
-  /** @nullable */
+  /**
+     * Time the user estimated the quest would take (in minutes)
+     * @nullable
+     */
   estimatedMinutes?: number | null;
-  /** @nullable */
+  /**
+     * Time the user actually spent on the quest (in minutes)
+     * @nullable
+     */
   actualMinutes?: number | null;
+  /** Whether this quest is pinned as a daily focus */
+  isDailyFocus?: boolean;
+  /**
+     * The date (YYYY-MM-DD) this quest was pinned as focus
+     * @nullable
+     */
+  focusDate?: string | null;
 }
