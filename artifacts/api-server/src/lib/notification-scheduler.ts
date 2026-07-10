@@ -91,7 +91,6 @@ async function sendDailySummary() {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, DEFAULT_USER_ID));
   if (!user) return;
 
-  // Gather today's task stats
   const allTodayTasks = await db.select().from(tasksTable).where(
     and(eq(tasksTable.userId, DEFAULT_USER_ID), eq(tasksTable.dueDate, today)),
   );
@@ -101,7 +100,6 @@ async function sendDailySummary() {
   const doneCount = completedToday.length;
   const remainingCount = totalTasks - doneCount;
 
-  // XP earned today from the activity log (points > 0)
   const todayStart = new Date(today + "T00:00:00.000Z");
   const activityRows = await db.select().from(activityTable).where(
     and(
@@ -116,7 +114,6 @@ async function sendDailySummary() {
   const streakDays = user.streakDays;
   const streakSafe = user.lastActiveDate === today;
 
-  // --- Scenario A: all tasks done (or no tasks due and streak is safe) ---
   if (totalTasks > 0 && doneCount === totalTasks) {
     const streakLine = streakDays > 0
       ? ` ${streakDays}-day streak intact! 🔥`
@@ -130,7 +127,6 @@ async function sendDailySummary() {
     return;
   }
 
-  // --- Scenario B: partial progress, some tasks remain ---
   if (totalTasks > 0 && doneCount > 0 && remainingCount > 0) {
     const xpLine = xpToday > 0 ? ` · ${xpToday} XP earned` : "";
     const streakLine = streakSafe ? ` Streak safe (${streakDays}d).` : " Streak at risk!";
@@ -143,7 +139,6 @@ async function sendDailySummary() {
     return;
   }
 
-  // --- Scenario C: nothing done, streak at risk ---
   if (doneCount === 0 && streakDays > 0) {
     const taskLine = totalTasks > 0
       ? ` You have ${totalTasks} quest${totalTasks === 1 ? "" : "s"} open.`
@@ -157,7 +152,6 @@ async function sendDailySummary() {
     return;
   }
 
-  // --- Scenario D: nothing done, no streak — gentle nudge ---
   if (doneCount === 0 && totalTasks > 0) {
     await notify(
       DEFAULT_USER_ID,
@@ -169,53 +163,23 @@ async function sendDailySummary() {
 }
 
 async function spawnRecurringTasks() {
-  try {
-    const created = await spawnRecurringTasksForToday();
-    if (created > 0) {
-      logger.info({ created }, "Spawned recurring tasks for today");
-    }
-  } catch (err) {
-    logger.error({ err }, "Failed to spawn recurring tasks");
+  const created = await spawnRecurringTasksForToday();
+  if (created > 0) {
+    logger.info({ created }, "Spawned recurring tasks for today");
   }
 }
 
-let schedulerInterval: ReturnType<typeof setInterval> | null = null;
-let lastSpawnDate: string | null = null;
+export async function tick() {
+  const ran: string[] = [];
 
-export function startScheduler() {
-  if (schedulerInterval) return;
+  await spawnRecurringTasks();
+  ran.push("recurring-tasks");
 
-  schedulerInterval = setInterval(async () => {
-    try {
-      const now = new Date();
-      const todayStr = now.toISOString().split("T")[0];
+  await checkDueTasks();
+  ran.push("check-due-tasks");
 
-      if (lastSpawnDate !== todayStr) {
-        lastSpawnDate = todayStr;
-        await spawnRecurringTasks();
-      } else {
-        const minute = now.getMinutes();
-        if (minute === 0) {
-          await spawnRecurringTasks();
-        }
-      }
+  await sendDailySummary();
+  ran.push("daily-summary");
 
-      await checkDueTasks();
-      await sendDailySummary();
-    } catch (err) {
-      logger.error({ err }, "Scheduler error");
-    }
-  }, 60 * 1000);
-
-  // Spawn immediately on startup for today
-  spawnRecurringTasks().catch((err) => logger.error({ err }, "Initial spawn error"));
-
-  logger.info("Notification scheduler started");
-}
-
-export function stopScheduler() {
-  if (schedulerInterval) {
-    clearInterval(schedulerInterval);
-    schedulerInterval = null;
-  }
+  return ran;
 }
