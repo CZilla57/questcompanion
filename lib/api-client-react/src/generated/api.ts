@@ -35,6 +35,7 @@ import type {
   ErrorEnvelope,
   FocusToggleInput,
   GearStoreResponse,
+  GetCalendarHeatmapParams,
   GetLeaderboardParams,
   GetMyInsightsParams,
   GetMyXpHistoryParams,
@@ -42,6 +43,7 @@ import type {
   GetTasksParams,
   HandleBrowserLoginCallbackParams,
   HealthStatus,
+  HeatmapResponse,
   InsightsResponse,
   LeaderboardEntry,
   LogoutSuccess,
@@ -3670,4 +3672,88 @@ export const useDeleteDopamineReward = <TError = ErrorType<ErrorEnvelope>,
       > => {
       return useMutation(getDeleteDopamineRewardMutationOptions(options));
     }
+
+export const getGetCalendarHeatmapUrl = (params?: GetCalendarHeatmapParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/calendar/heatmap?${stringifiedParams}` : `/api/calendar/heatmap`
+}
+
+/**
+ * @summary Get completion heatmap data for the last N days
+ */
+export const getCalendarHeatmap = async (params?: GetCalendarHeatmapParams, options?: RequestInit): Promise<HeatmapResponse> => {
+
+  return customFetch<HeatmapResponse>(getGetCalendarHeatmapUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCalendarHeatmapQueryKey = (params?: GetCalendarHeatmapParams,) => {
+    return [
+    `/api/calendar/heatmap`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetCalendarHeatmapQueryOptions = <TData = Awaited<ReturnType<typeof getCalendarHeatmap>>, TError = ErrorType<unknown>>(params?: GetCalendarHeatmapParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCalendarHeatmap>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCalendarHeatmapQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCalendarHeatmap>>> = ({ signal }) => getCalendarHeatmap(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCalendarHeatmap>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCalendarHeatmapQueryResult = NonNullable<Awaited<ReturnType<typeof getCalendarHeatmap>>>
+export type GetCalendarHeatmapQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get completion heatmap data for the last N days
+ */
+
+export function useGetCalendarHeatmap<TData = Awaited<ReturnType<typeof getCalendarHeatmap>>, TError = ErrorType<unknown>>(
+ params?: GetCalendarHeatmapParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCalendarHeatmap>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCalendarHeatmapQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 

@@ -808,6 +808,18 @@ export interface DopamineRewardInput {
   rewardText: string;
 }
 
+export interface HeatmapDay {
+  /** Date in YYYY-MM-DD format */
+  date: string;
+  totalTasks: number;
+  completedTasks: number;
+  xpEarned: number;
+}
+
+export interface HeatmapResponse {
+  days: HeatmapDay[];
+}
+
 /**
  * Opaque session token — `Bearer <sid>`.
  */
@@ -890,5 +902,12 @@ export const GetLeaderboardPeriod = {
 
 export type SearchUsersParams = {
 q: string;
+};
+
+export type GetCalendarHeatmapParams = {
+/**
+ * Number of days to return (default 90)
+ */
+days?: number;
 };
 
