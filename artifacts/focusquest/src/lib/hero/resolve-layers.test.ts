@@ -15,13 +15,15 @@ const look: HeroLook = {
   face: "neutral", avatarClass: "fighter", tier: 0, equipped: [],
 };
 
-const fullCatalog = cat([
+const baseEntries: CatalogEntry[] = [
   base("body:average:light", "body", 10),
   base("face:neutral", "face", 20),
   base("hair:short:brown", "hair", 30),
   base("outfit:fighter:t0:average", "outfit", 40),
   base("gear:iron-helm:average", "helmet", 70),
-]);
+];
+
+const fullCatalog = cat(baseEntries);
 
 describe("resolveLayers", () => {
   it("returns body, face, hair, outfit ordered by zIndex for an ungeared hero", () => {
@@ -68,5 +70,56 @@ describe("resolveLayers", () => {
     expect(layers.map((l) => l.file)).toEqual(["/lpc/body:average:light.png"]);
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
+  });
+
+  it("sorts final layers by zIndex, not by collection/insertion order", () => {
+    // collectIds() always emits body, face, hair, outfit in that order. Here the
+    // catalog assigns zIndex so the correct render order is the REVERSE of that
+    // insertion order (outfit=10 ... body=40). If resolveLayers ever dropped its
+    // `.sort()` call, this would still return layers in insertion order
+    // (body, face, hair, outfit) and the assertion below would fail.
+    const scrambledCatalog = cat([
+      base("body:average:light", "body", 40),
+      base("face:neutral", "face", 20),
+      base("hair:short:brown", "hair", 30),
+      base("outfit:fighter:t0:average", "outfit", 10),
+    ]);
+    const layers = resolveLayers(look, scrambledCatalog);
+    expect(layers.map((l) => l.file)).toEqual([
+      "/lpc/outfit:fighter:t0:average.png", // zIndex 10
+      "/lpc/face:neutral.png",              // zIndex 20
+      "/lpc/hair:short:brown.png",          // zIndex 30
+      "/lpc/body:average:light.png",        // zIndex 40
+    ]);
+  });
+
+  it("applies each equipped gear item's own tint independently and leaves non-gear layers untinted", () => {
+    const multiGearCatalog = cat([
+      ...baseEntries,
+      base("gear:steel-boots:average", "boots", 50),
+    ]);
+    const geared: HeroLook = {
+      ...look,
+      equipped: [
+        { slot: "helmet", spriteId: "iron-helm", rarity: "rare" },
+        { slot: "boots", spriteId: "steel-boots", rarity: "legendary" },
+      ],
+    };
+    const layers = resolveLayers(geared, multiGearCatalog);
+
+    const helm = layers.find((l) => l.file.includes("iron-helm"));
+    const boots = layers.find((l) => l.file.includes("steel-boots"));
+    expect(helm).toBeDefined();
+    expect(boots).toBeDefined();
+    expect(helm!.tint).toBe("#3b82f6"); // rare
+    expect(boots!.tint).toBe("#f59e0b"); // legendary
+
+    const nonGear = layers.filter(
+      (l) => !l.file.includes("iron-helm") && !l.file.includes("steel-boots"),
+    );
+    expect(nonGear.length).toBe(4); // body, face, hair, outfit
+    for (const l of nonGear) {
+      expect(l.tint).toBeUndefined();
+    }
   });
 });

@@ -18,7 +18,12 @@ function collectIds(look: HeroLook): string[] {
   return ids;
 }
 
-/** Map each gear catalog category to the rarity of the item occupying it. */
+/**
+ * Map each gear catalog category to the rarity of the item occupying it.
+ * Relies on the invariant that at most one equipped item maps to any given
+ * category (one item per slot/category); if that ever changes, later entries
+ * in `look.equipped` will silently overwrite earlier ones for the same category.
+ */
 function tintByCategory(
   look: HeroLook,
   catalogById: Map<string, CatalogEntry>,
