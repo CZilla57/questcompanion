@@ -6,7 +6,6 @@ import {
   addDays,
   getDay,
   isSameDay,
-  parseISO,
 } from "date-fns";
 import {
   useGetCalendarHeatmap,
