@@ -27,7 +27,24 @@ const HAIR_COLOR_CANDS = {
   blonde: ["blonde", "blond", "gold"], red: ["redhead", "red", "carrot", "ginger"],
   white: ["white", "platinum", "gray", "silver"], blue: ["blue", "navy"],
 };
-const Z = { body: 10, hair: 30 };
+const Z = { aura: 5, body: 10, hair: 30, outfit: 40, boots: 50, armor: 60, helmet: 70, weapon: 80, accessory: 90 };
+const GEAR_Z = { boots: Z.boots, armor: Z.armor, helmet: Z.helmet, weapon: Z.weapon, accessory: Z.accessory };
+
+// A clothing/gear part: a def path (relative to sheet_definitions/) + optional color variant.
+// Use { male, female } when a def only covers one body type and a per-build override is needed.
+type DefRef = { def: string; variant?: string };
+type PartRef = DefRef | { male: DefRef; female: DefRef };
+const perBuild = (r: PartRef, build) => ("def" in r ? r : r[build]);
+
+const defCache = new Map();
+async function fetchDef(defPath) {
+  if (!defCache.has(defPath)) defCache.set(defPath, await fetchJson(`${RAW}/sheet_definitions/${defPath}`));
+  return defCache.get(defPath);
+}
+const defCredit = (def) => {
+  const c = def.credits?.[0] ?? {};
+  return { author: (c.authors ?? []).join("; "), license: (c.licenses ?? []).join(", "), sourceUrl: (c.urls ?? [])[0] ?? "" };
+};
 
 // Curated ULPC attribution (from sheet_definitions credit fields + the LPC base/hair OGA collections).
 const CRED = {
@@ -80,9 +97,74 @@ function over(base, top) {
 const writePng = (dir, name, png) => writeFileSync(join(LPC_OUT, dir, name + ".png"), PNG.sync.write(png));
 const csv = (s) => `"${String(s).replace(/"/g, '""')}"`;
 
+// Load the south standing frame for a def's layer_1 for a given build.
+//
+// WRINKLE (confirmed empirically against the live repo during the Task 1 spike — this
+// overrides the "{prefix}{variant}/walk.png" leaf assumed in the plan's LPC path model):
+// a def with NO `variants` (recolor/palette-based, e.g. the longsleeve shirt) resolves at the
+// bare `{prefix}walk.png`. A def WITH `variants` (e.g. pants, shoes, tunic, the sword) does NOT
+// have a `{variant}/walk.png` subfolder — instead `walk` itself is a directory and the pre-colored
+// sheet lives at `{prefix}walk/{variant}.png`. Confirmed via the GitHub contents API for
+// legs/pants, feet/shoes/basic, torso/clothes/tunic, and weapon/sword/arming (male + female).
+async function loadDefFrame({ def: defPath, variant }, build) {
+  const def = await fetchDef(defPath);
+  const layer = def.layer_1;
+  const prefix = layer[build];
+  if (!prefix) throw new Error(`def ${defPath} has no '${build}' layer — supply a per-build override in the manifest`);
+  const url = variant ? `${RAW}/spritesheets/${prefix}walk/${variant}.png` : `${RAW}/spritesheets/${prefix}walk.png`;
+  const sheet = await loadSheet(url);
+  if (!sheet) throw new Error(`no sheet at ${url} for def ${defPath} (build ${build}) — check variant/leaf path`);
+  return { frame: cropSouth(sheet), credit: defCredit(def), zPos: layer.zPos };
+}
+
+// Union author/license/url across the parts of a baked sprite.
+function mergeCredits(creds) {
+  return {
+    author: [...new Set(creds.flatMap((c) => c.author.split("; ")).filter(Boolean))].join("; "),
+    license: [...new Set(creds.flatMap((c) => c.license.split(", ")).filter(Boolean))].join(", "),
+    sourceUrl: creds.find((c) => c.sourceUrl)?.sourceUrl ?? "",
+  };
+}
+
+// Shared with main()'s body/hair loops — populated across the whole build, emitted to catalog.ts at the end.
+const entries = [];
+// Attribution rows for outfit/gear parts, collected alongside `entries` and appended to CREDITS.csv.
+const gearCreditRows = [];
+
+// Composite an ordered list of parts (feet, legs, torso...) into one baked outfit sprite per build.
+async function buildOutfit(cls, tier, parts /* PartRef[] in draw order: feet→legs→torso */) {
+  for (const build of BUILDS) {
+    let img = new PNG({ width: 64, height: 64 }); // transparent base
+    const creds = [];
+    for (const part of parts) {
+      const { frame, credit } = await loadDefFrame(perBuild(part, build), build);
+      img = over(img, frame);
+      creds.push(credit);
+    }
+    writePng("outfit", `${cls}_t${tier}_${build}`, img);
+    const c = mergeCredits(creds);
+    entries.push({ id: `outfit:${cls}:t${tier}:${build}`, category: "outfit", zIndex: Z.outfit, file: `/lpc/outfit/${cls}_t${tier}_${build}.png`, ...c });
+    gearCreditRows.push([`outfit/${cls}_t${tier}_${build}`, c.author, c.license, c.sourceUrl]);
+  }
+  console.log(`✓ outfit ${cls} t${tier}`);
+}
+
+// Export a single gear archetype shape per build. Rarity tint is applied at runtime.
+async function buildGear(spriteId, category, part /* PartRef */) {
+  for (const build of BUILDS) {
+    const { frame, credit } = await loadDefFrame(perBuild(part, build), build);
+    writePng("gear", `${spriteId}_${build}`, frame);
+    entries.push({ id: `gear:${spriteId}:${build}`, category, zIndex: GEAR_Z[category], file: `/lpc/gear/${spriteId}_${build}.png`, ...credit });
+    gearCreditRows.push([`gear/${spriteId}_${build}`, credit.author, credit.license, credit.sourceUrl]);
+  }
+  console.log(`✓ gear ${spriteId} (${category})`);
+}
+
 async function main() {
   mkdirSync(join(LPC_OUT, "body"), { recursive: true });
   mkdirSync(join(LPC_OUT, "hair"), { recursive: true });
+  mkdirSync(join(LPC_OUT, "outfit"), { recursive: true });
+  mkdirSync(join(LPC_OUT, "gear"), { recursive: true });
 
   const bodyPal = await fetchJson(`${RAW}/tools/palettes/ulpc-body-palettes.json`);
   const hairPal = await fetchJson(`${RAW}/tools/palettes/ulpc-hair-palettes.json`);
@@ -94,7 +176,6 @@ async function main() {
   const eyeLayer = eyes ? cropSouth(eyes) : null;
   if (!eyeLayer) throw new Error("eyes layer failed to load");
 
-  const entries = [];
   const cc = (c) => ({ author: c.authors.join("; "), license: c.licenses.join(", "), sourceUrl: c.url });
 
   // BODIES = body + head + eyes, recolored to the same skin tone
@@ -129,6 +210,14 @@ async function main() {
     console.log(`✓ hair ${ourStyle} (6 colors)`);
   }
 
+  // --- SPIKE manifest (fighter t0 + sword). Expanded in Tasks 2–3. ---
+  await buildOutfit("fighter", 0, [
+    { def: "feet/shoes/feet_shoes_basic.json", variant: "brown" },
+    { def: "legs/pants/legs_pants.json", variant: "brown" },
+    { def: "torso/shirts/longsleeve/torso_clothes_longsleeve.json" },
+  ]);
+  await buildGear("sword", "weapon", { def: "weapons/sword/weapon_sword_arming.json", variant: "steel" });
+
   // catalog.ts
   const catalogTs = `// AUTO-GENERATED by scripts/src/build-lpc-assets.ts — do not edit by hand.\n` +
     `// Regenerate with: pnpm --filter @workspace/scripts build-lpc\n` +
@@ -141,6 +230,9 @@ async function main() {
   const credRows = [["asset", "authors", "licenses", "source_url"]];
   credRows.push(["body+head+eyes", BODY_CRED.authors.join(" | "), BODY_CRED.licenses.join(" | "), BODY_CRED.url]);
   credRows.push(["hair", CRED.hair.authors.join(" | "), CRED.hair.licenses.join(" | "), CRED.hair.url]);
+  for (const [asset, author, license, sourceUrl] of gearCreditRows) {
+    credRows.push([asset, author.replace(/; /g, " | "), license.replace(/, /g, " | "), sourceUrl]);
+  }
   const preamble = `# Character art: Universal LPC Spritesheet (art assets only, not generator code).\n` +
     `# Full per-asset credits: https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator/blob/master/CREDITS.csv\n`;
   writeFileSync(CREDITS_OUT, preamble + credRows.map((r) => r.map(csv).join(",")).join("\n") + "\n");

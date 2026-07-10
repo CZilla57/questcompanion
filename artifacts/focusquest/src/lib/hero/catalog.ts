@@ -326,6 +326,42 @@ export const CATALOG: CatalogEntry[] = [
     "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
     "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
     "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "outfit:fighter:t0:male",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/fighter_t0_male.png",
+    "author": "JaidynReiman; bluecarrot16; Johannes Sjölund (wulax); ElizaWy; Matthew Krohn (makrohn); Stephen Challener (Redshrike)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "outfit:fighter:t0:female",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/fighter_t0_female.png",
+    "author": "JaidynReiman; bluecarrot16; Johannes Sjölund (wulax); ElizaWy; Matthew Krohn (makrohn); Stephen Challener (Redshrike)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "gear:sword:male",
+    "category": "weapon",
+    "zIndex": 80,
+    "file": "/lpc/gear/sword_male.png",
+    "author": "ElizaWy; walk and down by JaidynReiman",
+    "license": "OGA-BY 3.0",
+    "sourceUrl": "https://github.com/ElizaWy/LPC/tree/main/Characters/Props/Sword%2001%20-%20Arming%20Sword"
+  },
+  {
+    "id": "gear:sword:female",
+    "category": "weapon",
+    "zIndex": 80,
+    "file": "/lpc/gear/sword_female.png",
+    "author": "ElizaWy; walk and down by JaidynReiman",
+    "license": "OGA-BY 3.0",
+    "sourceUrl": "https://github.com/ElizaWy/LPC/tree/main/Characters/Props/Sword%2001%20-%20Arming%20Sword"
   }
 ];
 
