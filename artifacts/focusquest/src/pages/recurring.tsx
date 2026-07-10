@@ -24,7 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { CATEGORIES, CATEGORY_COLORS, CATEGORY_LABEL } from "@/lib/categories";
+import { CATEGORIES, CATEGORY_COLORS, CATEGORY_HEX_COLORS } from "@/lib/categories";
 
 const DAYS = [
   { value: 0, short: "Su", label: "Sunday" },
@@ -229,7 +229,7 @@ function RecurringTaskForm({
             {CATEGORIES.map((c) => (
               <SelectItem key={c.slug} value={c.slug}>
                 <span className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${CATEGORY_COLORS[c.slug]?.split(" ")[0]}`} />
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CATEGORY_HEX_COLORS[c.slug] }} />
                   {c.label}
                 </span>
               </SelectItem>

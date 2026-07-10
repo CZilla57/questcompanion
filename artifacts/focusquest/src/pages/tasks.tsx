@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetTasksQueryKey } from "@workspace/api-client-react";
-import { CATEGORIES, CATEGORY_COLORS, CATEGORY_LABEL } from "@/lib/categories";
+import { CATEGORIES, CATEGORY_COLORS, CATEGORY_HEX_COLORS } from "@/lib/categories";
 
 interface PointPreview {
   points: number;
@@ -279,7 +279,7 @@ export default function Tasks() {
       onSuccess: (task) => {
         toast({
           title: `Quest added — ${task.points} XP`,
-          description: `Category: ${task.title}`,
+          description: `Category: ${task.categoryLabel}`,
           className: "border-primary bg-primary/10",
         });
         handleCloseCreate();
@@ -525,7 +525,7 @@ export default function Tasks() {
                   {CATEGORIES.map((c) => (
                     <SelectItem key={c.slug} value={c.slug}>
                       <span className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${CATEGORY_COLORS[c.slug]?.split(" ")[0]}`} />
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CATEGORY_HEX_COLORS[c.slug] }} />
                         {c.label}
                       </span>
                     </SelectItem>
@@ -618,7 +618,7 @@ export default function Tasks() {
                   {CATEGORIES.map((c) => (
                     <SelectItem key={c.slug} value={c.slug}>
                       <span className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${CATEGORY_COLORS[c.slug]?.split(" ")[0]}`} />
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CATEGORY_HEX_COLORS[c.slug] }} />
                         {c.label}
                       </span>
                     </SelectItem>
