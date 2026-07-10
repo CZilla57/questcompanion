@@ -141,6 +141,21 @@ export const TaskPriority = {
   high: 'high',
 } as const;
 
+export type TaskCategory = typeof TaskCategory[keyof typeof TaskCategory];
+
+
+export const TaskCategory = {
+  health: 'health',
+  deep_work: 'deep_work',
+  learning: 'learning',
+  finance: 'finance',
+  admin: 'admin',
+  household: 'household',
+  social: 'social',
+  creative: 'creative',
+  default: 'default',
+} as const;
+
 export interface Task {
   id: number;
   userId: number;
@@ -153,6 +168,8 @@ export interface Task {
   completedAt?: string | null;
   dueDate: string;
   priority: TaskPriority;
+  category: TaskCategory;
+  categoryLabel: string;
   createdAt: string;
   /**
      * Time the user estimated the quest would take (in minutes)
@@ -186,6 +203,24 @@ export const TaskInputPriority = {
   high: 'high',
 } as const;
 
+/**
+ * Optional category override. Auto-detected from title if omitted.
+ */
+export type TaskInputCategory = typeof TaskInputCategory[keyof typeof TaskInputCategory];
+
+
+export const TaskInputCategory = {
+  health: 'health',
+  deep_work: 'deep_work',
+  learning: 'learning',
+  finance: 'finance',
+  admin: 'admin',
+  household: 'household',
+  social: 'social',
+  creative: 'creative',
+  default: 'default',
+} as const;
+
 export interface TaskInput {
   /** @minLength 1 */
   title: string;
@@ -203,6 +238,8 @@ export interface TaskInput {
      * @maximum 1440
      */
   estimatedMinutes?: number;
+  /** Optional category override. Auto-detected from title if omitted. */
+  category?: TaskInputCategory;
 }
 
 export type TaskUpdatePriority = typeof TaskUpdatePriority[keyof typeof TaskUpdatePriority];
@@ -212,6 +249,21 @@ export const TaskUpdatePriority = {
   low: 'low',
   medium: 'medium',
   high: 'high',
+} as const;
+
+export type TaskUpdateCategory = typeof TaskUpdateCategory[keyof typeof TaskUpdateCategory];
+
+
+export const TaskUpdateCategory = {
+  health: 'health',
+  deep_work: 'deep_work',
+  learning: 'learning',
+  finance: 'finance',
+  admin: 'admin',
+  household: 'household',
+  social: 'social',
+  creative: 'creative',
+  default: 'default',
 } as const;
 
 export interface TaskUpdate {
@@ -237,6 +289,7 @@ export interface TaskUpdate {
      * @maximum 1440
      */
   actualMinutes?: number;
+  category?: TaskUpdateCategory;
 }
 
 export type BadgeCategory = typeof BadgeCategory[keyof typeof BadgeCategory];
@@ -343,6 +396,21 @@ export const RecurringTaskPriority = {
   high: 'high',
 } as const;
 
+export type RecurringTaskCategory = typeof RecurringTaskCategory[keyof typeof RecurringTaskCategory];
+
+
+export const RecurringTaskCategory = {
+  health: 'health',
+  deep_work: 'deep_work',
+  learning: 'learning',
+  finance: 'finance',
+  admin: 'admin',
+  household: 'household',
+  social: 'social',
+  creative: 'creative',
+  default: 'default',
+} as const;
+
 export interface RecurringTask {
   id: number;
   userId: number;
@@ -359,7 +427,8 @@ export interface RecurringTask {
   endDate?: string | null;
   isActive: boolean;
   estimatedPoints?: number;
-  categoryLabel?: string;
+  category: RecurringTaskCategory;
+  categoryLabel: string;
   currentStreak: number;
   longestStreak: number;
   totalCompletions: number;
@@ -377,6 +446,24 @@ export const RecurringTaskInputPriority = {
   high: 'high',
 } as const;
 
+/**
+ * Optional category override. Auto-detected from title if omitted.
+ */
+export type RecurringTaskInputCategory = typeof RecurringTaskInputCategory[keyof typeof RecurringTaskInputCategory];
+
+
+export const RecurringTaskInputCategory = {
+  health: 'health',
+  deep_work: 'deep_work',
+  learning: 'learning',
+  finance: 'finance',
+  admin: 'admin',
+  household: 'household',
+  social: 'social',
+  creative: 'creative',
+  default: 'default',
+} as const;
+
 export interface RecurringTaskInput {
   /** @minLength 1 */
   title: string;
@@ -387,6 +474,8 @@ export interface RecurringTaskInput {
   timeOfDay: string;
   startDate: string;
   endDate?: string;
+  /** Optional category override. Auto-detected from title if omitted. */
+  category?: RecurringTaskInputCategory;
 }
 
 export type RecurringTaskUpdatePriority = typeof RecurringTaskUpdatePriority[keyof typeof RecurringTaskUpdatePriority];
@@ -396,6 +485,21 @@ export const RecurringTaskUpdatePriority = {
   low: 'low',
   medium: 'medium',
   high: 'high',
+} as const;
+
+export type RecurringTaskUpdateCategory = typeof RecurringTaskUpdateCategory[keyof typeof RecurringTaskUpdateCategory];
+
+
+export const RecurringTaskUpdateCategory = {
+  health: 'health',
+  deep_work: 'deep_work',
+  learning: 'learning',
+  finance: 'finance',
+  admin: 'admin',
+  household: 'household',
+  social: 'social',
+  creative: 'creative',
+  default: 'default',
 } as const;
 
 export interface RecurringTaskUpdate {
@@ -409,6 +513,7 @@ export interface RecurringTaskUpdate {
   /** @nullable */
   endDate?: string | null;
   isActive?: boolean;
+  category?: RecurringTaskUpdateCategory;
 }
 
 export interface XpDataPoint {
@@ -750,7 +855,26 @@ date?: string | null;
  * @nullable
  */
 completed?: boolean | null;
+/**
+ * Filter by category
+ */
+category?: GetTasksCategory;
 };
+
+export type GetTasksCategory = typeof GetTasksCategory[keyof typeof GetTasksCategory];
+
+
+export const GetTasksCategory = {
+  health: 'health',
+  deep_work: 'deep_work',
+  learning: 'learning',
+  finance: 'finance',
+  admin: 'admin',
+  household: 'household',
+  social: 'social',
+  creative: 'creative',
+  default: 'default',
+} as const;
 
 export type GetLeaderboardParams = {
 period?: GetLeaderboardPeriod;

@@ -250,6 +250,8 @@ export const GetTaskRecommendationResponse = zod.object({
   "completedAt": zod.string().nullish(),
   "dueDate": zod.string(),
   "priority": zod.enum(['low', 'medium', 'high']),
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'default']),
+  "categoryLabel": zod.string(),
   "createdAt": zod.string(),
   "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
   "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
@@ -267,7 +269,8 @@ export const GetTaskRecommendationResponse = zod.object({
  */
 export const GetTasksQueryParams = zod.object({
   "date": zod.coerce.string().nullish().describe('Filter by date (YYYY-MM-DD). Defaults to today.'),
-  "completed": zod.coerce.boolean().nullish()
+  "completed": zod.coerce.boolean().nullish(),
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'default']).optional().describe('Filter by category')
 })
 
 export const GetTasksResponseItem = zod.object({
@@ -280,6 +283,8 @@ export const GetTasksResponseItem = zod.object({
   "completedAt": zod.string().nullish(),
   "dueDate": zod.string(),
   "priority": zod.enum(['low', 'medium', 'high']),
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'default']),
+  "categoryLabel": zod.string(),
   "createdAt": zod.string(),
   "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
   "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
@@ -307,7 +312,8 @@ export const CreateTaskBody = zod.object({
   "points": zod.number().min(1).max(createTaskBodyPointsMax).default(createTaskBodyPointsDefault),
   "dueDate": zod.string(),
   "priority": zod.enum(['low', 'medium', 'high']).default(createTaskBodyPriorityDefault),
-  "estimatedMinutes": zod.number().min(1).max(createTaskBodyEstimatedMinutesMax).optional().describe('Optional time estimate in minutes')
+  "estimatedMinutes": zod.number().min(1).max(createTaskBodyEstimatedMinutesMax).optional().describe('Optional time estimate in minutes'),
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'default']).optional().describe('Optional category override. Auto-detected from title if omitted.')
 })
 
 
@@ -328,6 +334,8 @@ export const GetTaskResponse = zod.object({
   "completedAt": zod.string().nullish(),
   "dueDate": zod.string(),
   "priority": zod.enum(['low', 'medium', 'high']),
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'default']),
+  "categoryLabel": zod.string(),
   "createdAt": zod.string(),
   "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
   "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
@@ -359,7 +367,8 @@ export const UpdateTaskBody = zod.object({
   "dueDate": zod.string().optional(),
   "priority": zod.enum(['low', 'medium', 'high']).optional(),
   "estimatedMinutes": zod.number().min(1).max(updateTaskBodyEstimatedMinutesMax).optional().describe('Time estimate (only updatable on incomplete tasks)'),
-  "actualMinutes": zod.number().min(1).max(updateTaskBodyActualMinutesMax).optional().describe('Actual time spent (updatable on completed tasks too)')
+  "actualMinutes": zod.number().min(1).max(updateTaskBodyActualMinutesMax).optional().describe('Actual time spent (updatable on completed tasks too)'),
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'default']).optional()
 })
 
 export const UpdateTaskResponse = zod.object({
@@ -372,6 +381,8 @@ export const UpdateTaskResponse = zod.object({
   "completedAt": zod.string().nullish(),
   "dueDate": zod.string(),
   "priority": zod.enum(['low', 'medium', 'high']),
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'default']),
+  "categoryLabel": zod.string(),
   "createdAt": zod.string(),
   "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
   "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
@@ -406,6 +417,8 @@ export const CompleteTaskResponse = zod.object({
   "completedAt": zod.string().nullish(),
   "dueDate": zod.string(),
   "priority": zod.enum(['low', 'medium', 'high']),
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'default']),
+  "categoryLabel": zod.string(),
   "createdAt": zod.string(),
   "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
   "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
@@ -468,7 +481,8 @@ export const GetRecurringTasksResponseItem = zod.object({
   "endDate": zod.string().nullish(),
   "isActive": zod.boolean(),
   "estimatedPoints": zod.number().optional(),
-  "categoryLabel": zod.string().optional(),
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'default']),
+  "categoryLabel": zod.string(),
   "currentStreak": zod.number(),
   "longestStreak": zod.number(),
   "totalCompletions": zod.number(),
@@ -492,7 +506,8 @@ export const CreateRecurringTaskBody = zod.object({
   "daysOfWeek": zod.array(zod.number()).min(1),
   "timeOfDay": zod.string(),
   "startDate": zod.string(),
-  "endDate": zod.string().optional()
+  "endDate": zod.string().optional(),
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'default']).optional().describe('Optional category override. Auto-detected from title if omitted.')
 })
 
 
@@ -515,7 +530,8 @@ export const GetRecurringTaskResponse = zod.object({
   "endDate": zod.string().nullish(),
   "isActive": zod.boolean(),
   "estimatedPoints": zod.number().optional(),
-  "categoryLabel": zod.string().optional(),
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'default']),
+  "categoryLabel": zod.string(),
   "currentStreak": zod.number(),
   "longestStreak": zod.number(),
   "totalCompletions": zod.number(),
@@ -542,7 +558,8 @@ export const UpdateRecurringTaskBody = zod.object({
   "timeOfDay": zod.string().optional(),
   "startDate": zod.string().optional(),
   "endDate": zod.string().nullish(),
-  "isActive": zod.boolean().optional()
+  "isActive": zod.boolean().optional(),
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'default']).optional()
 })
 
 export const UpdateRecurringTaskResponse = zod.object({
@@ -557,7 +574,8 @@ export const UpdateRecurringTaskResponse = zod.object({
   "endDate": zod.string().nullish(),
   "isActive": zod.boolean(),
   "estimatedPoints": zod.number().optional(),
-  "categoryLabel": zod.string().optional(),
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'default']),
+  "categoryLabel": zod.string(),
   "currentStreak": zod.number(),
   "longestStreak": zod.number(),
   "totalCompletions": zod.number(),
@@ -593,7 +611,8 @@ export const ToggleRecurringTaskResponse = zod.object({
   "endDate": zod.string().nullish(),
   "isActive": zod.boolean(),
   "estimatedPoints": zod.number().optional(),
-  "categoryLabel": zod.string().optional(),
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'default']),
+  "categoryLabel": zod.string(),
   "currentStreak": zod.number(),
   "longestStreak": zod.number(),
   "totalCompletions": zod.number(),
@@ -619,6 +638,8 @@ export const UncompleteTaskResponse = zod.object({
   "completedAt": zod.string().nullish(),
   "dueDate": zod.string(),
   "priority": zod.enum(['low', 'medium', 'high']),
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'default']),
+  "categoryLabel": zod.string(),
   "createdAt": zod.string(),
   "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
   "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
@@ -648,6 +669,8 @@ export const PatchTaskFocusResponse = zod.object({
   "completedAt": zod.string().nullish(),
   "dueDate": zod.string(),
   "priority": zod.enum(['low', 'medium', 'high']),
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'default']),
+  "categoryLabel": zod.string(),
   "createdAt": zod.string(),
   "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
   "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
