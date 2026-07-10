@@ -1,6 +1,5 @@
 import app from "./app";
 import { logger } from "./lib/logger";
-import { startScheduler } from "./lib/notification-scheduler";
 import { pool } from "@workspace/db";
 
 const rawPort = process.env["PORT"];
@@ -24,7 +23,6 @@ const server = app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
-  startScheduler();
 });
 
 function shutdown() {

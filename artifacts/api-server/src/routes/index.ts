@@ -12,10 +12,12 @@ import avatarRouter from "./avatar";
 import gearRouter from "./gear";
 import battleRouter from "./battle";
 import dopamineRewardsRouter from "./dopamine-rewards";
+import cronRouter from "./cron";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(cronRouter);
 router.use(authRouter);
 router.use(usersRouter);
 router.use(tasksRouter);
