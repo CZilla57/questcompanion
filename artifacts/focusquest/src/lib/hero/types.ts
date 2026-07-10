@@ -1,6 +1,6 @@
 export type Build = "male" | "female"; // LPC body base (male/female)
 export type Skin = "light" | "tan" | "brown" | "dark" | "green" | "blue";
-export type HairStyle = "bald" | "short" | "long" | "ponytail" | "mohawk";
+export type HairStyle = "bald" | "short" | "long" | "ponytail" | "afro";
 export type HairColor = "brown" | "black" | "blonde" | "red" | "white" | "blue";
 export type FaceId = "neutral" | "stern" | "smile";
 export type AvatarClass = "fighter" | "mage" | "ranger" | "healer";
