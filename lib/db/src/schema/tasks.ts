@@ -34,6 +34,7 @@ export const tasksTable = pgTable("tasks", {
   completedAt: timestamp("completed_at"),
   dueDate: text("due_date").notNull(),
   priority: text("priority").notNull().default("medium"),
+  category: text("category").notNull().default("default"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => [
   // Prevents duplicate recurring-task rows for the same user/template/day across concurrent
