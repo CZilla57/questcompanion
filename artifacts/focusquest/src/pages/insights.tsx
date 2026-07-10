@@ -10,24 +10,13 @@ import {
   TrendingUp, Zap, Calendar, Clock, Target, Trophy,
   Flame, BarChart3, Sun, Sunset, Moon, Sunrise,
 } from "lucide-react";
+import { CATEGORY_COLORS } from "@/lib/categories";
 
 const TIME_RANGES = [
   { label: "30d", days: 30 },
   { label: "60d", days: 60 },
   { label: "90d", days: 90 },
 ] as const;
-
-const CATEGORY_COLORS: Record<string, string> = {
-  health:    "#4ade80",
-  deep_work: "#60a5fa",
-  learning:  "#c084fc",
-  finance:   "#fbbf24",
-  admin:     "#f97316",
-  household: "#34d399",
-  social:    "#fb7185",
-  creative:  "#e879f9",
-  default:   "#94a3b8",
-};
 
 const PERIOD_ICONS: Record<string, React.ReactNode> = {
   morning:   <Sunrise className="w-4 h-4" />,
