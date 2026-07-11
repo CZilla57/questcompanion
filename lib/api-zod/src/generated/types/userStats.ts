@@ -22,5 +22,7 @@ export interface UserStats {
   /** Whether the user has completed hero name setup */
   onboardingComplete: boolean;
   pointsToNextLevel: number;
+  /** Points earned since entering the current level band (0 at the band's start) */
+  pointsIntoLevel: number;
   recentActivity: ActivityItem[];
 }
