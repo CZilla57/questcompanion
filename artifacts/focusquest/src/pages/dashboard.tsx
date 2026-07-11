@@ -3,6 +3,7 @@ import { format, differenceInDays, parseISO } from "date-fns";
 import { ActivityItem, Task, TaskPriority, useGetMyStats, useGetTasks, useBuyStreakFreeze, useUpdateTask } from "@workspace/api-client-react";
 import { TaskItem } from "@/components/task-item";
 import { ActivityHeatmap } from "@/components/activity-heatmap";
+import { HeroSummary } from "@/components/hero-summary";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -257,8 +258,8 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* ── Quest Activity Heatmap ────────────────────────── */}
-      <ActivityHeatmap />
+      {/* ── Quest Activity Heatmap + Hero ─────────────────── */}
+      <ActivityHeatmap aside={<HeroSummary />} />
 
       {/* ── XP Decay Warning ──────────────────────────────── */}
       {showDecayWarning && (
