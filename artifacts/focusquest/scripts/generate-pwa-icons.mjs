@@ -3,7 +3,7 @@
 // Fallback: rasterize public/favicon.svg so the icons exist even before final art.
 // Re-run after dropping in real art: `pnpm --filter @workspace/focusquest gen:icons`.
 import sharp from "sharp";
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -12,13 +12,16 @@ const sourcePng = path.join(iconsDir, "source.png");
 const faviconSvg = path.join(root, "public", "favicon.svg");
 const BG = "#090b15"; // app --background
 
+mkdirSync(iconsDir, { recursive: true });
+
 async function loadSource() {
   if (existsSync(sourcePng)) {
     console.log("Using source.png");
     return sharp(sourcePng);
   }
   console.log("source.png not found — rasterizing favicon.svg as a placeholder");
-  // density lifts the 180px SVG to a crisp 1024px raster.
+  // Rasterizes the 180px favicon.svg at high density (~960px), then the
+  // .resize below normalizes the buffer up to a clean 1024x1024.
   const buf = await sharp(faviconSvg, { density: 384 })
     .resize(1024, 1024, { fit: "cover" })
     .png()
@@ -38,8 +41,9 @@ await square(src, 512, "icon-512.png");
 await square(src, 180, "apple-touch-icon.png");
 
 // Maskable: source at ~80% centered on a solid #090b15 field (safe zone for
-// Android adaptive-icon cropping).
-const inner = await src.clone().resize(410, 410, { fit: "cover" }).png().toBuffer();
+// Android adaptive-icon cropping). 408/512 leaves 52px/side (~10.16%
+// padding), satisfying the >=10% safe-zone requirement.
+const inner = await src.clone().resize(408, 408, { fit: "cover" }).png().toBuffer();
 await sharp({ create: { width: 512, height: 512, channels: 4, background: BG } })
   .composite([{ input: inner, gravity: "center" }])
   .png()
