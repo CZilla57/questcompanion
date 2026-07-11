@@ -236,14 +236,43 @@ async function main() {
   const shirt = (v) => ({ def: "torso/shirts/longsleeve/torso_clothes_longsleeve.json" });
   // Robe (mage/healer, all tiers). torso_clothes_robe is female-only, so the male build uses
   // the frock coat (torso/jacket/torso_jacket_frock.json) as a robe-like substitute — it has
-  // every color name we need natively. The female robe def's palette is narrower (10 colors);
-  // where our requested color has no exact match we substitute the nearest hue: navy→blue,
-  // lavender→purple, sky→blue. The male frock side needs no substitution.
-  const ROBE_FEMALE_VARIANT = { blue: "blue", navy: "blue", purple: "purple", lavender: "purple", white: "white", gray: "light_gray", sky: "blue" };
-  const robe = (v) => ({
-    male: { def: "torso/jacket/torso_jacket_frock.json", variant: v },
-    female: { def: "torso/shirts/torso_clothes_robe.json", variant: ROBE_FEMALE_VARIANT[v] },
-  });
+  // every color name we need natively (confirmed via the real
+  // spritesheets/torso/jacket/frock/male/walk/ directory listing: black, blue, bluegray, brown,
+  // charcoal, forest, gray, green, lavender, leather, maroon, navy, orange, pink, purple, red,
+  // rose, sky, slate, tan, teal, walnut, white, yellow — all 24 present).
+  //
+  // The female robe def's palette is narrower — confirmed via the real
+  // spritesheets/torso/clothes/robe/female/walk/ directory listing: black, blue, brown,
+  // dark_brown, dark_gray, forest_green, light_gray, purple, red, white (10 colors).
+  //
+  // DEFECT FIX (task-2 review): the previous map substituted several requested colors to the
+  // SAME female fallback (navy→blue == blue→blue; lavender→purple == purple→purple), which,
+  // combined with the robe occluding the legs layer in the south frame, made mage:t0:female ==
+  // mage:t1:female and mage:t3 == healer:t3 (both builds, since both classes asked for
+  // "lavender" on every layer at t3) byte-identical. Fixed by choosing a distinct color per
+  // (class, tier) from each palette's *actual* colors — mage stays in the cool blue→black
+  // "arcane" range, healer stays in the light white→warm "holy" range, and the two ranges never
+  // share a color, so every mage/healer torso recolor (the layer that isn't occluded) differs.
+  const ROBE_FEMALE_VARIANT = {
+    // mage (cool / arcane, darkening with tier)
+    blue: "blue",             // mage t0
+    navy: "dark_gray",        // mage t1 — robe has no navy; dark_gray is the nearest cool dark tone (and, critically, distinct from t0's "blue")
+    purple: "purple",         // mage t2
+    black: "black",           // mage t3 — darkest, no substitute needed
+    // healer (light / holy, warming with tier)
+    white: "white",           // healer t0
+    gray: "light_gray",       // healer t1
+    tan: "brown",             // healer t2 — robe has no tan; brown is the nearest warm/gold-adjacent tone
+    yellow: "dark_brown",     // healer t3 — robe has no yellow (gold); dark_brown is the richest warm tone available
+  };
+  const robe = (v) => {
+    const femaleVariant = ROBE_FEMALE_VARIANT[v];
+    if (!femaleVariant) throw new Error(`no female robe variant mapped for ${v}`);
+    return {
+      male: { def: "torso/jacket/torso_jacket_frock.json", variant: v },
+      female: { def: "torso/shirts/torso_clothes_robe.json", variant: femaleVariant },
+    };
+  };
 
   const OUTFITS = {
     fighter: {
@@ -258,17 +287,20 @@ async function main() {
       2: [feetBoots("brown"), legsArmour(), torsoLeather()],
       3: [feetBoots("walnut"), legsArmour(), torsoLeather()],
     },
+    // Mage = cool/arcane robe (blue → black), healer = light/holy robe (white → warm/gold).
+    // The two classes' robe colors never overlap at any tier, and each class's four robe
+    // colors are pairwise distinct — see ROBE_FEMALE_VARIANT above for the female-side mapping.
     mage: {
       0: [feetShoes("blue"), pants("blue"), robe("blue")],
       1: [feetShoes("blue"), pants("navy"), robe("navy")],
       2: [feetSandals("purple"), robeLegs("purple"), robe("purple")],
-      3: [feetSandals("lavender"), robeLegs("lavender"), robe("lavender")],
+      3: [feetSandals("lavender"), robeLegs("lavender"), robe("black")],
     },
     healer: {
       0: [feetShoes("white"), pants("white"), robe("white")],
       1: [feetShoes("white"), pants("gray"), robe("gray")],
-      2: [feetSandals("sky"), robeLegs("sky"), robe("sky")],
-      3: [feetSandals("lavender"), robeLegs("lavender"), robe("lavender")],
+      2: [feetSandals("sky"), robeLegs("sky"), robe("tan")],
+      3: [feetSandals("lavender"), robeLegs("lavender"), robe("yellow")],
     },
   };
   for (const [cls, tiers] of Object.entries(OUTFITS))
