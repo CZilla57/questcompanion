@@ -664,7 +664,7 @@ export default function AvatarPage() {
             <PickerRow label="Beard" options={avatarData?.availableBeardStyles ?? []} value={heroLook.beardStyle}
               onSelect={(v) => handleAttrSelect({ avatarBeardStyle: v })} disabled={updateAvatar.isPending} />
             <PickerRow label="Beard Color" options={avatarData?.availableBeardColors ?? []} value={heroLook.beardColor}
-              onSelect={(v) => handleAttrSelect({ avatarBeardColor: v })} disabled={updateAvatar.isPending} swatch={HAIR_SWATCH} />
+              onSelect={(v) => handleAttrSelect({ avatarBeardColor: v })} disabled={updateAvatar.isPending || heroLook.beardStyle === "none"} swatch={HAIR_SWATCH} />
             <PickerRow label="Glasses" options={avatarData?.availableGlasses ?? []} value={heroLook.glasses}
               onSelect={(v) => handleAttrSelect({ avatarGlasses: v })} disabled={updateAvatar.isPending} />
             <PickerRow label="Earrings" options={avatarData?.availableEarrings ?? []} value={heroLook.earrings}

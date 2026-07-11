@@ -262,7 +262,7 @@ async function main() {
       writePng("body", `${build}_${ourSkin}`, img);
       entries.push({ id: `body:${build}:${ourSkin}`, category: "body", zIndex: Z.body, file: `/lpc/body/${build}_${ourSkin}.png`, ...cc(BODY_CRED) });
     }
-    console.log(`✓ bodies ${build} (6 tones)`);
+    console.log(`✓ bodies ${build} (${Object.keys(SKIN_MAP).length} tones)`);
   }
 
   // HAIR = style sheet recolored per color
@@ -276,7 +276,7 @@ async function main() {
       writePng("hair", `${ourStyle}_${ourColor}`, recolor(base, hairPal[src], hairPal[variant]));
       entries.push({ id: `hair:${ourStyle}:${ourColor}`, category: "hair", zIndex: Z.hair, file: `/lpc/hair/${ourStyle}_${ourColor}.png`, ...cc(CRED.hair) });
     }
-    console.log(`✓ hair ${ourStyle} (6 colors)`);
+    console.log(`✓ hair ${ourStyle} (${Object.keys(hairColorMap).length} colors)`);
   }
 
   // BEARD = style sheet recolored per beard color (shares the hair palette). Real leaf paths
