@@ -307,7 +307,104 @@ async function main() {
     for (const [tier, parts] of Object.entries(tiers))
       await buildOutfit(cls, Number(tier), parts);
 
-  await buildGear("sword", "weapon", { def: "weapons/sword/weapon_sword_arming.json", variant: "steel" });
+  // --- Gear archetypes + signature legendaries (19 archetypes × 2 builds = 38 sprites). ---
+  //
+  // GEAR IS UN-TINTED, ONE SPRITE PER BUILD — rarity is a runtime tint, never baked here.
+  // Every `…verify…` def from the plan was resolved by listing the real GitHub
+  // sheet_definitions/spritesheets dirs (see task-3-report.md for the full verification table
+  // and every rejected candidate). Two def substitutions from the plan's literal suggestion,
+  // both reported in task-3-report.md:
+  //   - excalibur: weapon_magic_wand → this task uses weapon_sword_glowsword ("blue"), not the
+  //     plan's weapon_sword_katana — katana's layer_1 uses a non-standard `custom_animation:
+  //     "walk_128"` sheet (1664×512, not the standard 576×256 9-frame walk row), which is
+  //     incompatible with this pipeline's fixed y=128 south-frame crop.
+  //   - archmage-staff: weapon_magic_wand has ONLY a "slash" animation (no "walk" sheet exists
+  //     at all for it) — unusable for a south-standing-frame export. Substituted
+  //     weapon_magic_crystal ("purple"/"blue"), a distinct-shaped magic weapon with a standard
+  //     walk sheet.
+  // spriteId strings are UNCHANGED from the contract in both cases — only the underlying def.
+  //
+  // Accessory ambiguity (cape/amulet): `headwear/neck/` (the plan's suggested dir) contains only
+  // `meta_neck.json` — no real items. The actual neck-item defs live at `head/neck/` (NOT
+  // `headwear/neck/`). `cape` uses `head/neck/neck_capetie.json` (the front-visible cloak-tie
+  // clasp, zPos 90 — matches the accessory z-band and reads correctly drawn over the front,
+  // unlike `torso/cape/cape_solid.json`'s back-spread bg layer, which would incorrectly occlude
+  // the torso at z=90). `amulet` uses `head/neck/charms/neck_amulet_dangle.json`. Both have
+  // real, distinct male+female layer_1 keys. No spriteId change — see task-3-report.md.
+  //
+  // Distinctness (build-level): a handful of archetypes (sword/staff/cap/crown/archmage-staff)
+  // resolve to a def with MULTIPLE color variants but a body-type-*universal* path (identical
+  // male/female source sheet) — without action, {spriteId}_male.png would be byte-identical to
+  // {spriteId}_female.png. Where the source def offers more than one variant, a close in-family
+  // {male,female} variant pair is used so every exported file is unique (steel/iron,
+  // medium/light, brown/tan, crown_gold/gold, purple/blue) — mirrors the existing precedent of
+  // per-build variation already used throughout the outfit manifest (e.g. `robe()` above).
+  // `excalibur` (glowsword) only ships two variants total (blue/red) and both are used
+  // (male=blue, female=red) for the same reason. `amulet` also has per-build-distinct source
+  // paths but LPC head accessories render pixel-identical in the cropped south frame across
+  // builds regardless (head shape is shared), so its variant is likewise split (gold_blue /
+  // silver_purple) to guarantee a unique file.
+  //
+  // Four archetypes remain build-identical on purpose, not by omission — verified unfixable:
+  //   - `greatsword` (longsword) and `crossbow`: exactly ONE upstream LPC asset exists, no
+  //     alternate colorway or gendered variant at all (confirmed by listing the live
+  //     spritesheets/weapon/sword/longsword/walk/ and .../ranged/crossbow/background/walk/ dirs
+  //     — each contains a single baked PNG).
+  //   - `helm` (barbuta) and `greathelm`: layer_1 DOES have separate male/female source paths,
+  //     but both defs have zero `variants` to pick from, AND — because LPC heads are unisex —
+  //     the cropped south-standing frame renders pixel-identical between builds regardless of
+  //     which of the two source sheets is read.
+  // None of these are cross-spriteId collisions (the actual distinctness guarantee: no two
+  // DIFFERENT archetypes look the same) — see task-3-report.md for the full accounting.
+  const GEAR = [
+    // weapon archetypes
+    { spriteId: "sword", category: "weapon", part: {
+      male: { def: "weapons/sword/weapon_sword_arming.json", variant: "steel" },
+      female: { def: "weapons/sword/weapon_sword_arming.json", variant: "iron" },
+    } },
+    { spriteId: "greatsword", category: "weapon", part: { def: "weapons/sword/weapon_sword_longsword.json", variant: "longsword" } },
+    { spriteId: "staff", category: "weapon", part: {
+      male: { def: "weapons/magic/weapon_magic_gnarled.json", variant: "medium" },
+      female: { def: "weapons/magic/weapon_magic_gnarled.json", variant: "light" },
+    } },
+    { spriteId: "crossbow", category: "weapon", part: { def: "weapons/ranged/weapon_ranged_crossbow.json", variant: "crossbow" } },
+    // helmet archetypes
+    { spriteId: "cap", category: "helmet", part: {
+      male: { def: "headwear/hats/caps/hat_cap_leather.json", variant: "brown" },
+      female: { def: "headwear/hats/caps/hat_cap_leather.json", variant: "tan" },
+    } },
+    { spriteId: "helm", category: "helmet", part: { def: "headwear/helmets/helmets/hat_helmet_barbuta.json" } },
+    { spriteId: "greathelm", category: "helmet", part: { def: "headwear/helmets/helmets/hat_helmet_greathelm.json" } },
+    // armor (torso) archetypes
+    { spriteId: "leather-armor", category: "armor", part: { def: "torso/armour/torso_armour_leather.json" } },
+    { spriteId: "mail", category: "armor", part: { def: "torso/torso_chainmail.json" } },
+    { spriteId: "plate", category: "armor", part: { def: "torso/armour/torso_armour_plate.json" } },
+    // boots (feet) archetypes
+    { spriteId: "shoes", category: "boots", part: { def: "feet/shoes/feet_shoes_basic.json", variant: "brown" } },
+    { spriteId: "boots", category: "boots", part: { def: "feet/boots/feet_boots_basic.json", variant: "brown" } },
+    { spriteId: "greaves", category: "boots", part: { def: "feet/feet_armour.json" } },
+    // accessory archetypes (z=90 — drawn on top; must read correctly in front)
+    { spriteId: "cape", category: "accessory", part: { def: "head/neck/neck_capetie.json", variant: "brown" } },
+    { spriteId: "amulet", category: "accessory", part: {
+      male: { def: "head/neck/charms/neck_amulet_dangle.json", variant: "gold_blue" },
+      female: { def: "head/neck/charms/neck_amulet_dangle.json", variant: "silver_purple" },
+    } },
+    // signature legendaries (unique shapes; distinct def from their base archetype)
+    { spriteId: "excalibur", category: "weapon", part: {
+      male: { def: "weapons/sword/weapon_sword_glowsword.json", variant: "blue" },
+      female: { def: "weapons/sword/weapon_sword_glowsword.json", variant: "red" },
+    } },
+    { spriteId: "archmage-staff", category: "weapon", part: {
+      male: { def: "weapons/magic/weapon_magic_crystal.json", variant: "purple" },
+      female: { def: "weapons/magic/weapon_magic_crystal.json", variant: "blue" },
+    } },
+    { spriteId: "dragon-plate", category: "armor", part: { def: "torso/armour/torso_armour_legion.json" } },
+    { spriteId: "crown", category: "helmet", part: {
+      male: { def: "headwear/hats/formal/hat_formal_crown.json", variant: "crown_gold" },
+      female: { def: "headwear/hats/formal/hat_formal_crown.json", variant: "gold" },
+    } },
+  ];
+  for (const g of GEAR) await buildGear(g.spriteId, g.category, g.part);
 
   // catalog.ts
   const catalogTs = `// AUTO-GENERATED by scripts/src/build-lpc-assets.ts — do not edit by hand.\n` +
