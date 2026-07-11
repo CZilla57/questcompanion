@@ -583,6 +583,13 @@ export default function AvatarPage() {
     item => slotFilter === "all" || item.slot === slotFilter
   );
 
+  // Surface an "earn XP" hint when the player has unowned gear in the store but can't afford or
+  // meet the level for any of it — otherwise the disabled Buy buttons look like nothing happens.
+  const storeItems = storeData?.items ?? [];
+  const showEarnXpHint =
+    storeItems.some(i => !i.owned) &&
+    !storeItems.some(i => !i.owned && i.canAfford && i.meetsLevel);
+
   return (
     <div className="space-y-6 pb-8">
       {/* Header */}
@@ -674,6 +681,12 @@ export default function AvatarPage() {
           {/* Equipment slots */}
           <div className="rounded-xl border border-border bg-card/50 p-4 space-y-3">
             <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Equipment</p>
+            {equippedSlots.length === 0 && (
+              <p className="text-xs text-muted-foreground/80 leading-relaxed">
+                Your hero wears their <span className="text-foreground/90 font-medium">class attire</span> by default.
+                Buy gear from the store and equip it to fill these slots.
+              </p>
+            )}
             {SLOT_ORDER.map(slot => {
               const item = equippedSlots.find(e => e.slot === slot);
               return <EquipmentSlotCard key={slot} slot={slot} item={item} />;
@@ -719,6 +732,13 @@ export default function AvatarPage() {
                   <span className="font-bold text-primary">{storeData.userXp.toLocaleString()}</span>
                   <span className="text-xs text-muted-foreground ml-auto">Level {storeData.userLevel}</span>
                 </div>
+              )}
+
+              {showEarnXpHint && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5 px-1">
+                  <Zap className="w-3 h-3 text-primary/70 flex-shrink-0" />
+                  Earn XP by completing quests, then spend it here to unlock and equip gear.
+                </p>
               )}
 
               {/* Slot filter */}
