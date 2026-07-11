@@ -33,5 +33,11 @@ export function getPointsToNextLevel(totalPoints: number): number {
   return current.maxPoints + 1 - totalPoints;
 }
 
+/** Points earned since entering the current level band (0 at the band's start). */
+export function getPointsIntoLevel(totalPoints: number): number {
+  const current = getLevelInfo(totalPoints);
+  return totalPoints - current.minPoints;
+}
+
 export const DAILY_BONUS_POINTS = 50;
 export const ALL_DAY_BONUS_LABEL = "all_day_bonus";

@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and, gte, gt, desc } from "drizzle-orm";
 import { db, usersTable, tasksTable, activityTable } from "@workspace/db";
-import { getLevelInfo, getPointsToNextLevel } from "../lib/gamification";
+import { getLevelInfo, getPointsToNextLevel, getPointsIntoLevel } from "../lib/gamification";
 import { CATEGORY_LABELS } from "../lib/auto-points";
 
 const router: IRouter = Router();
@@ -95,6 +95,7 @@ router.get("/users/me/stats", async (req, res): Promise<void> => {
     streakFreezes: user.streakFreezes,
     onboardingComplete: user.onboardingComplete,
     pointsToNextLevel: getPointsToNextLevel(user.totalPoints),
+    pointsIntoLevel: getPointsIntoLevel(user.totalPoints),
     recentActivity: recentActivity.map((a) => ({
       id: a.id,
       userId: a.userId,

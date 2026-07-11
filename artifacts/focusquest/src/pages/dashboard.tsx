@@ -159,8 +159,11 @@ export default function Dashboard() {
     });
   };
 
-  const progressPercent = stats.pointsToNextLevel > 0
-    ? ((stats.totalPoints % 1000) / 1000) * 100
+  // Levels have variable widths (see gamification.ts), so progress is measured
+  // within the current band: points earned into it vs. the band's full span.
+  const levelSpan = stats.pointsIntoLevel + stats.pointsToNextLevel;
+  const progressPercent = levelSpan > 0
+    ? (stats.pointsIntoLevel / levelSpan) * 100
     : 100;
 
   const hasFreeze = stats.streakFreezes > 0;
