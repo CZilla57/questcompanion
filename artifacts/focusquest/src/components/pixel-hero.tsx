@@ -58,16 +58,23 @@ export function PixelHero({
     if (!ctx) return;
 
     (async () => {
-      const imgs = await Promise.all(layers.map((l) => loadImage(l.file)));
+      // Promise.allSettled (not Promise.all): a single failed layer image
+      // (404, decode error) must not blank the whole hero. Each layer's
+      // outcome is checked below and only the failed ones are skipped.
+      const results = await Promise.allSettled(layers.map((l) => loadImage(l.file)));
       if (cancelled) return;
       ctx.imageSmoothingEnabled = false;
       ctx.clearRect(0, 0, FRAME, FRAME);
       layers.forEach((l, i) => {
-        if (l.tint) drawTinted(ctx, imgs[i], l.tint);
-        else ctx.drawImage(imgs[i], 0, 0, FRAME, FRAME);
+        const r = results[i];
+        if (r.status !== "fulfilled") return; // a missing/failed layer is skipped; the rest still render
+        if (l.tint) drawTinted(ctx, r.value, l.tint);
+        else ctx.drawImage(r.value, 0, 0, FRAME, FRAME);
       });
     })().catch(() => {
-      /* a missing/failed layer image is non-fatal; the other layers still render */
+      /* last-resort guard: something outside the per-layer image loading
+         (e.g. an unexpected synchronous error) failed; the per-layer skip
+         above is the primary resilience mechanism. */
     });
 
     return () => {
