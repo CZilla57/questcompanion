@@ -6,9 +6,11 @@
   "scripts": {
     "hello": "tsx ./src/hello.ts",
     "build-lpc": "tsx ./src/build-lpc-assets.ts",
+    "seed-gear": "tsx ./src/seed-gear.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@workspace/db": "workspace:*",
     "pngjs": "^7.0.0"
   },
   "devDependencies": {
