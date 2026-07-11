@@ -475,10 +475,10 @@ export default function AvatarPage() {
     hairStyle: (avatarData?.avatarHairStyle ?? "short") as HairStyle,
     hairColor: (avatarData?.avatarHairColor ?? "brown") as HairColor,
     face: (avatarData?.avatarFace ?? "neutral") as FaceId,
-    beardStyle: "none",
-    beardColor: "brown",
-    glasses: "none",
-    earrings: "none",
+    beardStyle: (avatarData?.avatarBeardStyle ?? "none") as HeroLook["beardStyle"],
+    beardColor: (avatarData?.avatarBeardColor ?? "brown") as HeroLook["beardColor"],
+    glasses: (avatarData?.avatarGlasses ?? "none") as HeroLook["glasses"],
+    earrings: (avatarData?.avatarEarrings ?? "none") as HeroLook["earrings"],
     avatarClass: currentClass,
     tier: Math.min(3, Math.floor(((avatarData?.level ?? 1) - 1) / 10)) as 0 | 1 | 2 | 3,
     equipped: (avatarData?.equippedGear ?? [])
@@ -658,6 +658,17 @@ export default function AvatarPage() {
               onSelect={(v) => handleAttrSelect({ avatarHairStyle: v })} disabled={updateAvatar.isPending} />
             <PickerRow label="Hair Color" options={avatarData?.availableHairColors ?? []} value={heroLook.hairColor}
               onSelect={(v) => handleAttrSelect({ avatarHairColor: v })} disabled={updateAvatar.isPending} swatch={HAIR_SWATCH} />
+
+            <div className="w-full border-t border-border/40 pt-1" />
+
+            <PickerRow label="Beard" options={avatarData?.availableBeardStyles ?? []} value={heroLook.beardStyle}
+              onSelect={(v) => handleAttrSelect({ avatarBeardStyle: v })} disabled={updateAvatar.isPending} />
+            <PickerRow label="Beard Color" options={avatarData?.availableBeardColors ?? []} value={heroLook.beardColor}
+              onSelect={(v) => handleAttrSelect({ avatarBeardColor: v })} disabled={updateAvatar.isPending} swatch={HAIR_SWATCH} />
+            <PickerRow label="Glasses" options={avatarData?.availableGlasses ?? []} value={heroLook.glasses}
+              onSelect={(v) => handleAttrSelect({ avatarGlasses: v })} disabled={updateAvatar.isPending} />
+            <PickerRow label="Earrings" options={avatarData?.availableEarrings ?? []} value={heroLook.earrings}
+              onSelect={(v) => handleAttrSelect({ avatarEarrings: v })} disabled={updateAvatar.isPending} />
 
             {/* Accent color (profile / leaderboard) */}
             <div className="w-full space-y-2">
