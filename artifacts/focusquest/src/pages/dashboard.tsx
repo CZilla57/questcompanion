@@ -4,6 +4,7 @@ import { ActivityItem, Task, TaskPriority, useGetMyStats, useGetTasks, useBuyStr
 import { TaskItem } from "@/components/task-item";
 import { ActivityHeatmap } from "@/components/activity-heatmap";
 import { HeroSummary } from "@/components/hero-summary";
+import { RecentBadges } from "@/components/recent-badges";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -258,8 +259,19 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* ── Quest Activity Heatmap + Hero ─────────────────── */}
-      <ActivityHeatmap aside={<HeroSummary />} />
+      {/* ── Quest Activity Heatmap + Hero + Recent Badges ── */}
+      <ActivityHeatmap
+        aside={
+          <div className="flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-6 w-full">
+            <div className="sm:shrink-0">
+              <HeroSummary />
+            </div>
+            <div className="w-full border-t border-border pt-4 sm:w-auto sm:border-t-0 sm:border-l sm:border-border sm:pt-0 sm:pl-6">
+              <RecentBadges />
+            </div>
+          </div>
+        }
+      />
 
       {/* ── XP Decay Warning ──────────────────────────────── */}
       {showDecayWarning && (
