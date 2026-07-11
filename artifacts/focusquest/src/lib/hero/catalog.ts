@@ -670,22 +670,22 @@ export const CATALOG: CatalogEntry[] = [
     "sourceUrl": "https://opengameart.org/content/lpc-more-weapons"
   },
   {
-    "id": "gear:crossbow:male",
+    "id": "gear:slingshot:male",
     "category": "weapon",
     "zIndex": 80,
-    "file": "/lpc/gear/crossbow_male.png",
-    "author": "bluecarrot16; drjamgo@hotmail.com",
-    "license": "CC0",
-    "sourceUrl": "https://opengameart.org/content/lpc-crossbow-final"
+    "file": "/lpc/gear/slingshot_male.png",
+    "author": "bluecarrot16",
+    "license": "OGA-BY 3.0+, GPL 3.0, CC-BY 4.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-more-weapons"
   },
   {
-    "id": "gear:crossbow:female",
+    "id": "gear:slingshot:female",
     "category": "weapon",
     "zIndex": 80,
-    "file": "/lpc/gear/crossbow_female.png",
-    "author": "bluecarrot16; drjamgo@hotmail.com",
-    "license": "CC0",
-    "sourceUrl": "https://opengameart.org/content/lpc-crossbow-final"
+    "file": "/lpc/gear/slingshot_female.png",
+    "author": "bluecarrot16",
+    "license": "OGA-BY 3.0+, GPL 3.0, CC-BY 4.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-more-weapons"
   },
   {
     "id": "gear:cap:male",

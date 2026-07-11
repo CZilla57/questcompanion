@@ -97,7 +97,21 @@ function over(base, top) {
   for (let i = 0; i < out.data.length; i += 4) { const ta = top.data[i + 3] / 255; if (ta === 0) continue; for (let c = 0; c < 3; c++) out.data[i + c] = Math.round(top.data[i + c] * ta + out.data[i + c] * (1 - ta)); out.data[i + 3] = Math.max(out.data[i + 3], top.data[i + 3]); }
   return out;
 }
-const writePng = (dir, name, png) => writeFileSync(join(LPC_OUT, dir, name + ".png"), PNG.sync.write(png));
+// Count pixels with alpha > 0. A fully-blank sprite (0 opaque pixels) means the source def's
+// south walk frame (y=128..191) had no content — e.g. the def's layer_1 pointed at a
+// "background"-only sub-layer with the actual art in an unread layer_2 (the crossbow defect).
+// Ship nothing invisible: fail the build loudly instead of silently writing a blank asset.
+function countOpaquePixels(png) {
+  let n = 0;
+  for (let i = 3; i < png.data.length; i += 4) if (png.data[i] > 0) n++;
+  return n;
+}
+const writePng = (dir, name, png) => {
+  if (countOpaquePixels(png) === 0) {
+    throw new Error(`blank sprite: ${dir}/${name} has no opaque pixels — check the source def's south frame`);
+  }
+  writeFileSync(join(LPC_OUT, dir, name + ".png"), PNG.sync.write(png));
+};
 const csv = (s) => `"${String(s).replace(/"/g, '""')}"`;
 
 // Load the south standing frame for a def's layer_1 for a given build.
@@ -346,10 +360,11 @@ async function main() {
   // silver_purple) to guarantee a unique file.
   //
   // Four archetypes remain build-identical on purpose, not by omission — verified unfixable:
-  //   - `greatsword` (longsword) and `crossbow`: exactly ONE upstream LPC asset exists, no
+  //   - `greatsword` (longsword) and `slingshot`: exactly ONE upstream LPC asset exists, no
   //     alternate colorway or gendered variant at all (confirmed by listing the live
-  //     spritesheets/weapon/sword/longsword/walk/ and .../ranged/crossbow/background/walk/ dirs
-  //     — each contains a single baked PNG).
+  //     spritesheets/weapon/sword/longsword/walk/ and .../ranged/slingshot/foreground/ dirs
+  //     — each contains a single baked PNG). `slingshot` replaces the plan's `crossbow` — see the
+  //     BLANK-SPRITE FIX comment above the GEAR entry for why.
   //   - `helm` (barbuta) and `greathelm`: layer_1 DOES have separate male/female source paths,
   //     but both defs have zero `variants` to pick from, AND — because LPC heads are unisex —
   //     the cropped south-standing frame renders pixel-identical between builds regardless of
@@ -367,7 +382,29 @@ async function main() {
       male: { def: "weapons/magic/weapon_magic_gnarled.json", variant: "medium" },
       female: { def: "weapons/magic/weapon_magic_gnarled.json", variant: "light" },
     } },
-    { spriteId: "crossbow", category: "weapon", part: { def: "weapons/ranged/weapon_ranged_crossbow.json", variant: "crossbow" } },
+    // BLANK-SPRITE FIX (post-Task-3 defect): the plan's `weapon_ranged_crossbow.json` reads its
+    // `layer_1` (the "background" sub-layer, zPos -1) — verified empirically (fetched sheet +
+    // counted opaque px in the y=128..191 south walk row) to be 100% transparent for BOTH builds.
+    // The visible crossbow art lives in `layer_2` ("foreground", zPos 140, 1563 opaque px), which
+    // `loadDefFrame` never reads (it only ever reads `def.layer_1`). Rather than special-case
+    // layer selection per-def, swapped the archetype to a ranged weapon whose `layer_1` itself has
+    // south-frame content. Checked every candidate the brief listed:
+    //   - `weapon_ranged_bow_normal/recurve/great.json`: `layer_1`/`layer_2` ("universal/…") only
+    //     have `hurt`/`shoot` sub-dirs, no `walk` sheet at all. The walk art lives in `layer_3`/
+    //     `layer_4` under `custom_animation: "walk_128"` — a 1664×512px sheet (128px-tall frames),
+    //     the same non-standard layout already rejected for `weapon_sword_katana` in the
+    //     `excalibur` substitution above. Incompatible with `cropSouth`'s fixed y=128/64px-row crop.
+    //   - `weapon_ranged_boomerang.json`: `animations: ["slash_reverse_oversize"]` only — no
+    //     `walk` sheet exists for this def at all (same failure mode as `weapon_magic_wand`,
+    //     rejected for `archmage-staff` above).
+    //   - `weapon_ranged_slingshot.json`: `layer_1` ("foreground", zPos 140) IS a standard
+    //     576×256 walk sheet with real south-frame content (748 opaque px in y=128..191),
+    //     universal male/female path. WORKS — chosen.
+    // spriteId renamed `crossbow` → `slingshot` to match the actual rendered weapon (a slingshot
+    // is not a crossbow) — flagged for Task 4 to reconcile the "Hunter's Crossbow" roster entry's
+    // `spriteId: "crossbow"` reference. Only one upstream variant exists (like `greatsword`), so
+    // male/female are intentionally byte-identical — see Distinctness note below.
+    { spriteId: "slingshot", category: "weapon", part: { def: "weapons/ranged/weapon_ranged_slingshot.json", variant: "slingshot" } },
     // helmet archetypes
     { spriteId: "cap", category: "helmet", part: {
       male: { def: "headwear/hats/caps/hat_cap_leather.json", variant: "brown" },
