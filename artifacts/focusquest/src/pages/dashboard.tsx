@@ -178,12 +178,6 @@ export default function Dashboard() {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-      <Link href="/focus">
-        <Button className="w-full sm:w-auto gap-2">
-          <Timer className="w-4 h-4" /> Start focus session
-        </Button>
-      </Link>
-
       {/* ── Stat cards ───────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 
@@ -253,6 +247,24 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ── Focus session CTA banner ─────────────────────── */}
+      <Link href="/focus" className="block">
+        <div className="group flex items-center justify-between gap-4 rounded-lg border border-primary/20 bg-primary/5 px-5 py-4 cursor-pointer transition-colors hover:bg-primary/10 hover:border-primary/40">
+          <div className="flex items-center gap-3">
+            <div className="rounded-md border border-primary/20 bg-primary/10 p-2.5 shrink-0">
+              <Timer className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <div className="font-semibold text-foreground">Start a focus session</div>
+              <div className="text-sm text-muted-foreground">Run a Pomodoro timer and earn XP for time focused</div>
+            </div>
+          </div>
+          <span className="hidden sm:inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-colors group-hover:bg-primary/90 shrink-0">
+            Start
+          </span>
+        </div>
+      </Link>
 
       {/* ── XP Progress bar ───────────────────────────────── */}
       <Card className="border-primary/20">
