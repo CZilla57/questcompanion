@@ -39,22 +39,35 @@ export function HeroSummary() {
       })),
   };
 
+  const accent = a.avatarColor ?? "#00FFFF";
+
   return (
-    <div className="flex items-center gap-4 w-full">
-      <div className="rounded-xl bg-gradient-to-b from-primary/10 to-transparent p-1.5 flex-shrink-0">
-        <PixelHero look={look} size={104} />
+    <div className="flex items-center gap-5 w-full">
+      {/* Portrait with a soft accent-colored glow for presence */}
+      <div className="relative flex-shrink-0">
+        <div
+          className="absolute -inset-2 rounded-2xl blur-xl opacity-25"
+          style={{ backgroundColor: accent }}
+          aria-hidden
+        />
+        <div
+          className="relative rounded-2xl border border-border/60 bg-card/40 p-2"
+          style={{ boxShadow: `0 0 20px ${accent}33` }}
+        >
+          <PixelHero look={look} size={128} />
+        </div>
       </div>
-      <div className="min-w-0 space-y-2">
+      <div className="min-w-0 space-y-2.5">
         <div>
           <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Your Hero</div>
-          <div className="font-bold text-lg text-foreground leading-tight">
+          <div className="font-bold text-xl text-foreground leading-tight">
             Level {a.level}
             <span className="text-primary"> {CLASS_LABEL[a.avatarClass] ?? ""}</span>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 text-sm">
+        <div className="flex items-center gap-1.5">
           <Swords className="w-4 h-4 text-primary" aria-hidden />
-          <span className="font-bold text-primary tabular-nums">{a.battlePower}</span>
+          <span className="font-bold text-primary tabular-nums text-base">{a.battlePower}</span>
           <span className="text-xs text-muted-foreground">battle power</span>
         </div>
         <Link

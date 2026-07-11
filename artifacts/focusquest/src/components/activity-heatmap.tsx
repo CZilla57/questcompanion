@@ -225,7 +225,7 @@ export function ActivityHeatmap({ aside }: { aside?: ReactNode } = {}) {
               <div className="h-[120px] bg-muted/20 animate-pulse rounded-lg" />
             </div>
             {aside && (
-              <div className="lg:flex-1 lg:border-l lg:border-border lg:pl-6 pt-4 lg:pt-0 border-t lg:border-t-0 border-border flex items-center justify-center">
+              <div className="lg:flex-1 lg:border-l lg:border-border lg:pl-6 pt-4 lg:pt-0 border-t lg:border-t-0 border-border flex items-center justify-center lg:justify-start">
                 {aside}
               </div>
             )}
@@ -372,7 +372,7 @@ export function ActivityHeatmap({ aside }: { aside?: ReactNode } = {}) {
         </div>{/* end heatmap column */}
 
           {aside && (
-            <div className="lg:flex-1 lg:border-l lg:border-border lg:pl-6 pt-4 lg:pt-0 mt-1 lg:mt-0 border-t lg:border-t-0 border-border flex items-center justify-center">
+            <div className="lg:flex-1 lg:border-l lg:border-border lg:pl-6 pt-4 lg:pt-0 mt-1 lg:mt-0 border-t lg:border-t-0 border-border flex items-center justify-center lg:justify-start">
               {aside}
             </div>
           )}
