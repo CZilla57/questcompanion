@@ -109,12 +109,16 @@ export default function Leaderboard() {
                   {/* Commander */}
                   <div className="col-span-6 flex items-center gap-3 min-w-0">
                     <div
-                      className={`
-                        w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm border flex-shrink-0
-                        ${isMe
-                          ? "bg-primary/20 border-primary/50 text-primary"
-                          : "bg-muted border-border text-foreground"}
-                      `}
+                      className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm border-2 border-border bg-muted text-foreground flex-shrink-0"
+                      style={
+                        entry.user.avatarColor
+                          ? {
+                              borderColor: entry.user.avatarColor,
+                              backgroundColor: `${entry.user.avatarColor}22`,
+                              boxShadow: `0 0 6px ${entry.user.avatarColor}55`,
+                            }
+                          : undefined
+                      }
                     >
                       {entry.user.username.charAt(0).toUpperCase()}
                     </div>
