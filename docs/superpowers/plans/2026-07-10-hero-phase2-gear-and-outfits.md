@@ -424,7 +424,7 @@ export const GEAR_CATALOG: GearRosterItem[] = [
   { name: "Knight's Blade", description: "Balanced steel for a true fighter.", slot: "weapon", rarity: "rare",      statPower: 10, costXp: 600,  levelRequired: 5,  icon: "Sword", spriteId: "sword" },
   { name: "Zweihänder",     description: "A massive two-handed greatsword.",   slot: "weapon", rarity: "epic",      statPower: 18, costXp: 1600, levelRequired: 12, icon: "Sword", spriteId: "greatsword" },
   { name: "Gnarled Staff",  description: "Channels arcane focus.",             slot: "weapon", rarity: "rare",      statPower: 9,  costXp: 600,  levelRequired: 5,  icon: "Gem",   spriteId: "staff" },
-  { name: "Hunter's Crossbow", description: "Precise ranged power.",           slot: "weapon", rarity: "epic",      statPower: 16, costXp: 1500, levelRequired: 12, icon: "Sword", spriteId: "crossbow" },
+  { name: "Hunter's Sling",    description: "A swift ranged sidearm.",          slot: "weapon", rarity: "rare",      statPower: 9,  costXp: 550,  levelRequired: 5,  icon: "Sword", spriteId: "slingshot" },  // was crossbow (blank south frame → slingshot, Task 3)
   { name: "Excalibur",      description: "The legendary blade of kings.",      slot: "weapon", rarity: "legendary", statPower: 30, costXp: 5000, levelRequired: 25, icon: "Sword", spriteId: "excalibur" },
   { name: "Staff of the Archmage", description: "Raw magic given form.",       slot: "weapon", rarity: "legendary", statPower: 28, costXp: 5000, levelRequired: 25, icon: "Gem",   spriteId: "archmage-staff" },
   // helmets
