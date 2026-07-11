@@ -1,9 +1,13 @@
-export type Build = "male" | "female"; // LPC body base (male/female)
-export type Skin = "light" | "tan" | "brown" | "dark" | "green" | "blue";
-export type HairStyle = "bald" | "short" | "long" | "ponytail" | "afro";
-export type HairColor = "brown" | "black" | "blonde" | "red" | "white" | "blue";
-export type FaceId = "neutral" | "stern" | "smile";
-export type AvatarClass = "fighter" | "mage" | "ranger" | "healer";
+import type {
+  BuildId, SkinId, HairStyleId, HairColorId, FaceId as FaceIdOpt, ClassId,
+} from "@workspace/hero-options";
+
+export type Build = BuildId; // LPC body base (male/female)
+export type Skin = SkinId;
+export type HairStyle = HairStyleId;
+export type HairColor = HairColorId;
+export type FaceId = FaceIdOpt;
+export type AvatarClass = ClassId;
 export type Rarity = "common" | "rare" | "epic" | "legendary";
 export type GearSlot = "weapon" | "helmet" | "armor" | "boots" | "accessory";
 

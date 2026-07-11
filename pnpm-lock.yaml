@@ -260,6 +260,9 @@ importers:
       '@workspace/auth-web':
         specifier: workspace:*
         version: link:../../lib/auth-web
+      '@workspace/hero-options':
+        specifier: workspace:*
+        version: link:../../lib/hero-options
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1

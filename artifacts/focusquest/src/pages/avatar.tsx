@@ -17,6 +17,7 @@ import type { GearStoreItem, AvatarUpdateInput } from "@workspace/api-client-rea
 import { PixelHero } from "@/components/pixel-hero";
 import { HeroCredits } from "@/components/hero-credits";
 import type { AvatarClass, HeroLook, Build, Skin, HairStyle, HairColor, FaceId, EquippedGearLook } from "@/lib/hero/types";
+import { skins as SKIN_OPTIONS, hairColors as HAIR_COLOR_OPTIONS } from "@workspace/hero-options";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -101,12 +102,10 @@ type EquippedSlot = {
   statPower: number;
 };
 
-const SKIN_SWATCH: Record<string, string> = {
-  light: "#FDBCB4", tan: "#D4956A", brown: "#8D5524", dark: "#4A2512", green: "#7BC47F", blue: "#89C4E1",
-};
-const HAIR_SWATCH: Record<string, string> = {
-  brown: "#5b3a1e", black: "#242424", blonde: "#E6C35C", red: "#a83232", white: "#e8e8ea", blue: "#3a4a9e",
-};
+const swatchMap = (opts: readonly { id: string; swatch?: string }[]): Record<string, string> =>
+  Object.fromEntries(opts.filter((o) => o.swatch).map((o) => [o.id, o.swatch as string]));
+const SKIN_SWATCH = swatchMap(SKIN_OPTIONS);
+const HAIR_SWATCH = swatchMap(HAIR_COLOR_OPTIONS);
 
 function PickerRow({ label, options, value, onSelect, disabled, swatch }: {
   label: string;
