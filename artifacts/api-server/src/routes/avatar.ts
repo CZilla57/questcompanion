@@ -2,16 +2,12 @@ import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, usersTable, gearItemsTable, userGearTable } from "@workspace/db";
 import { getLevelInfo } from "../lib/gamification";
+import {
+  builds, skins, hairStyles, hairColors, faces, classes, colors,
+  ids, includesId,
+} from "@workspace/hero-options";
 
 const router: IRouter = Router();
-
-const AVATAR_CLASSES = ["fighter", "mage", "ranger", "healer"] as const;
-const AVATAR_SKINS   = ["light", "tan", "brown", "dark", "green", "blue"] as const;
-const AVATAR_COLORS  = ["#00FFFF", "#A855F7", "#F97316", "#22C55E", "#EC4899", "#EAB308", "#6366F1", "#F43F5E"];
-const AVATAR_HAIR_STYLES = ["bald", "short", "long", "ponytail", "afro"] as const;
-const AVATAR_HAIR_COLORS = ["brown", "black", "blonde", "red", "white", "blue"] as const;
-const AVATAR_BUILDS      = ["male", "female"] as const;
-const AVATAR_FACES       = ["neutral", "stern", "smile"] as const;
 
 function calcBattlePower(level: number, equippedPower: number): number {
   return 30 + level * 5 + equippedPower;
@@ -50,13 +46,13 @@ async function buildAvatarResponse(userId: number) {
       icon:      g.gear.icon,
       spriteId:  g.gear.spriteId ?? null,
     })),
-    availableColors:  AVATAR_COLORS,
-    availableClasses: [...AVATAR_CLASSES],
-    availableSkins:   [...AVATAR_SKINS],
-    availableHairStyles: [...AVATAR_HAIR_STYLES],
-    availableHairColors: [...AVATAR_HAIR_COLORS],
-    availableBuilds:     [...AVATAR_BUILDS],
-    availableFaces:      [...AVATAR_FACES],
+    availableColors:  ids(colors),
+    availableClasses: ids(classes),
+    availableSkins:   ids(skins),
+    availableHairStyles: ids(hairStyles),
+    availableHairColors: ids(hairColors),
+    availableBuilds:     ids(builds),
+    availableFaces:      ids(faces),
   };
 }
 
@@ -86,37 +82,37 @@ router.patch("/avatar", async (req, res): Promise<void> => {
     updates.avatarColor = avatarColor;
   }
   if (avatarClass != null) {
-    if (!(AVATAR_CLASSES as readonly string[]).includes(avatarClass)) {
+    if (!includesId(classes, avatarClass)) {
       res.status(400).json({ error: "Invalid avatar class" }); return;
     }
     updates.avatarClass = avatarClass;
   }
   if (avatarSkin != null) {
-    if (!(AVATAR_SKINS as readonly string[]).includes(avatarSkin)) {
+    if (!includesId(skins, avatarSkin)) {
       res.status(400).json({ error: "Invalid avatar skin" }); return;
     }
     updates.avatarSkin = avatarSkin;
   }
   if (avatarHairStyle != null) {
-    if (!(AVATAR_HAIR_STYLES as readonly string[]).includes(avatarHairStyle)) {
+    if (!includesId(hairStyles, avatarHairStyle)) {
       res.status(400).json({ error: "Invalid hair style" }); return;
     }
     updates.avatarHairStyle = avatarHairStyle;
   }
   if (avatarHairColor != null) {
-    if (!(AVATAR_HAIR_COLORS as readonly string[]).includes(avatarHairColor)) {
+    if (!includesId(hairColors, avatarHairColor)) {
       res.status(400).json({ error: "Invalid hair color" }); return;
     }
     updates.avatarHairColor = avatarHairColor;
   }
   if (avatarBodyBuild != null) {
-    if (!(AVATAR_BUILDS as readonly string[]).includes(avatarBodyBuild)) {
+    if (!includesId(builds, avatarBodyBuild)) {
       res.status(400).json({ error: "Invalid body build" }); return;
     }
     updates.avatarBodyBuild = avatarBodyBuild;
   }
   if (avatarFace != null) {
-    if (!(AVATAR_FACES as readonly string[]).includes(avatarFace)) {
+    if (!includesId(faces, avatarFace)) {
       res.status(400).json({ error: "Invalid face" }); return;
     }
     updates.avatarFace = avatarFace;

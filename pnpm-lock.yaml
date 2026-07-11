@@ -88,6 +88,9 @@ importers:
       '@workspace/db':
         specifier: workspace:*
         version: link:../../lib/db
+      '@workspace/hero-options':
+        specifier: workspace:*
+        version: link:../../lib/hero-options
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7
