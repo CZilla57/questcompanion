@@ -566,6 +566,15 @@ importers:
         specifier: ^0.31.10
         version: 0.31.10
 
+  lib/hero-options:
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.6.2
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@25.6.2)(lightningcss@1.32.0)
+
   scripts:
     dependencies:
       '@workspace/db':
