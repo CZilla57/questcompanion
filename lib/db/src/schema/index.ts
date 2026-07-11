@@ -10,3 +10,4 @@ export * from "./habit-streaks";
 export * from "./gear";
 export * from "./battles";
 export * from "./dopamine-rewards";
+export * from "./focus-sessions";
