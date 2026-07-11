@@ -586,6 +586,9 @@ importers:
       '@workspace/db':
         specifier: workspace:*
         version: link:../lib/db
+      '@workspace/hero-options':
+        specifier: workspace:*
+        version: link:../lib/hero-options
       pngjs:
         specifier: ^7.0.0
         version: 7.0.0
