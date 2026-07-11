@@ -97,6 +97,8 @@ export const ActivityItemType = {
   streak_freeze_bought: 'streak_freeze_bought',
   streak_freeze_used: 'streak_freeze_used',
   gear_earned: 'gear_earned',
+  focus_session: 'focus_session',
+  focus_complete: 'focus_complete',
 } as const;
 
 export interface ActivityItem {

@@ -435,6 +435,8 @@ export default function Dashboard() {
                       {activity.type === 'all_day_bonus'        && <Zap         className="w-4 h-4 text-yellow-500" />}
                       {activity.type === 'streak_freeze_bought' && <Shield      className="w-4 h-4 text-cyan-400" />}
                       {activity.type === 'streak_freeze_used'   && <ShieldCheck className="w-4 h-4 text-cyan-400" />}
+                      {activity.type === 'focus_session'        && <Timer       className="w-4 h-4 text-primary" />}
+                      {activity.type === 'focus_complete'       && <Timer       className="w-4 h-4 text-primary" />}
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground leading-snug">{activity.description}</p>

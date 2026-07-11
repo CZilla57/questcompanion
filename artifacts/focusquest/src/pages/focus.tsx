@@ -115,7 +115,10 @@ export default function Focus() {
               toast({ title: "Session complete!", description: `Focused ${Math.round(res.session.focusedSeconds / 60)} min`, className: "border-primary bg-primary/10" });
             }
           },
-          onError: () => { creditedRef.current = next - 1; }, // allow retry on the next tick
+          onError: () => {
+            creditedRef.current = next - 1; // allow retry on the next tick
+            qc.invalidateQueries({ queryKey: getGetActiveFocusSessionQueryKey() });
+          },
         },
       );
     }
