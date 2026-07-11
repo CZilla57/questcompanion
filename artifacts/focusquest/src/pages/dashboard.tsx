@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Flame, Trophy, Target, Award, Zap, Check,
-  Shield, ShieldCheck, ShieldOff, AlertTriangle, X, TrendingDown, Clock,
+  Shield, ShieldCheck, ShieldOff, AlertTriangle, X, TrendingDown, Clock, Timer,
 } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -177,6 +177,12 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+      <Link href="/focus">
+        <Button className="w-full sm:w-auto gap-2">
+          <Timer className="w-4 h-4" /> Start focus session
+        </Button>
+      </Link>
 
       {/* ── Stat cards ───────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
