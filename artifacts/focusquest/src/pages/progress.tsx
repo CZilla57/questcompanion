@@ -2,41 +2,13 @@ import {
   useGetMe, useGetMyStats, useGetMyBadges, useGetMyXpHistory,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Award, Flame, Trophy, Zap, CheckCircle2, Star, Target,
-  Rocket, TrendingUp, Shield, Users, Medal, Calendar, Crown,
-} from "lucide-react";
+import { Award, Flame, Trophy, Zap, Star, Rocket } from "lucide-react";
+import { BadgeIcon, BADGE_CATEGORY_STYLE, DEFAULT_BADGE_CATEGORY_STYLE } from "@/lib/badges";
 import { format } from "date-fns";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
-
-const ICON_MAP: Record<string, React.ReactNode> = {
-  CheckCircle: <CheckCircle2 className="w-8 h-8" />,
-  Zap:         <Zap className="w-8 h-8" />,
-  Trophy:      <Trophy className="w-8 h-8" />,
-  Medal:       <Medal className="w-8 h-8" />,
-  Flame:       <Flame className="w-8 h-8" />,
-  Star:        <Star className="w-8 h-8" />,
-  Crown:       <Crown className="w-8 h-8" />,
-  Calendar:    <Calendar className="w-8 h-8" />,
-  Target:      <Target className="w-8 h-8" />,
-  Rocket:      <Rocket className="w-8 h-8" />,
-  TrendingUp:  <TrendingUp className="w-8 h-8" />,
-  Shield:      <Shield className="w-8 h-8" />,
-  Users:       <Users className="w-8 h-8" />,
-  Award:       <Award className="w-8 h-8" />,
-};
-
-const CATEGORY_STYLE: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  tasks:        { label: "Task Mastery",  color: "text-primary",    bg: "bg-primary/10",    border: "border-primary/30" },
-  points:       { label: "XP Milestones", color: "text-yellow-400", bg: "bg-yellow-400/10", border: "border-yellow-400/30" },
-  streak:       { label: "Daily Streaks", color: "text-orange-400", bg: "bg-orange-400/10", border: "border-orange-400/30" },
-  level:        { label: "Rank Ups",      color: "text-purple-400", bg: "bg-purple-400/10", border: "border-purple-400/30" },
-  social:       { label: "Social",        color: "text-green-400",  bg: "bg-green-400/10",  border: "border-green-400/30" },
-  habit_streak: { label: "Habit Streaks", color: "text-amber-400",  bg: "bg-amber-400/10",  border: "border-amber-500/40" },
-};
 
 interface TooltipProps {
   active?: boolean;
@@ -186,7 +158,7 @@ export default function Progress() {
             {categoryOrder.map((cat) => {
               const items = earnedByCategory[cat];
               if (!items || items.length === 0) return null;
-              const style = CATEGORY_STYLE[cat] ?? CATEGORY_STYLE["tasks"]!;
+              const style = BADGE_CATEGORY_STYLE[cat] ?? DEFAULT_BADGE_CATEGORY_STYLE;
               return (
                 <div key={cat}>
                   <h3 className={`text-xs font-bold uppercase tracking-widest mb-3 flex items-center gap-2 ${style.color}`}>
@@ -204,7 +176,7 @@ export default function Progress() {
                       >
                         <div className={`w-16 h-16 rounded-full ${style.bg} flex items-center justify-center mb-3 border ${style.border}`}>
                           <span className={style.color}>
-                            {ICON_MAP[ub.badge.icon] ?? <Award className="w-8 h-8" />}
+                            <BadgeIcon icon={ub.badge.icon} className="w-8 h-8" />
                           </span>
                         </div>
                         <h3 className="font-bold text-sm text-foreground leading-tight">{ub.badge.name}</h3>
