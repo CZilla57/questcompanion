@@ -36,18 +36,43 @@ export async function runInstallPrompt(
   return outcome;
 }
 
+/** Header/sidebar install button visibility. Platform-gated (NOT coupled to
+ *  banner dismissal) so it persists as a fallback on iOS after the banner is
+ *  dismissed. Hidden once installed. */
+export function shouldShowInstallButton(opts: {
+  isStandalone: boolean;
+  canInstall: boolean;
+  isIOS: boolean;
+}): boolean {
+  return !opts.isStandalone && (opts.canInstall || opts.isIOS);
+}
+
+/** Install banner visibility. Respects dismissal (banner is one-shot). */
+export function shouldShowInstallBanner(opts: {
+  isStandalone: boolean;
+  bannerDismissed: boolean;
+  canInstall: boolean;
+  showIosHint: boolean;
+}): boolean {
+  if (opts.isStandalone || opts.bannerDismissed) return false;
+  return opts.canInstall || opts.showIosHint;
+}
+
 // --- beforeinstallprompt holder -------------------------------------------
 // The event is single-use and can fire before React mounts, so we capture it
 // at module scope (primed from main.tsx) and let hooks subscribe for changes.
 
 let deferredPrompt: InstallPromptEvent | null = null;
 const listeners = new Set<() => void>();
+let primed = false;
 
 function notify(): void {
   for (const l of listeners) l();
 }
 
 export function primeInstallCapture(): void {
+  if (primed) return;
+  primed = true;
   if (typeof window === "undefined") return;
   window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();

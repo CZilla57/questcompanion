@@ -2,6 +2,7 @@
   "name": "FocusQuest",
   "short_name": "FocusQuest",
   "description": "Gamified tasks and habits — complete quests, earn XP, build streaks.",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

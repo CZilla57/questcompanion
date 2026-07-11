@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Download, X, Share } from "lucide-react";
 import { Button } from "./ui/button";
 import { usePwaInstall } from "@/hooks/use-pwa-install";
+import { shouldShowInstallBanner } from "@/lib/pwa";
 
 export function InstallBanner() {
   const {
@@ -15,16 +16,20 @@ export function InstallBanner() {
   } = usePwaInstall();
   const [showSteps, setShowSteps] = useState(false);
 
-  if (isStandalone || bannerDismissed) return null;
-  if (!canInstall && !showIosHint) return null;
+  if (!shouldShowInstallBanner({ isStandalone, bannerDismissed, canInstall, showIosHint }))
+    return null;
 
   const handleInstall = async () => {
     if (isIOS) {
       setShowSteps(true);
       return;
     }
-    const outcome = await promptInstall();
-    if (outcome === "accepted") dismissBanner();
+    try {
+      const outcome = await promptInstall();
+      if (outcome === "accepted") dismissBanner();
+    } catch (err) {
+      console.error("PWA install prompt failed", err);
+    }
   };
 
   return (
