@@ -14,6 +14,7 @@ import battleRouter from "./battle";
 import dopamineRewardsRouter from "./dopamine-rewards";
 import cronRouter from "./cron";
 import calendarRouter from "./calendar";
+import focusSessionsRouter from "./focus-sessions";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(gearRouter);
 router.use(battleRouter);
 router.use(dopamineRewardsRouter);
 router.use(calendarRouter);
+router.use(focusSessionsRouter);
 
 export default router;

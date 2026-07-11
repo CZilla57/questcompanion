@@ -25,6 +25,8 @@ tags:
     description: Leaderboard and rankings
   - name: calendar
     description: Calendar heatmap data
+  - name: focus
+    description: Focus sessions and Pomodoro timer
 paths:
   /auth/user:
     get:
@@ -557,6 +559,128 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+
+  /focus-sessions/presets:
+    get:
+      operationId: getFocusPresets
+      tags: [focus]
+      summary: List Pomodoro presets
+      responses:
+        "200":
+          description: Preset catalog
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FocusPreset"
+
+  /focus-sessions:
+    get:
+      operationId: listFocusSessions
+      tags: [focus]
+      summary: List recent focus sessions
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Recent sessions, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FocusSession"
+    post:
+      operationId: startFocusSession
+      tags: [focus]
+      summary: Start a focus session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartFocusSessionInput"
+      responses:
+        "201":
+          description: Session started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FocusSession"
+        "409":
+          description: A session is already active
+
+  /focus-sessions/active:
+    get:
+      operationId: getActiveFocusSession
+      tags: [focus]
+      summary: Get the current active session, or null
+      responses:
+        "200":
+          description: The active session, or null
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/FocusSession"
+                  - type: "null"
+
+  /focus-sessions/{id}/interval:
+    post:
+      operationId: creditFocusInterval
+      tags: [focus]
+      summary: Credit a completed focus interval
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FocusIntervalInput"
+      responses:
+        "200":
+          description: Interval credited (xpDelta is 0 for a duplicate)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FocusSessionResult"
+
+  /focus-sessions/{id}/complete:
+    post:
+      operationId: completeFocusSession
+      tags: [focus]
+      summary: End a focus session early
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FocusCompleteInput"
+      responses:
+        "200":
+          description: Session ended
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FocusSessionResult"
 
   /badges:
     get:
@@ -1516,7 +1640,7 @@ components:
           type: string
         type:
           type: string
-          enum: [task_completed, badge_earned, level_up, streak_milestone, all_day_bonus, streak_freeze_bought, streak_freeze_used, gear_earned]
+          enum: [task_completed, badge_earned, level_up, streak_milestone, all_day_bonus, streak_freeze_bought, streak_freeze_used, gear_earned, focus_session, focus_complete]
         description:
           type: string
         points:
@@ -1914,3 +2038,101 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/HeatmapDay"
+
+    FocusPreset:
+      type: object
+      required: [key, label, focusMinutes, breakMinutes, longBreakMinutes, longBreakEvery, plannedCycles]
+      properties:
+        key:
+          type: string
+          enum: [classic, deep, short]
+        label:
+          type: string
+        focusMinutes:
+          type: integer
+        breakMinutes:
+          type: integer
+        longBreakMinutes:
+          type: integer
+        longBreakEvery:
+          type: integer
+        plannedCycles:
+          type: integer
+
+    FocusSession:
+      type: object
+      required: [id, userId, taskId, preset, focusMinutes, breakMinutes, longBreakMinutes, longBreakEvery, plannedCycles, completedIntervals, focusedSeconds, xpAwarded, status, startedAt, lastIntervalAt, endedAt, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        taskId:
+          type: ["integer", "null"]
+        preset:
+          type: string
+          enum: [classic, deep, short]
+        focusMinutes:
+          type: integer
+        breakMinutes:
+          type: integer
+        longBreakMinutes:
+          type: integer
+        longBreakEvery:
+          type: integer
+        plannedCycles:
+          type: integer
+        completedIntervals:
+          type: integer
+        focusedSeconds:
+          type: integer
+        xpAwarded:
+          type: integer
+        status:
+          type: string
+          enum: [active, completed, stopped]
+        startedAt:
+          type: string
+        lastIntervalAt:
+          type: ["string", "null"]
+        endedAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    FocusSessionResult:
+      type: object
+      required: [session, xpDelta]
+      properties:
+        session:
+          $ref: "#/components/schemas/FocusSession"
+        xpDelta:
+          type: integer
+
+    StartFocusSessionInput:
+      type: object
+      required: [preset]
+      properties:
+        preset:
+          type: string
+          enum: [classic, deep, short]
+        taskId:
+          type: integer
+          description: Optional quest to focus on
+
+    FocusIntervalInput:
+      type: object
+      required: [intervalIndex]
+      properties:
+        intervalIndex:
+          type: integer
+          minimum: 1
+          description: 1-based index of the focus interval that just completed
+
+    FocusCompleteInput:
+      type: object
+      properties:
+        partialSeconds:
+          type: integer
+          minimum: 0
+          description: Seconds focused in the in-progress interval when stopping mid-focus

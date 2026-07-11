@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Flame, Trophy, Target, Award, Zap, Check,
-  Shield, ShieldCheck, ShieldOff, AlertTriangle, X, TrendingDown, Clock,
+  Shield, ShieldCheck, ShieldOff, AlertTriangle, X, TrendingDown, Clock, Timer,
 } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -248,6 +248,24 @@ export default function Dashboard() {
         </Card>
       </div>
 
+      {/* ── Focus session CTA banner ─────────────────────── */}
+      <Link href="/focus" className="block">
+        <div className="group flex items-center justify-between gap-4 rounded-lg border border-primary/20 bg-primary/5 px-5 py-4 cursor-pointer transition-colors hover:bg-primary/10 hover:border-primary/40">
+          <div className="flex items-center gap-3">
+            <div className="rounded-md border border-primary/20 bg-primary/10 p-2.5 shrink-0">
+              <Timer className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <div className="font-semibold text-foreground">Start a focus session</div>
+              <div className="text-sm text-muted-foreground">Run a Pomodoro timer and earn XP for time focused</div>
+            </div>
+          </div>
+          <span className="hidden sm:inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-colors group-hover:bg-primary/90 shrink-0">
+            Start
+          </span>
+        </div>
+      </Link>
+
       {/* ── XP Progress bar ───────────────────────────────── */}
       <Card className="border-primary/20">
         <CardContent className="pt-5 pb-5">
@@ -429,6 +447,8 @@ export default function Dashboard() {
                       {activity.type === 'all_day_bonus'        && <Zap         className="w-4 h-4 text-yellow-500" />}
                       {activity.type === 'streak_freeze_bought' && <Shield      className="w-4 h-4 text-cyan-400" />}
                       {activity.type === 'streak_freeze_used'   && <ShieldCheck className="w-4 h-4 text-cyan-400" />}
+                      {activity.type === 'focus_session'        && <Timer       className="w-4 h-4 text-primary" />}
+                      {activity.type === 'focus_complete'       && <Timer       className="w-4 h-4 text-primary" />}
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground leading-snug">{activity.description}</p>

@@ -97,6 +97,8 @@ export const ActivityItemType = {
   streak_freeze_bought: 'streak_freeze_bought',
   streak_freeze_used: 'streak_freeze_used',
   gear_earned: 'gear_earned',
+  focus_session: 'focus_session',
+  focus_complete: 'focus_complete',
 } as const;
 
 export interface ActivityItem {
@@ -824,6 +826,102 @@ export interface HeatmapResponse {
   days: HeatmapDay[];
 }
 
+export type FocusPresetKey = typeof FocusPresetKey[keyof typeof FocusPresetKey];
+
+
+export const FocusPresetKey = {
+  classic: 'classic',
+  deep: 'deep',
+  short: 'short',
+} as const;
+
+export interface FocusPreset {
+  key: FocusPresetKey;
+  label: string;
+  focusMinutes: number;
+  breakMinutes: number;
+  longBreakMinutes: number;
+  longBreakEvery: number;
+  plannedCycles: number;
+}
+
+export type FocusSessionPreset = typeof FocusSessionPreset[keyof typeof FocusSessionPreset];
+
+
+export const FocusSessionPreset = {
+  classic: 'classic',
+  deep: 'deep',
+  short: 'short',
+} as const;
+
+export type FocusSessionStatus = typeof FocusSessionStatus[keyof typeof FocusSessionStatus];
+
+
+export const FocusSessionStatus = {
+  active: 'active',
+  completed: 'completed',
+  stopped: 'stopped',
+} as const;
+
+export interface FocusSession {
+  id: number;
+  userId: number;
+  /** @nullable */
+  taskId: number | null;
+  preset: FocusSessionPreset;
+  focusMinutes: number;
+  breakMinutes: number;
+  longBreakMinutes: number;
+  longBreakEvery: number;
+  plannedCycles: number;
+  completedIntervals: number;
+  focusedSeconds: number;
+  xpAwarded: number;
+  status: FocusSessionStatus;
+  startedAt: string;
+  /** @nullable */
+  lastIntervalAt: string | null;
+  /** @nullable */
+  endedAt: string | null;
+  createdAt: string;
+}
+
+export interface FocusSessionResult {
+  session: FocusSession;
+  xpDelta: number;
+}
+
+export type StartFocusSessionInputPreset = typeof StartFocusSessionInputPreset[keyof typeof StartFocusSessionInputPreset];
+
+
+export const StartFocusSessionInputPreset = {
+  classic: 'classic',
+  deep: 'deep',
+  short: 'short',
+} as const;
+
+export interface StartFocusSessionInput {
+  preset: StartFocusSessionInputPreset;
+  /** Optional quest to focus on */
+  taskId?: number;
+}
+
+export interface FocusIntervalInput {
+  /**
+     * 1-based index of the focus interval that just completed
+     * @minimum 1
+     */
+  intervalIndex: number;
+}
+
+export interface FocusCompleteInput {
+  /**
+     * Seconds focused in the in-progress interval when stopping mid-focus
+     * @minimum 0
+     */
+  partialSeconds?: number;
+}
+
 /**
  * Opaque session token — `Bearer <sid>`.
  */
@@ -891,6 +989,14 @@ export const GetTasksCategory = {
   creative: 'creative',
   default: 'default',
 } as const;
+
+export type ListFocusSessionsParams = {
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+};
 
 export type GetLeaderboardParams = {
 period?: GetLeaderboardPeriod;

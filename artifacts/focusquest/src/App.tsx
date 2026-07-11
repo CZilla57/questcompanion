@@ -18,6 +18,7 @@ import Leaderboard from "@/pages/leaderboard";
 import Recurring from "@/pages/recurring";
 import AvatarPage from "@/pages/avatar";
 import DopamineMenu from "@/pages/dopamine-menu";
+import Focus from "@/pages/focus";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -149,6 +150,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Dashboard} />
         <Route path="/tasks" component={Tasks} />
+        <Route path="/focus" component={Focus} />
         <Route path="/recurring" component={Recurring} />
         <Route path="/progress" component={Progress} />
         <Route path="/insights" component={Insights} />

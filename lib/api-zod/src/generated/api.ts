@@ -161,7 +161,7 @@ export const GetMyStatsResponse = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
   "username": zod.string().optional(),
-  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_earned']),
+  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_earned', 'focus_session', 'focus_complete']),
   "description": zod.string(),
   "points": zod.number(),
   "createdAt": zod.string()
@@ -681,6 +681,165 @@ export const PatchTaskFocusResponse = zod.object({
 
 
 /**
+ * @summary List Pomodoro presets
+ */
+export const GetFocusPresetsResponseItem = zod.object({
+  "key": zod.enum(['classic', 'deep', 'short']),
+  "label": zod.string(),
+  "focusMinutes": zod.number(),
+  "breakMinutes": zod.number(),
+  "longBreakMinutes": zod.number(),
+  "longBreakEvery": zod.number(),
+  "plannedCycles": zod.number()
+})
+export const GetFocusPresetsResponse = zod.array(GetFocusPresetsResponseItem)
+
+
+/**
+ * @summary List recent focus sessions
+ */
+export const listFocusSessionsQueryLimitDefault = 20;
+export const listFocusSessionsQueryLimitMax = 100;
+
+
+
+export const ListFocusSessionsQueryParams = zod.object({
+  "limit": zod.coerce.number().min(1).max(listFocusSessionsQueryLimitMax).default(listFocusSessionsQueryLimitDefault)
+})
+
+export const ListFocusSessionsResponseItem = zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "taskId": zod.number().nullable(),
+  "preset": zod.enum(['classic', 'deep', 'short']),
+  "focusMinutes": zod.number(),
+  "breakMinutes": zod.number(),
+  "longBreakMinutes": zod.number(),
+  "longBreakEvery": zod.number(),
+  "plannedCycles": zod.number(),
+  "completedIntervals": zod.number(),
+  "focusedSeconds": zod.number(),
+  "xpAwarded": zod.number(),
+  "status": zod.enum(['active', 'completed', 'stopped']),
+  "startedAt": zod.string(),
+  "lastIntervalAt": zod.string().nullable(),
+  "endedAt": zod.string().nullable(),
+  "createdAt": zod.string()
+})
+export const ListFocusSessionsResponse = zod.array(ListFocusSessionsResponseItem)
+
+
+/**
+ * @summary Start a focus session
+ */
+export const StartFocusSessionBody = zod.object({
+  "preset": zod.enum(['classic', 'deep', 'short']),
+  "taskId": zod.number().optional().describe('Optional quest to focus on')
+})
+
+
+/**
+ * @summary Get the current active session, or null
+ */
+export const GetActiveFocusSessionResponse = zod.union([zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "taskId": zod.number().nullable(),
+  "preset": zod.enum(['classic', 'deep', 'short']),
+  "focusMinutes": zod.number(),
+  "breakMinutes": zod.number(),
+  "longBreakMinutes": zod.number(),
+  "longBreakEvery": zod.number(),
+  "plannedCycles": zod.number(),
+  "completedIntervals": zod.number(),
+  "focusedSeconds": zod.number(),
+  "xpAwarded": zod.number(),
+  "status": zod.enum(['active', 'completed', 'stopped']),
+  "startedAt": zod.string(),
+  "lastIntervalAt": zod.string().nullable(),
+  "endedAt": zod.string().nullable(),
+  "createdAt": zod.string()
+}),zod.null()])
+
+
+/**
+ * @summary Credit a completed focus interval
+ */
+export const CreditFocusIntervalParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+export const CreditFocusIntervalBody = zod.object({
+  "intervalIndex": zod.number().min(1).describe('1-based index of the focus interval that just completed')
+})
+
+export const CreditFocusIntervalResponse = zod.object({
+  "session": zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "taskId": zod.number().nullable(),
+  "preset": zod.enum(['classic', 'deep', 'short']),
+  "focusMinutes": zod.number(),
+  "breakMinutes": zod.number(),
+  "longBreakMinutes": zod.number(),
+  "longBreakEvery": zod.number(),
+  "plannedCycles": zod.number(),
+  "completedIntervals": zod.number(),
+  "focusedSeconds": zod.number(),
+  "xpAwarded": zod.number(),
+  "status": zod.enum(['active', 'completed', 'stopped']),
+  "startedAt": zod.string(),
+  "lastIntervalAt": zod.string().nullable(),
+  "endedAt": zod.string().nullable(),
+  "createdAt": zod.string()
+}),
+  "xpDelta": zod.number()
+})
+
+
+/**
+ * @summary End a focus session early
+ */
+export const CompleteFocusSessionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const completeFocusSessionBodyPartialSecondsMin = 0;
+
+
+
+export const CompleteFocusSessionBody = zod.object({
+  "partialSeconds": zod.number().min(completeFocusSessionBodyPartialSecondsMin).optional().describe('Seconds focused in the in-progress interval when stopping mid-focus')
+})
+
+export const CompleteFocusSessionResponse = zod.object({
+  "session": zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "taskId": zod.number().nullable(),
+  "preset": zod.enum(['classic', 'deep', 'short']),
+  "focusMinutes": zod.number(),
+  "breakMinutes": zod.number(),
+  "longBreakMinutes": zod.number(),
+  "longBreakEvery": zod.number(),
+  "plannedCycles": zod.number(),
+  "completedIntervals": zod.number(),
+  "focusedSeconds": zod.number(),
+  "xpAwarded": zod.number(),
+  "status": zod.enum(['active', 'completed', 'stopped']),
+  "startedAt": zod.string(),
+  "lastIntervalAt": zod.string().nullable(),
+  "endedAt": zod.string().nullable(),
+  "createdAt": zod.string()
+}),
+  "xpDelta": zod.number()
+})
+
+
+/**
  * @summary List all available badges
  */
 export const GetBadgesResponseItem = zod.object({
@@ -805,7 +964,7 @@ export const GetPartnerFeedResponseItem = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
   "username": zod.string().optional(),
-  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_earned']),
+  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_earned', 'focus_session', 'focus_complete']),
   "description": zod.string(),
   "points": zod.number(),
   "createdAt": zod.string()
