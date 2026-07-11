@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   builds, skins, hairStyles, hairColors, faces, classes, colors,
+  beardStyles, beardColors, glasses, earrings,
   ids, includesId, type Option,
 } from "./index";
 
@@ -41,5 +42,15 @@ describe("hero-options registry", () => {
   it("includesId matches by id", () => {
     expect(includesId(skins, "light")).toBe(true);
     expect(includesId(skins, "chartreuse")).toBe(false);
+  });
+
+  it("optional axes each start with a 'none' sentinel", () => {
+    for (const axis of [beardStyles, glasses, earrings]) {
+      expect(axis[0].id).toBe("none");
+    }
+  });
+
+  it("beardColors shares the hairColors palette", () => {
+    expect(ids(beardColors)).toEqual(ids(hairColors));
   });
 });

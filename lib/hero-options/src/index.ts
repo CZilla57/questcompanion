@@ -56,6 +56,31 @@ export const faces = [
   { id: "smile", label: "Smile" },
 ] as const satisfies readonly Option[];
 
+export const beardStyles = [
+  { id: "none", label: "None" },
+  { id: "stubble", label: "Stubble" },
+  { id: "short", label: "Short" },
+  { id: "full", label: "Full" },
+  { id: "goatee", label: "Goatee" },
+  { id: "mustache", label: "Mustache" },
+] as const satisfies readonly Option[];
+
+// Beard color shares the hair palette but is an independent selection.
+export const beardColors = hairColors;
+
+export const glasses = [
+  { id: "none", label: "None" },
+  { id: "round", label: "Round" },
+  { id: "square", label: "Square" },
+  { id: "sunglasses", label: "Sunglasses" },
+] as const satisfies readonly Option[];
+
+export const earrings = [
+  { id: "none", label: "None" },
+  { id: "studs", label: "Studs" },
+  { id: "hoops", label: "Hoops" },
+] as const satisfies readonly Option[];
+
 export const classes = [
   { id: "fighter", label: "Fighter", swatch: "#ef4444" },
   { id: "mage", label: "Mage", swatch: "#8b5cf6" },
@@ -81,6 +106,10 @@ export type HairStyleId = (typeof hairStyles)[number]["id"];
 export type HairColorId = (typeof hairColors)[number]["id"];
 export type FaceId = (typeof faces)[number]["id"];
 export type ClassId = (typeof classes)[number]["id"];
+export type BeardStyleId = (typeof beardStyles)[number]["id"];
+export type BeardColorId = HairColorId;
+export type GlassesId = (typeof glasses)[number]["id"];
+export type EarringId = (typeof earrings)[number]["id"];
 
 export function ids(o: readonly Option[]): string[] {
   return o.map((x) => x.id);

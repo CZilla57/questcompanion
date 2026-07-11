@@ -1,5 +1,6 @@
 import type {
   BuildId, SkinId, HairStyleId, HairColorId, FaceId as FaceIdOpt, ClassId,
+  BeardStyleId, GlassesId, EarringId,
 } from "@workspace/hero-options";
 
 export type Build = BuildId; // LPC body base (male/female)
@@ -12,8 +13,8 @@ export type Rarity = "common" | "rare" | "epic" | "legendary";
 export type GearSlot = "weapon" | "helmet" | "armor" | "boots" | "accessory";
 
 export type LayerCategory =
-  | "aura" | "body" | "face" | "hair" | "outfit"
-  | "boots" | "armor" | "helmet" | "weapon" | "accessory";
+  | "aura" | "body" | "face" | "earrings" | "beard" | "hair" | "outfit"
+  | "boots" | "armor" | "helmet" | "weapon" | "glasses" | "accessory";
 
 export interface CatalogEntry {
   id: string;
@@ -37,6 +38,10 @@ export interface HeroLook {
   hairStyle: HairStyle;
   hairColor: HairColor;
   face: FaceId;
+  beardStyle: BeardStyleId;
+  beardColor: HairColorId;
+  glasses: GlassesId;
+  earrings: EarringId;
   avatarClass: AvatarClass;
   tier: 0 | 1 | 2 | 3;
   equipped: EquippedGearLook[];

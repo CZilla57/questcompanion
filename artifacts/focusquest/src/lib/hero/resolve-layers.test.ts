@@ -13,7 +13,9 @@ const base = (id: string, category: CatalogEntry["category"], zIndex: number): C
 
 const look: HeroLook = {
   skin: "light", build: "male", hairStyle: "short", hairColor: "brown",
-  face: "neutral", avatarClass: "fighter", tier: 0, equipped: [],
+  face: "neutral", beardStyle: "none", beardColor: "black",
+  glasses: "none", earrings: "none",
+  avatarClass: "fighter", tier: 0, equipped: [],
 };
 
 const baseEntries: CatalogEntry[] = [
@@ -117,6 +119,41 @@ describe("resolveLayers", () => {
     for (const l of nonGear) {
       expect(l.tint).toBeUndefined();
     }
+  });
+
+  it("emits beard/glasses/earrings layers when set, with beard using its own color", () => {
+    const c = cat([
+      ...baseEntries,
+      base("earrings:studs", "earrings", 15),
+      base("beard:full:black", "beard", 20),
+      base("glasses:round", "glasses", 35),
+    ]);
+    const layers = resolveLayers(
+      { ...look, beardStyle: "full", beardColor: "black", glasses: "round", earrings: "studs" },
+      c,
+    );
+    const files = layers.map((l) => l.file);
+    expect(files).toContain("/lpc/earrings:studs.png");
+    expect(files).toContain("/lpc/beard:full:black.png");
+    expect(files).toContain("/lpc/glasses:round.png");
+    // z-order: earrings(15) < beard(20) < hair(30) < glasses(35)
+    const idx = (s: string) => files.findIndex((f) => f.includes(s));
+    expect(idx("earrings")).toBeLessThan(idx("beard"));
+    expect(idx("beard")).toBeLessThan(idx("hair"));
+    expect(idx("hair")).toBeLessThan(idx("glasses"));
+  });
+
+  it("emits no beard/glasses/earrings layer when the value is 'none'", () => {
+    const layers = resolveLayers(look, fullCatalog);
+    for (const s of ["beard", "glasses", "earrings"]) {
+      expect(layers.some((l) => l.file.includes(s))).toBe(false);
+    }
+  });
+
+  it("beard/glasses/earrings carry no rarity tint (not gear)", () => {
+    const c = cat([...baseEntries, base("beard:full:red", "beard", 20)]);
+    const layers = resolveLayers({ ...look, beardStyle: "full", beardColor: "red" }, c);
+    expect(layers.find((l) => l.file.includes("beard"))!.tint).toBeUndefined();
   });
 });
 

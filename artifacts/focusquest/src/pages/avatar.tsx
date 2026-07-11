@@ -475,6 +475,10 @@ export default function AvatarPage() {
     hairStyle: (avatarData?.avatarHairStyle ?? "short") as HairStyle,
     hairColor: (avatarData?.avatarHairColor ?? "brown") as HairColor,
     face: (avatarData?.avatarFace ?? "neutral") as FaceId,
+    beardStyle: "none",
+    beardColor: "brown",
+    glasses: "none",
+    earrings: "none",
     avatarClass: currentClass,
     tier: Math.min(3, Math.floor(((avatarData?.level ?? 1) - 1) / 10)) as 0 | 1 | 2 | 3,
     equipped: (avatarData?.equippedGear ?? [])

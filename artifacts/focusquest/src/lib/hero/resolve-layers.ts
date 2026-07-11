@@ -11,6 +11,9 @@ function collectIds(look: HeroLook): string[] {
   if (look.hairStyle !== "bald") {
     ids.push(`hair:${look.hairStyle}:${look.hairColor}`);
   }
+  if (look.earrings !== "none") ids.push(`earrings:${look.earrings}`);
+  if (look.beardStyle !== "none") ids.push(`beard:${look.beardStyle}:${look.beardColor}`);
+  if (look.glasses !== "none") ids.push(`glasses:${look.glasses}`);
   ids.push(`outfit:${look.avatarClass}:t${look.tier}:${look.build}`);
   for (const g of look.equipped) {
     ids.push(`gear:${g.spriteId}:${look.build}`);

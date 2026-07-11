@@ -28,6 +28,10 @@ export function HeroSummary() {
     hairStyle: (a.avatarHairStyle ?? "short") as HairStyle,
     hairColor: (a.avatarHairColor ?? "brown") as HairColor,
     face: (a.avatarFace ?? "neutral") as FaceId,
+    beardStyle: "none",
+    beardColor: "brown",
+    glasses: "none",
+    earrings: "none",
     avatarClass: (a.avatarClass ?? "fighter") as AvatarClass,
     tier: Math.min(3, Math.floor(((a.level ?? 1) - 1) / 10)) as 0 | 1 | 2 | 3,
     equipped: (a.equippedGear ?? [])
