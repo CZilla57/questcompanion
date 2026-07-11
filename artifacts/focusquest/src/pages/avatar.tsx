@@ -15,7 +15,8 @@ import {
 } from "@workspace/api-client-react";
 import type { GearStoreItem, AvatarUpdateInput } from "@workspace/api-client-react";
 import { PixelHero } from "@/components/pixel-hero";
-import type { AvatarClass, HeroLook, Build, Skin, HairStyle, HairColor, FaceId } from "@/lib/hero/types";
+import { HeroCredits } from "@/components/hero-credits";
+import type { AvatarClass, HeroLook, Build, Skin, HairStyle, HairColor, FaceId, EquippedGearLook } from "@/lib/hero/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -477,7 +478,13 @@ export default function AvatarPage() {
     face: (avatarData?.avatarFace ?? "neutral") as FaceId,
     avatarClass: currentClass,
     tier: Math.min(3, Math.floor(((avatarData?.level ?? 1) - 1) / 10)) as 0 | 1 | 2 | 3,
-    equipped: [], // gear-on-body is Phase 2; gear spriteIds not backfilled yet
+    equipped: (avatarData?.equippedGear ?? [])
+      .filter((g) => g.spriteId)
+      .map((g) => ({
+        slot: g.slot as EquippedGearLook["slot"],
+        spriteId: g.spriteId as string,
+        rarity: g.rarity as EquippedGearLook["rarity"],
+      })),
   };
 
   const equippedSlots: EquippedSlot[] = (avatarData?.equippedGear ?? []).map(g => ({
@@ -672,6 +679,12 @@ export default function AvatarPage() {
               return <EquipmentSlotCard key={slot} slot={slot} item={item} />;
             })}
           </div>
+
+          {/* Art credits */}
+          <details className="rounded-xl border border-border bg-card/50 p-4">
+            <summary className="text-xs font-bold uppercase tracking-wider text-muted-foreground cursor-pointer">Art credits</summary>
+            <div className="mt-3"><HeroCredits /></div>
+          </details>
         </div>
 
         {/* ── Right: Tabs ───────────────────────────────────── */}
