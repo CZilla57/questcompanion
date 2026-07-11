@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and, desc } from "drizzle-orm";
-import { db, usersTable, tasksTable, focusSessionsTable, type FocusSession } from "@workspace/db";
-import { PRESETS, getPreset } from "../lib/focus-sessions";
+import { db, usersTable, tasksTable, activityTable, focusSessionsTable, type FocusSession } from "@workspace/db";
+import { PRESETS, getPreset, computeIntervalXp, expectedElapsedSeconds, FULL_SET_BONUS, GRACE_SECONDS } from "../lib/focus-sessions";
 
 const router: IRouter = Router();
 
@@ -112,6 +112,110 @@ router.post("/focus-sessions", async (req, res): Promise<void> => {
   if (outcome.status === "completed_task") { res.status(400).json({ error: "Cannot focus on a completed quest" }); return; }
 
   res.status(201).json(formatSession(outcome.session));
+});
+
+// Credit the NEXT completed focus interval. Idempotent on intervalIndex; XP is
+// server-computed from validated wall-clock elapsed.
+router.post("/focus-sessions/:id/interval", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const id = parseInt(raw, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const intervalIndex = Number((req.body as { intervalIndex?: number }).intervalIndex);
+  if (!Number.isInteger(intervalIndex) || intervalIndex < 1) {
+    res.status(400).json({ error: "intervalIndex must be a positive integer" });
+    return;
+  }
+
+  const now = new Date();
+
+  type Outcome =
+    | { status: "not_found" }
+    | { status: "not_active" }
+    | { status: "duplicate"; session: FocusSession }
+    | { status: "gap" }
+    | { status: "too_early" }
+    | { status: "ok"; session: FocusSession; xpDelta: number };
+
+  const outcome = await db.transaction(async (tx): Promise<Outcome> => {
+    // Lock the user row so concurrent credits can't read stale point totals.
+    const [user] = await tx.select().from(usersTable).where(eq(usersTable.id, userId)).for("update");
+    if (!user) return { status: "not_found" };
+
+    const [session] = await tx.select().from(focusSessionsTable)
+      .where(and(eq(focusSessionsTable.id, id), eq(focusSessionsTable.userId, userId)))
+      .for("update");
+    if (!session) return { status: "not_found" };
+    if (session.status !== "active") return { status: "not_active" };
+
+    // Ordering / idempotency.
+    if (intervalIndex <= session.completedIntervals) return { status: "duplicate", session };
+    if (intervalIndex !== session.completedIntervals + 1) return { status: "gap" };
+
+    // Anti-cheat: breaks-excluded wall-clock lower bound.
+    const requiredSec = expectedElapsedSeconds(session.focusMinutes, intervalIndex) - GRACE_SECONDS;
+    const elapsedSec = Math.floor((now.getTime() - session.startedAt.getTime()) / 1000);
+    if (elapsedSec < requiredSec) return { status: "too_early" };
+
+    const intervalXp = computeIntervalXp(session.focusMinutes);
+    const isFinal = intervalIndex === session.plannedCycles;
+    const xpDelta = intervalXp + (isFinal ? FULL_SET_BONUS : 0);
+
+    await tx.update(usersTable).set({
+      totalPoints: user.totalPoints + xpDelta,
+      weeklyPoints: user.weeklyPoints + xpDelta,
+    }).where(eq(usersTable.id, userId));
+
+    const [updated] = await tx.update(focusSessionsTable).set({
+      completedIntervals: intervalIndex,
+      focusedSeconds: session.focusedSeconds + session.focusMinutes * 60,
+      xpAwarded: session.xpAwarded + xpDelta,
+      lastIntervalAt: now,
+      ...(isFinal ? { status: "completed", endedAt: now } : {}),
+    }).where(eq(focusSessionsTable.id, id)).returning();
+
+    // Roll the completed focus block into the linked task, if any.
+    if (session.taskId != null) {
+      const [task] = await tx.select().from(tasksTable)
+        .where(and(eq(tasksTable.id, session.taskId), eq(tasksTable.userId, userId)));
+      if (task) {
+        await tx.update(tasksTable)
+          .set({ actualMinutes: (task.actualMinutes ?? 0) + session.focusMinutes })
+          .where(eq(tasksTable.id, session.taskId));
+      }
+    }
+
+    // One activity row per interval keeps points and the feed in agreement even
+    // if the session is later abandoned.
+    await tx.insert(activityTable).values({
+      userId,
+      type: "focus_session",
+      description: `Focused ${session.focusMinutes} min`,
+      points: intervalXp,
+    });
+    if (isFinal) {
+      await tx.insert(activityTable).values({
+        userId,
+        type: "focus_complete",
+        description: `Completed focus session · ${session.plannedCycles} cycles`,
+        points: FULL_SET_BONUS,
+      });
+    }
+
+    return { status: "ok", session: updated, xpDelta };
+  });
+
+  switch (outcome.status) {
+    case "not_found": res.status(404).json({ error: "Focus session not found" }); return;
+    case "not_active": res.status(409).json({ error: "Focus session is not active" }); return;
+    case "gap": res.status(409).json({ error: "Interval out of order" }); return;
+    case "too_early": res.status(409).json({ error: "Interval not yet elapsed" }); return;
+    case "duplicate": res.status(200).json({ session: formatSession(outcome.session), xpDelta: 0 }); return;
+    case "ok": res.status(200).json({ session: formatSession(outcome.session), xpDelta: outcome.xpDelta }); return;
+  }
 });
 
 export default router;
