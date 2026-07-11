@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and, desc } from "drizzle-orm";
 import { db, usersTable, tasksTable, activityTable, focusSessionsTable, type FocusSession } from "@workspace/db";
-import { PRESETS, getPreset, computeIntervalXp, expectedElapsedSeconds, FULL_SET_BONUS, GRACE_SECONDS } from "../lib/focus-sessions";
+import { PRESETS, getPreset, computeIntervalXp, computePartialXp, expectedElapsedSeconds, FULL_SET_BONUS, GRACE_SECONDS } from "../lib/focus-sessions";
 
 const router: IRouter = Router();
 
@@ -216,6 +216,96 @@ router.post("/focus-sessions/:id/interval", async (req, res): Promise<void> => {
     case "duplicate": res.status(200).json({ session: formatSession(outcome.session), xpDelta: 0 }); return;
     case "ok": res.status(200).json({ session: formatSession(outcome.session), xpDelta: outcome.xpDelta }); return;
   }
+});
+
+// End a session early. Credits trailing partial focus time (clamped to wall-clock),
+// then marks the session stopped. Idempotent on an already-ended session.
+router.post("/focus-sessions/:id/complete", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const id = parseInt(raw, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const partialClaimRaw = Number((req.body as { partialSeconds?: number }).partialSeconds ?? 0);
+  const partialClaim = Number.isFinite(partialClaimRaw) && partialClaimRaw > 0 ? Math.floor(partialClaimRaw) : 0;
+  const now = new Date();
+
+  type Outcome =
+    | { status: "not_found" }
+    | { status: "ok"; session: FocusSession; xpDelta: number };
+
+  const outcome = await db.transaction(async (tx): Promise<Outcome> => {
+    const [user] = await tx.select().from(usersTable).where(eq(usersTable.id, userId)).for("update");
+    if (!user) return { status: "not_found" };
+
+    const [session] = await tx.select().from(focusSessionsTable)
+      .where(and(eq(focusSessionsTable.id, id), eq(focusSessionsTable.userId, userId)))
+      .for("update");
+    if (!session) return { status: "not_found" };
+
+    // Already ended: idempotent no-op.
+    if (session.status !== "active") return { status: "ok", session, xpDelta: 0 };
+
+    // Clamp claimed partial focus to [0, focusMinutes*60] and to real elapsed since last activity.
+    const sinceRefSec = Math.floor((now.getTime() - (session.lastIntervalAt ?? session.startedAt).getTime()) / 1000);
+    const cappedSeconds = Math.max(0, Math.min(partialClaim, session.focusMinutes * 60, sinceRefSec));
+    const partialMinutes = Math.floor(cappedSeconds / 60);
+    const xpDelta = computePartialXp(partialMinutes);
+
+    if (xpDelta > 0) {
+      await tx.update(usersTable).set({
+        totalPoints: user.totalPoints + xpDelta,
+        weeklyPoints: user.weeklyPoints + xpDelta,
+      }).where(eq(usersTable.id, userId));
+
+      if (session.taskId != null) {
+        const [task] = await tx.select().from(tasksTable)
+          .where(and(eq(tasksTable.id, session.taskId), eq(tasksTable.userId, userId)));
+        if (task) {
+          await tx.update(tasksTable)
+            .set({ actualMinutes: (task.actualMinutes ?? 0) + partialMinutes })
+            .where(eq(tasksTable.id, session.taskId));
+        }
+      }
+
+      await tx.insert(activityTable).values({
+        userId,
+        type: "focus_session",
+        description: `Focused ${partialMinutes} min`,
+        points: xpDelta,
+      });
+    }
+
+    const [updated] = await tx.update(focusSessionsTable).set({
+      status: "stopped",
+      endedAt: now,
+      focusedSeconds: session.focusedSeconds + partialMinutes * 60,
+      xpAwarded: session.xpAwarded + xpDelta,
+    }).where(eq(focusSessionsTable.id, id)).returning();
+
+    return { status: "ok", session: updated, xpDelta };
+  });
+
+  if (outcome.status === "not_found") { res.status(404).json({ error: "Focus session not found" }); return; }
+  res.status(200).json({ session: formatSession(outcome.session), xpDelta: outcome.xpDelta });
+});
+
+// Recent sessions for the current user (history / insights surface).
+router.get("/focus-sessions", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  const limitRaw = Number(req.query.limit ?? 20);
+  const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(1, Math.floor(limitRaw)), 100) : 20;
+
+  const sessions = await db.select().from(focusSessionsTable)
+    .where(eq(focusSessionsTable.userId, userId))
+    .orderBy(desc(focusSessionsTable.startedAt))
+    .limit(limit);
+
+  res.json(sessions.map(formatSession));
 });
 
 export default router;
