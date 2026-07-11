@@ -1570,6 +1570,42 @@ export const CATALOG: CatalogEntry[] = [
     "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
   },
   {
+    "id": "earrings:studs",
+    "category": "earrings",
+    "zIndex": 15,
+    "file": "/lpc/earrings/studs.png",
+    "author": "bluecarrot16; Thane Brimhall (pennomi); laetissima; JaidynReiman; Michael Whitlock (bigbeargames)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "glasses:round",
+    "category": "glasses",
+    "zIndex": 35,
+    "file": "/lpc/glasses/round.png",
+    "author": "bluecarrot16; Thane Brimhall (pennomi); laetissima; JaidynReiman; Michael Whitlock (bigbeargames)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "glasses:square",
+    "category": "glasses",
+    "zIndex": 35,
+    "file": "/lpc/glasses/square.png",
+    "author": "bluecarrot16; Thane Brimhall (pennomi); laetissima; JaidynReiman; Michael Whitlock (bigbeargames)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "glasses:sunglasses",
+    "category": "glasses",
+    "zIndex": 35,
+    "file": "/lpc/glasses/sunglasses.png",
+    "author": "bluecarrot16; Thane Brimhall (pennomi); laetissima; JaidynReiman; Michael Whitlock (bigbeargames)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
     "id": "outfit:fighter:t0:male",
     "category": "outfit",
     "zIndex": 40,

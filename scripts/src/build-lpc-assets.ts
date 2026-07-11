@@ -10,7 +10,7 @@ const { PNG } = pngjs;
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { SKIN_MAP, HAIR_STYLE_MAP, HAIR_COLOR_CANDS, BEARD_STYLE_MAP } from "./lpc-mapping";
+import { SKIN_MAP, HAIR_STYLE_MAP, HAIR_COLOR_CANDS, BEARD_STYLE_MAP, GLASSES_MAP, EARRING_MAP } from "./lpc-mapping";
 import * as heroOptions from "@workspace/hero-options";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -57,6 +57,16 @@ const CRED = {
   //   beard/winter/{male,female}    → bluecarrot16; CC0; lpc-santa
   //   mustache/basic/walk.png       → JaidynReiman, Carlo Enrico Victoria (Nemisys); CC-BY-SA 3.0, GPL 3.0; lpc-brunet-mustache
   beard: { authors: ["JaidynReiman", "Thane Brimhall (pennomi)", "laetissima", "ElizaWy", "bluecarrot16", "Carlo Enrico Victoria (Nemisys)"], licenses: ["CC-BY-SA 3.0", "GPL 3.0", "OGA-BY 3.0", "CC0"], url: "https://opengameart.org/content/lpc-base-character-expressions" },
+  // Union of the real per-sheet CREDITS.csv rows for the 4 baked glasses/earring sheets
+  // (verified via the live LPC repo's CREDITS.csv during Task 9 — see task-9-report.md):
+  //   facial/glasses/round/adult/walk.png      → bluecarrot16, Thane Brimhall (pennomi), laetissima;
+  //                                                CC-BY-SA 3.0, GPL 3.0; clothing-facial-features-and-ui-elements / lpc-gentleman
+  //   facial/glasses/secretary/adult/walk.png  → JaidynReiman, Thane Brimhall (pennomi), laetissima;
+  //                                                CC-BY-SA 3.0, GPL 3.0; lpc-base-character-expressions
+  //   facial/glasses/sunglasses/adult/walk.png → Michael Whitlock (bigbeargames), Thane Brimhall (pennomi), laetissima;
+  //                                                CC-BY-SA 3.0, GPL 3.0; lpc-base-character-expressions / lpc-expanded-hats-facial-helmets
+  //   facial/earrings/stud/male/walk.png       → bluecarrot16; CC0; lpc-jewelry
+  facial: { authors: ["bluecarrot16", "Thane Brimhall (pennomi)", "laetissima", "JaidynReiman", "Michael Whitlock (bigbeargames)"], licenses: ["CC-BY-SA 3.0", "GPL 3.0", "CC0"], url: "https://opengameart.org/content/lpc-base-character-expressions" },
 };
 const merge = (...cs) => ({
   authors: [...new Set(cs.flatMap((c) => c.authors))],
@@ -64,6 +74,7 @@ const merge = (...cs) => ({
   url: cs[0].url,
 });
 const BODY_CRED = merge(CRED.body, CRED.head, CRED.eyes);
+const cc = (c) => ({ author: c.authors.join("; "), license: c.licenses.join(", "), sourceUrl: c.url });
 
 async function fetchBuf(url) { const r = await fetch(url); if (!r.ok) throw new Error(`${r.status}`); return Buffer.from(await r.arrayBuffer()); }
 async function fetchJson(url) { return (await fetch(url)).json(); }
@@ -179,6 +190,24 @@ async function buildGear(spriteId, category, part /* PartRef */) {
   console.log(`✓ gear ${spriteId} (${category})`);
 }
 
+// Bake a single-color, universal cosmetic layer (glasses, earrings): one sprite per style, no
+// recolor, no per-build split. cc(CRED.facial) — see the CRED.facial comment above for the
+// per-asset credit rows this union was built from.
+async function buildCosmetic(category: "glasses" | "earrings", map: Record<string, string>) {
+  mkdirSync(join(LPC_OUT, category), { recursive: true });
+  for (const [style, leaf] of Object.entries(map)) {
+    let sheet = await loadSheet(`${RAW}/spritesheets/${leaf}/walk.png`);
+    if (!sheet) sheet = await loadSheet(`${RAW}/spritesheets/${leaf}.png`);
+    if (!sheet) throw new Error(`missing ${category} ${style} at ${leaf}`);
+    const frame = cropSouth(sheet);
+    writePng(category, style, frame);
+    const c = cc(CRED.facial);
+    entries.push({ id: `${category}:${style}`, category, zIndex: Z[category], file: `/lpc/${category}/${style}.png`, ...c });
+    gearCreditRows.push([`${category}/${style}`, c.author, c.license, c.sourceUrl]);
+    console.log(`✓ ${category} ${style}`);
+  }
+}
+
 // Fail the build if hero-options advertises an id the pipeline never baked.
 function assertCoverage() {
   const built = new Set(entries.map((e) => e.id));
@@ -196,6 +225,8 @@ function assertCoverage() {
     for (const c of heroOptions.beardColors)
       if (!built.has(`beard:${st.id}:${c.id}`)) miss.push(`beard:${st.id}:${c.id}`);
   }
+  for (const g of heroOptions.glasses) if (g.id !== "none" && !built.has(`glasses:${g.id}`)) miss.push(`glasses:${g.id}`);
+  for (const e of heroOptions.earrings) if (e.id !== "none" && !built.has(`earrings:${e.id}`)) miss.push(`earrings:${e.id}`);
   if (miss.length) throw new Error(`coverage gap — hero-options ids with no baked sprite:\n  ${miss.join("\n  ")}`);
 }
 
@@ -215,8 +246,6 @@ async function main() {
   if (!eyes) eyes = await loadSheet(`${RAW}/spritesheets/eyes/human/adult/neutral/walk.png`);
   const eyeLayer = eyes ? cropSouth(eyes) : null;
   if (!eyeLayer) throw new Error("eyes layer failed to load");
-
-  const cc = (c) => ({ author: c.authors.join("; "), license: c.licenses.join(", "), sourceUrl: c.url });
 
   // BODIES = body + head + eyes, recolored to the same skin tone
   for (const build of BUILDS) {
@@ -266,6 +295,12 @@ async function main() {
     }
     console.log(`✓ beard ${ourStyle}`);
   }
+
+  // EARRINGS + GLASSES — single-color, universal cosmetic layers (one sprite per style, no
+  // recolor, no per-build split). See GLASSES_MAP/EARRING_MAP in lpc-mapping.ts for the real
+  // upstream leaf paths (Task 9) and why 'hoops' was dropped from hero-options.earrings.
+  await buildCosmetic("earrings", EARRING_MAP);
+  await buildCosmetic("glasses", GLASSES_MAP);
 
   // --- Full class-outfit manifest (16 outfits × 2 builds = 32 sprites). ---
   //

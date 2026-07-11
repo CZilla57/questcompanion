@@ -76,10 +76,13 @@ export const glasses = [
   { id: "sunglasses", label: "Sunglasses" },
 ] as const satisfies readonly Option[];
 
+// "hoops" was dropped: a repo-wide search of the upstream LPC CREDITS.csv (every shipped asset)
+// found zero "hoop"-named files anywhere in spritesheets/facial/earrings/ (only emerald, moon,
+// pear, princess, simple, stud shapes exist, none a hoop) — see EARRING_MAP in
+// scripts/src/lpc-mapping.ts and task-9-report.md.
 export const earrings = [
   { id: "none", label: "None" },
   { id: "studs", label: "Studs" },
-  { id: "hoops", label: "Hoops" },
 ] as const satisfies readonly Option[];
 
 export const classes = [
