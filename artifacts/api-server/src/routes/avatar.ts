@@ -4,6 +4,7 @@ import { db, usersTable, gearItemsTable, userGearTable } from "@workspace/db";
 import { getLevelInfo } from "../lib/gamification";
 import {
   builds, skins, hairStyles, hairColors, faces, classes, colors,
+  beardStyles, beardColors, glasses, earrings,
   ids, includesId,
 } from "@workspace/hero-options";
 
@@ -35,6 +36,10 @@ async function buildAvatarResponse(userId: number) {
     avatarHairColor:  user.avatarHairColor  ?? "brown",
     avatarBodyBuild:  user.avatarBodyBuild  ?? "male",
     avatarFace:       user.avatarFace       ?? "neutral",
+    avatarBeardStyle: user.avatarBeardStyle ?? "none",
+    avatarBeardColor: user.avatarBeardColor ?? "brown",
+    avatarGlasses:    user.avatarGlasses    ?? "none",
+    avatarEarrings:   user.avatarEarrings   ?? "none",
     level:            levelInfo.level,
     battlePower:      calcBattlePower(levelInfo.level, equippedPower),
     equippedGear:     equipped.map(g => ({
@@ -53,6 +58,10 @@ async function buildAvatarResponse(userId: number) {
     availableHairColors: ids(hairColors),
     availableBuilds:     ids(builds),
     availableFaces:      ids(faces),
+    availableBeardStyles: ids(beardStyles),
+    availableBeardColors: ids(beardColors),
+    availableGlasses:     ids(glasses),
+    availableEarrings:    ids(earrings),
   };
 }
 
@@ -68,10 +77,13 @@ router.patch("/avatar", async (req, res): Promise<void> => {
   const userId = req.gameUserId;
 
   const { avatarColor, avatarClass, avatarSkin,
-          avatarHairStyle, avatarHairColor, avatarBodyBuild, avatarFace } = req.body as {
+          avatarHairStyle, avatarHairColor, avatarBodyBuild, avatarFace,
+          avatarBeardStyle, avatarBeardColor, avatarGlasses, avatarEarrings } = req.body as {
     avatarColor?: string; avatarClass?: string; avatarSkin?: string;
     avatarHairStyle?: string; avatarHairColor?: string;
     avatarBodyBuild?: string; avatarFace?: string;
+    avatarBeardStyle?: string; avatarBeardColor?: string;
+    avatarGlasses?: string; avatarEarrings?: string;
   };
   const updates: Partial<typeof usersTable.$inferInsert> = {};
 
@@ -116,6 +128,22 @@ router.patch("/avatar", async (req, res): Promise<void> => {
       res.status(400).json({ error: "Invalid face" }); return;
     }
     updates.avatarFace = avatarFace;
+  }
+  if (avatarBeardStyle != null) {
+    if (!includesId(beardStyles, avatarBeardStyle)) { res.status(400).json({ error: "Invalid beard style" }); return; }
+    updates.avatarBeardStyle = avatarBeardStyle;
+  }
+  if (avatarBeardColor != null) {
+    if (!includesId(beardColors, avatarBeardColor)) { res.status(400).json({ error: "Invalid beard color" }); return; }
+    updates.avatarBeardColor = avatarBeardColor;
+  }
+  if (avatarGlasses != null) {
+    if (!includesId(glasses, avatarGlasses)) { res.status(400).json({ error: "Invalid glasses" }); return; }
+    updates.avatarGlasses = avatarGlasses;
+  }
+  if (avatarEarrings != null) {
+    if (!includesId(earrings, avatarEarrings)) { res.status(400).json({ error: "Invalid earrings" }); return; }
+    updates.avatarEarrings = avatarEarrings;
   }
 
   if (Object.keys(updates).length === 0) {

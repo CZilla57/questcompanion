@@ -6,17 +6,20 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AvatarProfileAvatarClass } from './avatarProfileAvatarClass';
-import type { AvatarProfileAvatarSkin } from './avatarProfileAvatarSkin';
 import type { EquippedGearItem } from './equippedGearItem';
 
 export interface AvatarProfile {
   avatarColor: string;
   avatarClass: AvatarProfileAvatarClass;
-  avatarSkin: AvatarProfileAvatarSkin;
+  avatarSkin: string;
   avatarHairStyle?: string;
   avatarHairColor?: string;
   avatarBodyBuild?: string;
   avatarFace?: string;
+  avatarBeardStyle?: string;
+  avatarBeardColor?: string;
+  avatarGlasses?: string;
+  avatarEarrings?: string;
   /** @minimum 1 */
   level: number;
   battlePower: number;
@@ -28,4 +31,8 @@ export interface AvatarProfile {
   availableHairColors?: string[];
   availableBuilds?: string[];
   availableFaces?: string[];
+  availableBeardStyles?: string[];
+  availableBeardColors?: string[];
+  availableGlasses?: string[];
+  availableEarrings?: string[];
 }
