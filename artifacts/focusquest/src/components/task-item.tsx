@@ -114,7 +114,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
           toast({
             title: `Quest Complete! +${res.pointsAwarded} XP`,
             description,
-            className: "border-primary bg-primary/10 text-primary-foreground",
+            className: "border-primary bg-primary text-primary-foreground",
           });
 
           if (res.gearReward) {
