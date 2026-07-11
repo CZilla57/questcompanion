@@ -1574,7 +1574,6 @@ components:
           enum: [fighter, mage, ranger, healer]
         avatarSkin:
           type: string
-          enum: [light, tan, brown, dark, green, blue]
         avatarHairStyle:
           type: string
         avatarHairColor:
@@ -1582,6 +1581,14 @@ components:
         avatarBodyBuild:
           type: string
         avatarFace:
+          type: string
+        avatarBeardStyle:
+          type: string
+        avatarBeardColor:
+          type: string
+        avatarGlasses:
+          type: string
+        avatarEarrings:
           type: string
         level:
           type: integer
@@ -1620,6 +1627,22 @@ components:
           type: array
           items:
             type: string
+        availableBeardStyles:
+          type: array
+          items:
+            type: string
+        availableBeardColors:
+          type: array
+          items:
+            type: string
+        availableGlasses:
+          type: array
+          items:
+            type: string
+        availableEarrings:
+          type: array
+          items:
+            type: string
 
     AvatarUpdateInput:
       type: object
@@ -1631,7 +1654,6 @@ components:
           enum: [fighter, mage, ranger, healer]
         avatarSkin:
           type: string
-          enum: [light, tan, brown, dark, green, blue]
         avatarHairStyle:
           type: string
         avatarHairColor:
@@ -1639,6 +1661,14 @@ components:
         avatarBodyBuild:
           type: string
         avatarFace:
+          type: string
+        avatarBeardStyle:
+          type: string
+        avatarBeardColor:
+          type: string
+        avatarGlasses:
+          type: string
+        avatarEarrings:
           type: string
 
     GearStoreItem:

@@ -6,14 +6,17 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AvatarUpdateInputAvatarClass } from './avatarUpdateInputAvatarClass';
-import type { AvatarUpdateInputAvatarSkin } from './avatarUpdateInputAvatarSkin';
 
 export interface AvatarUpdateInput {
   avatarColor?: string;
   avatarClass?: AvatarUpdateInputAvatarClass;
-  avatarSkin?: AvatarUpdateInputAvatarSkin;
+  avatarSkin?: string;
   avatarHairStyle?: string;
   avatarHairColor?: string;
   avatarBodyBuild?: string;
   avatarFace?: string;
+  avatarBeardStyle?: string;
+  avatarBeardColor?: string;
+  avatarGlasses?: string;
+  avatarEarrings?: string;
 }

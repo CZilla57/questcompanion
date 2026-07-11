@@ -22,6 +22,10 @@ export const usersTable = pgTable("users", {
   avatarHairColor: text("avatar_hair_color").notNull().default("brown"),
   avatarBodyBuild: text("avatar_body_build").notNull().default("male"),
   avatarFace: text("avatar_face").notNull().default("neutral"),
+  avatarBeardStyle: text("avatar_beard_style").notNull().default("none"),
+  avatarBeardColor: text("avatar_beard_color").notNull().default("brown"),
+  avatarGlasses: text("avatar_glasses").notNull().default("none"),
+  avatarEarrings: text("avatar_earrings").notNull().default("none"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

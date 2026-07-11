@@ -868,11 +868,15 @@ export const SearchUsersResponse = zod.array(SearchUsersResponseItem)
 export const GetAvatarResponse = zod.object({
   "avatarColor": zod.string(),
   "avatarClass": zod.enum(['fighter', 'mage', 'ranger', 'healer']),
-  "avatarSkin": zod.enum(['light', 'tan', 'brown', 'dark', 'green', 'blue']),
+  "avatarSkin": zod.string(),
   "avatarHairStyle": zod.string().optional(),
   "avatarHairColor": zod.string().optional(),
   "avatarBodyBuild": zod.string().optional(),
   "avatarFace": zod.string().optional(),
+  "avatarBeardStyle": zod.string().optional(),
+  "avatarBeardColor": zod.string().optional(),
+  "avatarGlasses": zod.string().optional(),
+  "avatarEarrings": zod.string().optional(),
   "level": zod.number().min(1),
   "battlePower": zod.number(),
   "equippedGear": zod.array(zod.object({
@@ -890,7 +894,11 @@ export const GetAvatarResponse = zod.object({
   "availableHairStyles": zod.array(zod.string()).optional(),
   "availableHairColors": zod.array(zod.string()).optional(),
   "availableBuilds": zod.array(zod.string()).optional(),
-  "availableFaces": zod.array(zod.string()).optional()
+  "availableFaces": zod.array(zod.string()).optional(),
+  "availableBeardStyles": zod.array(zod.string()).optional(),
+  "availableBeardColors": zod.array(zod.string()).optional(),
+  "availableGlasses": zod.array(zod.string()).optional(),
+  "availableEarrings": zod.array(zod.string()).optional()
 })
 
 
@@ -900,11 +908,15 @@ export const GetAvatarResponse = zod.object({
 export const UpdateAvatarBody = zod.object({
   "avatarColor": zod.string().optional(),
   "avatarClass": zod.enum(['fighter', 'mage', 'ranger', 'healer']).optional(),
-  "avatarSkin": zod.enum(['light', 'tan', 'brown', 'dark', 'green', 'blue']).optional(),
+  "avatarSkin": zod.string().optional(),
   "avatarHairStyle": zod.string().optional(),
   "avatarHairColor": zod.string().optional(),
   "avatarBodyBuild": zod.string().optional(),
-  "avatarFace": zod.string().optional()
+  "avatarFace": zod.string().optional(),
+  "avatarBeardStyle": zod.string().optional(),
+  "avatarBeardColor": zod.string().optional(),
+  "avatarGlasses": zod.string().optional(),
+  "avatarEarrings": zod.string().optional()
 })
 
 
@@ -913,11 +925,15 @@ export const UpdateAvatarBody = zod.object({
 export const UpdateAvatarResponse = zod.object({
   "avatarColor": zod.string(),
   "avatarClass": zod.enum(['fighter', 'mage', 'ranger', 'healer']),
-  "avatarSkin": zod.enum(['light', 'tan', 'brown', 'dark', 'green', 'blue']),
+  "avatarSkin": zod.string(),
   "avatarHairStyle": zod.string().optional(),
   "avatarHairColor": zod.string().optional(),
   "avatarBodyBuild": zod.string().optional(),
   "avatarFace": zod.string().optional(),
+  "avatarBeardStyle": zod.string().optional(),
+  "avatarBeardColor": zod.string().optional(),
+  "avatarGlasses": zod.string().optional(),
+  "avatarEarrings": zod.string().optional(),
   "level": zod.number().min(1),
   "battlePower": zod.number(),
   "equippedGear": zod.array(zod.object({
@@ -935,7 +951,11 @@ export const UpdateAvatarResponse = zod.object({
   "availableHairStyles": zod.array(zod.string()).optional(),
   "availableHairColors": zod.array(zod.string()).optional(),
   "availableBuilds": zod.array(zod.string()).optional(),
-  "availableFaces": zod.array(zod.string()).optional()
+  "availableFaces": zod.array(zod.string()).optional(),
+  "availableBeardStyles": zod.array(zod.string()).optional(),
+  "availableBeardColors": zod.array(zod.string()).optional(),
+  "availableGlasses": zod.array(zod.string()).optional(),
+  "availableEarrings": zod.array(zod.string()).optional()
 })
 
 

@@ -17,6 +17,7 @@ import type { GearStoreItem, AvatarUpdateInput } from "@workspace/api-client-rea
 import { PixelHero } from "@/components/pixel-hero";
 import { HeroCredits } from "@/components/hero-credits";
 import type { AvatarClass, HeroLook, Build, Skin, HairStyle, HairColor, FaceId, EquippedGearLook } from "@/lib/hero/types";
+import { skins as SKIN_OPTIONS, hairColors as HAIR_COLOR_OPTIONS } from "@workspace/hero-options";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -101,12 +102,10 @@ type EquippedSlot = {
   statPower: number;
 };
 
-const SKIN_SWATCH: Record<string, string> = {
-  light: "#FDBCB4", tan: "#D4956A", brown: "#8D5524", dark: "#4A2512", green: "#7BC47F", blue: "#89C4E1",
-};
-const HAIR_SWATCH: Record<string, string> = {
-  brown: "#5b3a1e", black: "#242424", blonde: "#E6C35C", red: "#a83232", white: "#e8e8ea", blue: "#3a4a9e",
-};
+const swatchMap = (opts: readonly { id: string; swatch?: string }[]): Record<string, string> =>
+  Object.fromEntries(opts.filter((o) => o.swatch).map((o) => [o.id, o.swatch as string]));
+const SKIN_SWATCH = swatchMap(SKIN_OPTIONS);
+const HAIR_SWATCH = swatchMap(HAIR_COLOR_OPTIONS);
 
 function PickerRow({ label, options, value, onSelect, disabled, swatch }: {
   label: string;
@@ -476,6 +475,10 @@ export default function AvatarPage() {
     hairStyle: (avatarData?.avatarHairStyle ?? "short") as HairStyle,
     hairColor: (avatarData?.avatarHairColor ?? "brown") as HairColor,
     face: (avatarData?.avatarFace ?? "neutral") as FaceId,
+    beardStyle: (avatarData?.avatarBeardStyle ?? "none") as HeroLook["beardStyle"],
+    beardColor: (avatarData?.avatarBeardColor ?? "brown") as HeroLook["beardColor"],
+    glasses: (avatarData?.avatarGlasses ?? "none") as HeroLook["glasses"],
+    earrings: (avatarData?.avatarEarrings ?? "none") as HeroLook["earrings"],
     avatarClass: currentClass,
     tier: Math.min(3, Math.floor(((avatarData?.level ?? 1) - 1) / 10)) as 0 | 1 | 2 | 3,
     equipped: (avatarData?.equippedGear ?? [])
@@ -655,6 +658,17 @@ export default function AvatarPage() {
               onSelect={(v) => handleAttrSelect({ avatarHairStyle: v })} disabled={updateAvatar.isPending} />
             <PickerRow label="Hair Color" options={avatarData?.availableHairColors ?? []} value={heroLook.hairColor}
               onSelect={(v) => handleAttrSelect({ avatarHairColor: v })} disabled={updateAvatar.isPending} swatch={HAIR_SWATCH} />
+
+            <div className="w-full border-t border-border/40 pt-1" />
+
+            <PickerRow label="Beard" options={avatarData?.availableBeardStyles ?? []} value={heroLook.beardStyle}
+              onSelect={(v) => handleAttrSelect({ avatarBeardStyle: v })} disabled={updateAvatar.isPending} />
+            <PickerRow label="Beard Color" options={avatarData?.availableBeardColors ?? []} value={heroLook.beardColor}
+              onSelect={(v) => handleAttrSelect({ avatarBeardColor: v })} disabled={updateAvatar.isPending || heroLook.beardStyle === "none"} swatch={HAIR_SWATCH} />
+            <PickerRow label="Glasses" options={avatarData?.availableGlasses ?? []} value={heroLook.glasses}
+              onSelect={(v) => handleAttrSelect({ avatarGlasses: v })} disabled={updateAvatar.isPending} />
+            <PickerRow label="Earrings" options={avatarData?.availableEarrings ?? []} value={heroLook.earrings}
+              onSelect={(v) => handleAttrSelect({ avatarEarrings: v })} disabled={updateAvatar.isPending} />
 
             {/* Accent color (profile / leaderboard) */}
             <div className="w-full space-y-2">
