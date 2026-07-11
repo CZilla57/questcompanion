@@ -953,6 +953,7 @@ export const GetGearStoreResponse = zod.object({
   "costXp": zod.number(),
   "levelRequired": zod.number(),
   "icon": zod.string(),
+  "spriteId": zod.string().nullish(),
   "owned": zod.boolean(),
   "equipped": zod.boolean(),
   "canAfford": zod.boolean(),
