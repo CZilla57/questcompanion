@@ -1,15 +1,20 @@
-export type Build = "male" | "female"; // LPC body base (male/female)
-export type Skin = "light" | "tan" | "brown" | "dark" | "green" | "blue";
-export type HairStyle = "bald" | "short" | "long" | "ponytail" | "afro";
-export type HairColor = "brown" | "black" | "blonde" | "red" | "white" | "blue";
-export type FaceId = "neutral" | "stern" | "smile";
-export type AvatarClass = "fighter" | "mage" | "ranger" | "healer";
+import type {
+  BuildId, SkinId, HairStyleId, HairColorId, FaceId as FaceIdOpt, ClassId,
+  BeardStyleId, GlassesId, EarringId,
+} from "@workspace/hero-options";
+
+export type Build = BuildId; // LPC body base (male/female)
+export type Skin = SkinId;
+export type HairStyle = HairStyleId;
+export type HairColor = HairColorId;
+export type FaceId = FaceIdOpt;
+export type AvatarClass = ClassId;
 export type Rarity = "common" | "rare" | "epic" | "legendary";
 export type GearSlot = "weapon" | "helmet" | "armor" | "boots" | "accessory";
 
 export type LayerCategory =
-  | "aura" | "body" | "face" | "hair" | "outfit"
-  | "boots" | "armor" | "helmet" | "weapon" | "accessory";
+  | "aura" | "body" | "face" | "earrings" | "beard" | "hair" | "outfit"
+  | "boots" | "armor" | "helmet" | "weapon" | "glasses" | "accessory";
 
 export interface CatalogEntry {
   id: string;
@@ -33,6 +38,10 @@ export interface HeroLook {
   hairStyle: HairStyle;
   hairColor: HairColor;
   face: FaceId;
+  beardStyle: BeardStyleId;
+  beardColor: HairColorId;
+  glasses: GlassesId;
+  earrings: EarringId;
   avatarClass: AvatarClass;
   tier: 0 | 1 | 2 | 3;
   equipped: EquippedGearLook[];

@@ -603,26 +603,18 @@ export const AvatarProfileAvatarClass = {
   healer: 'healer',
 } as const;
 
-export type AvatarProfileAvatarSkin = typeof AvatarProfileAvatarSkin[keyof typeof AvatarProfileAvatarSkin];
-
-
-export const AvatarProfileAvatarSkin = {
-  light: 'light',
-  tan: 'tan',
-  brown: 'brown',
-  dark: 'dark',
-  green: 'green',
-  blue: 'blue',
-} as const;
-
 export interface AvatarProfile {
   avatarColor: string;
   avatarClass: AvatarProfileAvatarClass;
-  avatarSkin: AvatarProfileAvatarSkin;
+  avatarSkin: string;
   avatarHairStyle?: string;
   avatarHairColor?: string;
   avatarBodyBuild?: string;
   avatarFace?: string;
+  avatarBeardStyle?: string;
+  avatarBeardColor?: string;
+  avatarGlasses?: string;
+  avatarEarrings?: string;
   /** @minimum 1 */
   level: number;
   battlePower: number;
@@ -634,6 +626,10 @@ export interface AvatarProfile {
   availableHairColors?: string[];
   availableBuilds?: string[];
   availableFaces?: string[];
+  availableBeardStyles?: string[];
+  availableBeardColors?: string[];
+  availableGlasses?: string[];
+  availableEarrings?: string[];
 }
 
 export type AvatarUpdateInputAvatarClass = typeof AvatarUpdateInputAvatarClass[keyof typeof AvatarUpdateInputAvatarClass];
@@ -646,26 +642,18 @@ export const AvatarUpdateInputAvatarClass = {
   healer: 'healer',
 } as const;
 
-export type AvatarUpdateInputAvatarSkin = typeof AvatarUpdateInputAvatarSkin[keyof typeof AvatarUpdateInputAvatarSkin];
-
-
-export const AvatarUpdateInputAvatarSkin = {
-  light: 'light',
-  tan: 'tan',
-  brown: 'brown',
-  dark: 'dark',
-  green: 'green',
-  blue: 'blue',
-} as const;
-
 export interface AvatarUpdateInput {
   avatarColor?: string;
   avatarClass?: AvatarUpdateInputAvatarClass;
-  avatarSkin?: AvatarUpdateInputAvatarSkin;
+  avatarSkin?: string;
   avatarHairStyle?: string;
   avatarHairColor?: string;
   avatarBodyBuild?: string;
   avatarFace?: string;
+  avatarBeardStyle?: string;
+  avatarBeardColor?: string;
+  avatarGlasses?: string;
+  avatarEarrings?: string;
 }
 
 export type GearStoreItemSlot = typeof GearStoreItemSlot[keyof typeof GearStoreItemSlot];

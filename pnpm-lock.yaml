@@ -88,6 +88,9 @@ importers:
       '@workspace/db':
         specifier: workspace:*
         version: link:../../lib/db
+      '@workspace/hero-options':
+        specifier: workspace:*
+        version: link:../../lib/hero-options
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7
@@ -257,6 +260,9 @@ importers:
       '@workspace/auth-web':
         specifier: workspace:*
         version: link:../../lib/auth-web
+      '@workspace/hero-options':
+        specifier: workspace:*
+        version: link:../../lib/hero-options
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
@@ -566,11 +572,23 @@ importers:
         specifier: ^0.31.10
         version: 0.31.10
 
+  lib/hero-options:
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.6.2
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@25.6.2)(lightningcss@1.32.0)
+
   scripts:
     dependencies:
       '@workspace/db':
         specifier: workspace:*
         version: link:../lib/db
+      '@workspace/hero-options':
+        specifier: workspace:*
+        version: link:../lib/hero-options
       pngjs:
         specifier: ^7.0.0
         version: 7.0.0

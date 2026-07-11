@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { resolveLayers } from "./resolve-layers";
 import { catalogById as realCatalog } from "./catalog";
-import type { CatalogEntry, HeroLook } from "./types";
+import { isGearCategory } from "./types";
+import type { CatalogEntry, HeroLook, LayerCategory } from "./types";
 
 function cat(entries: CatalogEntry[]): Map<string, CatalogEntry> {
   return new Map(entries.map((e) => [e.id, e]));
@@ -13,7 +14,9 @@ const base = (id: string, category: CatalogEntry["category"], zIndex: number): C
 
 const look: HeroLook = {
   skin: "light", build: "male", hairStyle: "short", hairColor: "brown",
-  face: "neutral", avatarClass: "fighter", tier: 0, equipped: [],
+  face: "neutral", beardStyle: "none", beardColor: "black",
+  glasses: "none", earrings: "none",
+  avatarClass: "fighter", tier: 0, equipped: [],
 };
 
 const baseEntries: CatalogEntry[] = [
@@ -117,6 +120,66 @@ describe("resolveLayers", () => {
     for (const l of nonGear) {
       expect(l.tint).toBeUndefined();
     }
+  });
+
+  it("emits beard/glasses/earrings layers when set, with beard using its own color", () => {
+    const c = cat([
+      ...baseEntries,
+      base("earrings:studs", "earrings", 15),
+      base("beard:full:black", "beard", 20),
+      base("glasses:round", "glasses", 35),
+    ]);
+    const layers = resolveLayers(
+      { ...look, beardStyle: "full", beardColor: "black", glasses: "round", earrings: "studs" },
+      c,
+    );
+    const files = layers.map((l) => l.file);
+    expect(files).toContain("/lpc/earrings:studs.png");
+    expect(files).toContain("/lpc/beard:full:black.png");
+    expect(files).toContain("/lpc/glasses:round.png");
+    // z-order: earrings(15) < beard(20) < hair(30) < glasses(35)
+    const idx = (s: string) => files.findIndex((f) => f.includes(s));
+    expect(idx("earrings")).toBeLessThan(idx("beard"));
+    expect(idx("beard")).toBeLessThan(idx("hair"));
+    expect(idx("hair")).toBeLessThan(idx("glasses"));
+  });
+
+  it("emits no beard/glasses/earrings layer when the value is 'none'", () => {
+    // Include catalog entries for the ids a broken "none" gate would emit
+    // (beard:none:<color>, glasses:none, earrings:none). If resolveLayers ever
+    // stopped skipping "none" selections (gate removed or inverted), these
+    // entries would resolve and this test would fail.
+    const noneCatalog = cat([
+      ...baseEntries,
+      base(`beard:none:${look.beardColor}`, "beard", 20),
+      base("glasses:none", "glasses", 35),
+      base("earrings:none", "earrings", 15),
+    ]);
+    const layers = resolveLayers(look, noneCatalog);
+    for (const s of ["beard", "glasses", "earrings"]) {
+      expect(layers.some((l) => l.file.includes(s))).toBe(false);
+    }
+    // Exact equality to the ungeared body/hair/outfit baseline: nothing extra snuck in.
+    expect(layers.map((l) => l.file)).toEqual([
+      "/lpc/body:male:light.png",
+      "/lpc/hair:short:brown.png",
+      "/lpc/outfit:fighter:t0:male.png",
+    ]);
+  });
+
+  it("beard/glasses/earrings are not gear categories (no rarity tint)", () => {
+    // Direct guard on the classification itself: if "beard"/"glasses"/"earrings"
+    // were ever added to GEAR_CATEGORIES, this assertion fails regardless of
+    // what's equipped.
+    const nonGearCategories: LayerCategory[] = ["beard", "glasses", "earrings"];
+    for (const category of nonGearCategories) {
+      expect(isGearCategory(category)).toBe(false);
+    }
+
+    // Behavioral corroboration: a resolved beard layer carries no tint.
+    const c = cat([...baseEntries, base("beard:full:red", "beard", 20)]);
+    const layers = resolveLayers({ ...look, beardStyle: "full", beardColor: "red" }, c);
+    expect(layers.find((l) => l.file.includes("beard"))!.tint).toBeUndefined();
   });
 });
 
