@@ -274,11 +274,8 @@ Create `artifacts/api-server/src/routes/focus-sessions.ts`:
 ```ts
 import { Router, type IRouter } from "express";
 import { eq, and, desc } from "drizzle-orm";
-import { db, usersTable, tasksTable, activityTable, focusSessionsTable, type FocusSession } from "@workspace/db";
-import {
-  PRESETS, getPreset, computeIntervalXp, computePartialXp,
-  expectedElapsedSeconds, FULL_SET_BONUS, GRACE_SECONDS,
-} from "../lib/focus-sessions";
+import { db, tasksTable, focusSessionsTable, type FocusSession } from "@workspace/db";
+import { PRESETS, getPreset } from "../lib/focus-sessions";
 
 const router: IRouter = Router();
 
@@ -365,14 +362,10 @@ router.post("/focus-sessions", async (req, res): Promise<void> => {
   res.status(201).json(formatSession(session));
 });
 
-// Intentionally-unused-until-later imports keep the module cohesive across tasks.
-void computeIntervalXp; void computePartialXp; void expectedElapsedSeconds;
-void FULL_SET_BONUS; void GRACE_SECONDS; void usersTable; void activityTable;
-
 export default router;
 ```
 
-Note: the `void` line at the bottom prevents "unused import" typecheck errors for symbols wired up in Tasks 4–5. Delete the corresponding entries as each is used.
+Every import above is used by this task's three routes. Tasks 4–5 extend the import lines as they add endpoints.
 
 - [ ] **Step 2: Mount the router**
 
@@ -434,7 +427,11 @@ EOF
 
 - [ ] **Step 1: Add the interval endpoint**
 
-In `artifacts/api-server/src/routes/focus-sessions.ts`, remove `computeIntervalXp`, `expectedElapsedSeconds`, `FULL_SET_BONUS`, `GRACE_SECONDS`, `usersTable`, and `activityTable` from the bottom `void` line (they are now used), then insert this route immediately before the final `export default router;`:
+In `artifacts/api-server/src/routes/focus-sessions.ts`, extend the imports:
+- change the `@workspace/db` import to `import { db, usersTable, tasksTable, activityTable, focusSessionsTable, type FocusSession } from "@workspace/db";`
+- change the lib import to `import { PRESETS, getPreset, computeIntervalXp, expectedElapsedSeconds, FULL_SET_BONUS, GRACE_SECONDS } from "../lib/focus-sessions";`
+
+Then insert this route immediately before the final `export default router;`:
 
 ```ts
 // Credit the NEXT completed focus interval. Idempotent on intervalIndex; XP is
@@ -545,7 +542,7 @@ router.post("/focus-sessions/:id/interval", async (req, res): Promise<void> => {
 - [ ] **Step 2: Typecheck**
 
 Run: `pnpm typecheck`
-Expected: PASS (and the removed symbols should no longer be on the `void` line — if any are now unused again, that's a mistake; every one of `computeIntervalXp`/`expectedElapsedSeconds`/`FULL_SET_BONUS`/`GRACE_SECONDS`/`usersTable`/`activityTable` is used here).
+Expected: PASS. Every newly-added import (`usersTable`, `activityTable`, `computeIntervalXp`, `expectedElapsedSeconds`, `FULL_SET_BONUS`, `GRACE_SECONDS`) is used by this route.
 
 - [ ] **Step 3: Commit**
 
@@ -572,7 +569,7 @@ EOF
 
 - [ ] **Step 1: Add the complete and list endpoints**
 
-Remove `computePartialXp` from the bottom `void` line (now used). Insert these two routes immediately before `export default router;`:
+Add `computePartialXp` to the `../lib/focus-sessions` import (it becomes `import { PRESETS, getPreset, computeIntervalXp, computePartialXp, expectedElapsedSeconds, FULL_SET_BONUS, GRACE_SECONDS } from "../lib/focus-sessions";`). Insert these two routes immediately before `export default router;`:
 
 ```ts
 // End a session early. Credits trailing partial focus time (clamped to wall-clock),
@@ -666,9 +663,9 @@ router.get("/focus-sessions", async (req, res): Promise<void> => {
 });
 ```
 
-- [ ] **Step 2: Confirm the `void` line is gone**
+- [ ] **Step 2: Confirm all imports are used**
 
-Every lib symbol is now used. Delete the entire trailing `void ...;` maintenance line if any remains. (`PRESETS` is used by `/presets`.)
+`PRESETS`/`getPreset` (presets/start), `computeIntervalXp`/`expectedElapsedSeconds`/`FULL_SET_BONUS`/`GRACE_SECONDS` (interval), and now `computePartialXp` (complete) are all referenced. No unused imports should remain.
 
 - [ ] **Step 3: Typecheck**
 
