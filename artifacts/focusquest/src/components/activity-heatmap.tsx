@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import {
   format,
   subDays,
@@ -171,7 +171,7 @@ function DetailPanel({
   );
 }
 
-export function ActivityHeatmap() {
+export function ActivityHeatmap({ aside }: { aside?: ReactNode } = {}) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -220,7 +220,16 @@ export function ActivityHeatmap() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[120px] bg-muted/20 animate-pulse rounded-lg" />
+          <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+            <div className="w-full lg:w-[240px] lg:flex-shrink-0">
+              <div className="h-[120px] bg-muted/20 animate-pulse rounded-lg" />
+            </div>
+            {aside && (
+              <div className="lg:flex-1 lg:border-l lg:border-border lg:pl-6 pt-4 lg:pt-0 border-t lg:border-t-0 border-border flex items-center justify-center lg:justify-start">
+                {aside}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     );
@@ -235,6 +244,8 @@ export function ActivityHeatmap() {
         </CardTitle>
       </CardHeader>
       <CardContent>
+        <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+        <div className="min-w-0 lg:flex-shrink-0">
         <div
           ref={scrollRef}
           className="overflow-x-auto"
@@ -358,6 +369,14 @@ export function ActivityHeatmap() {
           ))}
           <span>More</span>
         </div>
+        </div>{/* end heatmap column */}
+
+          {aside && (
+            <div className="lg:flex-1 lg:border-l lg:border-border lg:pl-6 pt-4 lg:pt-0 mt-1 lg:mt-0 border-t lg:border-t-0 border-border flex items-center justify-center lg:justify-start">
+              {aside}
+            </div>
+          )}
+        </div>{/* end two-column row */}
 
         {/* Detail panel */}
         {selectedDate && (
