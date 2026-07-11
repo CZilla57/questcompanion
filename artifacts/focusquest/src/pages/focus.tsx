@@ -98,6 +98,8 @@ export default function Focus() {
   // since effectiveNow — and thus completedIntervals — only advances when running).
   useEffect(() => {
     if (!active || !state) return;
+    if (active.status !== "active") return;
+    if (staleHandledRef.current === active.id) return;
     if (intervalMut.isPending) return;
     const next = creditedRef.current + 1;
     if (state.completedIntervals >= next && next <= active.plannedCycles) {
