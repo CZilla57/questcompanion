@@ -6,8 +6,10 @@ import {
   ExchangeMobileAuthorizationCodeResponse,
   LogoutMobileSessionResponse,
 } from "@workspace/api-zod";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, tasksTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { buildStarterQuestRows } from "../lib/starter-quests";
+import { logger } from "../lib/logger";
 import {
   clearSession,
   getOidcConfig,
@@ -95,7 +97,21 @@ async function upsertGameUser(claims: Record<string, unknown>): Promise<{ id: nu
     .values({ externalId, username })
     .returning({ id: usersTable.id });
 
+  await seedStarterQuests(created.id);
+
   return created;
+}
+
+// Seed a brand-new account with a few starter quests so first-time users don't land on
+// empty pages. Called only on the create path above, so it runs exactly once per account
+// and never re-seeds. Best-effort: a failure here must never block account creation.
+async function seedStarterQuests(userId: number): Promise<void> {
+  const today = new Date().toISOString().split("T")[0]!;
+  try {
+    await db.insert(tasksTable).values(buildStarterQuestRows(userId, today));
+  } catch (err) {
+    logger.warn({ err, userId }, "Failed to seed starter quests for new user");
+  }
 }
 
 router.get("/auth/user", (req: Request, res: Response) => {
