@@ -17,3 +17,15 @@ export const HAIR_COLOR_CANDS: Record<string, string[]> = {
   gray: ["gray", "grey"], auburn: ["chestnut", "auburn"], green: ["green"],
   purple: ["purple", "violet"], pink: ["pink", "rose"], orange: ["orange", "carrot"],
 };
+
+// our beard style id → LPC beard/mustache folder under spritesheets/beards/ (recolored via the
+// hair palette, like hair). 'none' is not baked. 'goatee' has no upstream match (verified via the
+// live GitHub tree: spritesheets/beards/ only has `beard/{5oclock_shadow,basic,medium,trimmed,winter}`
+// and `mustache/{basic,bigstache,chevron,french,handlebar,horseshoe,lampshade,walrus}` — no
+// chin-only goatee shape exists) and was removed from hero-options.beardStyles to match.
+// `full` uses `beard/winter/male` — winter has no universal walk.png (only male/ and female/
+// subfolders), but the two south-frame crops are byte-identical (verified by hash), so `male` is
+// used unconditionally rather than adding a build split to the beard loop.
+export const BEARD_STYLE_MAP: Record<string, string> = {
+  stubble: "beard/5oclock_shadow", short: "beard/trimmed", full: "beard/winter/male", mustache: "mustache/basic",
+};

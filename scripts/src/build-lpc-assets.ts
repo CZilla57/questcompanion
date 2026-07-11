@@ -10,7 +10,7 @@ const { PNG } = pngjs;
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { SKIN_MAP, HAIR_STYLE_MAP, HAIR_COLOR_CANDS } from "./lpc-mapping";
+import { SKIN_MAP, HAIR_STYLE_MAP, HAIR_COLOR_CANDS, BEARD_STYLE_MAP } from "./lpc-mapping";
 import * as heroOptions from "@workspace/hero-options";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -22,7 +22,7 @@ const CREDITS_OUT = join(LPC_OUT, "CREDITS.csv");
 const RAW = "https://raw.githubusercontent.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator/master";
 
 const BUILDS = ["male", "female"];
-const Z = { aura: 5, body: 10, hair: 30, outfit: 40, boots: 50, armor: 60, helmet: 70, weapon: 80, accessory: 90 };
+const Z = { aura: 5, body: 10, earrings: 15, beard: 20, hair: 30, glasses: 35, outfit: 40, boots: 50, armor: 60, helmet: 70, weapon: 80, accessory: 90 };
 const GEAR_Z = { boots: Z.boots, armor: Z.armor, helmet: Z.helmet, weapon: Z.weapon, accessory: Z.accessory };
 
 // A clothing/gear part: a def path (relative to sheet_definitions/) + optional color variant.
@@ -50,6 +50,13 @@ const CRED = {
   head: { authors: ["bluecarrot16", "JaidynReiman", "Benjamin K. Smith (BenCreating)", "ElizaWy"], licenses: ["OGA-BY 3.0", "CC-BY-SA 3.0", "GPL 3.0"], url: "https://opengameart.org/content/lpc-character-bases" },
   eyes: { authors: ["bluecarrot16", "ElizaWy", "Nila122"], licenses: ["CC-BY-SA 3.0", "GPL 3.0"], url: "https://opengameart.org/content/lpc-character-bases" },
   hair: { authors: ["bluecarrot16", "Manuel Riecke (MrBeast)", "JaidynReiman", "ElizaWy"], licenses: ["OGA-BY 3.0", "CC-BY-SA 3.0", "GPL 3.0"], url: "https://opengameart.org/content/lpc-hair" },
+  // Union of the real per-sheet CREDITS.csv rows for the 4 baked beard/mustache sheets (verified
+  // via the live LPC repo's CREDITS.csv during Task 8 — see task-8-report.md):
+  //   beard/5oclock_shadow/walk.png → JaidynReiman, Thane Brimhall (pennomi), laetissima; CC-BY-SA 3.0, GPL 3.0; lpc-base-character-expressions
+  //   beard/trimmed/walk.png        → ElizaWy; OGA-BY 3.0; LPC Hair repo / lpc-expanded-sit-run-jump-more
+  //   beard/winter/{male,female}    → bluecarrot16; CC0; lpc-santa
+  //   mustache/basic/walk.png       → JaidynReiman, Carlo Enrico Victoria (Nemisys); CC-BY-SA 3.0, GPL 3.0; lpc-brunet-mustache
+  beard: { authors: ["JaidynReiman", "Thane Brimhall (pennomi)", "laetissima", "ElizaWy", "bluecarrot16", "Carlo Enrico Victoria (Nemisys)"], licenses: ["CC-BY-SA 3.0", "GPL 3.0", "OGA-BY 3.0", "CC0"], url: "https://opengameart.org/content/lpc-base-character-expressions" },
 };
 const merge = (...cs) => ({
   authors: [...new Set(cs.flatMap((c) => c.authors))],
@@ -184,12 +191,18 @@ function assertCoverage() {
     for (const c of heroOptions.hairColors)
       if (!built.has(`hair:${st.id}:${c.id}`)) miss.push(`hair:${st.id}:${c.id}`);
   }
+  for (const st of heroOptions.beardStyles) {
+    if (st.id === "none") continue;
+    for (const c of heroOptions.beardColors)
+      if (!built.has(`beard:${st.id}:${c.id}`)) miss.push(`beard:${st.id}:${c.id}`);
+  }
   if (miss.length) throw new Error(`coverage gap — hero-options ids with no baked sprite:\n  ${miss.join("\n  ")}`);
 }
 
 async function main() {
   mkdirSync(join(LPC_OUT, "body"), { recursive: true });
   mkdirSync(join(LPC_OUT, "hair"), { recursive: true });
+  mkdirSync(join(LPC_OUT, "beard"), { recursive: true });
   mkdirSync(join(LPC_OUT, "outfit"), { recursive: true });
   mkdirSync(join(LPC_OUT, "gear"), { recursive: true });
 
@@ -235,6 +248,23 @@ async function main() {
       entries.push({ id: `hair:${ourStyle}:${ourColor}`, category: "hair", zIndex: Z.hair, file: `/lpc/hair/${ourStyle}_${ourColor}.png`, ...cc(CRED.hair) });
     }
     console.log(`✓ hair ${ourStyle} (6 colors)`);
+  }
+
+  // BEARD = style sheet recolored per beard color (shares the hair palette). Real leaf paths
+  // verified against the live repo during Task 8 (spritesheets/beards/{beard,mustache}/...) —
+  // see BEARD_STYLE_MAP in lpc-mapping.ts for the per-style folder and why 'goatee' was dropped.
+  const BEARD_LEAF = "spritesheets/beards";
+  for (const [ourStyle, lpcStyle] of Object.entries(BEARD_STYLE_MAP)) {
+    let sheet = await loadSheet(`${RAW}/${BEARD_LEAF}/${lpcStyle}/adult/walk.png`);
+    if (!sheet) sheet = await loadSheet(`${RAW}/${BEARD_LEAF}/${lpcStyle}/walk.png`);
+    if (!sheet) throw new Error(`missing beard ${lpcStyle}`);
+    const base = cropSouth(sheet), src = detectSource(base, hairPal);
+    for (const [ourColor, variant] of Object.entries(hairColorMap)) {
+      if (!variant) throw new Error(`no hair palette variant for ${ourColor}`);
+      writePng("beard", `${ourStyle}_${ourColor}`, recolor(base, hairPal[src], hairPal[variant]));
+      entries.push({ id: `beard:${ourStyle}:${ourColor}`, category: "beard", zIndex: Z.beard, file: `/lpc/beard/${ourStyle}_${ourColor}.png`, ...cc(CRED.beard) });
+    }
+    console.log(`✓ beard ${ourStyle}`);
   }
 
   // --- Full class-outfit manifest (16 outfits × 2 builds = 32 sprites). ---
@@ -467,6 +497,7 @@ async function main() {
   const credRows = [["asset", "authors", "licenses", "source_url"]];
   credRows.push(["body+head+eyes", BODY_CRED.authors.join(" | "), BODY_CRED.licenses.join(" | "), BODY_CRED.url]);
   credRows.push(["hair", CRED.hair.authors.join(" | "), CRED.hair.licenses.join(" | "), CRED.hair.url]);
+  credRows.push(["beard", CRED.beard.authors.join(" | "), CRED.beard.licenses.join(" | "), CRED.beard.url]);
   for (const [asset, author, license, sourceUrl] of gearCreditRows) {
     credRows.push([asset, author.replace(/; /g, " | "), license.replace(/, /g, " | "), sourceUrl]);
   }

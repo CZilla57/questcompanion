@@ -8,7 +8,7 @@ import { CATALOG } from "./catalog";
 // the on-disk root from `import.meta.dirname` (Node 20.11+) instead.
 const PUBLIC = path.resolve(import.meta.dirname, "../../../public");
 const LPC = path.join(PUBLIC, "lpc");
-const Z_BANDS: Record<string, number> = { aura: 5, body: 10, face: 20, hair: 30, outfit: 40, boots: 50, armor: 60, helmet: 70, weapon: 80, accessory: 90 };
+const Z_BANDS: Record<string, number> = { aura: 5, body: 10, earrings: 15, beard: 20, face: 20, hair: 30, glasses: 35, outfit: 40, boots: 50, armor: 60, helmet: 70, weapon: 80, accessory: 90 };
 
 describe("catalog integrity", () => {
   it("every catalog entry points to a file that exists on disk", () => {

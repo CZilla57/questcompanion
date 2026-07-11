@@ -1138,6 +1138,438 @@ export const CATALOG: CatalogEntry[] = [
     "sourceUrl": "https://opengameart.org/content/lpc-hair"
   },
   {
+    "id": "beard:stubble:brown",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/stubble_brown.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:stubble:black",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/stubble_black.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:stubble:blonde",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/stubble_blonde.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:stubble:red",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/stubble_red.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:stubble:white",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/stubble_white.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:stubble:blue",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/stubble_blue.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:stubble:gray",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/stubble_gray.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:stubble:auburn",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/stubble_auburn.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:stubble:green",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/stubble_green.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:stubble:purple",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/stubble_purple.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:stubble:pink",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/stubble_pink.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:stubble:orange",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/stubble_orange.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:short:brown",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/short_brown.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:short:black",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/short_black.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:short:blonde",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/short_blonde.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:short:red",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/short_red.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:short:white",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/short_white.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:short:blue",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/short_blue.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:short:gray",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/short_gray.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:short:auburn",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/short_auburn.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:short:green",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/short_green.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:short:purple",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/short_purple.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:short:pink",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/short_pink.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:short:orange",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/short_orange.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:full:brown",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/full_brown.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:full:black",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/full_black.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:full:blonde",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/full_blonde.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:full:red",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/full_red.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:full:white",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/full_white.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:full:blue",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/full_blue.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:full:gray",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/full_gray.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:full:auburn",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/full_auburn.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:full:green",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/full_green.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:full:purple",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/full_purple.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:full:pink",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/full_pink.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:full:orange",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/full_orange.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:mustache:brown",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/mustache_brown.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:mustache:black",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/mustache_black.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:mustache:blonde",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/mustache_blonde.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:mustache:red",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/mustache_red.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:mustache:white",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/mustache_white.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:mustache:blue",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/mustache_blue.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:mustache:gray",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/mustache_gray.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:mustache:auburn",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/mustache_auburn.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:mustache:green",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/mustache_green.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:mustache:purple",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/mustache_purple.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:mustache:pink",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/mustache_pink.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
+    "id": "beard:mustache:orange",
+    "category": "beard",
+    "zIndex": 20,
+    "file": "/lpc/beard/mustache_orange.png",
+    "author": "JaidynReiman; Thane Brimhall (pennomi); laetissima; ElizaWy; bluecarrot16; Carlo Enrico Victoria (Nemisys)",
+    "license": "CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-base-character-expressions"
+  },
+  {
     "id": "outfit:fighter:t0:male",
     "category": "outfit",
     "zIndex": 40,

@@ -56,12 +56,13 @@ export const faces = [
   { id: "smile", label: "Smile" },
 ] as const satisfies readonly Option[];
 
+// Kept to the LPC beard/mustache art that actually exists upstream (spritesheets/beards/{beard,mustache}/*)
+// — "goatee" was dropped because no upstream sheet has a chin-only goatee shape; see task-8-report.md.
 export const beardStyles = [
   { id: "none", label: "None" },
   { id: "stubble", label: "Stubble" },
   { id: "short", label: "Short" },
   { id: "full", label: "Full" },
-  { id: "goatee", label: "Goatee" },
   { id: "mustache", label: "Mustache" },
 ] as const satisfies readonly Option[];
 
