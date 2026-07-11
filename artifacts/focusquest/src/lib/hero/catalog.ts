@@ -58,6 +58,33 @@ export const CATALOG: CatalogEntry[] = [
     "sourceUrl": "https://opengameart.org/content/lpc-character-bases"
   },
   {
+    "id": "body:male:olive",
+    "category": "body",
+    "zIndex": 10,
+    "file": "/lpc/body/male_olive.png",
+    "author": "bluecarrot16; JaidynReiman; Benjamin K. Smith (BenCreating); ElizaWy; Nila122",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-character-bases"
+  },
+  {
+    "id": "body:male:bronze",
+    "category": "body",
+    "zIndex": 10,
+    "file": "/lpc/body/male_bronze.png",
+    "author": "bluecarrot16; JaidynReiman; Benjamin K. Smith (BenCreating); ElizaWy; Nila122",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-character-bases"
+  },
+  {
+    "id": "body:male:almond",
+    "category": "body",
+    "zIndex": 10,
+    "file": "/lpc/body/male_almond.png",
+    "author": "bluecarrot16; JaidynReiman; Benjamin K. Smith (BenCreating); ElizaWy; Nila122",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-character-bases"
+  },
+  {
     "id": "body:female:light",
     "category": "body",
     "zIndex": 10,
@@ -107,6 +134,33 @@ export const CATALOG: CatalogEntry[] = [
     "category": "body",
     "zIndex": 10,
     "file": "/lpc/body/female_blue.png",
+    "author": "bluecarrot16; JaidynReiman; Benjamin K. Smith (BenCreating); ElizaWy; Nila122",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-character-bases"
+  },
+  {
+    "id": "body:female:olive",
+    "category": "body",
+    "zIndex": 10,
+    "file": "/lpc/body/female_olive.png",
+    "author": "bluecarrot16; JaidynReiman; Benjamin K. Smith (BenCreating); ElizaWy; Nila122",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-character-bases"
+  },
+  {
+    "id": "body:female:bronze",
+    "category": "body",
+    "zIndex": 10,
+    "file": "/lpc/body/female_bronze.png",
+    "author": "bluecarrot16; JaidynReiman; Benjamin K. Smith (BenCreating); ElizaWy; Nila122",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-character-bases"
+  },
+  {
+    "id": "body:female:almond",
+    "category": "body",
+    "zIndex": 10,
+    "file": "/lpc/body/female_almond.png",
     "author": "bluecarrot16; JaidynReiman; Benjamin K. Smith (BenCreating); ElizaWy; Nila122",
     "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
     "sourceUrl": "https://opengameart.org/content/lpc-character-bases"
@@ -166,6 +220,60 @@ export const CATALOG: CatalogEntry[] = [
     "sourceUrl": "https://opengameart.org/content/lpc-hair"
   },
   {
+    "id": "hair:short:gray",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/short_gray.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:short:auburn",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/short_auburn.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:short:green",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/short_green.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:short:purple",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/short_purple.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:short:pink",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/short_pink.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:short:orange",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/short_orange.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
     "id": "hair:long:brown",
     "category": "hair",
     "zIndex": 30,
@@ -215,6 +323,60 @@ export const CATALOG: CatalogEntry[] = [
     "category": "hair",
     "zIndex": 30,
     "file": "/lpc/hair/long_blue.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:long:gray",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/long_gray.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:long:auburn",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/long_auburn.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:long:green",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/long_green.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:long:purple",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/long_purple.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:long:pink",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/long_pink.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:long:orange",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/long_orange.png",
     "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
     "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
     "sourceUrl": "https://opengameart.org/content/lpc-hair"
@@ -274,6 +436,60 @@ export const CATALOG: CatalogEntry[] = [
     "sourceUrl": "https://opengameart.org/content/lpc-hair"
   },
   {
+    "id": "hair:ponytail:gray",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/ponytail_gray.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:ponytail:auburn",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/ponytail_auburn.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:ponytail:green",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/ponytail_green.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:ponytail:purple",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/ponytail_purple.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:ponytail:pink",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/ponytail_pink.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:ponytail:orange",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/ponytail_orange.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
     "id": "hair:afro:brown",
     "category": "hair",
     "zIndex": 30,
@@ -323,6 +539,600 @@ export const CATALOG: CatalogEntry[] = [
     "category": "hair",
     "zIndex": 30,
     "file": "/lpc/hair/afro_blue.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:afro:gray",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/afro_gray.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:afro:auburn",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/afro_auburn.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:afro:green",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/afro_green.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:afro:purple",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/afro_purple.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:afro:pink",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/afro_pink.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:afro:orange",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/afro_orange.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bob:brown",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bob_brown.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bob:black",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bob_black.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bob:blonde",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bob_blonde.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bob:red",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bob_red.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bob:white",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bob_white.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bob:blue",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bob_blue.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bob:gray",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bob_gray.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bob:auburn",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bob_auburn.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bob:green",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bob_green.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bob:purple",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bob_purple.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bob:pink",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bob_pink.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bob:orange",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bob_orange.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:curly:brown",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/curly_brown.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:curly:black",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/curly_black.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:curly:blonde",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/curly_blonde.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:curly:red",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/curly_red.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:curly:white",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/curly_white.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:curly:blue",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/curly_blue.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:curly:gray",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/curly_gray.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:curly:auburn",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/curly_auburn.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:curly:green",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/curly_green.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:curly:purple",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/curly_purple.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:curly:pink",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/curly_pink.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:curly:orange",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/curly_orange.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:spiked:brown",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/spiked_brown.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:spiked:black",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/spiked_black.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:spiked:blonde",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/spiked_blonde.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:spiked:red",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/spiked_red.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:spiked:white",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/spiked_white.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:spiked:blue",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/spiked_blue.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:spiked:gray",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/spiked_gray.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:spiked:auburn",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/spiked_auburn.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:spiked:green",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/spiked_green.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:spiked:purple",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/spiked_purple.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:spiked:pink",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/spiked_pink.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:spiked:orange",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/spiked_orange.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bangs:brown",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bangs_brown.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bangs:black",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bangs_black.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bangs:blonde",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bangs_blonde.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bangs:red",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bangs_red.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bangs:white",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bangs_white.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bangs:blue",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bangs_blue.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bangs:gray",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bangs_gray.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bangs:auburn",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bangs_auburn.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bangs:green",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bangs_green.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bangs:purple",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bangs_purple.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bangs:pink",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bangs_pink.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:bangs:orange",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/bangs_orange.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:pixie:brown",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/pixie_brown.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:pixie:black",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/pixie_black.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:pixie:blonde",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/pixie_blonde.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:pixie:red",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/pixie_red.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:pixie:white",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/pixie_white.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:pixie:blue",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/pixie_blue.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:pixie:gray",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/pixie_gray.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:pixie:auburn",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/pixie_auburn.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:pixie:green",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/pixie_green.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:pixie:purple",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/pixie_purple.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:pixie:pink",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/pixie_pink.png",
+    "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "hair:pixie:orange",
+    "category": "hair",
+    "zIndex": 30,
+    "file": "/lpc/hair/pixie_orange.png",
     "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
     "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
     "sourceUrl": "https://opengameart.org/content/lpc-hair"

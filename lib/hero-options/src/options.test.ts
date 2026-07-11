@@ -18,9 +18,16 @@ describe("hero-options registry", () => {
 
   it("preserves the current option values (regression lock)", () => {
     expect(ids(builds)).toEqual(["male", "female"]);
-    expect(ids(skins)).toEqual(["light", "tan", "brown", "dark", "green", "blue"]);
-    expect(ids(hairStyles)).toEqual(["bald", "short", "long", "ponytail", "afro"]);
-    expect(ids(hairColors)).toEqual(["brown", "black", "blonde", "red", "white", "blue"]);
+    expect(ids(skins)).toEqual([
+      "light", "tan", "brown", "dark", "green", "blue", "olive", "bronze", "almond",
+    ]);
+    expect(ids(hairStyles)).toEqual([
+      "bald", "short", "long", "ponytail", "afro", "bob", "curly", "spiked", "bangs", "pixie",
+    ]);
+    expect(ids(hairColors)).toEqual([
+      "brown", "black", "blonde", "red", "white", "blue",
+      "gray", "auburn", "green", "purple", "pink", "orange",
+    ]);
     expect(ids(faces)).toEqual(["neutral", "stern", "smile"]);
     expect(ids(classes)).toEqual(["fighter", "mage", "ranger", "healer"]);
   });

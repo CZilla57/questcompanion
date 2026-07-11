@@ -16,6 +16,9 @@ export const skins = [
   { id: "dark", label: "Dark", swatch: "#4A2512" },
   { id: "green", label: "Green", swatch: "#7BC47F" },
   { id: "blue", label: "Blue", swatch: "#89C4E1" },
+  { id: "olive", label: "Olive", swatch: "#b98a54" },
+  { id: "bronze", label: "Bronze", swatch: "#8a5a34" },
+  { id: "almond", label: "Almond", swatch: "#c7935f" },
 ] as const satisfies readonly Option[];
 
 export const hairStyles = [
@@ -24,6 +27,11 @@ export const hairStyles = [
   { id: "long", label: "Long" },
   { id: "ponytail", label: "Ponytail" },
   { id: "afro", label: "Afro" },
+  { id: "bob", label: "Bob" },
+  { id: "curly", label: "Curly" },
+  { id: "spiked", label: "Spiked" },
+  { id: "bangs", label: "Bangs" },
+  { id: "pixie", label: "Pixie" },
 ] as const satisfies readonly Option[];
 
 // Shared color palette — hairColors and beardColors both reference it.
@@ -34,6 +42,12 @@ export const hairColors = [
   { id: "red", label: "Red", swatch: "#a83232" },
   { id: "white", label: "White", swatch: "#e8e8ea" },
   { id: "blue", label: "Blue", swatch: "#3a4a9e" },
+  { id: "gray", label: "Gray", swatch: "#9a9a9a" },
+  { id: "auburn", label: "Auburn", swatch: "#8a3b1e" },
+  { id: "green", label: "Green", swatch: "#3f8f4f" },
+  { id: "purple", label: "Purple", swatch: "#7c3aed" },
+  { id: "pink", label: "Pink", swatch: "#ec6fa8" },
+  { id: "orange", label: "Orange", swatch: "#d97a2b" },
 ] as const satisfies readonly Option[];
 
 export const faces = [
