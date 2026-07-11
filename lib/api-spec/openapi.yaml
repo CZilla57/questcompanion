@@ -1665,6 +1665,9 @@ components:
           type: integer
         icon:
           type: string
+        spriteId:
+          type: string
+          nullable: true
         owned:
           type: boolean
         equipped:

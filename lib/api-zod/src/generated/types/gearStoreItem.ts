@@ -18,6 +18,7 @@ export interface GearStoreItem {
   costXp: number;
   levelRequired: number;
   icon: string;
+  spriteId?: string | null;
   owned: boolean;
   equipped: boolean;
   canAfford: boolean;

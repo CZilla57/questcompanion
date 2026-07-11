@@ -15,7 +15,9 @@ export const gearItemsTable = pgTable("gear_items", {
   levelRequired: integer("level_required").notNull().default(1),
   icon: text("icon").notNull(),
   spriteId: text("sprite_id"),
-});
+}, (table) => [
+  unique("gear_items_name_unique").on(table.name),
+]);
 
 export const userGearTable = pgTable("user_gear", {
   id: serial("id").primaryKey(),

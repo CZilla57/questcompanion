@@ -326,6 +326,636 @@ export const CATALOG: CatalogEntry[] = [
     "author": "bluecarrot16; Manuel Riecke (MrBeast); JaidynReiman; ElizaWy",
     "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
     "sourceUrl": "https://opengameart.org/content/lpc-hair"
+  },
+  {
+    "id": "outfit:fighter:t0:male",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/fighter_t0_male.png",
+    "author": "JaidynReiman; bluecarrot16; Johannes Sjölund (wulax); Joe White; ElizaWy; Matthew Krohn (makrohn); Stephen Challener (Redshrike)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "outfit:fighter:t0:female",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/fighter_t0_female.png",
+    "author": "JaidynReiman; bluecarrot16; Johannes Sjölund (wulax); Joe White; ElizaWy; Matthew Krohn (makrohn); Stephen Challener (Redshrike)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "outfit:fighter:t1:male",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/fighter_t1_male.png",
+    "author": "Matthew Krohn (makrohn); Johannes Sjölund (wulax); bluecarrot16; JaidynReiman; Michael Whitlock (bigbeargames)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "outfit:fighter:t1:female",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/fighter_t1_female.png",
+    "author": "Matthew Krohn (makrohn); Johannes Sjölund (wulax); bluecarrot16; JaidynReiman; Michael Whitlock (bigbeargames)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "outfit:fighter:t2:male",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/fighter_t2_male.png",
+    "author": "Matthew Krohn (makrohn); Johannes Sjölund (wulax); bluecarrot16; JaidynReiman; Michael Whitlock (bigbeargames); Napsio (Vitruvian Studio)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "outfit:fighter:t2:female",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/fighter_t2_female.png",
+    "author": "Matthew Krohn (makrohn); Johannes Sjölund (wulax); bluecarrot16; JaidynReiman; Michael Whitlock (bigbeargames); Napsio (Vitruvian Studio)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "outfit:fighter:t3:male",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/fighter_t3_male.png",
+    "author": "Matthew Krohn (makrohn); Johannes Sjölund (wulax); bluecarrot16; JaidynReiman; Michael Whitlock (bigbeargames); Napsio (Vitruvian Studio)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "outfit:fighter:t3:female",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/fighter_t3_female.png",
+    "author": "Matthew Krohn (makrohn); Johannes Sjölund (wulax); bluecarrot16; JaidynReiman; Michael Whitlock (bigbeargames); Napsio (Vitruvian Studio)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "outfit:ranger:t0:male",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/ranger_t0_male.png",
+    "author": "JaidynReiman; bluecarrot16; Johannes Sjölund (wulax); Joe White; ElizaWy; Matthew Krohn (makrohn); Stephen Challener (Redshrike)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "outfit:ranger:t0:female",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/ranger_t0_female.png",
+    "author": "JaidynReiman; bluecarrot16; Johannes Sjölund (wulax); Joe White; ElizaWy; Matthew Krohn (makrohn); Stephen Challener (Redshrike)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "outfit:ranger:t1:male",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/ranger_t1_male.png",
+    "author": "JaidynReiman; bluecarrot16; Nila122; ElizaWy; Matthew Krohn (makrohn); Johannes Sjölund (wulax); Stephen Challener (Redshrike); Joe White; Michael Whitlock (bigbeargames)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 2.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-clothes-and-hair"
+  },
+  {
+    "id": "outfit:ranger:t1:female",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/ranger_t1_female.png",
+    "author": "JaidynReiman; bluecarrot16; Nila122; ElizaWy; Matthew Krohn (makrohn); Johannes Sjölund (wulax); Stephen Challener (Redshrike); Joe White; Michael Whitlock (bigbeargames)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 2.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-clothes-and-hair"
+  },
+  {
+    "id": "outfit:ranger:t2:male",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/ranger_t2_male.png",
+    "author": "JaidynReiman; bluecarrot16; Nila122; Michael Whitlock (bigbeargames); Matthew Krohn (makrohn); Johannes Sjölund (wulax)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 2.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-clothes-and-hair"
+  },
+  {
+    "id": "outfit:ranger:t2:female",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/ranger_t2_female.png",
+    "author": "JaidynReiman; bluecarrot16; Nila122; Michael Whitlock (bigbeargames); Matthew Krohn (makrohn); Johannes Sjölund (wulax)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 2.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-clothes-and-hair"
+  },
+  {
+    "id": "outfit:ranger:t3:male",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/ranger_t3_male.png",
+    "author": "JaidynReiman; bluecarrot16; Nila122; Michael Whitlock (bigbeargames); Matthew Krohn (makrohn); Johannes Sjölund (wulax)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 2.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-clothes-and-hair"
+  },
+  {
+    "id": "outfit:ranger:t3:female",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/ranger_t3_female.png",
+    "author": "JaidynReiman; bluecarrot16; Nila122; Michael Whitlock (bigbeargames); Matthew Krohn (makrohn); Johannes Sjölund (wulax)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 2.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-clothes-and-hair"
+  },
+  {
+    "id": "outfit:mage:t0:male",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/mage_t0_male.png",
+    "author": "JaidynReiman; bluecarrot16; Johannes Sjölund (wulax); Joe White; ElizaWy; Matthew Krohn (makrohn); Stephen Challener (Redshrike)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "outfit:mage:t0:female",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/mage_t0_female.png",
+    "author": "JaidynReiman; bluecarrot16; Johannes Sjölund (wulax); Joe White; ElizaWy; Matthew Krohn (makrohn); Stephen Challener (Redshrike); Luke Mehl",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "outfit:mage:t1:male",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/mage_t1_male.png",
+    "author": "JaidynReiman; bluecarrot16; Johannes Sjölund (wulax); Joe White; ElizaWy; Matthew Krohn (makrohn); Stephen Challener (Redshrike)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "outfit:mage:t1:female",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/mage_t1_female.png",
+    "author": "JaidynReiman; bluecarrot16; Johannes Sjölund (wulax); Joe White; ElizaWy; Matthew Krohn (makrohn); Stephen Challener (Redshrike); Luke Mehl",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "outfit:mage:t2:male",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/mage_t2_male.png",
+    "author": "Nila122; JaidynReiman; Matthew Krohn (makrohn); Johannes Sjölund (wulax); Stephen Challener (Redshrike); bluecarrot16",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 2.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-roman-armor"
+  },
+  {
+    "id": "outfit:mage:t2:female",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/mage_t2_female.png",
+    "author": "Nila122; JaidynReiman; Matthew Krohn (makrohn); Johannes Sjölund (wulax); Stephen Challener (Redshrike); Luke Mehl",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 2.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-roman-armor"
+  },
+  {
+    "id": "outfit:mage:t3:male",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/mage_t3_male.png",
+    "author": "Nila122; JaidynReiman; Matthew Krohn (makrohn); Johannes Sjölund (wulax); Stephen Challener (Redshrike); bluecarrot16",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 2.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-roman-armor"
+  },
+  {
+    "id": "outfit:mage:t3:female",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/mage_t3_female.png",
+    "author": "Nila122; JaidynReiman; Matthew Krohn (makrohn); Johannes Sjölund (wulax); Stephen Challener (Redshrike); Luke Mehl",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 2.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-roman-armor"
+  },
+  {
+    "id": "outfit:healer:t0:male",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/healer_t0_male.png",
+    "author": "JaidynReiman; bluecarrot16; Johannes Sjölund (wulax); Joe White; ElizaWy; Matthew Krohn (makrohn); Stephen Challener (Redshrike)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "outfit:healer:t0:female",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/healer_t0_female.png",
+    "author": "JaidynReiman; bluecarrot16; Johannes Sjölund (wulax); Joe White; ElizaWy; Matthew Krohn (makrohn); Stephen Challener (Redshrike); Luke Mehl",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "outfit:healer:t1:male",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/healer_t1_male.png",
+    "author": "JaidynReiman; bluecarrot16; Johannes Sjölund (wulax); Joe White; ElizaWy; Matthew Krohn (makrohn); Stephen Challener (Redshrike)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "outfit:healer:t1:female",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/healer_t1_female.png",
+    "author": "JaidynReiman; bluecarrot16; Johannes Sjölund (wulax); Joe White; ElizaWy; Matthew Krohn (makrohn); Stephen Challener (Redshrike); Luke Mehl",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "outfit:healer:t2:male",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/healer_t2_male.png",
+    "author": "Nila122; JaidynReiman; Matthew Krohn (makrohn); Johannes Sjölund (wulax); Stephen Challener (Redshrike); bluecarrot16",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 2.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-roman-armor"
+  },
+  {
+    "id": "outfit:healer:t2:female",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/healer_t2_female.png",
+    "author": "Nila122; JaidynReiman; Matthew Krohn (makrohn); Johannes Sjölund (wulax); Stephen Challener (Redshrike); Luke Mehl",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 2.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-roman-armor"
+  },
+  {
+    "id": "outfit:healer:t3:male",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/healer_t3_male.png",
+    "author": "Nila122; JaidynReiman; Matthew Krohn (makrohn); Johannes Sjölund (wulax); Stephen Challener (Redshrike); bluecarrot16",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 2.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-roman-armor"
+  },
+  {
+    "id": "outfit:healer:t3:female",
+    "category": "outfit",
+    "zIndex": 40,
+    "file": "/lpc/outfit/healer_t3_female.png",
+    "author": "Nila122; JaidynReiman; Matthew Krohn (makrohn); Johannes Sjölund (wulax); Stephen Challener (Redshrike); Luke Mehl",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 2.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-roman-armor"
+  },
+  {
+    "id": "gear:sword:male",
+    "category": "weapon",
+    "zIndex": 80,
+    "file": "/lpc/gear/sword_male.png",
+    "author": "ElizaWy; walk and down by JaidynReiman",
+    "license": "OGA-BY 3.0",
+    "sourceUrl": "https://github.com/ElizaWy/LPC/tree/main/Characters/Props/Sword%2001%20-%20Arming%20Sword"
+  },
+  {
+    "id": "gear:sword:female",
+    "category": "weapon",
+    "zIndex": 80,
+    "file": "/lpc/gear/sword_female.png",
+    "author": "ElizaWy; walk and down by JaidynReiman",
+    "license": "OGA-BY 3.0",
+    "sourceUrl": "https://github.com/ElizaWy/LPC/tree/main/Characters/Props/Sword%2001%20-%20Arming%20Sword"
+  },
+  {
+    "id": "gear:greatsword:male",
+    "category": "weapon",
+    "zIndex": 80,
+    "file": "/lpc/gear/greatsword_male.png",
+    "author": "Johannes Sjölund (wulax); bluecarrot16",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "gear:greatsword:female",
+    "category": "weapon",
+    "zIndex": 80,
+    "file": "/lpc/gear/greatsword_female.png",
+    "author": "Johannes Sjölund (wulax); bluecarrot16",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "gear:staff:male",
+    "category": "weapon",
+    "zIndex": 80,
+    "file": "/lpc/gear/staff_male.png",
+    "author": "bluecarrot16",
+    "license": "OGA-BY 3.0+, GPL 3.0, CC-BY 4.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-more-weapons"
+  },
+  {
+    "id": "gear:staff:female",
+    "category": "weapon",
+    "zIndex": 80,
+    "file": "/lpc/gear/staff_female.png",
+    "author": "bluecarrot16",
+    "license": "OGA-BY 3.0+, GPL 3.0, CC-BY 4.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-more-weapons"
+  },
+  {
+    "id": "gear:slingshot:male",
+    "category": "weapon",
+    "zIndex": 80,
+    "file": "/lpc/gear/slingshot_male.png",
+    "author": "bluecarrot16",
+    "license": "OGA-BY 3.0+, GPL 3.0, CC-BY 4.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-more-weapons"
+  },
+  {
+    "id": "gear:slingshot:female",
+    "category": "weapon",
+    "zIndex": 80,
+    "file": "/lpc/gear/slingshot_female.png",
+    "author": "bluecarrot16",
+    "license": "OGA-BY 3.0+, GPL 3.0, CC-BY 4.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-more-weapons"
+  },
+  {
+    "id": "gear:cap:male",
+    "category": "helmet",
+    "zIndex": 70,
+    "file": "/lpc/gear/cap_male.png",
+    "author": "Johannes Sjölund (wulax); Matthew Krohn (Makrohn); JaidynReiman",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "gear:cap:female",
+    "category": "helmet",
+    "zIndex": 70,
+    "file": "/lpc/gear/cap_female.png",
+    "author": "Johannes Sjölund (wulax); Matthew Krohn (Makrohn); JaidynReiman",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "gear:helm:male",
+    "category": "helmet",
+    "zIndex": 70,
+    "file": "/lpc/gear/helm_male.png",
+    "author": "bluecarrot16",
+    "license": "OGA-BY 3.0, CC-BY 3.0, CC-BY 4.0, GPL 2.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-helmets"
+  },
+  {
+    "id": "gear:helm:female",
+    "category": "helmet",
+    "zIndex": 70,
+    "file": "/lpc/gear/helm_female.png",
+    "author": "bluecarrot16",
+    "license": "OGA-BY 3.0, CC-BY 3.0, CC-BY 4.0, GPL 2.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-helmets"
+  },
+  {
+    "id": "gear:greathelm:male",
+    "category": "helmet",
+    "zIndex": 70,
+    "file": "/lpc/gear/greathelm_male.png",
+    "author": "bluecarrot16",
+    "license": "OGA-BY 3.0, CC-BY 3.0, CC-BY 4.0, GPL 2.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-helmets"
+  },
+  {
+    "id": "gear:greathelm:female",
+    "category": "helmet",
+    "zIndex": 70,
+    "file": "/lpc/gear/greathelm_female.png",
+    "author": "bluecarrot16",
+    "license": "OGA-BY 3.0, CC-BY 3.0, CC-BY 4.0, GPL 2.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-helmets"
+  },
+  {
+    "id": "gear:leather-armor:male",
+    "category": "armor",
+    "zIndex": 60,
+    "file": "/lpc/gear/leather-armor_male.png",
+    "author": "Johannes Sjölund (wulax); bluecarrot16; JaidynReiman; Michael Whitlock (bigbeargames); Matthew Krohn (makrohn)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "gear:leather-armor:female",
+    "category": "armor",
+    "zIndex": 60,
+    "file": "/lpc/gear/leather-armor_female.png",
+    "author": "Johannes Sjölund (wulax); bluecarrot16; JaidynReiman; Michael Whitlock (bigbeargames); Matthew Krohn (makrohn)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "gear:mail:male",
+    "category": "armor",
+    "zIndex": 60,
+    "file": "/lpc/gear/mail_male.png",
+    "author": "Johannes Sjölund (wulax); Napsio (Vitruvian Studio); JaidynReiman",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "gear:mail:female",
+    "category": "armor",
+    "zIndex": 60,
+    "file": "/lpc/gear/mail_female.png",
+    "author": "Johannes Sjölund (wulax); Napsio (Vitruvian Studio); JaidynReiman",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "gear:plate:male",
+    "category": "armor",
+    "zIndex": 60,
+    "file": "/lpc/gear/plate_male.png",
+    "author": "Napsio (Vitruvian Studio); JaidynReiman; bluecarrot16; Michael Whitlock (bigbeargames); Johannes Sjölund (wulax); Matthew Krohn (makrohn)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "gear:plate:female",
+    "category": "armor",
+    "zIndex": 60,
+    "file": "/lpc/gear/plate_female.png",
+    "author": "Napsio (Vitruvian Studio); JaidynReiman; bluecarrot16; Michael Whitlock (bigbeargames); Johannes Sjölund (wulax); Matthew Krohn (makrohn)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "gear:shoes:male",
+    "category": "boots",
+    "zIndex": 50,
+    "file": "/lpc/gear/shoes_male.png",
+    "author": "JaidynReiman; bluecarrot16; Johannes Sjölund (wulax); Joe White",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "gear:shoes:female",
+    "category": "boots",
+    "zIndex": 50,
+    "file": "/lpc/gear/shoes_female.png",
+    "author": "JaidynReiman; bluecarrot16; Johannes Sjölund (wulax); Joe White",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "gear:boots:male",
+    "category": "boots",
+    "zIndex": 50,
+    "file": "/lpc/gear/boots_male.png",
+    "author": "JaidynReiman; bluecarrot16; Nila122",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 2.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-clothes-and-hair"
+  },
+  {
+    "id": "gear:boots:female",
+    "category": "boots",
+    "zIndex": 50,
+    "file": "/lpc/gear/boots_female.png",
+    "author": "JaidynReiman; bluecarrot16; Nila122",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 2.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-clothes-and-hair"
+  },
+  {
+    "id": "gear:greaves:male",
+    "category": "boots",
+    "zIndex": 50,
+    "file": "/lpc/gear/greaves_male.png",
+    "author": "Matthew Krohn (makrohn); Johannes Sjölund (wulax)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "gear:greaves:female",
+    "category": "boots",
+    "zIndex": 50,
+    "file": "/lpc/gear/greaves_female.png",
+    "author": "Matthew Krohn (makrohn); Johannes Sjölund (wulax)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "gear:cape:male",
+    "category": "accessory",
+    "zIndex": 90,
+    "file": "/lpc/gear/cape_male.png",
+    "author": "bluecarrot16; JaidynReiman",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-curly-hair-elven-ears-white-cape-with-blue-trim-and-more"
+  },
+  {
+    "id": "gear:cape:female",
+    "category": "accessory",
+    "zIndex": 90,
+    "file": "/lpc/gear/cape_female.png",
+    "author": "bluecarrot16; JaidynReiman",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-curly-hair-elven-ears-white-cape-with-blue-trim-and-more"
+  },
+  {
+    "id": "gear:amulet:male",
+    "category": "accessory",
+    "zIndex": 90,
+    "file": "/lpc/gear/amulet_male.png",
+    "author": "bluecarrot16; AntumDeluge",
+    "license": "CC0",
+    "sourceUrl": "https://opengameart.org/content/dungeon-crawl-32x32-tiles"
+  },
+  {
+    "id": "gear:amulet:female",
+    "category": "accessory",
+    "zIndex": 90,
+    "file": "/lpc/gear/amulet_female.png",
+    "author": "bluecarrot16; AntumDeluge",
+    "license": "CC0",
+    "sourceUrl": "https://opengameart.org/content/dungeon-crawl-32x32-tiles"
+  },
+  {
+    "id": "gear:excalibur:male",
+    "category": "weapon",
+    "zIndex": 80,
+    "file": "/lpc/gear/excalibur_male.png",
+    "author": "bluecarrot16; tskaufma; Johannes Sjölund (wulax)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "gear:excalibur:female",
+    "category": "weapon",
+    "zIndex": 80,
+    "file": "/lpc/gear/excalibur_female.png",
+    "author": "bluecarrot16; tskaufma; Johannes Sjölund (wulax)",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "gear:archmage-staff:male",
+    "category": "weapon",
+    "zIndex": 80,
+    "file": "/lpc/gear/archmage-staff_male.png",
+    "author": "bluecarrot16",
+    "license": "OGA-BY 3.0+, GPL 3.0, CC-BY 4.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-more-weapons"
+  },
+  {
+    "id": "gear:archmage-staff:female",
+    "category": "weapon",
+    "zIndex": 80,
+    "file": "/lpc/gear/archmage-staff_female.png",
+    "author": "bluecarrot16",
+    "license": "OGA-BY 3.0+, GPL 3.0, CC-BY 4.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-more-weapons"
+  },
+  {
+    "id": "gear:dragon-plate:male",
+    "category": "armor",
+    "zIndex": 60,
+    "file": "/lpc/gear/dragon-plate_male.png",
+    "author": "Napsio (Vitruvian Studio); JaidynReiman; bluecarrot16; Nila122",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 2.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-roman-armor"
+  },
+  {
+    "id": "gear:dragon-plate:female",
+    "category": "armor",
+    "zIndex": 60,
+    "file": "/lpc/gear/dragon-plate_female.png",
+    "author": "Napsio (Vitruvian Studio); JaidynReiman; bluecarrot16; Nila122",
+    "license": "OGA-BY 3.0, CC-BY-SA 3.0, GPL 2.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-roman-armor"
+  },
+  {
+    "id": "gear:crown:male",
+    "category": "helmet",
+    "zIndex": 70,
+    "file": "/lpc/gear/crown_male.png",
+    "author": "DarkwallLKE; Charles Sanchez (CharlesGabriel)",
+    "license": "CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles"
+  },
+  {
+    "id": "gear:crown:female",
+    "category": "helmet",
+    "zIndex": 70,
+    "file": "/lpc/gear/crown_female.png",
+    "author": "DarkwallLKE; Charles Sanchez (CharlesGabriel)",
+    "license": "CC-BY-SA 3.0, GPL 3.0",
+    "sourceUrl": "https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles"
   }
 ];
 

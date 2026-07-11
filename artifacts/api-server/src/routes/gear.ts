@@ -28,6 +28,7 @@ router.get("/gear/store", async (req, res): Promise<void> => {
     costXp: item.costXp,
     levelRequired: item.levelRequired,
     icon: item.icon,
+    spriteId: item.spriteId ?? null,
     owned: ownedMap.has(item.id),
     equipped: ownedMap.get(item.id)?.equipped ?? false,
     canAfford: user.totalPoints >= item.costXp,

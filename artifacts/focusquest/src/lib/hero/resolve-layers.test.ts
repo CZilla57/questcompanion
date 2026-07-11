@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { resolveLayers } from "./resolve-layers";
+import { catalogById as realCatalog } from "./catalog";
 import type { CatalogEntry, HeroLook } from "./types";
 
 function cat(entries: CatalogEntry[]): Map<string, CatalogEntry> {
@@ -116,5 +117,22 @@ describe("resolveLayers", () => {
     for (const l of nonGear) {
       expect(l.tint).toBeUndefined();
     }
+  });
+});
+
+describe("resolveLayers against generated catalog", () => {
+  it("includes the fighter t0 outfit for an ungeared fighter", () => {
+    const l = resolveLayers({ ...look, avatarClass: "fighter", tier: 0 }, realCatalog);
+    expect(l.some((x) => x.file.includes("/outfit/fighter_t0_male.png"))).toBe(true);
+  });
+  it("draws an equipped sword over the outfit with no tint at common rarity", () => {
+    const l = resolveLayers(
+      { ...look, avatarClass: "fighter", tier: 0, equipped: [{ slot: "weapon", spriteId: "sword", rarity: "common" }] },
+      realCatalog,
+    );
+    const sword = l.find((x) => x.file.includes("/gear/sword_male.png"));
+    expect(sword).toBeDefined();
+    expect(sword!.tint).toBeUndefined();
+    expect(l[l.length - 1].file).toContain("sword"); // weapon z=80 is on top
   });
 });
