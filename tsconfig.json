@@ -17,6 +17,9 @@
     },
     {
       "path": "./lib/auth-web"
+    },
+    {
+      "path": "./lib/quick-add"
     }
   ]
 }
