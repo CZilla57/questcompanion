@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, Clock, Plus, Filter, Target, Zap, Info, Sparkles, X, RefreshCw, ChevronRight } from "lucide-react";
-import { Task, useGetTasks, useCreateTask, useUpdateTask, TaskPriority } from "@workspace/api-client-react";
+import { Task, useGetTasks, useCreateTask, useUpdateTask, useBreakdownTask, TaskPriority } from "@workspace/api-client-react";
 import { TaskItem } from "@/components/task-item";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -196,6 +196,7 @@ export default function Tasks() {
   const [newTaskEstimate, setNewTaskEstimate] = useState("");
   const [newTaskCategory, setNewTaskCategory] = useState("");
   const [categoryManuallySet, setCategoryManuallySet] = useState(false);
+  const [createdTask, setCreatedTask] = useState<Task | null>(null);
 
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -252,6 +253,7 @@ export default function Tasks() {
 
   const createMutation = useCreateTask();
   const updateMutation = useUpdateTask();
+  const breakdownMutation = useBreakdownTask();
   const pointPreview = usePointPreview(newTaskTitle, newTaskPriority);
 
   useEffect(() => {
@@ -282,7 +284,7 @@ export default function Tasks() {
           description: `Category: ${task.categoryLabel}`,
           className: "border-primary bg-primary/10",
         });
-        handleCloseCreate();
+        setCreatedTask(task);
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
       }
     });
@@ -296,6 +298,27 @@ export default function Tasks() {
     setNewTaskEstimate("");
     setNewTaskCategory("");
     setCategoryManuallySet(false);
+    setCreatedTask(null);
+  };
+
+  const handleBreakdownNew = () => {
+    if (!createdTask) return;
+    breakdownMutation.mutate({ id: createdTask.id }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+        toast({ title: "Broke it into first steps ✦", className: "border-primary bg-primary/10" });
+        handleCloseCreate();
+      },
+      onError: (err: any) => {
+        const status = err?.status;
+        const msg =
+          status === 503 ? "AI breakdown isn't set up yet."
+          : status === 429 ? "Give it a moment and try again."
+          : status === 502 ? "Couldn't generate a breakdown — try again."
+          : err?.data?.error ?? "Something went wrong.";
+        toast({ title: msg, variant: "destructive" });
+      },
+    });
   };
 
   const handleOpenEdit = (task: Task) => {
@@ -462,8 +485,33 @@ export default function Tasks() {
       <Dialog open={isCreateOpen} onOpenChange={(open) => { if (!open) handleCloseCreate(); }}>
         <DialogContent className="sm:max-w-md bg-card border-primary/30">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-primary">New Quest</DialogTitle>
+            <DialogTitle className="text-2xl font-bold text-primary">
+              {createdTask ? "Quest Added" : "New Quest"}
+            </DialogTitle>
           </DialogHeader>
+          {createdTask ? (
+            <div className="space-y-4 mt-4">
+              <p className="text-sm text-muted-foreground">
+                <span className="text-foreground font-medium">{createdTask.title}</span> is in your log ✦ Want a head start?
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Let AI break it into a few concrete first steps to beat the initiation wall.
+              </p>
+              <div className="pt-2 flex justify-end gap-3">
+                <Button type="button" variant="ghost" onClick={handleCloseCreate}>Done</Button>
+                <Button
+                  onClick={handleBreakdownNew}
+                  disabled={breakdownMutation.isPending}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+                >
+                  {breakdownMutation.isPending
+                    ? <RefreshCw className="w-4 h-4 animate-spin" />
+                    : <Sparkles className="w-4 h-4" />}
+                  Break it down
+                </Button>
+              </div>
+            </div>
+          ) : (
           <form onSubmit={handleCreateTask} className="space-y-4 mt-4">
             <div>
               <label className="text-sm font-medium text-foreground mb-1 block">Objective</label>
@@ -578,6 +626,7 @@ export default function Tasks() {
               </Button>
             </div>
           </form>
+          )}
         </DialogContent>
       </Dialog>
 
