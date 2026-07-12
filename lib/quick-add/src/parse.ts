@@ -70,13 +70,107 @@ function extractTime(text: string): Field<string> {
   return { value, rest };
 }
 
+const WEEKDAYS: Record<string, number> = {
+  sunday: 0, sun: 0, monday: 1, mon: 1, tuesday: 2, tues: 2, tue: 2,
+  wednesday: 3, weds: 3, wed: 3, thursday: 4, thurs: 4, thur: 4, thu: 4,
+  friday: 5, fri: 5, saturday: 6, sat: 6,
+};
+
+const MONTHS: Record<string, number> = {
+  jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
+  jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
+};
+
+function ymd(d: Date): string { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+function atMidnight(now: Date): Date { return new Date(now.getFullYear(), now.getMonth(), now.getDate()); }
+function addDays(base: Date, n: number): Date { const r = new Date(base); r.setDate(r.getDate() + n); return r; }
+function isRealDate(y: number, m: number, d: number): boolean {
+  const dt = new Date(y, m - 1, d);
+  return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
+}
+// For M/D and month-name with no year: this year, or next year if already past.
+function futureYear(base: Date, m: number, d: number): number {
+  const y = base.getFullYear();
+  return isRealDate(y, m, d) && new Date(y, m - 1, d) < base ? y + 1 : y;
+}
+
+function extractDate(text: string, now: Date): Field<string> {
+  let value: string | undefined;
+  let rest = text;
+  const base = atMidnight(now);
+  const set = (d: string) => { value = d; return " "; };
+
+  // ISO YYYY-MM-DD
+  rest = rest.replace(/\b(\d{4})-(\d{2})-(\d{2})\b/, (whole, y, mo, d) =>
+    isRealDate(+y, +mo, +d) ? set(ymd(new Date(+y, +mo - 1, +d))) : whole);
+
+  // Numeric M/D or M/D/Y
+  if (value === undefined) {
+    rest = rest.replace(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/, (whole, mo, d, y) => {
+      const M = +mo, D = +d;
+      const Y = y ? (+y < 100 ? 2000 + +y : +y) : futureYear(base, M, D);
+      return isRealDate(Y, M, D) ? set(ymd(new Date(Y, M - 1, D))) : whole;
+    });
+  }
+
+  // Month name before day: "Jul 15"
+  if (value === undefined) {
+    rest = rest.replace(/\b([a-z]{3,9})\s+(\d{1,2})\b/i, (whole, mon, d) => {
+      const M = MONTHS[mon.slice(0, 3).toLowerCase()];
+      if (!M) return whole;
+      const D = +d, Y = futureYear(base, M, D);
+      return isRealDate(Y, M, D) ? set(ymd(new Date(Y, M - 1, D))) : whole;
+    });
+  }
+  // Day before month name: "15 Jul"
+  if (value === undefined) {
+    rest = rest.replace(/\b(\d{1,2})\s+([a-z]{3,9})\b/i, (whole, d, mon) => {
+      const M = MONTHS[mon.slice(0, 3).toLowerCase()];
+      if (!M) return whole;
+      const D = +d, Y = futureYear(base, M, D);
+      return isRealDate(Y, M, D) ? set(ymd(new Date(Y, M - 1, D))) : whole;
+    });
+  }
+
+  // in N days / in N weeks
+  if (value === undefined) {
+    rest = rest.replace(/\bin\s+(\d+)\s+(days?|weeks?)\b/i, (_whole, n, unit) =>
+      set(ymd(addDays(base, +n * (unit.toLowerCase().startsWith("week") ? 7 : 1)))));
+  }
+
+  // Relative words
+  if (value === undefined) {
+    rest = rest.replace(/\b(today|tonight|tomorrow|tmr|tmrw)\b/i, (_whole, w) => {
+      const lw = w.toLowerCase();
+      const n = lw === "tomorrow" || lw === "tmr" || lw === "tmrw" ? 1 : 0;
+      return set(ymd(addDays(base, n)));
+    });
+  }
+
+  // Weekday, optionally "next"
+  if (value === undefined) {
+    rest = rest.replace(
+      /\b(next\s+)?(sunday|sun|saturday|sat|monday|mon|tuesday|tues|tue|wednesday|weds|wed|thursday|thurs|thur|thu|friday|fri)\b/i,
+      (_whole, next, name) => {
+        const target = WEEKDAYS[name.toLowerCase()];
+        let delta = (target - base.getDay() + 7) % 7;
+        if (delta === 0) delta = 7; // bare weekday excludes today
+        if (next) delta += 7;       // "next <weekday>" = the following week
+        return set(ymd(addDays(base, delta)));
+      });
+  }
+
+  return { value, rest };
+}
+
 export function parseQuickAdd(input: string, opts: { now: Date }): ParsedQuickAdd {
-  void opts; // dates added in Task 4
   const p = extractPriority(input);
   const h = extractHashtag(p.rest);
-  const t = extractTime(h.rest);
+  const d = extractDate(h.rest, opts.now);
+  const t = extractTime(d.rest);
 
   const result: ParsedQuickAdd = { title: cleanTitle(t.rest) };
+  if (d.value) result.dueDate = d.value;
   if (t.value) result.dueTime = t.value;
   if (p.value) result.priority = p.value;
   if (h.value) result.category = h.value;

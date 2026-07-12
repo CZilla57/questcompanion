@@ -68,3 +68,70 @@ describe("parseQuickAdd — time-of-day", () => {
     expect(r.title).toBe("Standup");
   });
 });
+
+describe("parseQuickAdd — dates", () => {
+  it("parses relative words", () => {
+    expect(parseQuickAdd("x today", { now: NOW }).dueDate).toBe("2026-07-12");
+    expect(parseQuickAdd("x tonight", { now: NOW }).dueDate).toBe("2026-07-12");
+    expect(parseQuickAdd("x tomorrow", { now: NOW }).dueDate).toBe("2026-07-13");
+    expect(parseQuickAdd("x tmr", { now: NOW }).dueDate).toBe("2026-07-13");
+  });
+
+  it("parses 'in N days' and 'in N weeks'", () => {
+    expect(parseQuickAdd("x in 3 days", { now: NOW }).dueDate).toBe("2026-07-15");
+    expect(parseQuickAdd("x in 2 weeks", { now: NOW }).dueDate).toBe("2026-07-26");
+  });
+
+  it("parses weekdays (today excluded) and 'next'", () => {
+    expect(parseQuickAdd("x mon", { now: NOW }).dueDate).toBe("2026-07-13");
+    expect(parseQuickAdd("x friday", { now: NOW }).dueDate).toBe("2026-07-17");
+    expect(parseQuickAdd("x sun", { now: NOW }).dueDate).toBe("2026-07-19");
+    expect(parseQuickAdd("x next mon", { now: NOW }).dueDate).toBe("2026-07-20");
+  });
+
+  it("parses numeric M/D, defaulting to the next future year", () => {
+    expect(parseQuickAdd("x 7/15", { now: NOW }).dueDate).toBe("2026-07-15");
+    expect(parseQuickAdd("x 7/10", { now: NOW }).dueDate).toBe("2027-07-10");
+    expect(parseQuickAdd("x 12/25/2026", { now: NOW }).dueDate).toBe("2026-12-25");
+  });
+
+  it("parses ISO and month-name dates", () => {
+    expect(parseQuickAdd("x 2026-12-01", { now: NOW }).dueDate).toBe("2026-12-01");
+    expect(parseQuickAdd("x jul 15", { now: NOW }).dueDate).toBe("2026-07-15");
+    expect(parseQuickAdd("x 15 jul", { now: NOW }).dueDate).toBe("2026-07-15");
+    expect(parseQuickAdd("x dec 25", { now: NOW }).dueDate).toBe("2026-12-25");
+  });
+
+  it("treats impossible dates/times as ordinary title text", () => {
+    const r = parseQuickAdd("meet feb 30", { now: NOW });
+    expect(r.dueDate).toBeUndefined();
+    expect(r.title).toBe("meet feb 30");
+    expect(parseQuickAdd("x 25:00", { now: NOW }).dueTime).toBeUndefined();
+  });
+});
+
+describe("parseQuickAdd — full line, order independent", () => {
+  it("parses the canonical example", () => {
+    const r = parseQuickAdd("Email Sam re: budget tomorrow 3pm #work !high", { now: NOW });
+    expect(r).toEqual({
+      title: "Email Sam re: budget",
+      dueDate: "2026-07-13",
+      dueTime: "15:00",
+      priority: "high",
+      category: "deep_work",
+    });
+  });
+
+  it("does not depend on token order", () => {
+    const r = parseQuickAdd("!high #work 3pm tomorrow Email Sam re: budget", { now: NOW });
+    expect(r.dueDate).toBe("2026-07-13");
+    expect(r.dueTime).toBe("15:00");
+    expect(r.priority).toBe("high");
+    expect(r.category).toBe("deep_work");
+    expect(r.title).toBe("Email Sam re: budget");
+  });
+
+  it("returns an empty title when the line is only tokens", () => {
+    expect(parseQuickAdd("tomorrow 3pm !high", { now: NOW }).title).toBe("");
+  });
+});
