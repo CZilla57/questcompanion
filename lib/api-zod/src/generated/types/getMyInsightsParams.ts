@@ -8,4 +8,8 @@
 
 export type GetMyInsightsParams = {
 days?: number;
+/**
+ * IANA timezone (e.g. "America/New_York") used to bucket stats by the user's local calendar day and hour. Defaults to UTC when omitted or invalid.
+ */
+tz?: string;
 };

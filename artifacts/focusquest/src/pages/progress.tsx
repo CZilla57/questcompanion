@@ -4,6 +4,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Award, Flame, Trophy, Zap, Star, Rocket } from "lucide-react";
 import { BadgeIcon, BADGE_CATEGORY_STYLE, DEFAULT_BADGE_CATEGORY_STYLE } from "@/lib/badges";
+import { browserTimeZone } from "@/lib/timezone";
 import { format } from "date-fns";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -27,10 +28,11 @@ function XpTooltip({ active, payload, label }: TooltipProps) {
 }
 
 export default function Progress() {
+  const tz = browserTimeZone();
   const { data: user, isLoading: userLoading } = useGetMe();
-  const { data: stats, isLoading: statsLoading } = useGetMyStats();
+  const { data: stats, isLoading: statsLoading } = useGetMyStats({ tz });
   const { data: userBadges, isLoading: badgesLoading } = useGetMyBadges();
-  const { data: xpHistory, isLoading: xpLoading } = useGetMyXpHistory({ days: 14 });
+  const { data: xpHistory, isLoading: xpLoading } = useGetMyXpHistory({ days: 14, tz });
 
   if (userLoading || statsLoading || badgesLoading) {
     return (

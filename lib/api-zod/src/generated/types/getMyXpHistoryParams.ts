@@ -8,4 +8,8 @@
 
 export type GetMyXpHistoryParams = {
 days?: number;
+/**
+ * IANA timezone (e.g. "America/New_York") used to bucket XP by the user's local calendar day. Defaults to UTC when omitted or invalid.
+ */
+tz?: string;
 };

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { ActivityItem, Task, TaskPriority, useGetMyStats, useGetTasks, useBuyStreakFreeze, useUpdateTask } from "@workspace/api-client-react";
 import { TaskItem } from "@/components/task-item";
+import { browserTimeZone } from "@/lib/timezone";
 import { ActivityHeatmap } from "@/components/activity-heatmap";
 import { HeroSummary } from "@/components/hero-summary";
 import { RecentBadges } from "@/components/recent-badges";
@@ -83,7 +84,7 @@ function DashboardSkeleton() {
 }
 
 export default function Dashboard() {
-  const { data: stats, isLoading: statsLoading } = useGetMyStats();
+  const { data: stats, isLoading: statsLoading } = useGetMyStats({ tz: browserTimeZone() });
   const { data: tasks, isLoading: tasksLoading } = useGetTasks({
     date: format(new Date(), 'yyyy-MM-dd')
   });

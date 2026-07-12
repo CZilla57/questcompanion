@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useGetMyInsights } from "@workspace/api-client-react";
+import { browserTimeZone } from "@/lib/timezone";
 import type { InsightsCategoryBreakdown, InsightsDowStat, InsightsPeriodStat, InsightsXpPoint } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -261,7 +262,7 @@ function PeriodChart({ data }: { data: InsightsPeriodStat[] }) {
 
 export default function Insights() {
   const [days, setDays] = useState<30 | 60 | 90>(30);
-  const { data, isLoading } = useGetMyInsights({ days });
+  const { data, isLoading } = useGetMyInsights({ days, tz: browserTimeZone() });
 
   const insights = useMemo(() => {
     if (!data) return [];

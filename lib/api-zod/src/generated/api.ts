@@ -143,6 +143,10 @@ export const UpdateMeResponse = zod.object({
 /**
  * @summary Get current user dashboard stats
  */
+export const GetMyStatsQueryParams = zod.object({
+  "tz": zod.coerce.string().optional().describe('IANA timezone (e.g. \"America\/New_York\") used to determine the user\'s local \"today\". Defaults to UTC when omitted or invalid.')
+})
+
 export const GetMyStatsResponse = zod.object({
   "todayPoints": zod.number(),
   "todayTasksTotal": zod.number(),
@@ -184,7 +188,8 @@ export const BuyStreakFreezeResponse = zod.object({
 export const getMyXpHistoryQueryDaysDefault = 7;
 
 export const GetMyXpHistoryQueryParams = zod.object({
-  "days": zod.coerce.number().default(getMyXpHistoryQueryDaysDefault)
+  "days": zod.coerce.number().default(getMyXpHistoryQueryDaysDefault),
+  "tz": zod.coerce.string().optional().describe('IANA timezone (e.g. \"America\/New_York\") used to bucket XP by the user\'s local calendar day. Defaults to UTC when omitted or invalid.')
 })
 
 export const GetMyXpHistoryResponseItem = zod.object({
@@ -201,7 +206,8 @@ export const GetMyXpHistoryResponse = zod.array(GetMyXpHistoryResponseItem)
 export const getMyInsightsQueryDaysDefault = 30;
 
 export const GetMyInsightsQueryParams = zod.object({
-  "days": zod.coerce.number().default(getMyInsightsQueryDaysDefault)
+  "days": zod.coerce.number().default(getMyInsightsQueryDaysDefault),
+  "tz": zod.coerce.string().optional().describe('IANA timezone (e.g. \"America\/New_York\") used to bucket stats by the user\'s local calendar day and hour. Defaults to UTC when omitted or invalid.')
 })
 
 export const GetMyInsightsResponse = zod.object({
