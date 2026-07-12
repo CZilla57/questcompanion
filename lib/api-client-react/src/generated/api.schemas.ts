@@ -199,6 +199,11 @@ export interface Task {
      * @nullable
      */
   focusDate?: string | null;
+  /**
+     * Optional time of day (HH:mm, 24-hour)
+     * @nullable
+     */
+  dueTime?: string | null;
   /** AI-generated first-step checklist attached to this quest */
   steps: TaskStep[];
 }
@@ -209,6 +214,52 @@ export interface FocusToggleInput {
 
 export interface StepToggleInput {
   done: boolean;
+}
+
+export interface ParseQuickAddInput {
+  /** @minLength 1 */
+  text: string;
+}
+
+/**
+ * @nullable
+ */
+export type ParsedQuickAddPriority = typeof ParsedQuickAddPriority[keyof typeof ParsedQuickAddPriority] | null;
+
+
+export const ParsedQuickAddPriority = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+/**
+ * @nullable
+ */
+export type ParsedQuickAddCategory = typeof ParsedQuickAddCategory[keyof typeof ParsedQuickAddCategory] | null;
+
+
+export const ParsedQuickAddCategory = {
+  health: 'health',
+  deep_work: 'deep_work',
+  learning: 'learning',
+  finance: 'finance',
+  admin: 'admin',
+  household: 'household',
+  social: 'social',
+  creative: 'creative',
+} as const;
+
+export interface ParsedQuickAdd {
+  title: string;
+  /** @nullable */
+  dueDate?: string | null;
+  /** @nullable */
+  dueTime?: string | null;
+  /** @nullable */
+  priority?: ParsedQuickAddPriority;
+  /** @nullable */
+  category?: ParsedQuickAddCategory;
 }
 
 export type TaskInputPriority = typeof TaskInputPriority[keyof typeof TaskInputPriority];
@@ -257,6 +308,11 @@ export interface TaskInput {
   estimatedMinutes?: number;
   /** Optional category override. Auto-detected from title if omitted. */
   category?: TaskInputCategory;
+  /**
+     * Optional time of day (HH:mm, 24-hour)
+     * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
+     */
+  dueTime?: string;
 }
 
 export type TaskUpdatePriority = typeof TaskUpdatePriority[keyof typeof TaskUpdatePriority];
@@ -307,6 +363,11 @@ export interface TaskUpdate {
      */
   actualMinutes?: number;
   category?: TaskUpdateCategory;
+  /**
+     * Optional time of day (HH:mm, 24-hour)
+     * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
+     */
+  dueTime?: string;
 }
 
 export type BadgeCategory = typeof BadgeCategory[keyof typeof BadgeCategory];

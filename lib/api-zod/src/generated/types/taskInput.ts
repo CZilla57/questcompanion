@@ -27,4 +27,9 @@ export interface TaskInput {
   estimatedMinutes?: number;
   /** Optional category override. Auto-detected from title if omitted. */
   category?: TaskInputCategory;
+  /**
+     * Optional time of day (HH:mm, 24-hour)
+     * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
+     */
+  dueTime?: string;
 }

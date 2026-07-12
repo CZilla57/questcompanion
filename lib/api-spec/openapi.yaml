@@ -352,6 +352,43 @@ paths:
               schema:
                 $ref: "#/components/schemas/Task"
 
+  /tasks/parse:
+    post:
+      operationId: parseQuickAdd
+      tags: [tasks]
+      summary: Parse a natural-language quick-add line into structured task fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParseQuickAddInput"
+      responses:
+        "200":
+          description: Parsed fields (does not create a task)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParsedQuickAdd"
+        "429":
+          description: Cooldown — too many parse requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "502":
+          description: Model or parse failure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "503":
+          description: AI parse not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
   /tasks/{id}:
     get:
       operationId: getTask
@@ -1425,6 +1462,9 @@ components:
         focusDate:
           type: ["string", "null"]
           description: The date (YYYY-MM-DD) this quest was pinned as focus
+        dueTime:
+          type: ["string", "null"]
+          description: Optional time of day (HH:mm, 24-hour)
         steps:
           type: array
           description: AI-generated first-step checklist attached to this quest
@@ -1458,6 +1498,31 @@ components:
         done:
           type: boolean
 
+    ParseQuickAddInput:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          minLength: 1
+
+    ParsedQuickAdd:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        dueDate:
+          type: ["string", "null"]
+        dueTime:
+          type: ["string", "null"]
+        priority:
+          type: ["string", "null"]
+          enum: [low, medium, high, null]
+        category:
+          type: ["string", "null"]
+          enum: [health, deep_work, learning, finance, admin, household, social, creative, null]
+
     TaskInput:
       type: object
       required: [title, dueDate]
@@ -1487,6 +1552,10 @@ components:
           type: string
           enum: [health, deep_work, learning, finance, admin, household, social, creative, default]
           description: Optional category override. Auto-detected from title if omitted.
+        dueTime:
+          type: string
+          pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+          description: Optional time of day (HH:mm, 24-hour)
 
     TaskUpdate:
       type: object
@@ -1518,6 +1587,10 @@ components:
         category:
           type: string
           enum: [health, deep_work, learning, finance, admin, household, social, creative, default]
+        dueTime:
+          type: string
+          pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+          description: Optional time of day (HH:mm, 24-hour)
 
     TaskCompletionResult:
       type: object

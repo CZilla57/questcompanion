@@ -56,6 +56,8 @@ import type {
   LogoutSuccess,
   MobileTokenExchangeRequest,
   MobileTokenExchangeSuccess,
+  ParseQuickAddInput,
+  ParsedQuickAdd,
   PartnerRequestInput,
   Partnership,
   RecurringTask,
@@ -1333,6 +1335,77 @@ export const useCreateTask = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateTaskMutationOptions(options));
+    }
+
+export const getParseQuickAddUrl = () => {
+
+
+
+
+  return `/api/tasks/parse`
+}
+
+/**
+ * @summary Parse a natural-language quick-add line into structured task fields
+ */
+export const parseQuickAdd = async (parseQuickAddInput: ParseQuickAddInput, options?: RequestInit): Promise<ParsedQuickAdd> => {
+
+  return customFetch<ParsedQuickAdd>(getParseQuickAddUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      parseQuickAddInput,)
+  }
+);}
+
+
+
+
+export const getParseQuickAddMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof parseQuickAdd>>, TError,{data: BodyType<ParseQuickAddInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof parseQuickAdd>>, TError,{data: BodyType<ParseQuickAddInput>}, TContext> => {
+
+const mutationKey = ['parseQuickAdd'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof parseQuickAdd>>, {data: BodyType<ParseQuickAddInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  parseQuickAdd(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ParseQuickAddMutationResult = NonNullable<Awaited<ReturnType<typeof parseQuickAdd>>>
+    export type ParseQuickAddMutationBody = BodyType<ParseQuickAddInput>
+    export type ParseQuickAddMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Parse a natural-language quick-add line into structured task fields
+ */
+export const useParseQuickAdd = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof parseQuickAdd>>, TError,{data: BodyType<ParseQuickAddInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof parseQuickAdd>>,
+        TError,
+        {data: BodyType<ParseQuickAddInput>},
+        TContext
+      > => {
+      return useMutation(getParseQuickAddMutationOptions(options));
     }
 
 export const getGetTaskUrl = (id: number,) => {
