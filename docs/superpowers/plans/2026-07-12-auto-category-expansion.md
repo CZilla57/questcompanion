@@ -495,7 +495,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 4: Add new slugs to OpenAPI enums + regenerate types
 
 **Files:**
-- Modify: `lib/api-spec/openapi.yaml` (9 category enum occurrences)
+- Modify: `lib/api-spec/openapi.yaml` (8 category enum occurrences)
 - Regenerate (do not hand-edit): `lib/api-zod/**`, `lib/api-client-react/**`
 
 **Interfaces:**
@@ -504,7 +504,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 
 - [ ] **Step 1: Add the slugs to every category enum**
 
-Run this from the repo root (updates all 9 occurrences; the two `sed` expressions target the nullable and non-nullable variants separately so neither double-applies):
+Run this from the repo root (updates all 8 occurrences; the two `sed` expressions target the nullable and non-nullable variants separately so neither double-applies):
 
 ```bash
 sed -i \
@@ -513,10 +513,10 @@ sed -i \
   lib/api-spec/openapi.yaml
 ```
 
-- [ ] **Step 2: Verify all 9 enums were updated**
+- [ ] **Step 2: Verify all 8 enums were updated**
 
 Run: `grep -c "self_care, errands, travel" lib/api-spec/openapi.yaml`
-Expected: `9`
+Expected: `8`
 
 Also confirm none were missed:
 Run: `grep -n "creative, default" lib/api-spec/openapi.yaml`

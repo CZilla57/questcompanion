@@ -34,7 +34,7 @@ and grow the `#hashtag` alias list — without a DB migration.
   map to four *distinct* categories: `walk→health`, `read→learning`, `tidy→household`,
   `plan→deep_work`. All precision changes below preserve this.
 - **api-zod / api-client-react are generated** from `lib/api-spec/openapi.yaml`. The category
-  enum appears in **9 places** in that file (one includes `null`). Adding slugs = edit those
+  enum appears in **8 places** in that file (one includes `null`). Adding slugs = edit those
   enums, then regenerate.
 
 ## Design
@@ -150,7 +150,7 @@ Add to `CATEGORY_LABELS` (auto-points.ts), `CATEGORIES` + `CATEGORY_COLORS` +
 
 ### 6. openapi + regeneration
 
-- Add `self_care, errands, travel` to all 9 category enums in `lib/api-spec/openapi.yaml`
+- Add `self_care, errands, travel` to all 8 category enums in `lib/api-spec/openapi.yaml`
   (preserve the `null` on the one nullable enum).
 - Regenerate `api-zod` and `api-client-react` via the repo codegen command; commit the
   generated diffs.
@@ -176,7 +176,7 @@ Keep `starter-quests.test.ts` and `quick-add-parse.test.ts` green.
 - `lib/quick-add/src/categories.ts` — `CATEGORY_SLUGS`, `CATEGORY_ALIASES`.
 - `artifacts/focusquest/src/lib/categories.ts` — `CATEGORIES`, `CATEGORY_COLORS`,
   `CATEGORY_HEX_COLORS`.
-- `lib/api-spec/openapi.yaml` — 9 category enums.
+- `lib/api-spec/openapi.yaml` — 8 category enums.
 - `lib/api-zod/**`, `lib/api-client-react/**` — regenerated (do not hand-edit).
 
 ## Out of scope / YAGNI
