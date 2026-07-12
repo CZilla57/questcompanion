@@ -19,6 +19,8 @@ describe("buildBreakdownPrompt", () => {
     // JSON-mode providers require the shape to be stated in the prompt.
     expect(p.toLowerCase()).toContain("json");
     expect(p).toContain("\"steps\"");
+    // Steps must advance the task, not comfort rituals.
+    expect(p.toLowerCase()).toContain("progress");
   });
 
   it("includes description, category, and estimate when present", () => {

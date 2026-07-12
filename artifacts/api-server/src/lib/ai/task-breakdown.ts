@@ -30,7 +30,8 @@ export function buildBreakdownPrompt(input: BreakdownInput): string {
   return `You help people with ADHD start tasks they've been avoiding. Break the task below into ${MIN_STEPS}-${MAX_STEPS} concrete first steps that beat the initiation wall.
 
 Rules:
-- The FIRST step must be trivially easy — a 2-minute "just start" action that requires no decisions (e.g. "Grab a trash bag and a box").
+- The FIRST step must be the easiest possible action that STILL moves this task forward — a 2-minute "just start" move requiring no decisions (e.g. "Grab a trash bag and a box").
+- Every step must make real progress on THIS task. No comfort rituals, warm-ups, or filler unrelated to finishing it (never "make tea", "get comfortable", "sit down", "take a deep breath", "put on music").
 - Every step is a single concrete PHYSICAL action, written as a present-tense imperative.
 - Never use vague verbs like "organize", "sort out", "deal with", or "handle" — name the specific visible action instead.
 - Keep each step to a short phrase, not a sentence.
