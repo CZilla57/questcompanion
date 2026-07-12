@@ -586,7 +586,7 @@ export default function Recurring() {
         toast({
           title: "Recurring quest created",
           description: "Tasks will appear in your Quest Log automatically.",
-          className: "border-primary bg-primary/10",
+          className: "border-primary",
         });
       },
     });

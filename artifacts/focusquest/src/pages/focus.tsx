@@ -108,11 +108,11 @@ export default function Focus() {
         { id: active.id, data: { intervalIndex: next } },
         {
           onSuccess: (res) => {
-            if (res.xpDelta > 0) toast({ title: `+${res.xpDelta} XP`, description: "Focus block banked", className: "border-primary bg-primary/10" });
+            if (res.xpDelta > 0) toast({ title: `+${res.xpDelta} XP`, description: "Focus block banked", className: "border-primary" });
             qc.invalidateQueries({ queryKey: getGetActiveFocusSessionQueryKey() });
             qc.invalidateQueries({ queryKey: getGetMyStatsQueryKey() });
             if (res.session.status === "completed") {
-              toast({ title: "Session complete!", description: `Focused ${Math.round(res.session.focusedSeconds / 60)} min`, className: "border-primary bg-primary/10" });
+              toast({ title: "Session complete!", description: `Focused ${Math.round(res.session.focusedSeconds / 60)} min`, className: "border-primary" });
             }
           },
           onError: () => {
@@ -161,7 +161,7 @@ export default function Focus() {
           qc.invalidateQueries({ queryKey: getGetMyStatsQueryKey() });
         },
         onSuccess: (res) => {
-          toast({ title: "Session ended", description: res.xpDelta > 0 ? `+${res.xpDelta} XP` : undefined, className: "border-primary bg-primary/10" });
+          toast({ title: "Session ended", description: res.xpDelta > 0 ? `+${res.xpDelta} XP` : undefined, className: "border-primary" });
         },
       },
     );
@@ -215,7 +215,7 @@ export default function Focus() {
             <button
               key={p.key}
               onClick={() => setPresetKey(p.key)}
-              className={`text-left rounded-md border px-4 py-3 transition-colors ${presetKey === p.key ? "border-primary bg-primary/10" : "border-input hover:bg-muted"}`}
+              className={`text-left rounded-md border px-4 py-3 transition-colors ${presetKey === p.key ? "border-primary" : "border-input hover:bg-muted"}`}
             >
               <span className="font-semibold">{p.label}</span>
               <span className="block text-xs text-muted-foreground">

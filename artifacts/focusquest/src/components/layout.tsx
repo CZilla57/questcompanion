@@ -35,7 +35,7 @@ function NotificationBell() {
           toast({
             title: "Notifications enabled",
             description: "You'll be reminded about due tasks and streaks.",
-            className: "border-primary bg-primary/10",
+            className: "border-primary",
           });
         } else if (state === "denied") {
           toast({

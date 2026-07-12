@@ -540,7 +540,7 @@ export default function AvatarPage() {
       toast({
         title: "Gear acquired!",
         description: `-${res.xpSpent} XP spent. ${res.remainingXp} XP remaining.`,
-        className: "border-primary bg-primary/10",
+        className: "border-primary",
       });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Purchase failed";

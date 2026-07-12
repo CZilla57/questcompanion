@@ -81,7 +81,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
         toast({
           title: isPinned ? "Quest unpinned" : "Quest pinned to Today's Focus",
-          className: isPinned ? "" : "border-primary bg-primary/10",
+          className: isPinned ? "" : "border-primary",
         });
       },
       onError: (err: any) => {
@@ -126,10 +126,10 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
 
           if (res.gearReward) {
             const rarityStyles: Record<string, string> = {
-              legendary: "border-amber-400 bg-amber-500/10 text-amber-300",
-              epic:      "border-violet-400 bg-violet-500/10 text-violet-300",
-              rare:      "border-blue-400 bg-blue-500/10 text-blue-300",
-              common:    "border-slate-400 bg-slate-500/10 text-slate-300",
+              legendary: "border-amber-400 text-amber-300",
+              epic:      "border-violet-400 text-violet-300",
+              rare:      "border-blue-400 text-blue-300",
+              common:    "border-slate-400 text-slate-300",
             };
             const styleClass = rarityStyles[res.gearReward.rarity] ?? rarityStyles.common;
             toast({
@@ -144,14 +144,14 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
               toast({
                 title: `✨ Surprise! +${res.surpriseReward.xpAmount} Bonus XP`,
                 description: "A lucky drop from completing your quest!",
-                className: "border-yellow-400 bg-yellow-500/10 text-yellow-300",
+                className: "border-yellow-400 text-yellow-300",
               });
             } else if (res.surpriseReward.type === "gear" && res.surpriseReward.gear) {
               const rarityStyles: Record<string, string> = {
-                legendary: "border-amber-400 bg-amber-500/10 text-amber-300",
-                epic:      "border-violet-400 bg-violet-500/10 text-violet-300",
-                rare:      "border-blue-400 bg-blue-500/10 text-blue-300",
-                common:    "border-slate-400 bg-slate-500/10 text-slate-300",
+                legendary: "border-amber-400 text-amber-300",
+                epic:      "border-violet-400 text-violet-300",
+                rare:      "border-blue-400 text-blue-300",
+                common:    "border-slate-400 text-slate-300",
               };
               const g = res.surpriseReward.gear;
               toast({
@@ -189,7 +189,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
     }
     updateMutation.mutate({ id: task.id, data: { actualMinutes: mins } }, {
       onSuccess: () => {
-        toast({ title: `⏱ Time logged: ${formatMinutes(mins)}`, className: "border-primary bg-primary/10" });
+        toast({ title: `⏱ Time logged: ${formatMinutes(mins)}`, className: "border-primary" });
         setLoggingTime(false);
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
       }
@@ -204,7 +204,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
         toast({
           title: `Rescheduled to ${format(parseDueDate(dueDate), "MMM d")}`,
-          className: "border-primary bg-primary/10",
+          className: "border-primary",
         });
       },
       onError: (err: any) => {

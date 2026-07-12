@@ -124,7 +124,7 @@ export default function Dashboard() {
       }
     }, {
       onSuccess: () => {
-        toast({ title: "Quest updated", className: "border-primary bg-primary/10" });
+        toast({ title: "Quest updated", className: "border-primary" });
         setEditTask(null);
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
       }
@@ -147,7 +147,7 @@ export default function Dashboard() {
         toast({
           title: "Streak Shield Activated!",
           description: `Spent ${FREEZE_COST} XP. Your next missed day won't break your streak.`,
-          className: "border-cyan-500/50 bg-cyan-500/10",
+          className: "border-cyan-500/50",
         });
       },
       onError: (err: any) => {
