@@ -193,6 +193,14 @@ paths:
       operationId: getMyStats
       tags: [users]
       summary: Get current user dashboard stats
+      parameters:
+        - name: tz
+          in: query
+          description: >-
+            IANA timezone (e.g. "America/New_York") used to determine the user's
+            local "today". Defaults to UTC when omitted or invalid.
+          schema:
+            type: string
       responses:
         "200":
           description: User stats
@@ -234,6 +242,13 @@ paths:
           schema:
             type: integer
             default: 7
+        - name: tz
+          in: query
+          description: >-
+            IANA timezone (e.g. "America/New_York") used to bucket XP by the
+            user's local calendar day. Defaults to UTC when omitted or invalid.
+          schema:
+            type: string
       responses:
         "200":
           description: XP history per day
@@ -255,6 +270,13 @@ paths:
           schema:
             type: integer
             default: 30
+        - name: tz
+          in: query
+          description: >-
+            IANA timezone (e.g. "America/New_York") used to bucket stats by the
+            user's local calendar day and hour. Defaults to UTC when omitted or invalid.
+          schema:
+            type: string
       responses:
         "200":
           description: Insights data

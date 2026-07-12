@@ -50,6 +50,7 @@ export * from './getCalendarHeatmapParams';
 export * from './getLeaderboardParams';
 export * from './getLeaderboardPeriod';
 export * from './getMyInsightsParams';
+export * from './getMyStatsParams';
 export * from './getMyXpHistoryParams';
 export * from './getTaskRecommendationParams';
 export * from './getTasksCategory';

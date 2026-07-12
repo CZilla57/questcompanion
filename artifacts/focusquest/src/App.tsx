@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@workspace/auth-web";
 import { useGetMyStats, useUpdateMe, getGetMyStatsQueryKey } from "@workspace/api-client-react";
+import { browserTimeZone } from "@/lib/timezone";
 import { Swords, Trophy } from "lucide-react";
 
 import Dashboard from "@/pages/dashboard";
@@ -124,7 +125,7 @@ function OnboardingScreen() {
 }
 
 function OnboardingGate({ children }: { children: React.ReactNode }) {
-  const { data: stats, isLoading } = useGetMyStats();
+  const { data: stats, isLoading } = useGetMyStats({ tz: browserTimeZone() });
 
   if (isLoading) {
     return (

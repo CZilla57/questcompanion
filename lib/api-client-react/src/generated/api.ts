@@ -43,6 +43,7 @@ import type {
   GetCalendarHeatmapParams,
   GetLeaderboardParams,
   GetMyInsightsParams,
+  GetMyStatsParams,
   GetMyXpHistoryParams,
   GetTaskRecommendationParams,
   GetTasksParams,
@@ -771,20 +772,27 @@ export const useUpdateMe = <TError = ErrorType<unknown>,
       return useMutation(getUpdateMeMutationOptions(options));
     }
 
-export const getGetMyStatsUrl = () => {
+export const getGetMyStatsUrl = (params?: GetMyStatsParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/users/me/stats`
+  return stringifiedParams.length > 0 ? `/api/users/me/stats?${stringifiedParams}` : `/api/users/me/stats`
 }
 
 /**
  * @summary Get current user dashboard stats
  */
-export const getMyStats = async ( options?: RequestInit): Promise<UserStats> => {
+export const getMyStats = async (params?: GetMyStatsParams, options?: RequestInit): Promise<UserStats> => {
 
-  return customFetch<UserStats>(getGetMyStatsUrl(),
+  return customFetch<UserStats>(getGetMyStatsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -797,23 +805,23 @@ export const getMyStats = async ( options?: RequestInit): Promise<UserStats> => 
 
 
 
-export const getGetMyStatsQueryKey = () => {
+export const getGetMyStatsQueryKey = (params?: GetMyStatsParams,) => {
     return [
-    `/api/users/me/stats`
+    `/api/users/me/stats`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetMyStatsQueryOptions = <TData = Awaited<ReturnType<typeof getMyStats>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetMyStatsQueryOptions = <TData = Awaited<ReturnType<typeof getMyStats>>, TError = ErrorType<unknown>>(params?: GetMyStatsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetMyStatsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetMyStatsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyStats>>> = ({ signal }) => getMyStats({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyStats>>> = ({ signal }) => getMyStats(params, { signal, ...requestOptions });
 
 
 
@@ -831,11 +839,11 @@ export type GetMyStatsQueryError = ErrorType<unknown>
  */
 
 export function useGetMyStats<TData = Awaited<ReturnType<typeof getMyStats>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: GetMyStatsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetMyStatsQueryOptions(options)
+  const queryOptions = getGetMyStatsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

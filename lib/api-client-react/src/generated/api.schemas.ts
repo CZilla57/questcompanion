@@ -940,16 +940,31 @@ state?: string;
 iss?: string;
 };
 
+export type GetMyStatsParams = {
+/**
+ * IANA timezone (e.g. "America/New_York") used to determine the user's local "today". Defaults to UTC when omitted or invalid.
+ */
+tz?: string;
+};
+
 export type BuyStreakFreeze400 = {
   error?: string;
 };
 
 export type GetMyXpHistoryParams = {
 days?: number;
+/**
+ * IANA timezone (e.g. "America/New_York") used to bucket XP by the user's local calendar day. Defaults to UTC when omitted or invalid.
+ */
+tz?: string;
 };
 
 export type GetMyInsightsParams = {
 days?: number;
+/**
+ * IANA timezone (e.g. "America/New_York") used to bucket stats by the user's local calendar day and hour. Defaults to UTC when omitted or invalid.
+ */
+tz?: string;
 };
 
 export type GetTaskRecommendationParams = {

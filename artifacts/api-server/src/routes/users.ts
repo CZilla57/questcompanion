@@ -3,6 +3,7 @@ import { eq, and, gte, gt, desc } from "drizzle-orm";
 import { db, usersTable, tasksTable, activityTable } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, getPointsIntoLevel } from "../lib/gamification";
 import { CATEGORY_LABELS } from "../lib/auto-points";
+import { resolveTimeZone, localDateKey, buildDayDates, buildDaySlots, localHour } from "../lib/date-buckets";
 
 const router: IRouter = Router();
 
@@ -67,7 +68,9 @@ router.get("/users/me/stats", async (req, res): Promise<void> => {
     return;
   }
 
-  const today = new Date().toISOString().split("T")[0];
+  const timeZone = resolveTimeZone(typeof req.query.tz === "string" ? req.query.tz : undefined);
+  // Task dueDates are the user's local calendar dates, so "today" must be too.
+  const today = localDateKey(new Date(), timeZone);
   const todayTasks = await db.select().from(tasksTable)
     .where(and(eq(tasksTable.userId, userId), eq(tasksTable.dueDate, today)));
 
@@ -113,19 +116,16 @@ router.get("/users/me/xp-history", async (req, res): Promise<void> => {
   const userId = req.gameUserId;
 
   const days = Math.min(90, Math.max(1, parseInt(String(req.query.days ?? "7"), 10) || 7));
+  const timeZone = resolveTimeZone(typeof req.query.tz === "string" ? req.query.tz : undefined);
 
-  const today = new Date();
-  const dateSlots: { date: string; label: string }[] = [];
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split("T")[0];
-    const label = d.toLocaleDateString("en-US", { weekday: "short" });
-    dateSlots.push({ date: dateStr, label });
-  }
+  // Bucket by the user's local calendar day so the chart matches what they (and
+  // the rest of the app) call "today" instead of the server's UTC day.
+  const dateSlots = buildDaySlots(new Date(), days, timeZone);
 
-  const earliest = dateSlots[0].date;
-  const cutoff = new Date(earliest + "T00:00:00.000Z");
+  // Widen the query by a day so no row belonging to the earliest local day is
+  // missed due to the UTC↔local offset; out-of-range rows bucket to unused keys.
+  const cutoff = new Date(dateSlots[0]!.date + "T00:00:00.000Z");
+  cutoff.setUTCDate(cutoff.getUTCDate() - 1);
 
   const rows = await db
     .select()
@@ -134,8 +134,8 @@ router.get("/users/me/xp-history", async (req, res): Promise<void> => {
 
   const xpByDate = new Map<string, number>();
   for (const row of rows) {
-    const d = row.createdAt.toISOString().split("T")[0];
-    xpByDate.set(d, (xpByDate.get(d) ?? 0) + row.points);
+    const key = localDateKey(row.createdAt, timeZone);
+    xpByDate.set(key, (xpByDate.get(key) ?? 0) + row.points);
   }
 
   res.json(
@@ -152,21 +152,23 @@ router.get("/users/me/insights", async (req, res): Promise<void> => {
   const userId = req.gameUserId;
 
   const days = Math.min(90, Math.max(7, parseInt(String(req.query.days ?? "30"), 10) || 30));
+  const timeZone = resolveTimeZone(typeof req.query.tz === "string" ? req.query.tz : undefined);
 
-  const today = new Date();
-  const cutoff = new Date(today);
-  cutoff.setDate(cutoff.getDate() - (days - 1));
-  cutoff.setUTCHours(0, 0, 0, 0);
+  // Day/hour bucketing follows the user's local calendar, matching the rest of
+  // the app; day arithmetic uses UTC anchors so it's stable across DST.
+  const dates = buildDayDates(new Date(), days, timeZone);
+  const dateSlots = dates.map((date) => ({
+    date,
+    label: new Date(date + "T00:00:00Z").toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      timeZone: "UTC",
+    }),
+  }));
 
-  // ── XP history (reuse same logic as xp-history endpoint) ─────────────────
-  const dateSlots: { date: string; label: string }[] = [];
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split("T")[0]!;
-    const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    dateSlots.push({ date: dateStr, label });
-  }
+  // Widen the window by a day so no boundary row is missed due to the tz offset.
+  const cutoff = new Date(dates[0]! + "T00:00:00.000Z");
+  cutoff.setUTCDate(cutoff.getUTCDate() - 1);
 
   const activityRows = await db
     .select()
@@ -175,8 +177,8 @@ router.get("/users/me/insights", async (req, res): Promise<void> => {
 
   const xpByDate = new Map<string, number>();
   for (const row of activityRows) {
-    const d = row.createdAt.toISOString().split("T")[0]!;
-    xpByDate.set(d, (xpByDate.get(d) ?? 0) + row.points);
+    const key = localDateKey(row.createdAt, timeZone);
+    xpByDate.set(key, (xpByDate.get(key) ?? 0) + row.points);
   }
   const xpHistory = dateSlots.map(({ date, label }) => ({ date, label, xp: xpByDate.get(date) ?? 0 }));
 
@@ -214,7 +216,7 @@ router.get("/users/me/insights", async (req, res): Promise<void> => {
     if (task.completed) dowStats[dow]!.completed++;
   }
 
-  // ── Hourly stats (hour 0–23 from completedAt, UTC) ───────────────────────
+  // ── Hourly stats (hour 0–23 from completedAt, in the user's timezone) ─────
   const hourStats: { hour: number; label: string; completed: number }[] = Array.from({ length: 24 }, (_, h) => ({
     hour: h,
     label: h === 0 ? "12am" : h < 12 ? `${h}am` : h === 12 ? "12pm" : `${h - 12}pm`,
@@ -222,7 +224,7 @@ router.get("/users/me/insights", async (req, res): Promise<void> => {
   }));
   for (const task of allTasks) {
     if (task.completed && task.completedAt) {
-      const h = task.completedAt.getUTCHours();
+      const h = localHour(task.completedAt, timeZone);
       hourStats[h]!.completed++;
     }
   }

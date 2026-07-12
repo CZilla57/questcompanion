@@ -7,6 +7,7 @@ import { Input } from "./ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetTasksQueryKey, getGetMyStatsQueryKey } from "@workspace/api-client-react";
+import { browserTimeZone } from "@/lib/timezone";
 import { dispatchQuestCompleted } from "./dopamine-overlay";
 import { CATEGORY_COLORS, CATEGORY_LABEL } from "@/lib/categories";
 
@@ -56,7 +57,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
   const [loggingTime, setLoggingTime] = useState(false);
   const [actualInput, setActualInput] = useState(task.actualMinutes ? String(task.actualMinutes) : "");
 
-  const { data: stats } = useGetMyStats();
+  const { data: stats } = useGetMyStats({ tz: browserTimeZone() });
   const multiplier = !task.completed && stats ? getMultiplierDisplay(stats.streakDays) : null;
 
   const completeMutation = useCompleteTask();
