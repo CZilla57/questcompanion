@@ -3,7 +3,7 @@ import { eq, and, desc, count, inArray } from "drizzle-orm";
 import { applyMultiplier } from "../lib/xp-multiplier";
 import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable, taskStepsTable } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, DAILY_BONUS_POINTS } from "../lib/gamification";
-import { assignPoints, CATEGORY_LABELS, VALID_CATEGORIES } from "../lib/auto-points";
+import { assignPoints, CATEGORY_LABELS, VALID_CATEGORIES, MORNING_FOCUS_CATEGORIES, EVENING_WINDDOWN_CATEGORIES } from "../lib/auto-points";
 import { advanceHabitStreak, reverseHabitStreak, type HabitStreakPreviousState } from "../lib/habit-streaks";
 import { awardStreakGear, getStreakGearRarity, type GearRewardInfo } from "../lib/gear-rewards";
 import { rollSurpriseReward, type SurpriseRewardResult } from "../lib/surprise-rewards";
@@ -120,12 +120,12 @@ router.get("/tasks/recommend", async (req, res): Promise<void> => {
 
     // Time-of-day boost
     if (isMorning) {
-      if (category === "health" || category === "deep_work") {
+      if (MORNING_FOCUS_CATEGORIES.has(category)) {
         score += 20;
         reasons.push("ideal for morning focus");
       }
     } else if (isEvening) {
-      if (["learning", "finance", "social", "creative", "household"].includes(category)) {
+      if (EVENING_WINDDOWN_CATEGORIES.has(category)) {
         score += 20;
         reasons.push("perfect for your evening wind-down");
       }

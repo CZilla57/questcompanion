@@ -157,6 +157,9 @@ export const TaskCategory = {
   household: 'household',
   social: 'social',
   creative: 'creative',
+  self_care: 'self_care',
+  errands: 'errands',
+  travel: 'travel',
   default: 'default',
 } as const;
 
@@ -256,6 +259,9 @@ export const ParsedQuickAddCategory = {
   household: 'household',
   social: 'social',
   creative: 'creative',
+  self_care: 'self_care',
+  errands: 'errands',
+  travel: 'travel',
   default: 'default',
 } as const;
 
@@ -295,6 +301,9 @@ export const TaskInputCategory = {
   household: 'household',
   social: 'social',
   creative: 'creative',
+  self_care: 'self_care',
+  errands: 'errands',
+  travel: 'travel',
   default: 'default',
 } as const;
 
@@ -345,6 +354,9 @@ export const TaskUpdateCategory = {
   household: 'household',
   social: 'social',
   creative: 'creative',
+  self_care: 'self_care',
+  errands: 'errands',
+  travel: 'travel',
   default: 'default',
 } as const;
 
@@ -495,6 +507,9 @@ export const RecurringTaskCategory = {
   household: 'household',
   social: 'social',
   creative: 'creative',
+  self_care: 'self_care',
+  errands: 'errands',
+  travel: 'travel',
   default: 'default',
 } as const;
 
@@ -548,6 +563,9 @@ export const RecurringTaskInputCategory = {
   household: 'household',
   social: 'social',
   creative: 'creative',
+  self_care: 'self_care',
+  errands: 'errands',
+  travel: 'travel',
   default: 'default',
 } as const;
 
@@ -586,6 +604,9 @@ export const RecurringTaskUpdateCategory = {
   household: 'household',
   social: 'social',
   creative: 'creative',
+  self_care: 'self_care',
+  errands: 'errands',
+  travel: 'travel',
   default: 'default',
 } as const;
 
@@ -1085,6 +1106,9 @@ export const GetTasksCategory = {
   household: 'household',
   social: 'social',
   creative: 'creative',
+  self_care: 'self_care',
+  errands: 'errands',
+  travel: 'travel',
   default: 'default',
 } as const;
 

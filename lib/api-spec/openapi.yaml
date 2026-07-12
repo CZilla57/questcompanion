@@ -323,7 +323,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [health, deep_work, learning, finance, admin, household, social, creative, default]
+            enum: [health, deep_work, learning, finance, admin, household, social, creative, self_care, errands, travel, default]
           description: Filter by category
       responses:
         "200":
@@ -1445,7 +1445,7 @@ components:
           enum: [low, medium, high]
         category:
           type: string
-          enum: [health, deep_work, learning, finance, admin, household, social, creative, default]
+          enum: [health, deep_work, learning, finance, admin, household, social, creative, self_care, errands, travel, default]
         categoryLabel:
           type: string
         createdAt:
@@ -1526,7 +1526,7 @@ components:
           enum: [low, medium, high, null]
         category:
           type: ["string", "null"]
-          enum: [health, deep_work, learning, finance, admin, household, social, creative, default, null]
+          enum: [health, deep_work, learning, finance, admin, household, social, creative, self_care, errands, travel, default, null]
 
     TaskInput:
       type: object
@@ -1555,7 +1555,7 @@ components:
           description: Optional time estimate in minutes
         category:
           type: string
-          enum: [health, deep_work, learning, finance, admin, household, social, creative, default]
+          enum: [health, deep_work, learning, finance, admin, household, social, creative, self_care, errands, travel, default]
           description: Optional category override. Auto-detected from title if omitted.
         dueTime:
           type: string
@@ -1591,7 +1591,7 @@ components:
           description: Actual time spent (updatable on completed tasks too)
         category:
           type: string
-          enum: [health, deep_work, learning, finance, admin, household, social, creative, default]
+          enum: [health, deep_work, learning, finance, admin, household, social, creative, self_care, errands, travel, default]
         dueTime:
           type: string
           pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
@@ -1712,7 +1712,7 @@ components:
           type: integer
         category:
           type: string
-          enum: [health, deep_work, learning, finance, admin, household, social, creative, default]
+          enum: [health, deep_work, learning, finance, admin, household, social, creative, self_care, errands, travel, default]
         categoryLabel:
           type: string
         currentStreak:
@@ -1752,7 +1752,7 @@ components:
           type: string
         category:
           type: string
-          enum: [health, deep_work, learning, finance, admin, household, social, creative, default]
+          enum: [health, deep_work, learning, finance, admin, household, social, creative, self_care, errands, travel, default]
           description: Optional category override. Auto-detected from title if omitted.
 
     RecurringTaskUpdate:
@@ -1780,7 +1780,7 @@ components:
           type: boolean
         category:
           type: string
-          enum: [health, deep_work, learning, finance, admin, household, social, creative, default]
+          enum: [health, deep_work, learning, finance, admin, household, social, creative, self_care, errands, travel, default]
 
     Badge:
       type: object
