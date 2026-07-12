@@ -10,6 +10,7 @@ import { getGetTasksQueryKey, getGetMyStatsQueryKey } from "@workspace/api-clien
 import { browserTimeZone } from "@/lib/timezone";
 import { dispatchQuestCompleted } from "./dopamine-overlay";
 import { CATEGORY_COLORS, CATEGORY_LABEL } from "@/lib/categories";
+import { TaskSteps } from "./task-steps";
 
 interface TaskItemProps {
   task: Task;
@@ -320,6 +321,8 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
             </Button>
           </div>
         )}
+
+        <TaskSteps task={task} />
       </div>
 
       {/* Actions — always visible on mobile, hover-reveal on desktop */}
