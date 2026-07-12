@@ -40,3 +40,31 @@ describe("parseQuickAdd — hashtags", () => {
     expect(r.title).toBe("Email Sam");
   });
 });
+
+describe("parseQuickAdd — time-of-day", () => {
+  it("parses 12-hour times", () => {
+    expect(parseQuickAdd("call 3pm", { now: NOW }).dueTime).toBe("15:00");
+    expect(parseQuickAdd("call 3:30pm", { now: NOW }).dueTime).toBe("15:30");
+    expect(parseQuickAdd("call 9am", { now: NOW }).dueTime).toBe("09:00");
+  });
+
+  it("parses noon and midnight", () => {
+    expect(parseQuickAdd("call noon", { now: NOW }).dueTime).toBe("12:00");
+    expect(parseQuickAdd("call midnight", { now: NOW }).dueTime).toBe("00:00");
+  });
+
+  it("handles 12am/12pm correctly", () => {
+    expect(parseQuickAdd("call 12pm", { now: NOW }).dueTime).toBe("12:00");
+    expect(parseQuickAdd("call 12am", { now: NOW }).dueTime).toBe("00:00");
+  });
+
+  it("parses 24-hour times", () => {
+    expect(parseQuickAdd("call 15:00", { now: NOW }).dueTime).toBe("15:00");
+  });
+
+  it("strips an 'at' prefix and the time token from the title", () => {
+    const r = parseQuickAdd("Standup at 9am", { now: NOW });
+    expect(r.dueTime).toBe("09:00");
+    expect(r.title).toBe("Standup");
+  });
+});
