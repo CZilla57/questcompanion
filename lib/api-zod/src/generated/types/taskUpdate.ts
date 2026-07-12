@@ -32,4 +32,9 @@ export interface TaskUpdate {
      */
   actualMinutes?: number;
   category?: TaskUpdateCategory;
+  /**
+     * Optional time of day (HH:mm, 24-hour)
+     * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
+     */
+  dueTime?: string;
 }

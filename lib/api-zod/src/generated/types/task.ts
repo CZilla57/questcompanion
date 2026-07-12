@@ -41,6 +41,11 @@ export interface Task {
      * @nullable
      */
   focusDate?: string | null;
+  /**
+     * Optional time of day (HH:mm, 24-hour)
+     * @nullable
+     */
+  dueTime?: string | null;
   /** AI-generated first-step checklist attached to this quest */
   steps: TaskStep[];
 }

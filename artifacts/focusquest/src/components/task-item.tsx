@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetTasksQueryKey, getGetMyStatsQueryKey } from "@workspace/api-client-react";
 import { browserTimeZone } from "@/lib/timezone";
+import { formatTime12h } from "@/lib/format-time";
 import { dispatchQuestCompleted } from "./dopamine-overlay";
 import { CATEGORY_COLORS, CATEGORY_LABEL } from "@/lib/categories";
 import { TaskSteps } from "./task-steps";
@@ -44,6 +45,11 @@ const tierStyles: Record<NonNullable<MultiplierDisplay["tier"]>, string> = {
   driven:  "bg-violet-500/15 border-violet-400/40 text-violet-300 shadow-[0_0_8px_rgba(139,92,246,0.35)]",
   elite:   "bg-amber-500/15 border-amber-400/40 text-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.4)]",
 };
+
+function parseLocalDate(iso: string): Date {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
 
 function formatMinutes(minutes: number): string {
   if (minutes < 60) return `${minutes}m`;
@@ -231,7 +237,10 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
         <div className="flex items-center gap-3 mt-2 flex-wrap">
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Clock className="w-3 h-3" />
-            <span>{format(new Date(task.dueDate), 'MMM d, yyyy')}</span>
+            <span>
+              {format(parseLocalDate(task.dueDate), 'MMM d, yyyy')}
+              {task.dueTime ? ` · ${formatTime12h(task.dueTime)}` : ""}
+            </span>
           </div>
 
           <div className="flex items-center gap-1.5">

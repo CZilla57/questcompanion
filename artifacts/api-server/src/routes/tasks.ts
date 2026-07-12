@@ -11,6 +11,10 @@ import { logger } from "../lib/logger";
 import { breakdownTask, BreakdownParseError } from "../lib/ai/task-breakdown";
 import { generateJson, isAiConfigured, AiClientError } from "../lib/ai/client";
 import { breakdownCooldown } from "../lib/ai/breakdown-cooldown";
+import { isValidDueTime, isValidDueDate } from "../lib/task-datetime";
+import { parseQuickAdd } from "@workspace/quick-add";
+import { buildQuickAddPrompt, parseQuickAddResult, QuickAddParseError } from "../lib/ai/quick-add-parse";
+import { parseCooldown } from "../lib/ai/parse-cooldown";
 
 const router: IRouter = Router();
 
@@ -29,6 +33,7 @@ function formatTask(
     completed: task.completed,
     completedAt: task.completedAt ? task.completedAt.toISOString() : null,
     dueDate: task.dueDate,
+    dueTime: task.dueTime ?? null,
     priority: task.priority,
     category: task.category,
     categoryLabel: CATEGORY_LABELS[task.category] ?? CATEGORY_LABELS.default,
@@ -219,10 +224,11 @@ router.post("/tasks", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;
 
-  const { title, description, dueDate, priority = "medium", estimatedMinutes, category } = req.body as {
+  const { title, description, dueDate, dueTime, priority = "medium", estimatedMinutes, category } = req.body as {
     title?: string;
     description?: string;
     dueDate?: string;
+    dueTime?: string;
     priority?: string;
     estimatedMinutes?: number;
     category?: string;
@@ -230,6 +236,10 @@ router.post("/tasks", async (req, res): Promise<void> => {
 
   if (!title || !dueDate) {
     res.status(400).json({ error: "title and dueDate are required" });
+    return;
+  }
+  if (dueTime !== undefined && dueTime !== null && !isValidDueTime(dueTime)) {
+    res.status(400).json({ error: "dueTime must be HH:mm (24-hour)" });
     return;
   }
 
@@ -242,12 +252,63 @@ router.post("/tasks", async (req, res): Promise<void> => {
     description,
     points: autoPoint.points,
     dueDate,
+    dueTime: dueTime ?? null,
     priority,
     category: resolvedCategory,
     estimatedMinutes: estimatedMinutes ?? null,
   }).returning();
 
   res.status(201).json(formatTask(task));
+});
+
+router.post("/tasks/parse", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  const text = typeof req.body?.text === "string" ? req.body.text : "";
+  if (!text.trim()) { res.status(400).json({ error: "text is required" }); return; }
+  if (text.length > 500) { res.status(400).json({ error: "text is too long" }); return; }
+
+  const todayRaw = typeof req.body?.today === "string" ? req.body.today : undefined;
+  // Anchor relative-date parsing to the client's local calendar date (noon avoids DST edges),
+  // so the AI fallback resolves "next friday" etc. in the user's timezone, not the server's UTC.
+  const now = todayRaw && isValidDueDate(todayRaw) ? new Date(`${todayRaw}T12:00:00`) : new Date();
+  const deterministic = parseQuickAdd(text, { now });
+
+  // Deterministic path was enough — no LLM call needed.
+  if (deterministic.dueDate || deterministic.dueTime) {
+    res.json(deterministic);
+    return;
+  }
+
+  if (!isAiConfigured()) {
+    res.status(503).json({ error: "AI parse is not configured" });
+    return;
+  }
+  if (!parseCooldown.tryAcquire(userId)) {
+    res.status(429).json({ error: "Slow down a moment before parsing again." });
+    return;
+  }
+
+  let aiParsed;
+  try {
+    const rawJson = await generateJson(buildQuickAddPrompt(text, { now }));
+    aiParsed = parseQuickAddResult(rawJson, { text });
+  } catch (err) {
+    if (err instanceof AiClientError || err instanceof QuickAddParseError) {
+      logger.warn({ err }, "quick-add parse generation failed");
+      res.status(502).json({ error: "Couldn't smart-parse, edit manually." });
+      return;
+    }
+    throw err;
+  }
+
+  // Deterministic fields win on merge (title, priority, category from explicit tokens).
+  const merged = { ...aiParsed };
+  if (deterministic.title) merged.title = deterministic.title;
+  if (deterministic.priority) merged.priority = deterministic.priority;
+  if (deterministic.category) merged.category = deterministic.category;
+  res.json(merged);
 });
 
 router.get("/tasks/:id", async (req, res): Promise<void> => {
@@ -282,10 +343,11 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
   if (!existing) { res.status(404).json({ error: "Task not found" }); return; }
 
   // Points are server-assigned by auto-points logic and are not client-editable.
-  const { title, description, dueDate, priority, estimatedMinutes, actualMinutes, category } = req.body as {
+  const { title, description, dueDate, dueTime, priority, estimatedMinutes, actualMinutes, category } = req.body as {
     title?: string;
     description?: string;
     dueDate?: string;
+    dueTime?: string;
     priority?: string;
     estimatedMinutes?: number;
     actualMinutes?: number;
@@ -313,6 +375,13 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
   if (title != null) updates.title = title;
   if (description != null) updates.description = description;
   if (dueDate != null) updates.dueDate = dueDate;
+  if (dueTime !== undefined) {
+    if (dueTime !== null && !isValidDueTime(dueTime)) {
+      res.status(400).json({ error: "dueTime must be HH:mm (24-hour)" });
+      return;
+    }
+    updates.dueTime = dueTime;
+  }
   if (priority != null) updates.priority = priority;
   if (estimatedMinutes != null) updates.estimatedMinutes = estimatedMinutes;
   if (category != null && VALID_CATEGORIES.has(category)) updates.category = category;

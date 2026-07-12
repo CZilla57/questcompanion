@@ -264,6 +264,7 @@ export const GetTaskRecommendationResponse = zod.object({
   "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
   "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
   "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus'),
+  "dueTime": zod.string().nullish().describe('Optional time of day (HH:mm, 24-hour)'),
   "steps": zod.array(zod.object({
   "id": zod.number(),
   "text": zod.string(),
@@ -303,6 +304,7 @@ export const GetTasksResponseItem = zod.object({
   "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
   "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
   "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus'),
+  "dueTime": zod.string().nullish().describe('Optional time of day (HH:mm, 24-hour)'),
   "steps": zod.array(zod.object({
   "id": zod.number(),
   "text": zod.string(),
@@ -323,6 +325,7 @@ export const createTaskBodyPointsMax = 100;
 export const createTaskBodyPriorityDefault = `medium`;
 export const createTaskBodyEstimatedMinutesMax = 1440;
 
+export const createTaskBodyDueTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
 
 
 export const CreateTaskBody = zod.object({
@@ -332,7 +335,30 @@ export const CreateTaskBody = zod.object({
   "dueDate": zod.string(),
   "priority": zod.enum(['low', 'medium', 'high']).default(createTaskBodyPriorityDefault),
   "estimatedMinutes": zod.number().min(1).max(createTaskBodyEstimatedMinutesMax).optional().describe('Optional time estimate in minutes'),
-  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'default']).optional().describe('Optional category override. Auto-detected from title if omitted.')
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'default']).optional().describe('Optional category override. Auto-detected from title if omitted.'),
+  "dueTime": zod.string().regex(createTaskBodyDueTimeRegExp).optional().describe('Optional time of day (HH:mm, 24-hour)')
+})
+
+
+/**
+ * @summary Parse a natural-language quick-add line into structured task fields
+ */
+export const parseQuickAddBodyTextMax = 500;
+
+export const parseQuickAddBodyTodayRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
+
+export const ParseQuickAddBody = zod.object({
+  "text": zod.string().min(1).max(parseQuickAddBodyTextMax),
+  "today": zod.string().regex(parseQuickAddBodyTodayRegExp).optional().describe('The client\'s local calendar date (YYYY-MM-DD), used to anchor relative date parsing in the client\'s timezone.')
+})
+
+export const ParseQuickAddResponse = zod.object({
+  "title": zod.string(),
+  "dueDate": zod.string().nullish(),
+  "dueTime": zod.string().nullish(),
+  "priority": zod.union([zod.literal('low'),zod.literal('medium'),zod.literal('high'),zod.literal(null)]).nullish(),
+  "category": zod.union([zod.literal('health'),zod.literal('deep_work'),zod.literal('learning'),zod.literal('finance'),zod.literal('admin'),zod.literal('household'),zod.literal('social'),zod.literal('creative'),zod.literal('default'),zod.literal(null)]).nullish()
 })
 
 
@@ -360,6 +386,7 @@ export const GetTaskResponse = zod.object({
   "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
   "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
   "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus'),
+  "dueTime": zod.string().nullish().describe('Optional time of day (HH:mm, 24-hour)'),
   "steps": zod.array(zod.object({
   "id": zod.number(),
   "text": zod.string(),
@@ -383,6 +410,7 @@ export const updateTaskBodyEstimatedMinutesMax = 1440;
 
 export const updateTaskBodyActualMinutesMax = 1440;
 
+export const updateTaskBodyDueTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
 
 
 export const UpdateTaskBody = zod.object({
@@ -393,7 +421,8 @@ export const UpdateTaskBody = zod.object({
   "priority": zod.enum(['low', 'medium', 'high']).optional(),
   "estimatedMinutes": zod.number().min(1).max(updateTaskBodyEstimatedMinutesMax).optional().describe('Time estimate (only updatable on incomplete tasks)'),
   "actualMinutes": zod.number().min(1).max(updateTaskBodyActualMinutesMax).optional().describe('Actual time spent (updatable on completed tasks too)'),
-  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'default']).optional()
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'default']).optional(),
+  "dueTime": zod.string().regex(updateTaskBodyDueTimeRegExp).optional().describe('Optional time of day (HH:mm, 24-hour)')
 })
 
 export const UpdateTaskResponse = zod.object({
@@ -413,6 +442,7 @@ export const UpdateTaskResponse = zod.object({
   "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
   "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
   "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus'),
+  "dueTime": zod.string().nullish().describe('Optional time of day (HH:mm, 24-hour)'),
   "steps": zod.array(zod.object({
   "id": zod.number(),
   "text": zod.string(),
@@ -455,6 +485,7 @@ export const CompleteTaskResponse = zod.object({
   "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
   "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
   "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus'),
+  "dueTime": zod.string().nullish().describe('Optional time of day (HH:mm, 24-hour)'),
   "steps": zod.array(zod.object({
   "id": zod.number(),
   "text": zod.string(),
@@ -682,6 +713,7 @@ export const UncompleteTaskResponse = zod.object({
   "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
   "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
   "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus'),
+  "dueTime": zod.string().nullish().describe('Optional time of day (HH:mm, 24-hour)'),
   "steps": zod.array(zod.object({
   "id": zod.number(),
   "text": zod.string(),
@@ -719,6 +751,7 @@ export const PatchTaskFocusResponse = zod.object({
   "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
   "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
   "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus'),
+  "dueTime": zod.string().nullish().describe('Optional time of day (HH:mm, 24-hour)'),
   "steps": zod.array(zod.object({
   "id": zod.number(),
   "text": zod.string(),
