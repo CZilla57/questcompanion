@@ -1,5 +1,7 @@
 // One-off asset generator for the PWA icon set.
-// Preferred source: public/icons/source.png (a square, full-bleed PNG, >=512px).
+// Preferred source: scripts/pwa-icon-source.png (a square, full-bleed PNG, >=512px).
+//   Kept in scripts/ (NOT public/) so the source art is committed for reproducible
+//   regeneration but never bundled into the shipped build.
 // Fallback: rasterize public/favicon.svg so the icons exist even before final art.
 // Re-run after dropping in real art: `pnpm --filter @workspace/focusquest gen:icons`.
 import sharp from "sharp";
@@ -8,7 +10,7 @@ import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
 const iconsDir = path.join(root, "public", "icons");
-const sourcePng = path.join(iconsDir, "source.png");
+const sourcePng = path.join(root, "scripts", "pwa-icon-source.png");
 const faviconSvg = path.join(root, "public", "favicon.svg");
 const BG = "#090b15"; // app --background
 
@@ -16,10 +18,10 @@ mkdirSync(iconsDir, { recursive: true });
 
 async function loadSource() {
   if (existsSync(sourcePng)) {
-    console.log("Using source.png");
+    console.log("Using scripts/pwa-icon-source.png");
     return sharp(sourcePng);
   }
-  console.log("source.png not found — rasterizing favicon.svg as a placeholder");
+  console.log("source art not found — rasterizing favicon.svg as a placeholder");
   // Rasterizes the 180px favicon.svg at high density (~960px), then the
   // .resize below normalizes the buffer up to a clean 1024x1024.
   const buf = await sharp(faviconSvg, { density: 384 })
