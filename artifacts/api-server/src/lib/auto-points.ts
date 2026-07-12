@@ -106,6 +106,12 @@ export const CATEGORY_LABELS: Record<string, string> = {
 
 export const VALID_CATEGORIES = new Set(Object.keys(CATEGORY_LABELS));
 
+// Categories that earn a time-of-day boost in the daily-focus recommendation scorer.
+export const MORNING_FOCUS_CATEGORIES = new Set<string>(["health", "deep_work"]);
+export const EVENING_WINDDOWN_CATEGORIES = new Set<string>([
+  "learning", "finance", "social", "creative", "household", "self_care", "errands",
+]);
+
 export interface AutoPointResult {
   points: number;
   category: string;

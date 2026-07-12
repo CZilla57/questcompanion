@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { assignPoints, CATEGORY_LABELS, VALID_CATEGORIES } from "./auto-points";
+import { assignPoints, CATEGORY_LABELS, VALID_CATEGORIES, MORNING_FOCUS_CATEGORIES, EVENING_WINDDOWN_CATEGORIES } from "./auto-points";
 
 const cat = (title: string) => assignPoints(title).category;
 
@@ -63,6 +63,21 @@ describe("assignPoints — labels + valid set", () => {
     for (const slug of ["self_care", "errands", "travel"]) {
       expect(VALID_CATEGORIES.has(slug)).toBe(true);
     }
+  });
+});
+
+describe("time-of-day recommendation categories", () => {
+  it("evening wind-down includes the new categories but not travel", () => {
+    expect(EVENING_WINDDOWN_CATEGORIES.has("self_care")).toBe(true);
+    expect(EVENING_WINDDOWN_CATEGORIES.has("errands")).toBe(true);
+    expect(EVENING_WINDDOWN_CATEGORIES.has("household")).toBe(true);
+    expect(EVENING_WINDDOWN_CATEGORIES.has("travel")).toBe(false);
+  });
+
+  it("morning focus stays limited to health and deep_work", () => {
+    expect(MORNING_FOCUS_CATEGORIES.has("health")).toBe(true);
+    expect(MORNING_FOCUS_CATEGORIES.has("deep_work")).toBe(true);
+    expect(MORNING_FOCUS_CATEGORIES.has("self_care")).toBe(false);
   });
 });
 
