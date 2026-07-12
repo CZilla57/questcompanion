@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
-import { eq, or, and, desc } from "drizzle-orm";
+import { eq, or, and, desc, inArray } from "drizzle-orm";
 import { db, usersTable, partnershipsTable, activityTable } from "@workspace/db";
 import { getLevelInfo } from "../lib/gamification";
+import { resolvePartnerRequest } from "../lib/partnerships";
 
 const router: IRouter = Router();
 
@@ -66,9 +67,15 @@ router.post("/accountability/partners", async (req, res): Promise<void> => {
       and(eq(partnershipsTable.requesterId, recipientId), eq(partnershipsTable.recipientId, userId)),
     )
   );
-  if (existing.length > 0) {
-    res.status(409).json({ error: "Partnership already exists" });
+
+  const decision = resolvePartnerRequest(existing);
+  if (decision.action === "reject") {
+    res.status(409).json({ error: decision.reason });
     return;
+  }
+  if (decision.action === "reactivate") {
+    // Clear stale declined rows so a fresh request isn't blocked as a duplicate.
+    await db.delete(partnershipsTable).where(inArray(partnershipsTable.id, decision.staleIds));
   }
 
   const [p] = await db.insert(partnershipsTable).values({
