@@ -22,7 +22,6 @@ describe("parseQuickAddResult", () => {
       dueDate: "2026-07-20",
       dueTime: "09:00",
       priority: "high",
-      category: "admin",
     });
   });
 

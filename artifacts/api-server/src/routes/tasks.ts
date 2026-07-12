@@ -11,7 +11,7 @@ import { logger } from "../lib/logger";
 import { breakdownTask, BreakdownParseError } from "../lib/ai/task-breakdown";
 import { generateJson, isAiConfigured, AiClientError } from "../lib/ai/client";
 import { breakdownCooldown } from "../lib/ai/breakdown-cooldown";
-import { isValidDueTime } from "../lib/task-datetime";
+import { isValidDueTime, isValidDueDate } from "../lib/task-datetime";
 import { parseQuickAdd } from "@workspace/quick-add";
 import { buildQuickAddPrompt, parseQuickAddResult, QuickAddParseError } from "../lib/ai/quick-add-parse";
 import { parseCooldown } from "../lib/ai/parse-cooldown";
@@ -267,8 +267,12 @@ router.post("/tasks/parse", async (req, res): Promise<void> => {
 
   const text = typeof req.body?.text === "string" ? req.body.text : "";
   if (!text.trim()) { res.status(400).json({ error: "text is required" }); return; }
+  if (text.length > 500) { res.status(400).json({ error: "text is too long" }); return; }
 
-  const now = new Date();
+  const todayRaw = typeof req.body?.today === "string" ? req.body.today : undefined;
+  // Anchor relative-date parsing to the client's local calendar date (noon avoids DST edges),
+  // so the AI fallback resolves "next friday" etc. in the user's timezone, not the server's UTC.
+  const now = todayRaw && isValidDueDate(todayRaw) ? new Date(`${todayRaw}T12:00:00`) : new Date();
   const deterministic = parseQuickAdd(text, { now });
 
   // Deterministic path was enough — no LLM call needed.

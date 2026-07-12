@@ -84,7 +84,7 @@ export function QuickAddBar({ selectedDate }: { selectedDate: Date | undefined }
 
   const handleSmartParse = () => {
     const requested = text;
-    parseMutation.mutate({ data: { text } }, {
+    parseMutation.mutate({ data: { text, today: format(new Date(), "yyyy-MM-dd") } }, {
       onSuccess: (result) => {
         // Ignore a response for text the user has since edited.
         if (textRef.current !== requested) return;

@@ -217,8 +217,16 @@ export interface StepToggleInput {
 }
 
 export interface ParseQuickAddInput {
-  /** @minLength 1 */
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
   text: string;
+  /**
+     * The client's local calendar date (YYYY-MM-DD), used to anchor relative date parsing in the client's timezone.
+     * @pattern ^\d{4}-\d{2}-\d{2}$
+     */
+  today?: string;
 }
 
 /**
@@ -248,6 +256,7 @@ export const ParsedQuickAddCategory = {
   household: 'household',
   social: 'social',
   creative: 'creative',
+  default: 'default',
 } as const;
 
 export interface ParsedQuickAdd {

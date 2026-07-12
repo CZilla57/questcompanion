@@ -1,5 +1,4 @@
 import type { ParsedQuickAdd } from "@workspace/quick-add";
-import { VALID_CATEGORIES } from "../auto-points";
 import { isValidDueDate, isValidDueTime } from "../task-datetime";
 
 const PRIORITIES = new Set(["low", "medium", "high"]);
@@ -32,10 +31,9 @@ Extract these fields, omitting any you cannot confidently determine:
 - dueDate: YYYY-MM-DD, if any date is implied
 - dueTime: HH:mm 24-hour, if a time of day is implied
 - priority: one of low, medium, high, if implied
-- category: one of health, deep_work, learning, finance, admin, household, social, creative, if clear
 
 Respond with JSON only, no prose, in exactly this shape:
-{"title": "...", "dueDate": "...", "dueTime": "...", "priority": "...", "category": "..."}`;
+{"title": "...", "dueDate": "...", "dueTime": "...", "priority": "..."}`;
 }
 
 export function parseQuickAddResult(raw: unknown, fallback: { text: string }): ParsedQuickAdd {
@@ -52,9 +50,6 @@ export function parseQuickAddResult(raw: unknown, fallback: { text: string }): P
   if (typeof o.dueTime === "string" && isValidDueTime(o.dueTime)) result.dueTime = o.dueTime;
   if (typeof o.priority === "string" && PRIORITIES.has(o.priority)) {
     result.priority = o.priority as ParsedQuickAdd["priority"];
-  }
-  if (typeof o.category === "string" && VALID_CATEGORIES.has(o.category) && o.category !== "default") {
-    result.category = o.category;
   }
   return result;
 }

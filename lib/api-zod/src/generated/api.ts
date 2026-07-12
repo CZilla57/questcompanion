@@ -343,11 +343,14 @@ export const CreateTaskBody = zod.object({
 /**
  * @summary Parse a natural-language quick-add line into structured task fields
  */
+export const parseQuickAddBodyTextMax = 500;
 
+export const parseQuickAddBodyTodayRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 
 
 export const ParseQuickAddBody = zod.object({
-  "text": zod.string().min(1)
+  "text": zod.string().min(1).max(parseQuickAddBodyTextMax),
+  "today": zod.string().regex(parseQuickAddBodyTodayRegExp).optional().describe('The client\'s local calendar date (YYYY-MM-DD), used to anchor relative date parsing in the client\'s timezone.')
 })
 
 export const ParseQuickAddResponse = zod.object({
@@ -355,7 +358,7 @@ export const ParseQuickAddResponse = zod.object({
   "dueDate": zod.string().nullish(),
   "dueTime": zod.string().nullish(),
   "priority": zod.union([zod.literal('low'),zod.literal('medium'),zod.literal('high'),zod.literal(null)]).nullish(),
-  "category": zod.union([zod.literal('health'),zod.literal('deep_work'),zod.literal('learning'),zod.literal('finance'),zod.literal('admin'),zod.literal('household'),zod.literal('social'),zod.literal('creative'),zod.literal(null)]).nullish()
+  "category": zod.union([zod.literal('health'),zod.literal('deep_work'),zod.literal('learning'),zod.literal('finance'),zod.literal('admin'),zod.literal('household'),zod.literal('social'),zod.literal('creative'),zod.literal('default'),zod.literal(null)]).nullish()
 })
 
 

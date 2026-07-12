@@ -21,4 +21,5 @@ export const ParsedQuickAddCategory = {
   household: 'household',
   social: 'social',
   creative: 'creative',
+  default: 'default',
 } as const;

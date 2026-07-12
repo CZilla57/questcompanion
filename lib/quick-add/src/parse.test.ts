@@ -67,6 +67,11 @@ describe("parseQuickAdd — time-of-day", () => {
     expect(r.dueTime).toBe("09:00");
     expect(r.title).toBe("Standup");
   });
+
+  it("rejects an out-of-range minute rather than producing an invalid time", () => {
+    expect(parseQuickAdd("call 3:99pm", { now: NOW }).dueTime).toBeUndefined();
+    expect(parseQuickAdd("call 3:30pm", { now: NOW }).dueTime).toBe("15:30");
+  });
 });
 
 describe("parseQuickAdd — dates", () => {

@@ -40,7 +40,7 @@ function extractTime(text: string): Field<string> {
   let rest = text;
 
   // 12-hour: 3pm, 3:30pm, at 9 am
-  rest = rest.replace(/\b(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i,
+  rest = rest.replace(/\b(?:at\s+)?(\d{1,2})(?::([0-5]\d))?\s*(am|pm)\b/i,
     (whole, h: string, min: string | undefined, ap: string) => {
       let hour = parseInt(h, 10);
       if (hour < 1 || hour > 12) return whole;
