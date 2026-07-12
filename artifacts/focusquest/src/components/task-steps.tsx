@@ -51,7 +51,11 @@ export function TaskSteps({ task }: { task: Task }) {
   const handleToggle = (stepId: number, done: boolean) => {
     patchStepMutation.mutate(
       { id: task.id, stepId, data: { done } },
-      { onSuccess: () => invalidate() },
+      {
+        onSuccess: () => invalidate(),
+        onError: () =>
+          toast({ title: "Couldn't update that step — try again.", variant: "destructive" }),
+      },
     );
   };
 
@@ -63,6 +67,8 @@ export function TaskSteps({ task }: { task: Task }) {
           invalidate();
           toast({ title: "Breakdown removed" });
         },
+        onError: () =>
+          toast({ title: "Couldn't remove the breakdown — try again.", variant: "destructive" }),
       },
     );
   };
@@ -100,28 +106,31 @@ export function TaskSteps({ task }: { task: Task }) {
         <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-primary flex-1">
           First steps · {doneCount}/{steps.length}
         </span>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 text-muted-foreground hover:text-foreground"
-            >
-              <MoreVertical className="w-3.5 h-3.5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleBreakdown} disabled={breakdownMutation.isPending}>
-              <RefreshCw className="w-3.5 h-3.5 mr-2" /> Regenerate
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={handleRemove}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="w-3.5 h-3.5 mr-2" /> Remove
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {!task.completed && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Step options"
+                className="h-6 w-6 text-muted-foreground hover:text-foreground"
+              >
+                <MoreVertical className="w-3.5 h-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleBreakdown} disabled={breakdownMutation.isPending}>
+                <RefreshCw className="w-3.5 h-3.5 mr-2" /> Regenerate
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={handleRemove}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-2" /> Remove
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       <Progress value={pct} className="h-1.5 mb-3" />

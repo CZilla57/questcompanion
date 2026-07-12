@@ -54,4 +54,11 @@ describe("generateJson", () => {
     ));
     await expect(generateJson("p", {})).rejects.toBeInstanceOf(AiClientError);
   });
+
+  it("throws AiClientError when the 200 response body is not valid JSON", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () =>
+      new Response("<html>proxy error</html>", { status: 200, headers: { "content-type": "text/html" } }),
+    ));
+    await expect(generateJson("p", {})).rejects.toBeInstanceOf(AiClientError);
+  });
 });

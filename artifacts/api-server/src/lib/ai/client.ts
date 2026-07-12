@@ -55,9 +55,14 @@ export async function generateJson(
     throw new AiClientError(`Gemini request returned ${response.status}`);
   }
 
-  const envelope = (await response.json()) as {
-    candidates?: { content?: { parts?: { text?: string }[] } }[];
-  };
+  let envelope: { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+  try {
+    envelope = (await response.json()) as {
+      candidates?: { content?: { parts?: { text?: string }[] } }[];
+    };
+  } catch {
+    throw new AiClientError("Gemini returned a non-JSON response body");
+  }
   const text = envelope?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (typeof text !== "string") {
     throw new AiClientError("Gemini returned no candidate text");
