@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useGetPartners, useSearchUsers, useSendPartnerRequest, useAcceptPartnerRequest, useDeclinePartnerRequest, PartnershipStatus } from "@workspace/api-client-react";
+import { useGetPartners, useGetMe, useSearchUsers, useSendPartnerRequest, useAcceptPartnerRequest, useDeclinePartnerRequest, PartnershipStatus } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,16 @@ import { Users, Search, Check, X, UserPlus, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetPartnersQueryKey } from "@workspace/api-client-react";
+
+/** Pull a human-readable message out of an API error, falling back if absent. */
+function errorMessage(err: unknown, fallback: string): string {
+  const data = (err as { data?: unknown } | null)?.data;
+  if (data && typeof data === "object" && typeof (data as { error?: unknown }).error === "string") {
+    return (data as { error: string }).error;
+  }
+  if (err instanceof Error && err.message) return err.message;
+  return fallback;
+}
 
 export default function Partners() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -21,6 +31,7 @@ export default function Partners() {
   }, [searchQuery]);
 
   const { data: partners, isLoading: partnersLoading } = useGetPartners();
+  const { data: me } = useGetMe();
   const { data: searchResults, isLoading: searchLoading } = useSearchUsers(
     { q: debouncedSearch },
     { query: { enabled: debouncedSearch.length > 2, queryKey: ["searchUsers", debouncedSearch] } }
@@ -31,13 +42,26 @@ export default function Partners() {
   const declineReq = useDeclinePartnerRequest();
 
   const activePartners = partners?.filter(p => p.status === PartnershipStatus.accepted) || [];
-  const pendingRequests = partners?.filter(p => p.status === PartnershipStatus.pending && p.recipientId === 1) || []; // Hardcoded user 1
+  // Incoming requests are the pending ones addressed to me.
+  const pendingRequests = partners?.filter(p => p.status === PartnershipStatus.pending && p.recipientId === me?.id) || [];
+
+  // Map of the other user's id -> current relationship status, so search
+  // results can reflect an existing tie instead of inviting a duplicate add.
+  const relationshipByUserId = new Map<number, PartnershipStatus>();
+  for (const p of partners ?? []) {
+    if (p.partner && p.status !== PartnershipStatus.declined) {
+      relationshipByUserId.set(p.partner.id, p.status);
+    }
+  }
 
   const handleSend = (id: number) => {
     sendReq.mutate({ data: { recipientId: id } }, {
       onSuccess: () => {
         toast({ title: "Request sent!" });
         queryClient.invalidateQueries({ queryKey: getGetPartnersQueryKey() });
+      },
+      onError: (err) => {
+        toast({ title: "Couldn't send request", description: errorMessage(err, "Please try again."), variant: "destructive" });
       }
     });
   };
@@ -47,6 +71,9 @@ export default function Partners() {
       onSuccess: () => {
         toast({ title: "Ally added!", className: "bg-primary/20 text-primary border-primary" });
         queryClient.invalidateQueries({ queryKey: getGetPartnersQueryKey() });
+      },
+      onError: (err) => {
+        toast({ title: "Couldn't accept request", description: errorMessage(err, "Please try again."), variant: "destructive" });
       }
     });
   };
@@ -55,6 +82,9 @@ export default function Partners() {
     declineReq.mutate({ id }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetPartnersQueryKey() });
+      },
+      onError: (err) => {
+        toast({ title: "Couldn't decline request", description: errorMessage(err, "Please try again."), variant: "destructive" });
       }
     });
   };
@@ -155,7 +185,9 @@ export default function Partners() {
             {searchLoading && <div className="text-center text-primary animate-pulse py-8">Scanning network...</div>}
             
             {!searchLoading && searchResults && searchResults.length > 0 ? (
-              searchResults.map(u => (
+              searchResults.map(u => {
+                const relationship = relationshipByUserId.get(u.id);
+                return (
                 <div key={u.id} className="flex items-center justify-between p-4 bg-card rounded-xl border border-border">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center font-bold">
@@ -166,11 +198,22 @@ export default function Partners() {
                       <p className="text-sm text-muted-foreground">Lv. {u.currentLevel} • {u.totalPoints} XP</p>
                     </div>
                   </div>
-                  <Button variant="outline" className="border-primary/50 text-primary hover:bg-primary/20" onClick={() => handleSend(u.id)} disabled={sendReq.isPending}>
-                    <UserPlus className="w-4 h-4 mr-2" /> Add Ally
-                  </Button>
+                  {relationship === PartnershipStatus.accepted ? (
+                    <Button variant="outline" className="border-primary/30 text-muted-foreground" disabled>
+                      <Check className="w-4 h-4 mr-2" /> Allies
+                    </Button>
+                  ) : relationship === PartnershipStatus.pending ? (
+                    <Button variant="outline" className="border-primary/30 text-muted-foreground" disabled>
+                      <Check className="w-4 h-4 mr-2" /> Pending
+                    </Button>
+                  ) : (
+                    <Button variant="outline" className="border-primary/50 text-primary hover:bg-primary/20" onClick={() => handleSend(u.id)} disabled={sendReq.isPending}>
+                      <UserPlus className="w-4 h-4 mr-2" /> Add Ally
+                    </Button>
+                  )}
                 </div>
-              ))
+                );
+              })
             ) : debouncedSearch.length > 2 && !searchLoading ? (
               <div className="text-center text-muted-foreground py-8">No users found matching "{debouncedSearch}"</div>
             ) : null}
