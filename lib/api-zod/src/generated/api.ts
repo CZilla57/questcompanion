@@ -263,7 +263,13 @@ export const GetTaskRecommendationResponse = zod.object({
   "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
   "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
   "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
-  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus')
+  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus'),
+  "steps": zod.array(zod.object({
+  "id": zod.number(),
+  "text": zod.string(),
+  "position": zod.number(),
+  "done": zod.boolean()
+})).describe('AI-generated first-step checklist attached to this quest')
 }),zod.null()]).optional(),
   "reason": zod.string(),
   "category": zod.string().optional(),
@@ -296,7 +302,13 @@ export const GetTasksResponseItem = zod.object({
   "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
   "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
   "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
-  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus')
+  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus'),
+  "steps": zod.array(zod.object({
+  "id": zod.number(),
+  "text": zod.string(),
+  "position": zod.number(),
+  "done": zod.boolean()
+})).describe('AI-generated first-step checklist attached to this quest')
 })
 export const GetTasksResponse = zod.array(GetTasksResponseItem)
 
@@ -347,7 +359,13 @@ export const GetTaskResponse = zod.object({
   "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
   "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
   "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
-  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus')
+  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus'),
+  "steps": zod.array(zod.object({
+  "id": zod.number(),
+  "text": zod.string(),
+  "position": zod.number(),
+  "done": zod.boolean()
+})).describe('AI-generated first-step checklist attached to this quest')
 })
 
 
@@ -394,7 +412,13 @@ export const UpdateTaskResponse = zod.object({
   "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
   "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
   "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
-  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus')
+  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus'),
+  "steps": zod.array(zod.object({
+  "id": zod.number(),
+  "text": zod.string(),
+  "position": zod.number(),
+  "done": zod.boolean()
+})).describe('AI-generated first-step checklist attached to this quest')
 })
 
 
@@ -430,7 +454,13 @@ export const CompleteTaskResponse = zod.object({
   "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
   "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
   "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
-  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus')
+  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus'),
+  "steps": zod.array(zod.object({
+  "id": zod.number(),
+  "text": zod.string(),
+  "position": zod.number(),
+  "done": zod.boolean()
+})).describe('AI-generated first-step checklist attached to this quest')
 }),
   "pointsAwarded": zod.number().describe('Total XP awarded (base + streak bonus + all-day bonus)'),
   "bonusAwarded": zod.boolean(),
@@ -651,7 +681,13 @@ export const UncompleteTaskResponse = zod.object({
   "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
   "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
   "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
-  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus')
+  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus'),
+  "steps": zod.array(zod.object({
+  "id": zod.number(),
+  "text": zod.string(),
+  "position": zod.number(),
+  "done": zod.boolean()
+})).describe('AI-generated first-step checklist attached to this quest')
 })
 
 
@@ -682,7 +718,49 @@ export const PatchTaskFocusResponse = zod.object({
   "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
   "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
   "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
-  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus')
+  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus'),
+  "steps": zod.array(zod.object({
+  "id": zod.number(),
+  "text": zod.string(),
+  "position": zod.number(),
+  "done": zod.boolean()
+})).describe('AI-generated first-step checklist attached to this quest')
+})
+
+
+/**
+ * @summary Generate an AI first-step breakdown for a quest (replaces existing steps)
+ */
+export const BreakdownTaskParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Toggle a breakdown step's done state
+ */
+export const PatchTaskStepParams = zod.object({
+  "id": zod.coerce.number(),
+  "stepId": zod.coerce.number()
+})
+
+export const PatchTaskStepBody = zod.object({
+  "done": zod.boolean()
+})
+
+export const PatchTaskStepResponse = zod.object({
+  "id": zod.number(),
+  "text": zod.string(),
+  "position": zod.number(),
+  "done": zod.boolean()
+})
+
+
+/**
+ * @summary Remove all breakdown steps for a quest
+ */
+export const DeleteTaskStepsParams = zod.object({
+  "id": zod.coerce.number()
 })
 
 

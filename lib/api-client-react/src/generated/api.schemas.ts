@@ -160,6 +160,13 @@ export const TaskCategory = {
   default: 'default',
 } as const;
 
+export interface TaskStep {
+  id: number;
+  text: string;
+  position: number;
+  done: boolean;
+}
+
 export interface Task {
   id: number;
   userId: number;
@@ -192,10 +199,16 @@ export interface Task {
      * @nullable
      */
   focusDate?: string | null;
+  /** AI-generated first-step checklist attached to this quest */
+  steps: TaskStep[];
 }
 
 export interface FocusToggleInput {
   pin: boolean;
+}
+
+export interface StepToggleInput {
+  done: boolean;
 }
 
 export type TaskInputPriority = typeof TaskInputPriority[keyof typeof TaskInputPriority];

@@ -7,6 +7,7 @@
  */
 import type { TaskCategory } from './taskCategory';
 import type { TaskPriority } from './taskPriority';
+import type { TaskStep } from './taskStep';
 
 export interface Task {
   id: number;
@@ -40,4 +41,6 @@ export interface Task {
      * @nullable
      */
   focusDate?: string | null;
+  /** AI-generated first-step checklist attached to this quest */
+  steps: TaskStep[];
 }

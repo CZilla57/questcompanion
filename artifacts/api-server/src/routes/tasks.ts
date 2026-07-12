@@ -1,19 +1,25 @@
 import { Router, type IRouter } from "express";
-import { eq, and, desc, count } from "drizzle-orm";
+import { eq, and, desc, count, inArray } from "drizzle-orm";
 import { applyMultiplier } from "../lib/xp-multiplier";
-import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable } from "@workspace/db";
+import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable, taskStepsTable } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, DAILY_BONUS_POINTS } from "../lib/gamification";
 import { assignPoints, CATEGORY_LABELS, VALID_CATEGORIES } from "../lib/auto-points";
 import { advanceHabitStreak, reverseHabitStreak, type HabitStreakPreviousState } from "../lib/habit-streaks";
 import { awardStreakGear, getStreakGearRarity, type GearRewardInfo } from "../lib/gear-rewards";
 import { rollSurpriseReward, type SurpriseRewardResult } from "../lib/surprise-rewards";
 import { logger } from "../lib/logger";
+import { breakdownTask, BreakdownParseError } from "../lib/ai/task-breakdown";
+import { generateJson, isAiConfigured, AiClientError } from "../lib/ai/client";
+import { breakdownCooldown } from "../lib/ai/breakdown-cooldown";
 
 const router: IRouter = Router();
 
 const FOCUS_BONUS_POINTS = 10;
 
-function formatTask(task: typeof tasksTable.$inferSelect) {
+function formatTask(
+  task: typeof tasksTable.$inferSelect,
+  steps: (typeof taskStepsTable.$inferSelect)[] = [],
+) {
   return {
     id: task.id,
     userId: task.userId,
@@ -31,6 +37,10 @@ function formatTask(task: typeof tasksTable.$inferSelect) {
     actualMinutes: task.actualMinutes ?? null,
     isDailyFocus: task.isDailyFocus,
     focusDate: task.focusDate ?? null,
+    steps: steps
+      .slice()
+      .sort((a, b) => a.position - b.position)
+      .map((s) => ({ id: s.id, text: s.text, position: s.position, done: s.done })),
   };
 }
 
@@ -189,7 +199,20 @@ router.get("/tasks", async (req, res): Promise<void> => {
     .where(and(...conditions))
     .orderBy(desc(tasksTable.createdAt));
 
-  res.json(tasks.map(formatTask));
+  const taskIds = tasks.map((t) => t.id);
+  const steps = taskIds.length
+    ? await db.select().from(taskStepsTable)
+        .where(inArray(taskStepsTable.taskId, taskIds))
+        .orderBy(taskStepsTable.position)
+    : [];
+  const stepsByTask = new Map<number, (typeof taskStepsTable.$inferSelect)[]>();
+  for (const s of steps) {
+    const arr = stepsByTask.get(s.taskId) ?? [];
+    arr.push(s);
+    stepsByTask.set(s.taskId, arr);
+  }
+
+  res.json(tasks.map((t) => formatTask(t, stepsByTask.get(t.id) ?? [])));
 });
 
 router.post("/tasks", async (req, res): Promise<void> => {
@@ -238,7 +261,10 @@ router.get("/tasks/:id", async (req, res): Promise<void> => {
   const [task] = await db.select().from(tasksTable).where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)));
   if (!task) { res.status(404).json({ error: "Task not found" }); return; }
 
-  res.json(formatTask(task));
+  const stepsForTask = await db.select().from(taskStepsTable)
+    .where(eq(taskStepsTable.taskId, id))
+    .orderBy(taskStepsTable.position);
+  res.json(formatTask(task, stepsForTask));
 });
 
 router.patch("/tasks/:id", async (req, res): Promise<void> => {
@@ -822,6 +848,102 @@ router.post("/tasks/:id/uncomplete", async (req, res): Promise<void> => {
   // ─────────────────────────────────────────────────────────────────────────────
 
   res.json(formatTask(updatedTask));
+});
+
+router.post("/tasks/:id/breakdown", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const id = parseInt(raw, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [task] = await db.select().from(tasksTable)
+    .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)));
+  if (!task) { res.status(404).json({ error: "Task not found" }); return; }
+
+  if (!isAiConfigured()) {
+    res.status(503).json({ error: "AI breakdown is not configured" });
+    return;
+  }
+  if (!breakdownCooldown.tryAcquire(userId)) {
+    res.status(429).json({ error: "Slow down a moment before generating another breakdown." });
+    return;
+  }
+
+  let steps: string[];
+  try {
+    steps = await breakdownTask(
+      {
+        title: task.title,
+        description: task.description,
+        category: task.category,
+        estimatedMinutes: task.estimatedMinutes,
+      },
+      generateJson,
+    );
+  } catch (err) {
+    if (err instanceof AiClientError || err instanceof BreakdownParseError) {
+      logger.warn({ err, taskId: id }, "task breakdown generation failed");
+      res.status(502).json({ error: "Couldn't generate a breakdown, try again." });
+      return;
+    }
+    throw err;
+  }
+
+  // Replace any existing steps atomically so a breakdown never half-applies.
+  const inserted = await db.transaction(async (tx) => {
+    await tx.delete(taskStepsTable)
+      .where(and(eq(taskStepsTable.taskId, id), eq(taskStepsTable.userId, userId)));
+    return tx.insert(taskStepsTable)
+      .values(steps.map((text, i) => ({ taskId: id, userId, text, position: i })))
+      .returning();
+  });
+
+  res.status(201).json(formatTask(task, inserted));
+});
+
+router.patch("/tasks/:id/steps/:stepId", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const rawStepId = Array.isArray(req.params.stepId) ? req.params.stepId[0] : req.params.stepId;
+  const id = parseInt(rawId, 10);
+  const stepId = parseInt(rawStepId, 10);
+  if (isNaN(id) || isNaN(stepId)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const done: unknown = req.body?.done;
+  if (typeof done !== "boolean") {
+    res.status(400).json({ error: "done must be a boolean" });
+    return;
+  }
+
+  const [updated] = await db.update(taskStepsTable)
+    .set({ done })
+    .where(and(
+      eq(taskStepsTable.id, stepId),
+      eq(taskStepsTable.taskId, id),
+      eq(taskStepsTable.userId, userId),
+    ))
+    .returning();
+  if (!updated) { res.status(404).json({ error: "Step not found" }); return; }
+
+  res.json({ id: updated.id, text: updated.text, position: updated.position, done: updated.done });
+});
+
+router.delete("/tasks/:id/steps", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const id = parseInt(raw, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  // Idempotent: the userId filter means a non-owned/absent task deletes nothing.
+  await db.delete(taskStepsTable)
+    .where(and(eq(taskStepsTable.taskId, id), eq(taskStepsTable.userId, userId)));
+  res.sendStatus(204);
 });
 
 router.patch("/tasks/:id/focus", async (req, res): Promise<void> => {

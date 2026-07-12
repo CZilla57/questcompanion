@@ -63,12 +63,14 @@ import type {
   RecurringTaskUpdate,
   SearchUsersParams,
   StartFocusSessionInput,
+  StepToggleInput,
   StreakFreezeResult,
   SuccessEnvelope,
   Task,
   TaskCompletionResult,
   TaskInput,
   TaskRecommendation,
+  TaskStep,
   TaskUpdate,
   User,
   UserBadge,
@@ -2199,6 +2201,220 @@ export const usePatchTaskFocus = <TError = ErrorType<ErrorEnvelope>,
         TContext
       > => {
       return useMutation(getPatchTaskFocusMutationOptions(options));
+    }
+
+export const getBreakdownTaskUrl = (id: number,) => {
+
+
+
+
+  return `/api/tasks/${id}/breakdown`
+}
+
+/**
+ * @summary Generate an AI first-step breakdown for a quest (replaces existing steps)
+ */
+export const breakdownTask = async (id: number, options?: RequestInit): Promise<Task> => {
+
+  return customFetch<Task>(getBreakdownTaskUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getBreakdownTaskMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof breakdownTask>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof breakdownTask>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['breakdownTask'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof breakdownTask>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  breakdownTask(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BreakdownTaskMutationResult = NonNullable<Awaited<ReturnType<typeof breakdownTask>>>
+
+    export type BreakdownTaskMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Generate an AI first-step breakdown for a quest (replaces existing steps)
+ */
+export const useBreakdownTask = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof breakdownTask>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof breakdownTask>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getBreakdownTaskMutationOptions(options));
+    }
+
+export const getPatchTaskStepUrl = (id: number,
+    stepId: number,) => {
+
+
+
+
+  return `/api/tasks/${id}/steps/${stepId}`
+}
+
+/**
+ * @summary Toggle a breakdown step's done state
+ */
+export const patchTaskStep = async (id: number,
+    stepId: number,
+    stepToggleInput: StepToggleInput, options?: RequestInit): Promise<TaskStep> => {
+
+  return customFetch<TaskStep>(getPatchTaskStepUrl(id,stepId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      stepToggleInput,)
+  }
+);}
+
+
+
+
+export const getPatchTaskStepMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchTaskStep>>, TError,{id: number;stepId: number;data: BodyType<StepToggleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof patchTaskStep>>, TError,{id: number;stepId: number;data: BodyType<StepToggleInput>}, TContext> => {
+
+const mutationKey = ['patchTaskStep'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchTaskStep>>, {id: number;stepId: number;data: BodyType<StepToggleInput>}> = (props) => {
+          const {id,stepId,data} = props ?? {};
+
+          return  patchTaskStep(id,stepId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PatchTaskStepMutationResult = NonNullable<Awaited<ReturnType<typeof patchTaskStep>>>
+    export type PatchTaskStepMutationBody = BodyType<StepToggleInput>
+    export type PatchTaskStepMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Toggle a breakdown step's done state
+ */
+export const usePatchTaskStep = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchTaskStep>>, TError,{id: number;stepId: number;data: BodyType<StepToggleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof patchTaskStep>>,
+        TError,
+        {id: number;stepId: number;data: BodyType<StepToggleInput>},
+        TContext
+      > => {
+      return useMutation(getPatchTaskStepMutationOptions(options));
+    }
+
+export const getDeleteTaskStepsUrl = (id: number,) => {
+
+
+
+
+  return `/api/tasks/${id}/steps`
+}
+
+/**
+ * @summary Remove all breakdown steps for a quest
+ */
+export const deleteTaskSteps = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteTaskStepsUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteTaskStepsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTaskSteps>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteTaskSteps>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteTaskSteps'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteTaskSteps>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteTaskSteps(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteTaskStepsMutationResult = NonNullable<Awaited<ReturnType<typeof deleteTaskSteps>>>
+
+    export type DeleteTaskStepsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Remove all breakdown steps for a quest
+ */
+export const useDeleteTaskSteps = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTaskSteps>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteTaskSteps>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteTaskStepsMutationOptions(options));
     }
 
 export const getGetFocusPresetsUrl = () => {

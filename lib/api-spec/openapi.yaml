@@ -582,6 +582,100 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
 
+  /tasks/{id}/breakdown:
+    post:
+      operationId: breakdownTask
+      tags: [tasks]
+      summary: Generate an AI first-step breakdown for a quest (replaces existing steps)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: Task with its new steps
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "429":
+          description: Cooldown — too many breakdown requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "502":
+          description: Model or parse failure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "503":
+          description: AI breakdown not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /tasks/{id}/steps/{stepId}:
+    patch:
+      operationId: patchTaskStep
+      tags: [tasks]
+      summary: Toggle a breakdown step's done state
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: stepId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StepToggleInput"
+      responses:
+        "200":
+          description: Updated step
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskStep"
+        "400":
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Step not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /tasks/{id}/steps:
+    delete:
+      operationId: deleteTaskSteps
+      tags: [tasks]
+      summary: Remove all breakdown steps for a quest
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Steps removed
+
   /focus-sessions/presets:
     get:
       operationId: getFocusPresets
@@ -1291,7 +1385,7 @@ components:
 
     Task:
       type: object
-      required: [id, userId, title, points, completed, dueDate, priority, createdAt, category, categoryLabel]
+      required: [id, userId, title, points, completed, dueDate, priority, createdAt, category, categoryLabel, steps]
       properties:
         id:
           type: integer
@@ -1331,12 +1425,37 @@ components:
         focusDate:
           type: ["string", "null"]
           description: The date (YYYY-MM-DD) this quest was pinned as focus
+        steps:
+          type: array
+          description: AI-generated first-step checklist attached to this quest
+          items:
+            $ref: "#/components/schemas/TaskStep"
 
     FocusToggleInput:
       type: object
       required: [pin]
       properties:
         pin:
+          type: boolean
+
+    TaskStep:
+      type: object
+      required: [id, text, position, done]
+      properties:
+        id:
+          type: integer
+        text:
+          type: string
+        position:
+          type: integer
+        done:
+          type: boolean
+
+    StepToggleInput:
+      type: object
+      required: [done]
+      properties:
+        done:
           type: boolean
 
     TaskInput:
