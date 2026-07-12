@@ -43,3 +43,9 @@ self.addEventListener("notificationclick", (event) => {
     })
   );
 });
+
+self.addEventListener("fetch", () => {
+  // No-op: present only so the app meets PWA installability criteria.
+  // Intentionally does NOT call event.respondWith — every request goes to the
+  // network. There is no offline caching in this version.
+});

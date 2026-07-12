@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useLocation } from "wouter";
 import { Link } from "wouter";
-import { Home, CheckSquare, BarChart2, BarChart3, Users, Trophy, X, Zap, Bell, BellOff, Repeat, Menu, User, LogOut, Coffee, Timer } from "lucide-react";
+import { Home, CheckSquare, BarChart2, BarChart3, Users, Trophy, X, Zap, Bell, BellOff, Repeat, Menu, User, LogOut, Coffee, Timer, Download } from "lucide-react";
 import { Button } from "./ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
+import { usePwaInstall } from "@/hooks/use-pwa-install";
+import { shouldShowInstallButton } from "@/lib/pwa";
 import {
   Tooltip,
   TooltipContent,
@@ -12,6 +14,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { DopamineOverlay } from "./dopamine-overlay";
+import { InstallBanner } from "./install-banner";
 
 function NotificationBell() {
   const { state, isSubscribed, supported, subscribe, unsubscribe } = useNotifications();
@@ -81,6 +84,47 @@ function NotificationBell() {
   );
 }
 
+function InstallButton() {
+  const { canInstall, isIOS, isStandalone, promptInstall } = usePwaInstall();
+  const { toast } = useToast();
+
+  if (!shouldShowInstallButton({ isStandalone, canInstall, isIOS })) return null;
+
+  const handleClick = async () => {
+    if (isIOS) {
+      toast({
+        title: "Install FocusQuest",
+        description: "Tap the Share icon, then “Add to Home Screen.”",
+      });
+      return;
+    }
+    try {
+      await promptInstall();
+    } catch (err) {
+      console.error("PWA install prompt failed", err);
+    }
+  };
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleClick}
+            aria-label="Install app"
+            className="text-muted-foreground"
+          >
+            <Download className="h-5 w-5" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Install app</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 function LogoutButton({ iconOnly = false }: { iconOnly?: boolean }) {
   return (
     <form method="POST" action="/api/logout">
@@ -126,12 +170,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row overflow-hidden font-sans dark">
 
       {/* ── Mobile header ─────────────────────────────────── */}
-      <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-card/80 backdrop-blur-md z-20 sticky top-0">
+      <header className="md:hidden flex items-center justify-between px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] border-b border-border bg-card/80 backdrop-blur-md z-20 sticky top-0">
         <div className="flex items-center gap-2 text-primary">
           <Zap className="w-5 h-5 fill-current" />
           <span className="font-bold text-base tracking-wider uppercase">FocusQuest</span>
         </div>
         <div className="flex items-center gap-1">
+          <InstallButton />
           <NotificationBell />
           <TooltipProvider>
             <LogoutButton iconOnly />
@@ -164,7 +209,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
               FocusQuest
             </span>
           </div>
-          <NotificationBell />
+          <div className="flex items-center gap-1">
+            <InstallButton />
+            <NotificationBell />
+          </div>
         </div>
 
         <nav className="flex-1 px-4 space-y-1 mt-8 md:mt-0" aria-label="Main navigation">
@@ -213,6 +261,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* ── Main content ─────────────────────────────────── */}
       <main className="flex-1 relative overflow-y-auto overflow-x-hidden p-4 md:p-8 pb-24 md:pb-8">
         <div className="max-w-5xl mx-auto">
+          <InstallBanner />
           {children}
         </div>
       </main>
