@@ -228,30 +228,33 @@ function PeriodChart({ data }: { data: InsightsPeriodStat[] }) {
   const maxCompleted = Math.max(...data.map(d => d.completed), 1);
 
   return (
-    <div className="grid grid-cols-4 gap-3 h-full items-end">
+    <div className="grid grid-cols-4 gap-3 h-full">
       {data.map((p) => {
         const pct = maxCompleted > 0 ? Math.round((p.completed / maxCompleted) * 100) : 0;
         const color = PERIOD_COLORS[p.key] ?? "#94a3b8";
         const icon = PERIOD_ICONS[p.key];
         const isTop = p.completed === maxCompleted && p.completed > 0;
         return (
-          <div key={p.key} className="flex flex-col items-center gap-2">
-            <div className="text-sm font-bold text-foreground">{p.completed}</div>
-            <div className="w-full flex flex-col items-center gap-1">
+          <div key={p.key} className="flex flex-col items-center h-full min-w-0">
+            <div className="text-sm font-bold text-foreground mb-1">{p.completed}</div>
+            {/* Bar grows from the bottom of the flexible middle area, so its
+                height is a share of the space left after the count and labels —
+                it can never push them out of the card. */}
+            <div className="flex-1 w-full flex items-end min-h-0">
               <div
                 className="w-full rounded-t-lg transition-all duration-700"
                 style={{
-                  height: `${Math.max(8, pct * 1.4)}px`,
+                  height: `${Math.max(4, pct)}%`,
                   background: color,
                   opacity: isTop ? 1 : 0.45,
                   boxShadow: isTop ? `0 0 12px ${color}88` : "none",
                 }}
               />
             </div>
-            <div className="flex flex-col items-center gap-1" style={{ color: isTop ? color : "#A0AEC0" }}>
+            <div className="flex flex-col items-center gap-0.5 mt-2 text-center" style={{ color: isTop ? color : "#A0AEC0" }}>
               {icon}
-              <span className="text-xs font-semibold">{p.label}</span>
-              <span className="text-[10px] text-muted-foreground">{p.range}</span>
+              <span className="text-xs font-semibold leading-tight">{p.label}</span>
+              <span className="text-[10px] text-muted-foreground leading-tight whitespace-nowrap">{p.range}</span>
             </div>
           </div>
         );
@@ -454,7 +457,7 @@ export default function Insights() {
                 </span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="h-[200px] flex items-end px-8 pb-4 pt-2">
+            <CardContent className="h-[220px] px-6 pb-4 pt-3">
               <PeriodChart data={data.periodStats} />
             </CardContent>
           </Card>
