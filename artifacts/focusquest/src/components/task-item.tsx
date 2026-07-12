@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Clock, Edit2, Flame, Pin, PinOff, Shield, Timer, Trash2, Zap } from "lucide-react";
+import { CalendarClock, Check, Clock, Edit2, Flame, Pin, PinOff, Shield, Timer, Trash2, Zap } from "lucide-react";
 import { format } from "date-fns";
 import { Task, TaskPriority, useCompleteTask, useDeleteTask, usePatchTaskFocus, useUncompleteTask, useUpdateTask, useGetMyStats } from "@workspace/api-client-react";
 import { Button } from "./ui/button";
@@ -12,6 +12,9 @@ import { formatTime12h } from "@/lib/format-time";
 import { dispatchQuestCompleted } from "./dopamine-overlay";
 import { CATEGORY_COLORS, CATEGORY_LABEL } from "@/lib/categories";
 import { TaskSteps } from "./task-steps";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Calendar } from "./ui/calendar";
+import { parseDueDate, toDueDateString, todayDueDate, tomorrowDueDate, nextWeekDueDate } from "@/lib/reschedule";
 
 interface TaskItemProps {
   task: Task;
@@ -46,11 +49,6 @@ const tierStyles: Record<NonNullable<MultiplierDisplay["tier"]>, string> = {
   elite:   "bg-amber-500/15 border-amber-400/40 text-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.4)]",
 };
 
-function parseLocalDate(iso: string): Date {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
-
 function formatMinutes(minutes: number): string {
   if (minutes < 60) return `${minutes}m`;
   const h = Math.floor(minutes / 60);
@@ -63,6 +61,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
   const queryClient = useQueryClient();
   const [loggingTime, setLoggingTime] = useState(false);
   const [actualInput, setActualInput] = useState(task.actualMinutes ? String(task.actualMinutes) : "");
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
 
   const { data: stats } = useGetMyStats({ tz: browserTimeZone() });
   const multiplier = !task.completed && stats ? getMultiplierDisplay(stats.streakDays) : null;
@@ -197,6 +196,24 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
     });
   };
 
+  const handleReschedule = (dueDate: string) => {
+    if (updateMutation.isPending) return;
+    updateMutation.mutate({ id: task.id, data: { dueDate } }, {
+      onSuccess: () => {
+        setRescheduleOpen(false);
+        queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+        toast({
+          title: `Rescheduled to ${format(parseDueDate(dueDate), "MMM d")}`,
+          className: "border-primary bg-primary/10",
+        });
+      },
+      onError: (err: any) => {
+        const msg = err?.response?.data?.error ?? err?.message ?? "Could not reschedule quest";
+        toast({ title: msg, variant: "destructive" });
+      },
+    });
+  };
+
   const isBusy = completeMutation.isPending || uncompleteMutation.isPending;
 
   const hasEstimate = !!task.estimatedMinutes;
@@ -238,7 +255,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Clock className="w-3 h-3" />
             <span>
-              {format(parseLocalDate(task.dueDate), 'MMM d, yyyy')}
+              {format(parseDueDate(task.dueDate), 'MMM d, yyyy')}
               {task.dueTime ? ` · ${formatTime12h(task.dueTime)}` : ""}
             </span>
           </div>
@@ -348,6 +365,64 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
           >
             {isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
           </Button>
+        )}
+        {!task.completed && (
+          <Popover open={rescheduleOpen} onOpenChange={setRescheduleOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Reschedule quest"
+                title="Change date"
+                className="h-9 w-9 cursor-pointer text-muted-foreground hover:text-primary"
+                disabled={updateMutation.isPending}
+              >
+                <CalendarClock className="w-4 h-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-3 border-primary/20" align="end">
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs"
+                    onClick={() => handleReschedule(todayDueDate())}
+                    disabled={updateMutation.isPending}
+                  >
+                    Today
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs"
+                    onClick={() => handleReschedule(tomorrowDueDate())}
+                    disabled={updateMutation.isPending}
+                  >
+                    Tomorrow
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs whitespace-nowrap"
+                    onClick={() => handleReschedule(nextWeekDueDate())}
+                    disabled={updateMutation.isPending}
+                  >
+                    Next week
+                  </Button>
+                </div>
+                <Calendar
+                  mode="single"
+                  selected={parseDueDate(task.dueDate)}
+                  onSelect={(d) => { if (d) handleReschedule(toDueDateString(d)); }}
+                  initialFocus
+                />
+              </div>
+            </PopoverContent>
+          </Popover>
         )}
         {task.completed && !loggingTime && (
           <Button

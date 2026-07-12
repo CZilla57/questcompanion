@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetTasksQueryKey } from "@workspace/api-client-react";
 import { CATEGORIES, CATEGORY_COLORS, CATEGORY_HEX_COLORS } from "@/lib/categories";
+import { parseDueDate, toDueDateString } from "@/lib/reschedule";
 
 interface PointPreview {
   points: number;
@@ -205,6 +206,7 @@ export default function Tasks() {
   const [editPriority, setEditPriority] = useState<TaskPriority>(TaskPriority.medium);
   const [editEstimate, setEditEstimate] = useState("");
   const [editCategory, setEditCategory] = useState("");
+  const [editDueDate, setEditDueDate] = useState<Date | undefined>(undefined);
 
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [excludedIds, setExcludedIds] = useState<number[]>([]);
@@ -329,6 +331,7 @@ export default function Tasks() {
     setEditPriority((task.priority as TaskPriority) ?? TaskPriority.medium);
     setEditEstimate(task.estimatedMinutes ? String(task.estimatedMinutes) : "");
     setEditCategory(task.category ?? "default");
+    setEditDueDate(parseDueDate(task.dueDate));
   };
 
   const handleSaveEdit = (e: React.FormEvent) => {
@@ -343,6 +346,7 @@ export default function Tasks() {
         title: editTitle,
         description: editDesc,
         priority: editPriority as any,
+        ...(editDueDate ? { dueDate: toDueDateString(editDueDate) } : {}),
         ...(estimatedMinutes && estimatedMinutes > 0 ? { estimatedMinutes } : {}),
         category: editCategory as any,
       }
@@ -351,7 +355,11 @@ export default function Tasks() {
         toast({ title: "Quest updated", className: "border-primary bg-primary/10" });
         setEditTask(null);
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
-      }
+      },
+      onError: (err: any) => {
+        const msg = err?.response?.data?.error ?? err?.message ?? "Could not update quest";
+        toast({ title: msg, variant: "destructive" });
+      },
     });
   };
 
@@ -677,6 +685,25 @@ export default function Tasks() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">Due date</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={`w-full justify-start text-left font-normal border-primary/20 ${!editDueDate && "text-muted-foreground"}`}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
+                    {editDueDate ? format(editDueDate, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 border-primary/20" align="start">
+                  <Calendar mode="single" selected={editDueDate} onSelect={setEditDueDate} initialFocus />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

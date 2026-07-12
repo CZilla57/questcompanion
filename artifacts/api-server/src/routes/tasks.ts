@@ -20,6 +20,19 @@ const router: IRouter = Router();
 
 const FOCUS_BONUS_POINTS = 10;
 
+// node-postgres reports a unique-constraint violation as SQLSTATE 23505.
+// drizzle-orm may wrap the driver error, so inspect the error and its `cause`.
+function isUniqueViolation(err: unknown, constraint: string): boolean {
+  const e = err as {
+    code?: string;
+    constraint?: string;
+    cause?: { code?: string; constraint?: string };
+  };
+  const code = e?.code ?? e?.cause?.code;
+  const name = e?.constraint ?? e?.cause?.constraint;
+  return code === "23505" && name === constraint;
+}
+
 function formatTask(
   task: typeof tasksTable.$inferSelect,
   steps: (typeof taskStepsTable.$inferSelect)[] = [],
@@ -388,9 +401,20 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
 
   // The WHERE clause re-checks completed=false as a safety guard against a race
   // between the read above and this write.
-  const [task] = await db.update(tasksTable).set(updates)
-    .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId), eq(tasksTable.completed, false)))
-    .returning();
+  let task: typeof tasksTable.$inferSelect | undefined;
+  try {
+    [task] = await db.update(tasksTable).set(updates)
+      .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId), eq(tasksTable.completed, false)))
+      .returning();
+  } catch (err) {
+    // Rescheduling a recurring-spawned quest onto a date that already holds a
+    // sibling instance violates unique(userId, recurringTaskId, dueDate).
+    if (isUniqueViolation(err, "tasks_recurring_unique_idx")) {
+      res.status(409).json({ error: "A quest from this habit already exists on that date." });
+      return;
+    }
+    throw err;
+  }
   if (!task) { res.status(409).json({ error: "Cannot edit a completed task" }); return; }
 
   res.json(formatTask(task));
