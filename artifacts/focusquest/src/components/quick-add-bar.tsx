@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { Sparkles, CalendarClock, Zap, Plus, RefreshCw } from "lucide-react";
 import { parseQuickAdd, type ParsedQuickAdd } from "@workspace/quick-add";
@@ -31,14 +31,25 @@ export function QuickAddBar({ selectedDate }: { selectedDate: Date | undefined }
   const createMutation = useCreateTask();
   const parseMutation = useParseQuickAdd();
 
-  // Deterministic parse runs live on every keystroke; AI result (if any) overrides it.
-  const parsed = useMemo<ParsedQuickAdd>(() => {
-    const det = parseQuickAdd(text, { now: new Date() });
-    return aiFields ? { ...det, ...aiFields, title: det.title || aiFields.title } : det;
-  }, [text, aiFields]);
+  // Deterministic parse runs live on every keystroke.
+  const det = useMemo(() => parseQuickAdd(text, { now: new Date() }), [text]);
 
-  // Reset any AI result once the user edits the line again.
-  useEffect(() => { setAiFields(null); }, [text]);
+  // A Smart-parse (AI) result overlays ONLY the fields it actually resolved — it never
+  // clobbers a deterministic value with undefined. Category stays deterministic (explicit
+  // #tag only) per spec, so an AI-inferred category is never merged in or sent to create.
+  const parsed = useMemo<ParsedQuickAdd>(() => {
+    if (!aiFields) return det;
+    const merged: ParsedQuickAdd = { ...det };
+    if (aiFields.dueDate) merged.dueDate = aiFields.dueDate;
+    if (aiFields.dueTime) merged.dueTime = aiFields.dueTime;
+    if (aiFields.priority) merged.priority = aiFields.priority;
+    if (!merged.title) merged.title = aiFields.title;
+    return merged;
+  }, [det, aiFields]);
+
+  // Track the current text so an in-flight Smart-parse can detect a stale response.
+  const textRef = useRef(text);
+  useEffect(() => { textRef.current = text; }, [text]);
 
   // Reuse the existing points/category endpoint for the XP + auto-category chip.
   useEffect(() => {
@@ -78,14 +89,19 @@ export function QuickAddBar({ selectedDate }: { selectedDate: Date | undefined }
   };
 
   const handleSmartParse = () => {
+    const requested = text;
     parseMutation.mutate({ data: { text } }, {
-      onSuccess: (result) => setAiFields({
-        title: result.title,
-        dueDate: result.dueDate ?? undefined,
-        dueTime: result.dueTime ?? undefined,
-        priority: result.priority ?? undefined,
-        category: result.category ?? undefined,
-      }),
+      onSuccess: (result) => {
+        // Ignore a response for text the user has since edited.
+        if (textRef.current !== requested) return;
+        setAiFields({
+          title: result.title,
+          dueDate: result.dueDate ?? undefined,
+          dueTime: result.dueTime ?? undefined,
+          priority: result.priority ?? undefined,
+          category: result.category ?? undefined,
+        });
+      },
       onError: (err: any) => {
         const status = err?.status;
         const msg =
@@ -102,7 +118,7 @@ export function QuickAddBar({ selectedDate }: { selectedDate: Date | undefined }
       <div className="flex gap-2">
         <Input
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => { setText(e.target.value); setAiFields(null); }}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCreate(); } }}
           placeholder="Quick add — e.g. Email Sam tomorrow 3pm #work !high"
           aria-label="Quick add a quest in natural language"
