@@ -285,7 +285,7 @@ export default function Tasks() {
         toast({
           title: `Quest added — ${task.points} XP`,
           description: `Category: ${task.categoryLabel}`,
-          className: "border-primary bg-primary/10",
+          className: "border-primary",
         });
         setCreatedTask(task);
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
@@ -309,7 +309,7 @@ export default function Tasks() {
     breakdownMutation.mutate({ id: createdTask.id }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
-        toast({ title: "Broke it into first steps ✦", className: "border-primary bg-primary/10" });
+        toast({ title: "Broke it into first steps ✦", className: "border-primary" });
         handleCloseCreate();
       },
       onError: (err: any) => {
@@ -352,7 +352,7 @@ export default function Tasks() {
       }
     }, {
       onSuccess: () => {
-        toast({ title: "Quest updated", className: "border-primary bg-primary/10" });
+        toast({ title: "Quest updated", className: "border-primary" });
         setEditTask(null);
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
       },

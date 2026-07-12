@@ -69,7 +69,7 @@ export default function Partners() {
   const handleAccept = (id: number) => {
     acceptReq.mutate({ id }, {
       onSuccess: () => {
-        toast({ title: "Ally added!", className: "bg-primary/20 text-primary border-primary" });
+        toast({ title: "Ally added!", className: "text-primary border-primary" });
         queryClient.invalidateQueries({ queryKey: getGetPartnersQueryKey() });
       },
       onError: (err) => {

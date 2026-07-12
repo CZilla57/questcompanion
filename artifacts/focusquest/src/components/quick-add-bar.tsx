@@ -73,7 +73,7 @@ export function QuickAddBar({ selectedDate }: { selectedDate: Date | undefined }
       },
     }, {
       onSuccess: (task) => {
-        toast({ title: `Quest added — ${task.points} XP`, className: "border-primary bg-primary/10" });
+        toast({ title: `Quest added — ${task.points} XP`, className: "border-primary" });
         setText("");
         setAiFields(null);
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
