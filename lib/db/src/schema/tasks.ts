@@ -33,6 +33,7 @@ export const tasksTable = pgTable("tasks", {
   completed: boolean("completed").notNull().default(false),
   completedAt: timestamp("completed_at"),
   dueDate: text("due_date").notNull(),
+  dueTime: text("due_time"),
   priority: text("priority").notNull().default("medium"),
   category: text("category").notNull().default("default"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

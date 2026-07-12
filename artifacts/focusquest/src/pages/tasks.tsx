@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { Calendar as CalendarIcon, Clock, Plus, Filter, Target, Zap, Info, Sparkles, X, RefreshCw, ChevronRight } from "lucide-react";
 import { Task, useGetTasks, useCreateTask, useUpdateTask, useBreakdownTask, TaskPriority } from "@workspace/api-client-react";
 import { TaskItem } from "@/components/task-item";
+import { QuickAddBar } from "@/components/quick-add-bar";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -386,6 +387,8 @@ export default function Tasks() {
           </Button>
         </div>
       </div>
+
+      <QuickAddBar selectedDate={date} />
 
       {/* Recommendation card */}
       {recommendation && (

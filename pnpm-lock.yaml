@@ -91,6 +91,9 @@ importers:
       '@workspace/hero-options':
         specifier: workspace:*
         version: link:../../lib/hero-options
+      '@workspace/quick-add':
+        specifier: workspace:*
+        version: link:../../lib/quick-add
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7
@@ -266,6 +269,9 @@ importers:
       '@workspace/hero-options':
         specifier: workspace:*
         version: link:../../lib/hero-options
+      '@workspace/quick-add':
+        specifier: workspace:*
+        version: link:../../lib/quick-add
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
@@ -583,6 +589,12 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 25.6.2
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@25.6.2)(lightningcss@1.32.0)
+
+  lib/quick-add:
+    devDependencies:
       vitest:
         specifier: ^2.1.9
         version: 2.1.9(@types/node@25.6.2)(lightningcss@1.32.0)

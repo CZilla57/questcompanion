@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetTasksQueryKey, getGetMyStatsQueryKey } from "@workspace/api-client-react";
 import { browserTimeZone } from "@/lib/timezone";
+import { formatTime12h } from "@/lib/format-time";
 import { dispatchQuestCompleted } from "./dopamine-overlay";
 import { CATEGORY_COLORS, CATEGORY_LABEL } from "@/lib/categories";
 import { TaskSteps } from "./task-steps";
@@ -253,7 +254,10 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
         <div className="flex items-center gap-3 mt-2 flex-wrap">
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Clock className="w-3 h-3" />
-            <span>{format(parseDueDate(task.dueDate), 'MMM d, yyyy')}</span>
+            <span>
+              {format(parseDueDate(task.dueDate), 'MMM d, yyyy')}
+              {task.dueTime ? ` · ${formatTime12h(task.dueTime)}` : ""}
+            </span>
           </div>
 
           <div className="flex items-center gap-1.5">
