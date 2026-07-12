@@ -18,5 +18,8 @@ export const TaskCategory = {
   household: 'household',
   social: 'social',
   creative: 'creative',
+  self_care: 'self_care',
+  errands: 'errands',
+  travel: 'travel',
   default: 'default',
 } as const;
