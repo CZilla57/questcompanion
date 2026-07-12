@@ -39,33 +39,37 @@ and grow the `#hashtag` alias list — without a DB migration.
 
 ## Design
 
-### 1. Matcher: leading word-boundary (root-cause precision fix)
+### 1. Matcher: word-boundary with length-tiered suffix (root-cause precision fix)
 
-Change the match test in `assignPoints` from substring:
-
-```ts
-rule.keywords.some((kw) => lower.includes(kw))
-```
-
-to a **leading word-boundary** regex — the keyword must start at a word boundary, but the
-suffix stays open so stemmed keywords keep working:
+Change the match test in `assignPoints` from substring (`lower.includes(kw)`) to a
+word-boundary regex. A pure *leading* boundary (`\bkw`) is not enough: with an open suffix
+it still matches shared-prefix false friends — `read`→"**read**y", `tax`→"**tax**i",
+`plan`→"**plan**t", `sing`→"**sing**le", `text`→"**text**book". So the boundary is
+**length-tiered**:
 
 ```ts
-// \bkeyword — matches "walk"/"walking", "meditat"/"meditation";
-// does NOT match "brunch" (run), "party" (art), "workshop" (shop), "bread" (read).
-function matches(lower: string, kw: string): boolean {
-  return new RegExp(`\\b${escapeRegExp(kw)}`, "i").test(lower);
+// Short keywords (<=4 chars) match as WHOLE words — avoids false friends
+//   read≠ready, tax≠taxi, plan≠plant, art≠party, bed≠bedroom, trip≠triple.
+// Longer keywords keep an OPEN suffix so stems inflect —
+//   meditat→meditation, budget→budgeting, reflect→reflection, journal→journaling.
+function keywordRegex(kw: string): RegExp {
+  const body = escapeRegExp(kw);
+  return kw.length <= 4
+    ? new RegExp(`\\b${body}\\b`, "i")   // whole word
+    : new RegExp(`\\b${body}`, "i");     // leading boundary, open suffix
 }
 ```
 
-- Preserves intentional prefix stems (`meditat`, `budget`, `cook`).
-- Multi-word phrase keywords (`meal prep`, `call friend`, `post office`) work unchanged.
-- Digit-leading keywords (`5k`, `10k`) work: space→digit is a boundary.
+- Short keywords lose arbitrary suffixes, but their common inflections are **already listed
+  explicitly** in the rules (`run`+`running`, `walk`+`walking`, `shop`+`shopping`,
+  `bill`+`billing`, `read`+`reading`, `plan`+`planning`, `tax`+`taxes`).
+- Multi-word phrase keywords (`meal prep`, `call mom`, `post office`) are length ≥5 → open
+  boundary, work unchanged.
+- Digit-leading keywords (`5k`, `10k`) are ≤4 → whole word; `\b5k\b` still matches "run a 5k".
 - Escape keywords before building the regex (defensive; current keywords have no special
-  chars). Regexes may be precompiled once at module load for clarity/perf, but the list is
-  small — either is fine.
+  chars). Compile one regex per keyword once at module load.
 
-This single change eliminates the bulk of the substring false positives.
+This eliminates the substring false positives *and* the shared-prefix ones.
 
 ### 2. Three new categories
 
