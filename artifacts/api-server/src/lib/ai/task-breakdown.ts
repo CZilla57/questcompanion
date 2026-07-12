@@ -16,19 +16,10 @@ export interface BreakdownInput {
   estimatedMinutes?: number | null;
 }
 
-// Gemini responseSchema (OpenAPI subset) constraining output to { steps: string[] }.
-export const RESPONSE_SCHEMA = {
-  type: "object",
-  properties: {
-    steps: { type: "array", items: { type: "string" } },
-  },
-  required: ["steps"],
-} as const;
-
-export type GenerateJson = (
-  prompt: string,
-  responseSchema: Record<string, unknown>,
-) => Promise<unknown>;
+// The breakdown seam: given a prompt, return the model's parsed JSON. Provider-
+// agnostic — the prompt itself specifies the { steps: string[] } shape (see
+// buildBreakdownPrompt), so any JSON-mode chat model satisfies it.
+export type GenerateJson = (prompt: string) => Promise<unknown>;
 
 export function buildBreakdownPrompt(input: BreakdownInput): string {
   const context: string[] = [`Task: ${input.title}`];
@@ -46,7 +37,9 @@ Rules:
 - Do not restate the task itself as a step.
 - Return between ${MIN_STEPS} and ${MAX_STEPS} steps.
 
-${context.join("\n")}`;
+${context.join("\n")}
+
+Respond with JSON only, in this exact shape: {"steps": ["first step", "second step", "..."]}`;
 }
 
 export function parseBreakdown(raw: unknown): string[] {
@@ -76,6 +69,6 @@ export async function breakdownTask(
   generate: GenerateJson,
 ): Promise<string[]> {
   const prompt = buildBreakdownPrompt(input);
-  const raw = await generate(prompt, RESPONSE_SCHEMA);
+  const raw = await generate(prompt);
   return parseBreakdown(raw);
 }

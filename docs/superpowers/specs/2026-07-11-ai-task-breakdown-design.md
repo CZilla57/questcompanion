@@ -1,5 +1,14 @@
 # AI Task Breakdown
 
+> **Provider update (during implementation):** shipped on **Groq**
+> (`llama-3.3-70b-versatile`) rather than Gemini — Gemini's free tier returned
+> `limit: 0` for this account and required prepaid billing. The swappable client
+> seam (`artifacts/api-server/src/lib/ai/client.ts`) made this a one-file change;
+> env vars are `GROQ_API_KEY` / `GROQ_MODEL`. The `RESPONSE_SCHEMA` object was
+> dropped — the prompt now states the `{ steps: string[] }` shape and the client
+> uses OpenAI-style JSON mode. All other design below holds; "Gemini" references
+> are historical.
+
 ## Overview
 
 Turn a vague, intimidating quest like "clean the garage" into a short checklist of

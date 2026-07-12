@@ -4,7 +4,6 @@ import {
   parseBreakdown,
   breakdownTask,
   BreakdownParseError,
-  RESPONSE_SCHEMA,
   MIN_STEPS,
   MAX_STEPS,
   MAX_STEP_LENGTH,
@@ -17,6 +16,9 @@ describe("buildBreakdownPrompt", () => {
     expect(p.toLowerCase()).toContain("first step");
     expect(p).toContain(String(MIN_STEPS));
     expect(p).toContain(String(MAX_STEPS));
+    // JSON-mode providers require the shape to be stated in the prompt.
+    expect(p.toLowerCase()).toContain("json");
+    expect(p).toContain("\"steps\"");
   });
 
   it("includes description, category, and estimate when present", () => {
@@ -64,13 +66,10 @@ describe("parseBreakdown", () => {
 });
 
 describe("breakdownTask", () => {
-  it("passes the built prompt + RESPONSE_SCHEMA to generate and returns parsed steps", async () => {
+  it("passes the built prompt to generate and returns parsed steps", async () => {
     const generate = vi.fn(async () => ({ steps: ["a", "b", "c"] }));
     const result = await breakdownTask({ title: "Tidy the shed" }, generate);
     expect(result).toEqual(["a", "b", "c"]);
-    expect(generate).toHaveBeenCalledWith(
-      expect.stringContaining("Tidy the shed"),
-      RESPONSE_SCHEMA,
-    );
+    expect(generate).toHaveBeenCalledWith(expect.stringContaining("Tidy the shed"));
   });
 });

@@ -1,5 +1,12 @@
 # AI Task Breakdown Implementation Plan
 
+> **Provider update (post-implementation):** the feature shipped on **Groq**
+> (`llama-3.3-70b-versatile`, `GROQ_API_KEY`/`GROQ_MODEL`) instead of Gemini —
+> Gemini's free tier was unavailable for this account. The change was contained to
+> `client.ts` (Groq's OpenAI-compatible endpoint), with `RESPONSE_SCHEMA` removed
+> and the `{ steps: string[] }` shape moved into the prompt. Task bodies below that
+> say "Gemini" are historical; the seam design is unchanged.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Let a user turn a vague quest ("clean the garage") into a short LLM-generated checklist of concrete first steps that attach to the quest as checkable progress.
