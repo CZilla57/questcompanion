@@ -11,6 +11,7 @@ import { logger } from "../lib/logger";
 import { breakdownTask, BreakdownParseError } from "../lib/ai/task-breakdown";
 import { generateJson, isAiConfigured, AiClientError } from "../lib/ai/client";
 import { breakdownCooldown } from "../lib/ai/breakdown-cooldown";
+import { isValidDueTime } from "../lib/task-datetime";
 
 const router: IRouter = Router();
 
@@ -29,6 +30,7 @@ function formatTask(
     completed: task.completed,
     completedAt: task.completedAt ? task.completedAt.toISOString() : null,
     dueDate: task.dueDate,
+    dueTime: task.dueTime ?? null,
     priority: task.priority,
     category: task.category,
     categoryLabel: CATEGORY_LABELS[task.category] ?? CATEGORY_LABELS.default,
@@ -219,10 +221,11 @@ router.post("/tasks", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;
 
-  const { title, description, dueDate, priority = "medium", estimatedMinutes, category } = req.body as {
+  const { title, description, dueDate, dueTime, priority = "medium", estimatedMinutes, category } = req.body as {
     title?: string;
     description?: string;
     dueDate?: string;
+    dueTime?: string;
     priority?: string;
     estimatedMinutes?: number;
     category?: string;
@@ -230,6 +233,10 @@ router.post("/tasks", async (req, res): Promise<void> => {
 
   if (!title || !dueDate) {
     res.status(400).json({ error: "title and dueDate are required" });
+    return;
+  }
+  if (dueTime !== undefined && dueTime !== null && !isValidDueTime(dueTime)) {
+    res.status(400).json({ error: "dueTime must be HH:mm (24-hour)" });
     return;
   }
 
@@ -242,6 +249,7 @@ router.post("/tasks", async (req, res): Promise<void> => {
     description,
     points: autoPoint.points,
     dueDate,
+    dueTime: dueTime ?? null,
     priority,
     category: resolvedCategory,
     estimatedMinutes: estimatedMinutes ?? null,
@@ -282,10 +290,11 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
   if (!existing) { res.status(404).json({ error: "Task not found" }); return; }
 
   // Points are server-assigned by auto-points logic and are not client-editable.
-  const { title, description, dueDate, priority, estimatedMinutes, actualMinutes, category } = req.body as {
+  const { title, description, dueDate, dueTime, priority, estimatedMinutes, actualMinutes, category } = req.body as {
     title?: string;
     description?: string;
     dueDate?: string;
+    dueTime?: string;
     priority?: string;
     estimatedMinutes?: number;
     actualMinutes?: number;
@@ -313,6 +322,13 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
   if (title != null) updates.title = title;
   if (description != null) updates.description = description;
   if (dueDate != null) updates.dueDate = dueDate;
+  if (dueTime !== undefined) {
+    if (dueTime !== null && !isValidDueTime(dueTime)) {
+      res.status(400).json({ error: "dueTime must be HH:mm (24-hour)" });
+      return;
+    }
+    updates.dueTime = dueTime;
+  }
   if (priority != null) updates.priority = priority;
   if (estimatedMinutes != null) updates.estimatedMinutes = estimatedMinutes;
   if (category != null && VALID_CATEGORIES.has(category)) updates.category = category;
