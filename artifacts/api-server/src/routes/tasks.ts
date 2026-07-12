@@ -12,6 +12,9 @@ import { breakdownTask, BreakdownParseError } from "../lib/ai/task-breakdown";
 import { generateJson, isAiConfigured, AiClientError } from "../lib/ai/client";
 import { breakdownCooldown } from "../lib/ai/breakdown-cooldown";
 import { isValidDueTime } from "../lib/task-datetime";
+import { parseQuickAdd } from "@workspace/quick-add";
+import { buildQuickAddPrompt, parseQuickAddResult, QuickAddParseError } from "../lib/ai/quick-add-parse";
+import { parseCooldown } from "../lib/ai/parse-cooldown";
 
 const router: IRouter = Router();
 
@@ -256,6 +259,52 @@ router.post("/tasks", async (req, res): Promise<void> => {
   }).returning();
 
   res.status(201).json(formatTask(task));
+});
+
+router.post("/tasks/parse", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  const text = typeof req.body?.text === "string" ? req.body.text : "";
+  if (!text.trim()) { res.status(400).json({ error: "text is required" }); return; }
+
+  const now = new Date();
+  const deterministic = parseQuickAdd(text, { now });
+
+  // Deterministic path was enough — no LLM call needed.
+  if (deterministic.dueDate || deterministic.dueTime) {
+    res.json(deterministic);
+    return;
+  }
+
+  if (!isAiConfigured()) {
+    res.status(503).json({ error: "AI parse is not configured" });
+    return;
+  }
+  if (!parseCooldown.tryAcquire(userId)) {
+    res.status(429).json({ error: "Slow down a moment before parsing again." });
+    return;
+  }
+
+  let aiParsed;
+  try {
+    const rawJson = await generateJson(buildQuickAddPrompt(text, { now }));
+    aiParsed = parseQuickAddResult(rawJson, { text });
+  } catch (err) {
+    if (err instanceof AiClientError || err instanceof QuickAddParseError) {
+      logger.warn({ err }, "quick-add parse generation failed");
+      res.status(502).json({ error: "Couldn't smart-parse, edit manually." });
+      return;
+    }
+    throw err;
+  }
+
+  // Deterministic fields win on merge (title, priority, category from explicit tokens).
+  const merged = { ...aiParsed };
+  if (deterministic.title) merged.title = deterministic.title;
+  if (deterministic.priority) merged.priority = deterministic.priority;
+  if (deterministic.category) merged.category = deterministic.category;
+  res.json(merged);
 });
 
 router.get("/tasks/:id", async (req, res): Promise<void> => {
