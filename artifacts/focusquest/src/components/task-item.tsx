@@ -196,6 +196,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
   };
 
   const handleReschedule = (dueDate: string) => {
+    if (updateMutation.isPending) return;
     updateMutation.mutate({ id: task.id, data: { dueDate } }, {
       onSuccess: () => {
         setRescheduleOpen(false);
@@ -252,7 +253,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
         <div className="flex items-center gap-3 mt-2 flex-wrap">
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Clock className="w-3 h-3" />
-            <span>{format(new Date(task.dueDate), 'MMM d, yyyy')}</span>
+            <span>{format(parseDueDate(task.dueDate), 'MMM d, yyyy')}</span>
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -384,6 +385,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
                     size="sm"
                     className="flex-1 text-xs"
                     onClick={() => handleReschedule(todayDueDate())}
+                    disabled={updateMutation.isPending}
                   >
                     Today
                   </Button>
@@ -393,6 +395,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
                     size="sm"
                     className="flex-1 text-xs"
                     onClick={() => handleReschedule(tomorrowDueDate())}
+                    disabled={updateMutation.isPending}
                   >
                     Tomorrow
                   </Button>
@@ -402,6 +405,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
                     size="sm"
                     className="flex-1 text-xs whitespace-nowrap"
                     onClick={() => handleReschedule(nextWeekDueDate())}
+                    disabled={updateMutation.isPending}
                   >
                     Next week
                   </Button>

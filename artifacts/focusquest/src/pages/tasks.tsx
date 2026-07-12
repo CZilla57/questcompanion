@@ -354,7 +354,11 @@ export default function Tasks() {
         toast({ title: "Quest updated", className: "border-primary bg-primary/10" });
         setEditTask(null);
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
-      }
+      },
+      onError: (err: any) => {
+        const msg = err?.response?.data?.error ?? err?.message ?? "Could not update quest";
+        toast({ title: msg, variant: "destructive" });
+      },
     });
   };
 
