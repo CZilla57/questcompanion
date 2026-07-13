@@ -34,7 +34,7 @@ function isUniqueViolation(err: unknown, constraint: string): boolean {
   return code === "23505" && name === constraint;
 }
 
-function formatTask(
+export function formatTask(
   task: typeof tasksTable.$inferSelect,
   steps: (typeof taskStepsTable.$inferSelect)[] = [],
 ) {
