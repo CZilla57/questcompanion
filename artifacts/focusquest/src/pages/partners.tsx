@@ -10,16 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetPartnersQueryKey } from "@workspace/api-client-react";
 import { NudgePicker } from "@/components/nudge-picker";
-
-/** Pull a human-readable message out of an API error, falling back if absent. */
-function errorMessage(err: unknown, fallback: string): string {
-  const data = (err as { data?: unknown } | null)?.data;
-  if (data && typeof data === "object" && typeof (data as { error?: unknown }).error === "string") {
-    return (data as { error: string }).error;
-  }
-  if (err instanceof Error && err.message) return err.message;
-  return fallback;
-}
+import { apiErrorMessage } from "@/lib/api-error";
 
 export default function Partners() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -75,7 +66,7 @@ export default function Partners() {
         queryClient.invalidateQueries({ queryKey: getGetPartnersQueryKey() });
       },
       onError: (err) => {
-        toast({ title: "Couldn't send request", description: errorMessage(err, "Please try again."), variant: "destructive" });
+        toast({ title: "Couldn't send request", description: apiErrorMessage(err, "Please try again."), variant: "destructive" });
       }
     });
   };
@@ -87,7 +78,7 @@ export default function Partners() {
         queryClient.invalidateQueries({ queryKey: getGetPartnersQueryKey() });
       },
       onError: (err) => {
-        toast({ title: "Couldn't accept request", description: errorMessage(err, "Please try again."), variant: "destructive" });
+        toast({ title: "Couldn't accept request", description: apiErrorMessage(err, "Please try again."), variant: "destructive" });
       }
     });
   };
@@ -98,7 +89,7 @@ export default function Partners() {
         queryClient.invalidateQueries({ queryKey: getGetPartnersQueryKey() });
       },
       onError: (err) => {
-        toast({ title: "Couldn't decline request", description: errorMessage(err, "Please try again."), variant: "destructive" });
+        toast({ title: "Couldn't decline request", description: apiErrorMessage(err, "Please try again."), variant: "destructive" });
       }
     });
   };
