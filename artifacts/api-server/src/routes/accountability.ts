@@ -5,7 +5,7 @@ import { getLevelInfo } from "../lib/gamification";
 import { resolvePartnerRequest } from "../lib/partnerships";
 import { buildHeroLook } from "./avatar";
 import { getEarnedBadges } from "./badges";
-import { MILESTONE_TYPES } from "../lib/ally-milestones";
+import { MILESTONE_TYPES, hasFreshMilestone } from "../lib/ally-milestones";
 import { resolveTimeZone, localDateKey } from "../lib/date-buckets";
 import { sendPushNotification } from "../lib/push-notifications";
 import { isValidKind, isValidReaction, reactionLabel, canSendNudge, type NudgeKind } from "../lib/nudges";
@@ -62,6 +62,11 @@ router.get("/accountability/partners", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;
 
+  const timeZone = resolveTimeZone(typeof req.query.tz === "string" ? req.query.tz : undefined);
+  const now = new Date();
+  const today = localDateKey(now, timeZone);
+  const dayStart = new Date(today + "T00:00:00Z");
+
   const partnerships = await db.select().from(partnershipsTable)
     .where(or(
       eq(partnershipsTable.requesterId, userId),
@@ -71,6 +76,33 @@ router.get("/accountability/partners", async (req, res): Promise<void> => {
   const result = await Promise.all(partnerships.map(async (p) => {
     const partnerId = p.requesterId === userId ? p.recipientId : p.requesterId;
     const [partner] = await db.select().from(usersTable).where(eq(usersTable.id, partnerId));
+
+    let progress: { questsDueToday: number; questsCompletedToday: number; allDoneToday: boolean } | null = null;
+    let freshMilestone = false;
+    let sentTodayPoke = false;
+    let sentTodayCheer = false;
+
+    if (p.status === "accepted") {
+      const todayTasks = await db.select().from(tasksTable)
+        .where(and(eq(tasksTable.userId, partnerId), eq(tasksTable.dueDate, today)));
+      const due = todayTasks.length;
+      const done = todayTasks.filter((t) => t.completed).length;
+      progress = { questsDueToday: due, questsCompletedToday: done, allDoneToday: due > 0 && done === due };
+
+      const recentActivity = await db.select().from(activityTable)
+        .where(and(
+          eq(activityTable.userId, partnerId),
+          inArray(activityTable.type, [...MILESTONE_TYPES]),
+        ))
+        .orderBy(desc(activityTable.createdAt))
+        .limit(10);
+      freshMilestone = hasFreshMilestone(recentActivity, now, 48);
+
+      const flags = await sentTodayFlags(userId, partnerId, dayStart);
+      sentTodayPoke = flags.sentTodayPoke;
+      sentTodayCheer = flags.sentTodayCheer;
+    }
+
     return {
       id: p.id,
       requesterId: p.requesterId,
@@ -78,6 +110,10 @@ router.get("/accountability/partners", async (req, res): Promise<void> => {
       status: p.status,
       partner: partner ? formatUserSummary(partner) : null,
       createdAt: p.createdAt.toISOString(),
+      progress,
+      hasFreshMilestone: freshMilestone,
+      sentTodayPoke,
+      sentTodayCheer,
     };
   }));
 
