@@ -4,6 +4,8 @@ import { db, usersTable, tasksTable, activityTable } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, getPointsIntoLevel } from "../lib/gamification";
 import { CATEGORY_LABELS } from "../lib/auto-points";
 import { resolveTimeZone, localDateKey, buildDayDates, buildDaySlots, localHour } from "../lib/date-buckets";
+import { hungerStage, moodFor } from "../lib/hero-care";
+import { currentVignette } from "../lib/hero-flavor";
 
 const router: IRouter = Router();
 
@@ -108,6 +110,25 @@ router.get("/users/me/stats", async (req, res): Promise<void> => {
       points: a.points,
       createdAt: a.createdAt.toISOString(),
     })),
+  });
+});
+
+router.get("/users/me/hero-status", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (!user) { res.status(404).json({ error: "User not found" }); return; }
+
+  const now = new Date();
+  const stage = hungerStage(user.lastFedAt, now);
+  const vignette = currentVignette(user.id, stage, user.avatarClass, now);
+
+  res.json({
+    stage,
+    mood: moodFor(stage),
+    lastFedAt: user.lastFedAt.toISOString(),
+    activity: { id: vignette.id, text: vignette.text },
   });
 });
 

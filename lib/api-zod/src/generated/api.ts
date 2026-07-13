@@ -174,6 +174,20 @@ export const GetMyStatsResponse = zod.object({
 
 
 /**
+ * @summary Hero hunger stage, mood, and current ambient activity
+ */
+export const GetHeroStatusResponse = zod.object({
+  "stage": zod.enum(['well_fed', 'peckish', 'hungry', 'starving', 'fainted']),
+  "mood": zod.string().describe('Short mood line matching the stage'),
+  "lastFedAt": zod.coerce.date(),
+  "activity": zod.object({
+  "id": zod.string(),
+  "text": zod.string()
+}).describe('Current ambient \"hero life\" vignette (rotates every ~3h)')
+})
+
+
+/**
  * @summary Spend 50 XP to buy a streak freeze (max 1 held at a time)
  */
 export const BuyStreakFreezeResponse = zod.object({
@@ -524,7 +538,8 @@ export const CompleteTaskResponse = zod.object({
 }),zod.null()]).optional().describe('Gear item awarded (present when type=gear)')
 }),zod.null()]).optional().describe('Random bonus reward triggered on ~12% of completions'),
   "focusBonusAwarded": zod.boolean().optional().describe('Whether the all-3-focus-quests bonus was awarded'),
-  "focusBonusPoints": zod.number().optional().describe('XP awarded for completing all 3 focus quests')
+  "focusBonusPoints": zod.number().optional().describe('XP awarded for completing all 3 focus quests'),
+  "heroRevived": zod.boolean().optional().describe('True when this completion revived a fainted hero (fed after ≥7 days)')
 })
 
 

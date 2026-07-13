@@ -211,6 +211,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserStats"
 
+  /users/me/hero-status:
+    get:
+      operationId: getHeroStatus
+      tags: [users]
+      summary: Hero hunger stage, mood, and current ambient activity
+      responses:
+        "200":
+          description: Hero care status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HeroStatus"
+
   /users/me/streak-freeze/buy:
     post:
       operationId: buyStreakFreeze
@@ -1681,6 +1694,29 @@ components:
           items:
             $ref: "#/components/schemas/ActivityItem"
 
+    HeroStatus:
+      type: object
+      required: [stage, mood, lastFedAt, activity]
+      properties:
+        stage:
+          type: string
+          enum: [well_fed, peckish, hungry, starving, fainted]
+        mood:
+          type: string
+          description: Short mood line matching the stage
+        lastFedAt:
+          type: string
+          format: date-time
+        activity:
+          type: object
+          required: [id, text]
+          description: Current ambient "hero life" vignette (rotates every ~3h)
+          properties:
+            id:
+              type: string
+            text:
+              type: string
+
     StreakFreezeResult:
       type: object
       required: [streakFreezes, totalPoints]
@@ -1931,6 +1967,9 @@ components:
         focusBonusPoints:
           type: integer
           description: XP awarded for completing all 3 focus quests
+        heroRevived:
+          type: boolean
+          description: True when this completion revived a fainted hero (fed after ≥7 days)
 
     Questline:
       type: object

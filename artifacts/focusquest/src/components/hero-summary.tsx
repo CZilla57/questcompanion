@@ -1,7 +1,9 @@
-import { useGetAvatar } from "@workspace/api-client-react";
+import { useGetAvatar, useGetHeroStatus } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Swords, ChevronRight } from "lucide-react";
 import { PixelHero } from "@/components/pixel-hero";
+import { HeroVitality } from "@/components/hero-vitality";
+import { heroSpriteEffect, type HungerStage } from "@/lib/hero-vitality";
 import type {
   HeroLook, AvatarClass, Build, Skin, HairStyle, HairColor, FaceId, EquippedGearLook,
 } from "@/lib/hero/types";
@@ -16,6 +18,7 @@ const CLASS_LABEL: Record<string, string> = {
  */
 export function HeroSummary() {
   const { data: a, isLoading } = useGetAvatar();
+  const { data: heroStatus } = useGetHeroStatus();
 
   if (isLoading) {
     return <div className="w-full h-[120px] rounded-lg bg-muted/20 animate-pulse" />;
@@ -58,7 +61,12 @@ export function HeroSummary() {
           className="relative rounded-2xl border border-border/60 bg-card/40 p-2"
           style={{ boxShadow: `0 0 20px ${accent}33` }}
         >
-          <PixelHero look={look} size={128} />
+          <div className="relative" style={heroSpriteEffect(heroStatus?.stage as HungerStage | undefined)}>
+            <PixelHero look={look} size={128} />
+          </div>
+          {heroStatus?.stage === "fainted" && (
+            <span className="absolute top-1 right-1 text-lg" aria-hidden>💫</span>
+          )}
         </div>
       </div>
       <div className="min-w-0 space-y-2.5">
@@ -74,6 +82,7 @@ export function HeroSummary() {
           <span className="font-bold text-primary tabular-nums text-base">{a.battlePower}</span>
           <span className="text-xs text-muted-foreground">battle power</span>
         </div>
+        <HeroVitality compact />
         <Link
           href="/avatar"
           className="inline-flex items-center gap-0.5 text-xs font-medium text-primary hover:underline"

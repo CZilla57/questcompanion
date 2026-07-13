@@ -6,7 +6,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { getGetTasksQueryKey, getGetMyStatsQueryKey, getGetQuestlinesQueryKey, getGetQuestlineQueryKey } from "@workspace/api-client-react";
+import { getGetTasksQueryKey, getGetMyStatsQueryKey, getGetQuestlinesQueryKey, getGetQuestlineQueryKey, getGetHeroStatusQueryKey } from "@workspace/api-client-react";
 import { browserTimeZone } from "@/lib/timezone";
 import { formatTime12h } from "@/lib/format-time";
 import { dispatchQuestCompleted } from "./dopamine-overlay";
@@ -113,6 +113,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
           if (task.questlineId != null) {
             queryClient.invalidateQueries({ queryKey: getGetQuestlineQueryKey(task.questlineId) });
           }
+          queryClient.invalidateQueries({ queryKey: getGetHeroStatusQueryKey() });
 
           const descParts: string[] = [];
           if ((res.streakBonus ?? 0) > 0) {
@@ -132,6 +133,14 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
             description,
             className: "border-primary bg-primary text-primary-foreground",
           });
+
+          if (res.heroRevived) {
+            toast({
+              title: "⚔️ Your hero rises, renewed!",
+              description: "Fed and back on their feet — the quest goes on.",
+              className: "border-primary",
+            });
+          }
 
           if (res.gearReward) {
             const rarityStyles: Record<string, string> = {

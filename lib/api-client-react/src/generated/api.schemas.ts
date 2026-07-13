@@ -131,6 +131,34 @@ export interface UserStats {
   recentActivity: ActivityItem[];
 }
 
+export type HeroStatusStage = typeof HeroStatusStage[keyof typeof HeroStatusStage];
+
+
+export const HeroStatusStage = {
+  well_fed: 'well_fed',
+  peckish: 'peckish',
+  hungry: 'hungry',
+  starving: 'starving',
+  fainted: 'fainted',
+} as const;
+
+/**
+ * Current ambient "hero life" vignette (rotates every ~3h)
+ */
+export type HeroStatusActivity = {
+  id: string;
+  text: string;
+};
+
+export interface HeroStatus {
+  stage: HeroStatusStage;
+  /** Short mood line matching the stage */
+  mood: string;
+  lastFedAt: string;
+  /** Current ambient "hero life" vignette (rotates every ~3h) */
+  activity: HeroStatusActivity;
+}
+
 export interface StreakFreezeResult {
   streakFreezes: number;
   totalPoints: number;
@@ -506,6 +534,8 @@ export interface TaskCompletionResult {
   focusBonusAwarded?: boolean;
   /** XP awarded for completing all 3 focus quests */
   focusBonusPoints?: number;
+  /** True when this completion revived a fainted hero (fed after ≥7 days) */
+  heroRevived?: boolean;
 }
 
 export type QuestlineStatus = typeof QuestlineStatus[keyof typeof QuestlineStatus];
