@@ -114,9 +114,11 @@ export default function QuestlineDetail() {
         )}
       </div>
 
-      <div className="mb-4">
-        <QuickAddBar selectedDate={new Date()} questlineId={questline.id} />
-      </div>
+      {questline.status !== "completed" && (
+        <div className="mb-4">
+          <QuickAddBar selectedDate={new Date()} questlineId={questline.id} />
+        </div>
+      )}
 
       {quests.length === 0 ? (
         <p className="text-muted-foreground text-center py-6">
