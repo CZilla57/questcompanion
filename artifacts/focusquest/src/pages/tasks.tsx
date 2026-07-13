@@ -162,6 +162,10 @@ function formatMinutes(minutes: number | null | undefined): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
+function questlineLabel(ql: { title: string; status: string }): string {
+  return ql.status === "completed" ? `${ql.title} · done` : ql.title;
+}
+
 function TimeInput({
   value,
   onChange,
@@ -470,7 +474,7 @@ export default function Tasks() {
             <SelectItem value="all">All questlines</SelectItem>
             {(questlines ?? []).map((ql) => (
               <SelectItem key={ql.id} value={String(ql.id)}>
-                {ql.title}{ql.status === "completed" ? " · done" : ""}
+                {questlineLabel(ql)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -755,7 +759,7 @@ export default function Tasks() {
                   <SelectItem value="none">None</SelectItem>
                   {(questlines ?? []).map((ql) => (
                     <SelectItem key={ql.id} value={String(ql.id)}>
-                      {ql.title}{ql.status === "completed" ? " · done" : ""}
+                      {questlineLabel(ql)}
                     </SelectItem>
                   ))}
                 </SelectContent>

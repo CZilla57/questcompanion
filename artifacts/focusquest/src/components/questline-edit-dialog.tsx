@@ -68,11 +68,13 @@ export function QuestlineEditDialog({
           <Textarea placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} />
           <div>
             <label className="text-sm text-muted-foreground">Accent color</label>
-            <div className="flex flex-wrap items-center gap-2 mt-1.5">
+            <div className="flex flex-wrap items-center gap-2 mt-1.5" role="radiogroup" aria-label="Accent color">
               {QUESTLINE_COLORS.map((c) => (
                 <button
                   key={c}
                   type="button"
+                  role="radio"
+                  aria-checked={color === c}
                   aria-label={`Color ${c}`}
                   onClick={() => setColor(c)}
                   className={`w-7 h-7 rounded-full border-2 transition-transform ${color === c ? "ring-2 ring-offset-2 ring-offset-background ring-foreground scale-110" : "border-transparent"}`}
@@ -81,6 +83,8 @@ export function QuestlineEditDialog({
               ))}
               <button
                 type="button"
+                role="radio"
+                aria-checked={color == null}
                 aria-label="No color"
                 onClick={() => setColor(null)}
                 className={`px-3 h-7 rounded-full border text-xs ${color == null ? "border-foreground text-foreground" : "border-border text-muted-foreground"}`}
