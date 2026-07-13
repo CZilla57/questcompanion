@@ -99,17 +99,33 @@ export function useNotifications() {
       });
 
       const json = sub.toJSON();
-      if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) return "error";
+      if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
+        await sub.unsubscribe().catch(() => {});
+        return "error";
+      }
 
-      // Save subscription to server
-      await fetch(SUBSCRIBE_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          endpoint: json.endpoint,
-          keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
-        }),
-      });
+      // Save subscription to the server. If that fails (e.g. auth expired), roll
+      // back the local subscription so the bell doesn't show "on" for a device
+      // the server has no record of and therefore can't deliver to.
+      let saved = false;
+      try {
+        const saveRes = await fetch(SUBSCRIBE_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            endpoint: json.endpoint,
+            keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
+          }),
+        });
+        saved = saveRes.ok;
+      } catch {
+        saved = false;
+      }
+
+      if (!saved) {
+        await sub.unsubscribe().catch(() => {});
+        return "error";
+      }
 
       setIsSubscribed(true);
       return "subscribed";
