@@ -54,6 +54,7 @@ export * from './getLeaderboardPeriod';
 export * from './getMyInsightsParams';
 export * from './getMyStatsParams';
 export * from './getMyXpHistoryParams';
+export * from './getNudgesParams';
 export * from './getPartnerDetailParams';
 export * from './getTaskRecommendationParams';
 export * from './getTasksCategory';

@@ -418,10 +418,16 @@ router.get("/accountability/nudges", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;
 
+  const limitRaw = Number(req.query.limit ?? 50);
+  const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(1, Math.floor(limitRaw)), 100) : 50;
+  const offsetRaw = Number(req.query.offset ?? 0);
+  const offset = Number.isFinite(offsetRaw) ? Math.max(0, Math.floor(offsetRaw)) : 0;
+
   const rows = await db.select().from(allyNudgesTable)
     .where(eq(allyNudgesTable.recipientId, userId))
     .orderBy(desc(allyNudgesTable.createdAt))
-    .limit(50);
+    .limit(limit)
+    .offset(offset);
 
   const senderIds = [...new Set(rows.map((r) => r.senderId))];
   const senders = senderIds.length

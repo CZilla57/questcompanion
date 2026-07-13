@@ -1118,6 +1118,19 @@ export const SendNudgeBody = zod.object({
 /**
  * @summary List nudges received by the current user
  */
+export const getNudgesQueryLimitDefault = 50;
+export const getNudgesQueryLimitMax = 100;
+
+export const getNudgesQueryOffsetDefault = 0;
+export const getNudgesQueryOffsetMin = 0;
+
+
+
+export const GetNudgesQueryParams = zod.object({
+  "limit": zod.coerce.number().min(1).max(getNudgesQueryLimitMax).default(getNudgesQueryLimitDefault),
+  "offset": zod.coerce.number().min(getNudgesQueryOffsetMin).default(getNudgesQueryOffsetDefault)
+})
+
 export const GetNudgesResponseItem = zod.object({
   "id": zod.number(),
   "kind": zod.enum(['poke', 'cheer']),

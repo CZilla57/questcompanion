@@ -1223,6 +1223,18 @@ export type GetPartnerDetailParams = {
 tz?: string;
 };
 
+export type GetNudgesParams = {
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+/**
+ * @minimum 0
+ */
+offset?: number;
+};
+
 export type MarkNudgesRead200 = {
   success: boolean;
   updated: number;

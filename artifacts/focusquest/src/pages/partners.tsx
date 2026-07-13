@@ -34,9 +34,14 @@ export default function Partners() {
   const acceptReq = useAcceptPartnerRequest();
   const declineReq = useDeclinePartnerRequest();
 
-  const { data: nudges } = useGetNudges();
+  const NUDGE_PAGE = 50;
+  const NUDGE_MAX = 100; // server clamps `limit` to 100
+  const [nudgeLimit, setNudgeLimit] = useState(NUDGE_PAGE);
+  const { data: nudges } = useGetNudges({ limit: nudgeLimit });
   const markRead = useMarkNudgesRead();
   const unreadCount = (nudges ?? []).filter((n) => !n.readAt).length;
+  // A full page back means there may be more; stop at the server's cap.
+  const hasMoreNudges = (nudges?.length ?? 0) >= nudgeLimit && nudgeLimit < NUDGE_MAX;
 
   const handleOpenInbox = (value: string) => {
     if (value === "inbox" && unreadCount > 0) {
@@ -277,6 +282,17 @@ export default function Partners() {
                 </div>
               </div>
             ))
+          )}
+          {hasMoreNudges && (
+            <div className="text-center pt-2">
+              <Button
+                variant="outline"
+                className="border-primary/30 text-primary hover:bg-primary/10"
+                onClick={() => setNudgeLimit((l) => Math.min(l + NUDGE_PAGE, NUDGE_MAX))}
+              >
+                Load more
+              </Button>
+            </div>
           )}
         </TabsContent>
       </Tabs>
