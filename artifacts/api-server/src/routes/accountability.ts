@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, or, and, desc, inArray, gte } from "drizzle-orm";
+import { eq, or, and, desc, inArray, gte, isNull } from "drizzle-orm";
 import { db, usersTable, partnershipsTable, activityTable, tasksTable, allyNudgesTable, pushSubscriptionsTable } from "@workspace/db";
 import { getLevelInfo } from "../lib/gamification";
 import { resolvePartnerRequest } from "../lib/partnerships";
@@ -374,6 +374,58 @@ router.post("/accountability/partners/:id/nudge", async (req, res): Promise<void
     reaction: nudge.reaction,
     createdAt: nudge.createdAt.toISOString(),
   });
+});
+
+router.get("/accountability/nudges", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  const rows = await db.select().from(allyNudgesTable)
+    .where(eq(allyNudgesTable.recipientId, userId))
+    .orderBy(desc(allyNudgesTable.createdAt))
+    .limit(50);
+
+  const senderIds = [...new Set(rows.map((r) => r.senderId))];
+  const senders = senderIds.length
+    ? await db.select().from(usersTable).where(inArray(usersTable.id, senderIds))
+    : [];
+  const senderById = new Map(senders.map((s) => [s.id, s]));
+
+  res.json(rows.map((r) => {
+    const sender = senderById.get(r.senderId);
+    return {
+      id: r.id,
+      kind: r.kind,
+      reaction: r.reaction,
+      reactionLabel: isValidKind(r.kind) ? reactionLabel(r.kind, r.reaction) : null,
+      contextType: r.contextType,
+      sender: sender ? formatUserSummary(sender) : null,
+      createdAt: r.createdAt.toISOString(),
+      readAt: r.readAt ? r.readAt.toISOString() : null,
+    };
+  }));
+});
+
+router.post("/accountability/nudges/read", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  const { ids } = req.body as { ids?: number[] };
+  const now = new Date();
+
+  const scope = Array.isArray(ids) && ids.length > 0
+    ? and(
+        eq(allyNudgesTable.recipientId, userId),
+        inArray(allyNudgesTable.id, ids.filter((n) => Number.isInteger(n))),
+      )
+    : eq(allyNudgesTable.recipientId, userId);
+
+  const updated = await db.update(allyNudgesTable)
+    .set({ readAt: now })
+    .where(and(scope, isNull(allyNudgesTable.readAt)))
+    .returning({ id: allyNudgesTable.id });
+
+  res.json({ success: true, updated: updated.length });
 });
 
 export default router;
