@@ -23,6 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Sword, HardHat, ShieldHalf, Shield, Footprints, Gem, Crown,
   Zap, Swords, Skull, Trophy, Lock, Check, ShoppingBag,
+  ChevronDown, Wand2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -622,74 +623,87 @@ export default function AvatarPage() {
               <PixelHero look={heroLook} size={160} />
             )}
 
-            {/* Class selector */}
-            <div className="w-full space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Class</p>
-              <div className="grid grid-cols-2 gap-2">
-                {Object.entries(CLASS_INFO).map(([cls, info]) => (
-                  <button
-                    key={cls}
-                    onClick={() => handleClassSelect(cls as AvatarClass)}
-                    disabled={updateAvatar.isPending}
-                    className={`
-                      px-2 py-2 rounded-lg border text-xs font-medium transition-all
-                      ${currentClass === cls
-                        ? "text-foreground"
-                        : "border-border text-muted-foreground hover:border-muted-foreground"}
-                    `}
-                    style={currentClass === cls ? {
-                      borderColor: info.color + "80",
-                      backgroundColor: info.color + "15",
-                      color: info.color,
-                    } : undefined}
-                  >
-                    {info.label}
-                  </button>
-                ))}
+            {/* Customization — collapsed by default so the panel stays clean on first load */}
+            <details className="w-full group">
+              <summary className="flex items-center justify-between cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden rounded-lg border border-border px-3 py-2 text-sm font-medium transition-colors hover:border-muted-foreground">
+                <span className="flex items-center gap-2">
+                  <Wand2 className="w-4 h-4 text-primary" />
+                  Customize appearance
+                </span>
+                <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform group-open:rotate-180" />
+              </summary>
+
+              <div className="mt-4 space-y-4">
+                {/* Class selector */}
+                <div className="w-full space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Class</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Object.entries(CLASS_INFO).map(([cls, info]) => (
+                      <button
+                        key={cls}
+                        onClick={() => handleClassSelect(cls as AvatarClass)}
+                        disabled={updateAvatar.isPending}
+                        className={`
+                          px-2 py-2 rounded-lg border text-xs font-medium transition-all
+                          ${currentClass === cls
+                            ? "text-foreground"
+                            : "border-border text-muted-foreground hover:border-muted-foreground"}
+                        `}
+                        style={currentClass === cls ? {
+                          borderColor: info.color + "80",
+                          backgroundColor: info.color + "15",
+                          color: info.color,
+                        } : undefined}
+                      >
+                        {info.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Physical customization */}
+                <PickerRow label="Body Type" options={avatarData?.availableBuilds ?? []} value={heroLook.build}
+                  onSelect={(v) => handleAttrSelect({ avatarBodyBuild: v })} disabled={updateAvatar.isPending} />
+                <PickerRow label="Skin" options={avatarData?.availableSkins ?? []} value={heroLook.skin}
+                  onSelect={(v) => handleAttrSelect({ avatarSkin: v })} disabled={updateAvatar.isPending} swatch={SKIN_SWATCH} />
+                <PickerRow label="Hair" options={avatarData?.availableHairStyles ?? []} value={heroLook.hairStyle}
+                  onSelect={(v) => handleAttrSelect({ avatarHairStyle: v })} disabled={updateAvatar.isPending} />
+                <PickerRow label="Hair Color" options={avatarData?.availableHairColors ?? []} value={heroLook.hairColor}
+                  onSelect={(v) => handleAttrSelect({ avatarHairColor: v })} disabled={updateAvatar.isPending} swatch={HAIR_SWATCH} />
+
+                <div className="w-full border-t border-border/40 pt-1" />
+
+                <PickerRow label="Beard" options={avatarData?.availableBeardStyles ?? []} value={heroLook.beardStyle}
+                  onSelect={(v) => handleAttrSelect({ avatarBeardStyle: v })} disabled={updateAvatar.isPending} />
+                <PickerRow label="Beard Color" options={avatarData?.availableBeardColors ?? []} value={heroLook.beardColor}
+                  onSelect={(v) => handleAttrSelect({ avatarBeardColor: v })} disabled={updateAvatar.isPending || heroLook.beardStyle === "none"} swatch={HAIR_SWATCH} />
+                <PickerRow label="Glasses" options={avatarData?.availableGlasses ?? []} value={heroLook.glasses}
+                  onSelect={(v) => handleAttrSelect({ avatarGlasses: v })} disabled={updateAvatar.isPending} />
+                <PickerRow label="Earrings" options={avatarData?.availableEarrings ?? []} value={heroLook.earrings}
+                  onSelect={(v) => handleAttrSelect({ avatarEarrings: v })} disabled={updateAvatar.isPending} />
+
+                {/* Accent color (profile / leaderboard) */}
+                <div className="w-full space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Accent</p>
+                  <div className="flex flex-wrap gap-2">
+                    {AVATAR_COLORS.map(color => (
+                      <button
+                        key={color}
+                        onClick={() => handleColorSelect(color)}
+                        disabled={updateAvatar.isPending}
+                        className={`w-8 h-8 rounded-full border-2 transition-all ${currentColor === color ? "scale-110" : "hover:scale-105"}`}
+                        style={{
+                          backgroundColor: color,
+                          borderColor: currentColor === color ? "white" : "transparent",
+                          boxShadow: currentColor === color ? `0 0 8px ${color}` : undefined,
+                        }}
+                        aria-label={`Color ${color}`}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-
-            {/* Physical customization */}
-            <PickerRow label="Body Type" options={avatarData?.availableBuilds ?? []} value={heroLook.build}
-              onSelect={(v) => handleAttrSelect({ avatarBodyBuild: v })} disabled={updateAvatar.isPending} />
-            <PickerRow label="Skin" options={avatarData?.availableSkins ?? []} value={heroLook.skin}
-              onSelect={(v) => handleAttrSelect({ avatarSkin: v })} disabled={updateAvatar.isPending} swatch={SKIN_SWATCH} />
-            <PickerRow label="Hair" options={avatarData?.availableHairStyles ?? []} value={heroLook.hairStyle}
-              onSelect={(v) => handleAttrSelect({ avatarHairStyle: v })} disabled={updateAvatar.isPending} />
-            <PickerRow label="Hair Color" options={avatarData?.availableHairColors ?? []} value={heroLook.hairColor}
-              onSelect={(v) => handleAttrSelect({ avatarHairColor: v })} disabled={updateAvatar.isPending} swatch={HAIR_SWATCH} />
-
-            <div className="w-full border-t border-border/40 pt-1" />
-
-            <PickerRow label="Beard" options={avatarData?.availableBeardStyles ?? []} value={heroLook.beardStyle}
-              onSelect={(v) => handleAttrSelect({ avatarBeardStyle: v })} disabled={updateAvatar.isPending} />
-            <PickerRow label="Beard Color" options={avatarData?.availableBeardColors ?? []} value={heroLook.beardColor}
-              onSelect={(v) => handleAttrSelect({ avatarBeardColor: v })} disabled={updateAvatar.isPending || heroLook.beardStyle === "none"} swatch={HAIR_SWATCH} />
-            <PickerRow label="Glasses" options={avatarData?.availableGlasses ?? []} value={heroLook.glasses}
-              onSelect={(v) => handleAttrSelect({ avatarGlasses: v })} disabled={updateAvatar.isPending} />
-            <PickerRow label="Earrings" options={avatarData?.availableEarrings ?? []} value={heroLook.earrings}
-              onSelect={(v) => handleAttrSelect({ avatarEarrings: v })} disabled={updateAvatar.isPending} />
-
-            {/* Accent color (profile / leaderboard) */}
-            <div className="w-full space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Accent</p>
-              <div className="flex flex-wrap gap-2">
-                {AVATAR_COLORS.map(color => (
-                  <button
-                    key={color}
-                    onClick={() => handleColorSelect(color)}
-                    disabled={updateAvatar.isPending}
-                    className={`w-8 h-8 rounded-full border-2 transition-all ${currentColor === color ? "scale-110" : "hover:scale-105"}`}
-                    style={{
-                      backgroundColor: color,
-                      borderColor: currentColor === color ? "white" : "transparent",
-                      boxShadow: currentColor === color ? `0 0 8px ${color}` : undefined,
-                    }}
-                    aria-label={`Color ${color}`}
-                  />
-                ))}
-              </div>
-            </div>
+            </details>
           </div>
 
           {/* Equipment slots */}
