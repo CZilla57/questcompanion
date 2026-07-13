@@ -283,6 +283,7 @@ router.get("/accountability/partners/:id/feed", async (req, res): Promise<void> 
   })));
 });
 
+// NOTE: here :id is the ally's userId (unlike /accept|/decline|/feed, where it is a partnership id).
 router.get("/accountability/partners/:id/detail", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;
@@ -342,6 +343,7 @@ router.get("/accountability/partners/:id/detail", async (req, res): Promise<void
   });
 });
 
+// NOTE: here :id is the ally's userId (unlike /accept|/decline|/feed, where it is a partnership id).
 router.post("/accountability/partners/:id/nudge", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;

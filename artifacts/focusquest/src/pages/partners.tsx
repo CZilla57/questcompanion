@@ -162,20 +162,22 @@ export default function Partners() {
                       )}
                     </div>
 
-                    <div className="mt-4 flex justify-center gap-2">
-                      <NudgePicker
-                        partnerId={p.partner!.id}
-                        kind="poke"
-                        disabled={p.sentTodayPoke}
-                        emphasized={!!p.progress && !p.progress.allDoneToday && p.progress.questsDueToday > 0}
-                      />
-                      <NudgePicker
-                        partnerId={p.partner!.id}
-                        kind="cheer"
-                        disabled={p.sentTodayCheer}
-                        emphasized={p.hasFreshMilestone}
-                      />
-                    </div>
+                    {p.partner && (
+                      <div className="mt-4 flex justify-center gap-2">
+                        <NudgePicker
+                          partnerId={p.partner.id}
+                          kind="poke"
+                          disabled={p.sentTodayPoke}
+                          emphasized={!!p.progress && !p.progress.allDoneToday && p.progress.questsDueToday > 0}
+                        />
+                        <NudgePicker
+                          partnerId={p.partner.id}
+                          kind="cheer"
+                          disabled={p.sentTodayCheer}
+                          emphasized={p.hasFreshMilestone}
+                        />
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}

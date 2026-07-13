@@ -5,6 +5,7 @@ import { PixelHero } from "@/components/pixel-hero";
 import { NudgePicker } from "@/components/nudge-picker";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Trophy } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import type {
   HeroLook, Skin, Build, HairStyle, HairColor, FaceId, AvatarClass, EquippedGearLook,
 } from "@/lib/hero/types";
@@ -16,6 +17,7 @@ const MILESTONE_ICON: Record<string, string> = {
 export default function PartnerDetail() {
   const [, params] = useRoute("/partners/:id");
   const partnerId = params ? parseInt(params.id, 10) : NaN;
+  const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useGetPartnerDetail(
     partnerId,
@@ -88,8 +90,8 @@ export default function PartnerDetail() {
               </div>
             </div>
             <div className="mt-4 flex justify-center sm:justify-start gap-2">
-              <NudgePicker partnerId={partnerId} kind="poke" disabled={data.sentTodayPoke} emphasized={behind} />
-              <NudgePicker partnerId={partnerId} kind="cheer" disabled={data.sentTodayCheer} emphasized={data.milestones.length > 0} />
+              <NudgePicker partnerId={partnerId} kind="poke" disabled={data.sentTodayPoke} emphasized={behind} onSent={() => queryClient.invalidateQueries({ queryKey: ["partnerDetail", partnerId] })} />
+              <NudgePicker partnerId={partnerId} kind="cheer" disabled={data.sentTodayCheer} emphasized={data.milestones.length > 0} onSent={() => queryClient.invalidateQueries({ queryKey: ["partnerDetail", partnerId] })} />
             </div>
           </div>
         </CardContent>
