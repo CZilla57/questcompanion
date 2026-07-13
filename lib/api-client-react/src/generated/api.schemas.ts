@@ -550,6 +550,21 @@ export interface QuestlineInput {
   color?: string | null;
 }
 
+/**
+ * Partial update — every field optional.
+ */
+export interface QuestlineUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  title?: string;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  color?: string | null;
+}
+
 export interface QuestlineDetail {
   questline: Questline;
   quests: Task[];

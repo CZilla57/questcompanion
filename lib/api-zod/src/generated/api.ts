@@ -840,10 +840,10 @@ export const updateQuestlineBodyTitleMax = 120;
 
 
 export const UpdateQuestlineBody = zod.object({
-  "title": zod.string().min(1).max(updateQuestlineBodyTitleMax),
+  "title": zod.string().min(1).max(updateQuestlineBodyTitleMax).optional(),
   "description": zod.string().nullish(),
   "color": zod.string().nullish()
-})
+}).describe('Partial update — every field optional.')
 
 export const UpdateQuestlineResponse = zod.object({
   "id": zod.number(),
