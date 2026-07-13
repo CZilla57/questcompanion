@@ -27,6 +27,8 @@ tags:
     description: Calendar heatmap data
   - name: focus
     description: Focus sessions and Pomodoro timer
+  - name: questlines
+    description: Grouping quests into goal-oriented questlines
 paths:
   /auth/user:
     get:
@@ -712,6 +714,137 @@ paths:
       responses:
         "204":
           description: Steps removed
+
+  /questlines:
+    get:
+      operationId: getQuestlines
+      tags: [questlines]
+      summary: List the current user's questlines with derived progress
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, completed]
+          description: Optional status filter
+      responses:
+        "200":
+          description: Questline list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Questline"
+    post:
+      operationId: createQuestline
+      tags: [questlines]
+      summary: Create a questline
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuestlineInput"
+      responses:
+        "201":
+          description: Created questline
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Questline"
+
+  /questlines/{id}:
+    get:
+      operationId: getQuestline
+      tags: [questlines]
+      summary: Get one questline with its quests
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Questline with quests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuestlineDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    patch:
+      operationId: updateQuestline
+      tags: [questlines]
+      summary: Update a questline's title/description/color
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuestlineInput"
+      responses:
+        "200":
+          description: Updated questline
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Questline"
+    delete:
+      operationId: deleteQuestline
+      tags: [questlines]
+      summary: Delete a questline (its quests are unlinked, not deleted)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /questlines/{id}/claim:
+    post:
+      operationId: claimQuestline
+      tags: [questlines]
+      summary: Claim the reward for a fully-completed questline
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Reward claimed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuestlineClaimResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: Not ready to claim, or already completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
 
   /focus-sessions/presets:
     get:
@@ -1573,6 +1706,9 @@ components:
           description: AI-generated first-step checklist attached to this quest
           items:
             $ref: "#/components/schemas/TaskStep"
+        questlineId:
+          type: ["integer", "null"]
+          description: The questline this quest belongs to, or null
 
     FocusToggleInput:
       type: object
@@ -1668,6 +1804,9 @@ components:
           type: boolean
           default: false
           description: Create a no-deadline anchored quest (dueDate is ignored)
+        questlineId:
+          type: ["integer", "null"]
+          description: Assign the new quest to a questline (one-off quests only)
 
     TaskUpdate:
       type: object
@@ -1706,6 +1845,9 @@ components:
         isAnchored:
           type: boolean
           description: Toggle anchored (no-deadline) state; anchoring clears the due date
+        questlineId:
+          type: ["integer", "null"]
+          description: Reassign the quest to a questline, or null to unlink (one-off quests only)
 
     TaskCompletionResult:
       type: object
@@ -1752,6 +1894,80 @@ components:
         focusBonusPoints:
           type: integer
           description: XP awarded for completing all 3 focus quests
+
+    Questline:
+      type: object
+      required: [id, userId, title, status, total, done, ready, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        color:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [active, completed]
+        total:
+          type: integer
+          description: Number of quests in this questline
+        done:
+          type: integer
+          description: Number of completed quests
+        ready:
+          type: boolean
+          description: True when active, non-empty, and every quest is done
+        rewardXpAwarded:
+          type: ["integer", "null"]
+        completedAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    QuestlineInput:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: ["string", "null"]
+        color:
+          type: ["string", "null"]
+
+    QuestlineDetail:
+      type: object
+      required: [questline, quests]
+      properties:
+        questline:
+          $ref: "#/components/schemas/Questline"
+        quests:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+
+    QuestlineClaimResult:
+      type: object
+      required: [questline, xpAwarded, totalPoints, currentLevel, levelName, leveledUp]
+      properties:
+        questline:
+          $ref: "#/components/schemas/Questline"
+        xpAwarded:
+          type: integer
+        totalPoints:
+          type: integer
+        currentLevel:
+          type: integer
+        levelName:
+          type: string
+        leveledUp:
+          type: boolean
 
     SurpriseReward:
       type: object

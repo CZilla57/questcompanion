@@ -39,4 +39,9 @@ export interface TaskUpdate {
   dueTime?: string;
   /** Toggle anchored (no-deadline) state; anchoring clears the due date */
   isAnchored?: boolean;
+  /**
+     * Reassign the quest to a questline, or null to unlink (one-off quests only)
+     * @nullable
+     */
+  questlineId?: number | null;
 }

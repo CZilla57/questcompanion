@@ -212,6 +212,11 @@ export interface Task {
   dueTime?: string | null;
   /** AI-generated first-step checklist attached to this quest */
   steps: TaskStep[];
+  /**
+     * The questline this quest belongs to, or null
+     * @nullable
+     */
+  questlineId?: number | null;
 }
 
 export interface FocusToggleInput {
@@ -336,6 +341,11 @@ export interface TaskInput {
   dueTime?: string;
   /** Create a no-deadline anchored quest (dueDate is ignored) */
   isAnchored?: boolean;
+  /**
+     * Assign the new quest to a questline (one-off quests only)
+     * @nullable
+     */
+  questlineId?: number | null;
 }
 
 export type TaskUpdatePriority = typeof TaskUpdatePriority[keyof typeof TaskUpdatePriority];
@@ -396,6 +406,11 @@ export interface TaskUpdate {
   dueTime?: string;
   /** Toggle anchored (no-deadline) state; anchoring clears the due date */
   isAnchored?: boolean;
+  /**
+     * Reassign the quest to a questline, or null to unlink (one-off quests only)
+     * @nullable
+     */
+  questlineId?: number | null;
 }
 
 export type BadgeCategory = typeof BadgeCategory[keyof typeof BadgeCategory];
@@ -491,6 +506,62 @@ export interface TaskCompletionResult {
   focusBonusAwarded?: boolean;
   /** XP awarded for completing all 3 focus quests */
   focusBonusPoints?: number;
+}
+
+export type QuestlineStatus = typeof QuestlineStatus[keyof typeof QuestlineStatus];
+
+
+export const QuestlineStatus = {
+  active: 'active',
+  completed: 'completed',
+} as const;
+
+export interface Questline {
+  id: number;
+  userId: number;
+  title: string;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  color?: string | null;
+  status: QuestlineStatus;
+  /** Number of quests in this questline */
+  total: number;
+  /** Number of completed quests */
+  done: number;
+  /** True when active, non-empty, and every quest is done */
+  ready: boolean;
+  /** @nullable */
+  rewardXpAwarded?: number | null;
+  /** @nullable */
+  completedAt?: string | null;
+  createdAt: string;
+}
+
+export interface QuestlineInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  title: string;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  color?: string | null;
+}
+
+export interface QuestlineDetail {
+  questline: Questline;
+  quests: Task[];
+}
+
+export interface QuestlineClaimResult {
+  questline: Questline;
+  xpAwarded: number;
+  totalPoints: number;
+  currentLevel: number;
+  levelName: string;
+  leveledUp: boolean;
 }
 
 export type RecurringTaskPriority = typeof RecurringTaskPriority[keyof typeof RecurringTaskPriority];
@@ -1209,6 +1280,21 @@ export const GetTasksCategory = {
   errands: 'errands',
   travel: 'travel',
   default: 'default',
+} as const;
+
+export type GetQuestlinesParams = {
+/**
+ * Optional status filter
+ */
+status?: GetQuestlinesStatus;
+};
+
+export type GetQuestlinesStatus = typeof GetQuestlinesStatus[keyof typeof GetQuestlinesStatus];
+
+
+export const GetQuestlinesStatus = {
+  active: 'active',
+  completed: 'completed',
 } as const;
 
 export type ListFocusSessionsParams = {

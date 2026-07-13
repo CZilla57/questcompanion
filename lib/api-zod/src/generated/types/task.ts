@@ -51,4 +51,9 @@ export interface Task {
   dueTime?: string | null;
   /** AI-generated first-step checklist attached to this quest */
   steps: TaskStep[];
+  /**
+     * The questline this quest belongs to, or null
+     * @nullable
+     */
+  questlineId?: number | null;
 }
