@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Anchor, CalendarClock, Check, Clock, Edit2, Flame, Pin, PinOff, Shield, Timer, Trash2, Zap } from "lucide-react";
+import { Anchor, CalendarClock, Check, Clock, Edit2, Flame, Pin, PinOff, Scroll, Shield, Timer, Trash2, Zap } from "lucide-react";
 import { format } from "date-fns";
 import { Task, TaskPriority, useCompleteTask, useDeleteTask, usePatchTaskFocus, useUncompleteTask, useUpdateTask, useGetMyStats } from "@workspace/api-client-react";
 import { Button } from "./ui/button";
@@ -306,6 +306,12 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
           {task.category && task.category !== "default" && (
             <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${CATEGORY_COLORS[task.category] ?? CATEGORY_COLORS.default}`}>
               {CATEGORY_LABEL[task.category] ?? "General"}
+            </span>
+          )}
+
+          {task.questlineId != null && (
+            <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border border-primary/30 bg-primary/10 text-primary font-medium">
+              <Scroll className="w-2.5 h-2.5" /> Questline
             </span>
           )}
 
