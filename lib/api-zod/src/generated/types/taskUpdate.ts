@@ -37,4 +37,6 @@ export interface TaskUpdate {
      * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
      */
   dueTime?: string;
+  /** Toggle anchored (no-deadline) state; anchoring clears the due date */
+  isAnchored?: boolean;
 }

@@ -211,6 +211,8 @@ router.get("/users/me/insights", async (req, res): Promise<void> => {
   const DOW_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
   const dowStats = DOW_LABELS.map((label, day) => ({ day, label, completed: 0, total: 0 }));
   for (const task of allTasks) {
+    // Anchored quests have no due date, so they don't belong to any weekday bucket.
+    if (!task.dueDate) continue;
     const dow = new Date(task.dueDate + "T12:00:00Z").getUTCDay();
     dowStats[dow]!.total++;
     if (task.completed) dowStats[dow]!.completed++;

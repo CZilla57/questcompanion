@@ -180,7 +180,8 @@ export interface Task {
   completed: boolean;
   /** @nullable */
   completedAt?: string | null;
-  dueDate: string;
+  /** @nullable */
+  dueDate: string | null;
   priority: TaskPriority;
   category: TaskCategory;
   categoryLabel: string;
@@ -202,6 +203,8 @@ export interface Task {
      * @nullable
      */
   focusDate?: string | null;
+  /** A no-deadline quest that stays visible until completed */
+  isAnchored?: boolean;
   /**
      * Optional time of day (HH:mm, 24-hour)
      * @nullable
@@ -316,7 +319,7 @@ export interface TaskInput {
      * @maximum 100
      */
   points?: number;
-  dueDate: string;
+  dueDate?: string;
   priority?: TaskInputPriority;
   /**
      * Optional time estimate in minutes
@@ -331,6 +334,8 @@ export interface TaskInput {
      * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
      */
   dueTime?: string;
+  /** Create a no-deadline anchored quest (dueDate is ignored) */
+  isAnchored?: boolean;
 }
 
 export type TaskUpdatePriority = typeof TaskUpdatePriority[keyof typeof TaskUpdatePriority];
@@ -389,6 +394,8 @@ export interface TaskUpdate {
      * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
      */
   dueTime?: string;
+  /** Toggle anchored (no-deadline) state; anchoring clears the due date */
+  isAnchored?: boolean;
 }
 
 export type BadgeCategory = typeof BadgeCategory[keyof typeof BadgeCategory];

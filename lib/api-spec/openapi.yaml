@@ -1439,7 +1439,7 @@ components:
         completedAt:
           type: ["string", "null"]
         dueDate:
-          type: string
+          type: ["string", "null"]
         priority:
           type: string
           enum: [low, medium, high]
@@ -1462,6 +1462,9 @@ components:
         focusDate:
           type: ["string", "null"]
           description: The date (YYYY-MM-DD) this quest was pinned as focus
+        isAnchored:
+          type: boolean
+          description: A no-deadline quest that stays visible until completed
         dueTime:
           type: ["string", "null"]
           description: Optional time of day (HH:mm, 24-hour)
@@ -1530,7 +1533,7 @@ components:
 
     TaskInput:
       type: object
-      required: [title, dueDate]
+      required: [title]
       properties:
         title:
           type: string
@@ -1561,6 +1564,10 @@ components:
           type: string
           pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
           description: Optional time of day (HH:mm, 24-hour)
+        isAnchored:
+          type: boolean
+          default: false
+          description: Create a no-deadline anchored quest (dueDate is ignored)
 
     TaskUpdate:
       type: object
@@ -1596,6 +1603,9 @@ components:
           type: string
           pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
           description: Optional time of day (HH:mm, 24-hour)
+        isAnchored:
+          type: boolean
+          description: Toggle anchored (no-deadline) state; anchoring clears the due date
 
     TaskCompletionResult:
       type: object

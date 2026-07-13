@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarClock, Check, Clock, Edit2, Flame, Pin, PinOff, Shield, Timer, Trash2, Zap } from "lucide-react";
+import { Anchor, CalendarClock, Check, Clock, Edit2, Flame, Pin, PinOff, Shield, Timer, Trash2, Zap } from "lucide-react";
 import { format } from "date-fns";
 import { Task, TaskPriority, useCompleteTask, useDeleteTask, usePatchTaskFocus, useUncompleteTask, useUpdateTask, useGetMyStats } from "@workspace/api-client-react";
 import { Button } from "./ui/button";
@@ -214,6 +214,28 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
     });
   };
 
+  const handleToggleAnchor = () => {
+    if (updateMutation.isPending) return;
+    const nextAnchored = !task.isAnchored;
+    updateMutation.mutate({
+      id: task.id,
+      // Un-anchoring restores a date; send local today so it lands on the user's day.
+      data: nextAnchored ? { isAnchored: true } : { isAnchored: false, dueDate: todayDueDate() },
+    }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+        toast({
+          title: nextAnchored ? "Quest anchored — no deadline" : "Anchor removed",
+          className: nextAnchored ? "border-primary" : "",
+        });
+      },
+      onError: (err: any) => {
+        const msg = err?.response?.data?.error ?? err?.message ?? "Could not update anchor";
+        toast({ title: msg, variant: "destructive" });
+      },
+    });
+  };
+
   const isBusy = completeMutation.isPending || uncompleteMutation.isPending;
 
   const hasEstimate = !!task.estimatedMinutes;
@@ -253,10 +275,11 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
 
         <div className="flex items-center gap-3 mt-2 flex-wrap">
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Clock className="w-3 h-3" />
+            {task.dueDate && !task.isAnchored ? <Clock className="w-3 h-3" /> : <Anchor className="w-3 h-3" />}
             <span>
-              {format(parseDueDate(task.dueDate), 'MMM d, yyyy')}
-              {task.dueTime ? ` · ${formatTime12h(task.dueTime)}` : ""}
+              {task.dueDate && !task.isAnchored
+                ? `${format(parseDueDate(task.dueDate), 'MMM d, yyyy')}${task.dueTime ? ` · ${formatTime12h(task.dueTime)}` : ""}`
+                : "No deadline"}
             </span>
           </div>
 
@@ -357,6 +380,19 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
           <Button
             variant="ghost"
             size="icon"
+            aria-label={task.isAnchored ? "Remove anchor" : "Anchor (no deadline)"}
+            title={task.isAnchored ? "Remove anchor" : "Anchor — no deadline, keep until done"}
+            className={`h-9 w-9 cursor-pointer ${task.isAnchored ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
+            onClick={handleToggleAnchor}
+            disabled={updateMutation.isPending}
+          >
+            <Anchor className="w-4 h-4" />
+          </Button>
+        )}
+        {!task.completed && (
+          <Button
+            variant="ghost"
+            size="icon"
             aria-label={isPinned ? "Unpin from Today's Focus" : "Pin to Today's Focus"}
             title={isPinned ? "Unpin from Today's Focus" : "Pin to Today's Focus"}
             className={`h-9 w-9 cursor-pointer ${isPinned ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
@@ -366,7 +402,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
             {isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
           </Button>
         )}
-        {!task.completed && (
+        {!task.completed && !task.isAnchored && (
           <Popover open={rescheduleOpen} onOpenChange={setRescheduleOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -416,7 +452,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
                 </div>
                 <Calendar
                   mode="single"
-                  selected={parseDueDate(task.dueDate)}
+                  selected={task.dueDate ? parseDueDate(task.dueDate) : undefined}
                   onSelect={(d) => { if (d) handleReschedule(toDueDateString(d)); }}
                   initialFocus
                 />

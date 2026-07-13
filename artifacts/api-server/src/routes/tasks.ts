@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, desc, count, inArray } from "drizzle-orm";
+import { eq, and, or, desc, count, inArray } from "drizzle-orm";
 import { applyMultiplier } from "../lib/xp-multiplier";
 import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable, taskStepsTable } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, DAILY_BONUS_POINTS } from "../lib/gamification";
@@ -15,6 +15,7 @@ import { isValidDueTime, isValidDueDate } from "../lib/task-datetime";
 import { parseQuickAdd } from "@workspace/quick-add";
 import { buildQuickAddPrompt, parseQuickAddResult, QuickAddParseError } from "../lib/ai/quick-add-parse";
 import { parseCooldown } from "../lib/ai/parse-cooldown";
+import { isBonusGatingTask, countsAsTodayCompletion } from "../lib/anchored-tasks";
 
 const router: IRouter = Router();
 
@@ -55,6 +56,7 @@ function formatTask(
     actualMinutes: task.actualMinutes ?? null,
     isDailyFocus: task.isDailyFocus,
     focusDate: task.focusDate ?? null,
+    isAnchored: task.isAnchored,
     steps: steps
       .slice()
       .sort((a, b) => a.position - b.position)
@@ -148,8 +150,8 @@ router.get("/tasks/recommend", async (req, res): Promise<void> => {
       reasons.push(`adds ${ap.categoryLabel} variety`);
     }
 
-    // Overdue bonus
-    if (task.dueDate < today) {
+    // Overdue bonus (anchored tasks have no deadline and are never overdue).
+    if (task.dueDate && task.dueDate < today) {
       score += 20;
       reasons.push("overdue");
     }
@@ -202,20 +204,35 @@ router.get("/tasks", async (req, res): Promise<void> => {
 
   const { date, completed, category } = req.query;
 
-  const conditions = [eq(tasksTable.userId, userId)];
+  const userCond = eq(tasksTable.userId, userId);
+  const completedCond =
+    completed !== undefined && completed !== null
+      ? eq(tasksTable.completed, completed === "true")
+      : undefined;
+  const categoryCond =
+    category && typeof category === "string" && VALID_CATEGORIES.has(category)
+      ? eq(tasksTable.category, category)
+      : undefined;
+
+  let where;
   if (date && typeof date === "string") {
-    conditions.push(eq(tasksTable.dueDate, date));
-  }
-  if (completed !== undefined && completed !== null) {
-    conditions.push(eq(tasksTable.completed, completed === "true"));
-  }
-  if (category && typeof category === "string" && VALID_CATEGORIES.has(category)) {
-    conditions.push(eq(tasksTable.category, category));
+    // Bucket A: tasks dated this day (respecting the status + category filters).
+    const datedBucket = and(eq(tasksTable.dueDate, date), completedCond, categoryCond);
+    // Bucket B: incomplete anchored tasks, injected regardless of date (respecting
+    // the category filter). Skipped when the caller asked for completed-only, since
+    // a completed anchored task has left the daily flow.
+    const includeAnchored = completedCond === undefined || completed === "false";
+    const anchoredBucket = includeAnchored
+      ? and(eq(tasksTable.isAnchored, true), eq(tasksTable.completed, false), categoryCond)
+      : undefined;
+    where = and(userCond, anchoredBucket ? or(datedBucket, anchoredBucket) : datedBucket);
+  } else {
+    where = and(userCond, completedCond, categoryCond);
   }
 
   const tasks = await db.select().from(tasksTable)
-    .where(and(...conditions))
-    .orderBy(desc(tasksTable.createdAt));
+    .where(where)
+    .orderBy(desc(tasksTable.isAnchored), desc(tasksTable.createdAt));
 
   const taskIds = tasks.map((t) => t.id);
   const steps = taskIds.length
@@ -237,7 +254,7 @@ router.post("/tasks", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;
 
-  const { title, description, dueDate, dueTime, priority = "medium", estimatedMinutes, category } = req.body as {
+  const { title, description, dueDate, dueTime, priority = "medium", estimatedMinutes, category, isAnchored } = req.body as {
     title?: string;
     description?: string;
     dueDate?: string;
@@ -245,10 +262,17 @@ router.post("/tasks", async (req, res): Promise<void> => {
     priority?: string;
     estimatedMinutes?: number;
     category?: string;
+    isAnchored?: boolean;
   };
 
-  if (!title || !dueDate) {
-    res.status(400).json({ error: "title and dueDate are required" });
+  const anchored = isAnchored === true;
+
+  if (!title) {
+    res.status(400).json({ error: "title is required" });
+    return;
+  }
+  if (!anchored && !dueDate) {
+    res.status(400).json({ error: "dueDate is required for non-anchored quests" });
     return;
   }
   if (dueTime !== undefined && dueTime !== null && !isValidDueTime(dueTime)) {
@@ -259,16 +283,18 @@ router.post("/tasks", async (req, res): Promise<void> => {
   const autoPoint = assignPoints(title, priority);
   const resolvedCategory = category && VALID_CATEGORIES.has(category) ? category : autoPoint.category;
 
+  // Anchored quests have no deadline: force a null date/time regardless of input.
   const [task] = await db.insert(tasksTable).values({
     userId,
     title,
     description,
     points: autoPoint.points,
-    dueDate,
-    dueTime: dueTime ?? null,
+    dueDate: anchored ? null : dueDate,
+    dueTime: anchored ? null : (dueTime ?? null),
     priority,
     category: resolvedCategory,
     estimatedMinutes: estimatedMinutes ?? null,
+    isAnchored: anchored,
   }).returning();
 
   res.status(201).json(formatTask(task));
@@ -356,7 +382,7 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
   if (!existing) { res.status(404).json({ error: "Task not found" }); return; }
 
   // Points are server-assigned by auto-points logic and are not client-editable.
-  const { title, description, dueDate, dueTime, priority, estimatedMinutes, actualMinutes, category } = req.body as {
+  const { title, description, dueDate, dueTime, priority, estimatedMinutes, actualMinutes, category, isAnchored } = req.body as {
     title?: string;
     description?: string;
     dueDate?: string;
@@ -365,6 +391,7 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
     estimatedMinutes?: number;
     actualMinutes?: number;
     category?: string;
+    isAnchored?: boolean;
   };
 
   const updates: Partial<typeof tasksTable.$inferInsert> = {};
@@ -387,7 +414,12 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
   // Incomplete task: allow full edit.
   if (title != null) updates.title = title;
   if (description != null) updates.description = description;
-  if (dueDate != null) updates.dueDate = dueDate;
+  if (dueDate != null) {
+    updates.dueDate = dueDate;
+    // Giving a quest a concrete date takes it out of the anchored (no-deadline)
+    // state, unless this same request is explicitly re-anchoring it below.
+    if (isAnchored !== true) updates.isAnchored = false;
+  }
   if (dueTime !== undefined) {
     if (dueTime !== null && !isValidDueTime(dueTime)) {
       res.status(400).json({ error: "dueTime must be HH:mm (24-hour)" });
@@ -398,6 +430,19 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
   if (priority != null) updates.priority = priority;
   if (estimatedMinutes != null) updates.estimatedMinutes = estimatedMinutes;
   if (category != null && VALID_CATEGORIES.has(category)) updates.category = category;
+  if (isAnchored !== undefined) {
+    if (isAnchored === true) {
+      // Anchoring drops the deadline entirely.
+      updates.isAnchored = true;
+      updates.dueDate = null;
+      updates.dueTime = null;
+    } else {
+      updates.isAnchored = false;
+      // Un-anchoring re-enters the dated flow; default to today unless the same
+      // request supplied an explicit date (handled above, which wins).
+      if (dueDate == null) updates.dueDate = new Date().toISOString().split("T")[0]!;
+    }
+  }
 
   // The WHERE clause re-checks completed=false as a safety guard against a race
   // between the read above and this write.
@@ -501,12 +546,18 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     const { totalPoints: boostedBase, streakBonus, multiplierInfo } = applyMultiplier(task.points, user.streakDays);
     let pointsToAdd = boostedBase;
 
-    // Daily bonus check: read today's tasks inside the transaction for consistency.
-    const todayTasks = await tx.select().from(tasksTable)
-      .where(and(eq(tasksTable.userId, userId), eq(tasksTable.dueDate, today)));
-    const allDone = todayTasks.every((t) => t.id === id || t.completed);
+    // Daily bonus check: the gating set is tasks due today plus anchored tasks past
+    // their one-day grace (created before today). Fetch the superset in-transaction,
+    // then filter with the pure predicate so grace logic stays unit-tested.
+    const candidateTasks = await tx.select().from(tasksTable)
+      .where(and(
+        eq(tasksTable.userId, userId),
+        or(eq(tasksTable.dueDate, today), eq(tasksTable.isAnchored, true)),
+      ));
+    const gatingTasks = candidateTasks.filter((t) => isBonusGatingTask(t, today));
+    const allDone = gatingTasks.every((t) => t.id === id || t.completed);
     let bonusAwarded = false;
-    if (allDone && todayTasks.length > 0) {
+    if (allDone && gatingTasks.length > 0) {
       const recentBonus = await tx.select().from(activityTable)
         .where(and(eq(activityTable.userId, userId), eq(activityTable.type, "all_day_bonus")))
         .orderBy(desc(activityTable.createdAt))
@@ -854,14 +905,18 @@ router.post("/tasks/:id/uncomplete", async (req, res): Promise<void> => {
     // Only restore if this task was the sole contributor of today's streak advancement,
     // i.e., no other completed task remains for today.
     const today = new Date().toISOString().split("T")[0];
-    const otherCompletedToday = await tx.select({ id: tasksTable.id })
+    // Streak restore only if this task was the sole contributor to today's activity.
+    // A "today contribution" is a task due today OR an anchored task completed today.
+    const completedTodayCandidates = await tx.select()
       .from(tasksTable)
       .where(and(
         eq(tasksTable.userId, userId),
         eq(tasksTable.completed, true),
-        eq(tasksTable.dueDate, today),
+        or(eq(tasksTable.dueDate, today), eq(tasksTable.isAnchored, true)),
       ));
-    const hasOtherCompletedToday = otherCompletedToday.some((t) => t.id !== id);
+    const hasOtherCompletedToday = completedTodayCandidates.some(
+      (t) => t.id !== id && countsAsTodayCompletion(t, today),
+    );
 
     let newStreakDays = user.streakDays;
     let newLongestStreak = user.longestStreak;
