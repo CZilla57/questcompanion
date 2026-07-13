@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { Sparkles, CalendarClock, Zap, Plus, RefreshCw } from "lucide-react";
 import { parseQuickAdd, type ParsedQuickAdd } from "@workspace/quick-add";
-import { useCreateTask, useParseQuickAdd, getGetTasksQueryKey } from "@workspace/api-client-react";
+import { useCreateTask, useParseQuickAdd, getGetTasksQueryKey, getGetQuestlinesQueryKey, getGetQuestlineQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ function dateLabel(iso: string): string {
   return format(new Date(y, m - 1, d), "EEE MMM d");
 }
 
-export function QuickAddBar({ selectedDate }: { selectedDate: Date | undefined }) {
+export function QuickAddBar({ selectedDate, questlineId }: { selectedDate: Date | undefined; questlineId?: number }) {
   const [text, setText] = useState("");
   const [aiFields, setAiFields] = useState<ParsedQuickAdd | null>(null);
   const [xp, setXp] = useState<number | null>(null);
@@ -70,6 +70,7 @@ export function QuickAddBar({ selectedDate }: { selectedDate: Date | undefined }
         priority: (parsed.priority ?? "medium") as any,
         ...(parsed.dueTime ? { dueTime: parsed.dueTime } : {}),
         ...(parsed.category ? { category: parsed.category as any } : {}),
+        ...(questlineId != null ? { questlineId } : {}),
       },
     }, {
       onSuccess: (task) => {
@@ -77,6 +78,10 @@ export function QuickAddBar({ selectedDate }: { selectedDate: Date | undefined }
         setText("");
         setAiFields(null);
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+        if (questlineId != null) {
+          queryClient.invalidateQueries({ queryKey: getGetQuestlinesQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetQuestlineQueryKey(questlineId) });
+        }
       },
       onError: () => toast({ title: "Couldn't add that quest", variant: "destructive" }),
     });
