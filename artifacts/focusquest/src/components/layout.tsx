@@ -8,6 +8,7 @@ import { useNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
 import { usePwaInstall } from "@/hooks/use-pwa-install";
 import { shouldShowInstallButton } from "@/lib/pwa";
+import { subscribeToast, unsubscribeToast } from "@/lib/push";
 import {
   Tooltip,
   TooltipContent,
@@ -27,25 +28,13 @@ function NotificationBell() {
   const handleToggle = async () => {
     setLoading(true);
     try {
-      if (isSubscribed) {
-        const ok = await unsubscribe();
-        if (ok) toast({ title: "Notifications disabled" });
-      } else {
-        const ok = await subscribe();
-        if (ok) {
-          toast({
-            title: "Notifications enabled",
-            description: "You'll be reminded about due tasks and streaks.",
-            className: "border-primary",
-          });
-        } else if (state === "denied") {
-          toast({
-            title: "Notifications blocked",
-            description: "Enable notifications in your browser settings.",
-            variant: "destructive",
-          });
-        }
-      }
+      // Map the outcome to a toast so the button always gives feedback — never
+      // silently does nothing. (Reading `state` here would be stale after the
+      // await; the outcome from the hook is authoritative.)
+      const message = isSubscribed
+        ? unsubscribeToast(await unsubscribe())
+        : subscribeToast(await subscribe());
+      if (message) toast(message);
     } finally {
       setLoading(false);
     }
