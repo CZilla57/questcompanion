@@ -166,7 +166,7 @@ const mobileNavItems = allNavItems.filter(i => i.mobileShow);
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { data: navNudges } = useGetNudges({ query: { queryKey: ["nudges"] } });
+  const { data: navNudges } = useGetNudges();
   const allyUnread = (navNudges ?? []).filter((n) => !n.readAt).length;
 
   return (

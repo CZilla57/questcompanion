@@ -43,7 +43,7 @@ export default function Partners() {
   const acceptReq = useAcceptPartnerRequest();
   const declineReq = useDeclinePartnerRequest();
 
-  const { data: nudges } = useGetNudges({ query: { queryKey: ["nudges"] } });
+  const { data: nudges } = useGetNudges();
   const markRead = useMarkNudgesRead();
   const unreadCount = (nudges ?? []).filter((n) => !n.readAt).length;
 
