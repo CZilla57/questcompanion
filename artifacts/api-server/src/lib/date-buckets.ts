@@ -34,6 +34,32 @@ export function localDateKey(instant: Date, timeZone: string): string {
 }
 
 /**
+ * The UTC instant of 00:00 local time on `dateKey` (YYYY-MM-DD) in `timeZone`.
+ *
+ * `new Date(dateKey + "T00:00:00Z")` is UTC midnight of the *date string* — off
+ * by the zone's offset, which is wrong when comparing against real timestamps
+ * (e.g. "was this row created today in the user's zone?"). This returns true
+ * local midnight: take the UTC-midnight guess, read its wall-clock time in
+ * `timeZone`, and correct by that offset. DST-safe: the offset is read at the
+ * specific date.
+ */
+export function localDayStartUtc(dateKey: string, timeZone: string): Date {
+  const guess = new Date(dateKey + "T00:00:00Z");
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+  }).formatToParts(guess);
+  const f: Record<string, number> = {};
+  for (const p of parts) if (p.type !== "literal") f[p.type] = Number(p.value);
+  // `guess`'s wall-clock time in the zone, re-read as a UTC instant.
+  const asUtc = Date.UTC(f.year, f.month - 1, f.day, f.hour, f.minute, f.second);
+  const offset = asUtc - guess.getTime(); // zone leads UTC by `offset` ms
+  return new Date(guess.getTime() - offset);
+}
+
+/**
  * The `days` calendar dates (YYYY-MM-DD) ending on the current day in
  * `timeZone`, oldest first. Day arithmetic is done on a UTC anchor of the local
  * calendar date so DST transitions can't shift the dates.
