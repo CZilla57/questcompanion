@@ -82,7 +82,7 @@ export default function Questlines() {
   const [description, setDescription] = useState("");
   const [, navigate] = useLocation();
   const suggestMutation = useSuggestQuestlineQuests();
-  const [draftQuests, setDraftQuests] = useState<{ text: string; included: boolean }[]>([]);
+  const [draftQuests, setDraftQuests] = useState<{ id: string; text: string; included: boolean }[]>([]);
 
   const resetDialog = () => {
     setTitle("");
@@ -95,7 +95,7 @@ export default function Questlines() {
     if (!title.trim()) return;
     suggestMutation.mutate({ data: { goal: title.trim() } }, {
       onSuccess: (res) => {
-        setDraftQuests(res.quests.map((text) => ({ text, included: true })));
+        setDraftQuests(res.quests.map((text) => ({ id: crypto.randomUUID(), text, included: true })));
       },
       onError: (err: any) => {
         const status = err?.status ?? err?.response?.status;
@@ -186,7 +186,7 @@ export default function Questlines() {
             {draftQuests.length > 0 && (
               <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                 {draftQuests.map((d, i) => (
-                  <div key={i} className="flex items-center gap-2">
+                  <div key={d.id} className="flex items-center gap-2">
                     <Checkbox
                       checked={d.included}
                       onCheckedChange={(v) =>
