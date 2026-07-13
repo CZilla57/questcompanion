@@ -5,16 +5,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { reactionsFor, type NudgeKind } from "@/lib/nudge-reactions";
+import { apiErrorMessage } from "@/lib/api-error";
 import { Hand, PartyPopper } from "lucide-react";
-
-/** Pull a human-readable message out of an API error, falling back if absent. */
-function nudgeError(err: unknown, fallback: string): string {
-  const data = (err as { data?: unknown } | null)?.data;
-  if (data && typeof data === "object" && typeof (data as { error?: unknown }).error === "string") {
-    return (data as { error: string }).error;
-  }
-  return fallback;
-}
 
 export function NudgePicker({
   partnerId, kind, disabled, emphasized, onSent,
@@ -43,7 +35,7 @@ export function NudgePicker({
       },
       onError: (err) => {
         setOpen(false);
-        toast({ title: "Couldn't send", description: nudgeError(err, "Please try again."), variant: "destructive" });
+        toast({ title: "Couldn't send", description: apiErrorMessage(err, "Please try again."), variant: "destructive" });
       },
     });
   };

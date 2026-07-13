@@ -1009,6 +1009,20 @@ paths:
       operationId: getNudges
       tags: [accountability]
       summary: List nudges received by the current user
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
       responses:
         "200":
           description: Received nudges

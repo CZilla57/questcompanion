@@ -10,16 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetPartnersQueryKey } from "@workspace/api-client-react";
 import { NudgePicker } from "@/components/nudge-picker";
-
-/** Pull a human-readable message out of an API error, falling back if absent. */
-function errorMessage(err: unknown, fallback: string): string {
-  const data = (err as { data?: unknown } | null)?.data;
-  if (data && typeof data === "object" && typeof (data as { error?: unknown }).error === "string") {
-    return (data as { error: string }).error;
-  }
-  if (err instanceof Error && err.message) return err.message;
-  return fallback;
-}
+import { apiErrorMessage } from "@/lib/api-error";
 
 export default function Partners() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -43,9 +34,14 @@ export default function Partners() {
   const acceptReq = useAcceptPartnerRequest();
   const declineReq = useDeclinePartnerRequest();
 
-  const { data: nudges } = useGetNudges();
+  const NUDGE_PAGE = 50;
+  const NUDGE_MAX = 100; // server clamps `limit` to 100
+  const [nudgeLimit, setNudgeLimit] = useState(NUDGE_PAGE);
+  const { data: nudges } = useGetNudges({ limit: nudgeLimit });
   const markRead = useMarkNudgesRead();
   const unreadCount = (nudges ?? []).filter((n) => !n.readAt).length;
+  // A full page back means there may be more; stop at the server's cap.
+  const hasMoreNudges = (nudges?.length ?? 0) >= nudgeLimit && nudgeLimit < NUDGE_MAX;
 
   const handleOpenInbox = (value: string) => {
     if (value === "inbox" && unreadCount > 0) {
@@ -75,7 +71,7 @@ export default function Partners() {
         queryClient.invalidateQueries({ queryKey: getGetPartnersQueryKey() });
       },
       onError: (err) => {
-        toast({ title: "Couldn't send request", description: errorMessage(err, "Please try again."), variant: "destructive" });
+        toast({ title: "Couldn't send request", description: apiErrorMessage(err, "Please try again."), variant: "destructive" });
       }
     });
   };
@@ -87,7 +83,7 @@ export default function Partners() {
         queryClient.invalidateQueries({ queryKey: getGetPartnersQueryKey() });
       },
       onError: (err) => {
-        toast({ title: "Couldn't accept request", description: errorMessage(err, "Please try again."), variant: "destructive" });
+        toast({ title: "Couldn't accept request", description: apiErrorMessage(err, "Please try again."), variant: "destructive" });
       }
     });
   };
@@ -98,7 +94,7 @@ export default function Partners() {
         queryClient.invalidateQueries({ queryKey: getGetPartnersQueryKey() });
       },
       onError: (err) => {
-        toast({ title: "Couldn't decline request", description: errorMessage(err, "Please try again."), variant: "destructive" });
+        toast({ title: "Couldn't decline request", description: apiErrorMessage(err, "Please try again."), variant: "destructive" });
       }
     });
   };
@@ -286,6 +282,17 @@ export default function Partners() {
                 </div>
               </div>
             ))
+          )}
+          {hasMoreNudges && (
+            <div className="text-center pt-2">
+              <Button
+                variant="outline"
+                className="border-primary/30 text-primary hover:bg-primary/10"
+                onClick={() => setNudgeLimit((l) => Math.min(l + NUDGE_PAGE, NUDGE_MAX))}
+              >
+                Load more
+              </Button>
+            </div>
           )}
         </TabsContent>
       </Tabs>

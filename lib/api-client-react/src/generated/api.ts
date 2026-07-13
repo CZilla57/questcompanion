@@ -46,6 +46,7 @@ import type {
   GetMyInsightsParams,
   GetMyStatsParams,
   GetMyXpHistoryParams,
+  GetNudgesParams,
   GetPartnerDetailParams,
   GetTaskRecommendationParams,
   GetTasksParams,
@@ -3630,20 +3631,27 @@ export const useSendNudge = <TError = ErrorType<unknown>,
       return useMutation(getSendNudgeMutationOptions(options));
     }
 
-export const getGetNudgesUrl = () => {
+export const getGetNudgesUrl = (params?: GetNudgesParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/accountability/nudges`
+  return stringifiedParams.length > 0 ? `/api/accountability/nudges?${stringifiedParams}` : `/api/accountability/nudges`
 }
 
 /**
  * @summary List nudges received by the current user
  */
-export const getNudges = async ( options?: RequestInit): Promise<Nudge[]> => {
+export const getNudges = async (params?: GetNudgesParams, options?: RequestInit): Promise<Nudge[]> => {
 
-  return customFetch<Nudge[]>(getGetNudgesUrl(),
+  return customFetch<Nudge[]>(getGetNudgesUrl(params),
   {
     ...options,
     method: 'GET'
@@ -3656,23 +3664,23 @@ export const getNudges = async ( options?: RequestInit): Promise<Nudge[]> => {
 
 
 
-export const getGetNudgesQueryKey = () => {
+export const getGetNudgesQueryKey = (params?: GetNudgesParams,) => {
     return [
-    `/api/accountability/nudges`
+    `/api/accountability/nudges`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetNudgesQueryOptions = <TData = Awaited<ReturnType<typeof getNudges>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNudges>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetNudgesQueryOptions = <TData = Awaited<ReturnType<typeof getNudges>>, TError = ErrorType<unknown>>(params?: GetNudgesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNudges>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetNudgesQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetNudgesQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNudges>>> = ({ signal }) => getNudges({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNudges>>> = ({ signal }) => getNudges(params, { signal, ...requestOptions });
 
 
 
@@ -3690,11 +3698,11 @@ export type GetNudgesQueryError = ErrorType<unknown>
  */
 
 export function useGetNudges<TData = Awaited<ReturnType<typeof getNudges>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNudges>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: GetNudgesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNudges>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetNudgesQueryOptions(options)
+  const queryOptions = getGetNudgesQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

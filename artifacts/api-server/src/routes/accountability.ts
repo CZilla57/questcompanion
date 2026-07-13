@@ -6,7 +6,7 @@ import { resolvePartnerRequest } from "../lib/partnerships";
 import { buildHeroLook } from "./avatar";
 import { getEarnedBadges } from "./badges";
 import { MILESTONE_TYPES, hasFreshMilestone } from "../lib/ally-milestones";
-import { resolveTimeZone, localDateKey } from "../lib/date-buckets";
+import { resolveTimeZone, localDateKey, localDayStartUtc } from "../lib/date-buckets";
 import { sendPushNotification } from "../lib/push-notifications";
 import { isValidKind, isValidReaction, reactionLabel, canSendNudge, type NudgeKind } from "../lib/nudges";
 
@@ -65,7 +65,7 @@ router.get("/accountability/partners", async (req, res): Promise<void> => {
   const timeZone = resolveTimeZone(typeof req.query.tz === "string" ? req.query.tz : undefined);
   const now = new Date();
   const today = localDateKey(now, timeZone);
-  const dayStart = new Date(today + "T00:00:00Z");
+  const dayStart = localDayStartUtc(today, timeZone);
 
   const partnerships = await db.select().from(partnershipsTable)
     .where(or(
@@ -302,7 +302,7 @@ router.get("/accountability/partners/:id/detail", async (req, res): Promise<void
   const timeZone = resolveTimeZone(typeof req.query.tz === "string" ? req.query.tz : undefined);
   const now = new Date();
   const today = localDateKey(now, timeZone);
-  const dayStart = new Date(today + "T00:00:00Z");
+  const dayStart = localDayStartUtc(today, timeZone);
 
   const todayTasks = await db.select().from(tasksTable)
     .where(and(eq(tasksTable.userId, partnerId), eq(tasksTable.dueDate, today)));
@@ -366,7 +366,7 @@ router.post("/accountability/partners/:id/nudge", async (req, res): Promise<void
 
   // Rate limit: one nudge of this kind per recipient per local day.
   const timeZone = resolveTimeZone(typeof req.query.tz === "string" ? req.query.tz : undefined);
-  const dayStart = new Date(localDateKey(new Date(), timeZone) + "T00:00:00Z");
+  const dayStart = localDayStartUtc(localDateKey(new Date(), timeZone), timeZone);
   const priorToday = await db.select().from(allyNudgesTable).where(
     and(
       eq(allyNudgesTable.senderId, userId),
@@ -418,10 +418,16 @@ router.get("/accountability/nudges", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;
 
+  const limitRaw = Number(req.query.limit ?? 50);
+  const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(1, Math.floor(limitRaw)), 100) : 50;
+  const offsetRaw = Number(req.query.offset ?? 0);
+  const offset = Number.isFinite(offsetRaw) ? Math.max(0, Math.floor(offsetRaw)) : 0;
+
   const rows = await db.select().from(allyNudgesTable)
     .where(eq(allyNudgesTable.recipientId, userId))
     .orderBy(desc(allyNudgesTable.createdAt))
-    .limit(50);
+    .limit(limit)
+    .offset(offset);
 
   const senderIds = [...new Set(rows.map((r) => r.senderId))];
   const senders = senderIds.length

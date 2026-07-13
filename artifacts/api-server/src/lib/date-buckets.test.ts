@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveTimeZone, localDateKey, buildDayDates, buildDaySlots, localHour } from "./date-buckets";
+import { resolveTimeZone, localDateKey, buildDayDates, buildDaySlots, localHour, localDayStartUtc } from "./date-buckets";
 
 describe("resolveTimeZone", () => {
   it("returns a valid IANA timezone unchanged", () => {
@@ -83,5 +83,33 @@ describe("localHour", () => {
     // 04:00 UTC is exactly midnight in New York (UTC-4).
     const instant = new Date("2026-07-11T04:00:00Z");
     expect(localHour(instant, "America/New_York")).toBe(0);
+  });
+});
+
+describe("localDayStartUtc", () => {
+  it("is identity for UTC", () => {
+    expect(localDayStartUtc("2026-07-13", "UTC").toISOString()).toBe("2026-07-13T00:00:00.000Z");
+  });
+
+  it("returns the UTC instant of local midnight for a zone behind UTC (summer DST)", () => {
+    // New York is UTC-4 in July (EDT); local midnight Jul 13 = 04:00 UTC.
+    expect(localDayStartUtc("2026-07-13", "America/New_York").toISOString()).toBe("2026-07-13T04:00:00.000Z");
+  });
+
+  it("returns the UTC instant of local midnight for a zone ahead of UTC", () => {
+    // Tokyo is UTC+9; local midnight Jul 13 = 15:00 UTC on Jul 12.
+    expect(localDayStartUtc("2026-07-13", "Asia/Tokyo").toISOString()).toBe("2026-07-12T15:00:00.000Z");
+  });
+
+  it("uses the per-date offset (DST-aware): New York is UTC-5 in winter", () => {
+    // New York is UTC-5 in January (EST); local midnight Jan 15 = 05:00 UTC.
+    expect(localDayStartUtc("2026-01-15", "America/New_York").toISOString()).toBe("2026-01-15T05:00:00.000Z");
+  });
+
+  it("round-trips: the day-start instant maps back to the same local date", () => {
+    for (const tz of ["UTC", "America/New_York", "Asia/Tokyo", "America/Los_Angeles"]) {
+      const start = localDayStartUtc("2026-07-13", tz);
+      expect(localDateKey(start, tz)).toBe("2026-07-13");
+    }
   });
 });
