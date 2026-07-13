@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, desc, count, inArray } from "drizzle-orm";
+import { eq, and, or, desc, count, inArray } from "drizzle-orm";
 import { applyMultiplier } from "../lib/xp-multiplier";
 import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable, taskStepsTable } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, DAILY_BONUS_POINTS } from "../lib/gamification";
@@ -55,6 +55,7 @@ function formatTask(
     actualMinutes: task.actualMinutes ?? null,
     isDailyFocus: task.isDailyFocus,
     focusDate: task.focusDate ?? null,
+    isAnchored: task.isAnchored,
     steps: steps
       .slice()
       .sort((a, b) => a.position - b.position)
@@ -202,20 +203,35 @@ router.get("/tasks", async (req, res): Promise<void> => {
 
   const { date, completed, category } = req.query;
 
-  const conditions = [eq(tasksTable.userId, userId)];
+  const userCond = eq(tasksTable.userId, userId);
+  const completedCond =
+    completed !== undefined && completed !== null
+      ? eq(tasksTable.completed, completed === "true")
+      : undefined;
+  const categoryCond =
+    category && typeof category === "string" && VALID_CATEGORIES.has(category)
+      ? eq(tasksTable.category, category)
+      : undefined;
+
+  let where;
   if (date && typeof date === "string") {
-    conditions.push(eq(tasksTable.dueDate, date));
-  }
-  if (completed !== undefined && completed !== null) {
-    conditions.push(eq(tasksTable.completed, completed === "true"));
-  }
-  if (category && typeof category === "string" && VALID_CATEGORIES.has(category)) {
-    conditions.push(eq(tasksTable.category, category));
+    // Bucket A: tasks dated this day (respecting the status + category filters).
+    const datedBucket = and(eq(tasksTable.dueDate, date), completedCond, categoryCond);
+    // Bucket B: incomplete anchored tasks, injected regardless of date (respecting
+    // the category filter). Skipped when the caller asked for completed-only, since
+    // a completed anchored task has left the daily flow.
+    const includeAnchored = completedCond === undefined || completed === "false";
+    const anchoredBucket = includeAnchored
+      ? and(eq(tasksTable.isAnchored, true), eq(tasksTable.completed, false), categoryCond)
+      : undefined;
+    where = and(userCond, anchoredBucket ? or(datedBucket, anchoredBucket) : datedBucket);
+  } else {
+    where = and(userCond, completedCond, categoryCond);
   }
 
   const tasks = await db.select().from(tasksTable)
-    .where(and(...conditions))
-    .orderBy(desc(tasksTable.createdAt));
+    .where(where)
+    .orderBy(desc(tasksTable.isAnchored), desc(tasksTable.createdAt));
 
   const taskIds = tasks.map((t) => t.id);
   const steps = taskIds.length
@@ -237,7 +253,7 @@ router.post("/tasks", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;
 
-  const { title, description, dueDate, dueTime, priority = "medium", estimatedMinutes, category } = req.body as {
+  const { title, description, dueDate, dueTime, priority = "medium", estimatedMinutes, category, isAnchored } = req.body as {
     title?: string;
     description?: string;
     dueDate?: string;
@@ -245,10 +261,17 @@ router.post("/tasks", async (req, res): Promise<void> => {
     priority?: string;
     estimatedMinutes?: number;
     category?: string;
+    isAnchored?: boolean;
   };
 
-  if (!title || !dueDate) {
-    res.status(400).json({ error: "title and dueDate are required" });
+  const anchored = isAnchored === true;
+
+  if (!title) {
+    res.status(400).json({ error: "title is required" });
+    return;
+  }
+  if (!anchored && !dueDate) {
+    res.status(400).json({ error: "dueDate is required for non-anchored quests" });
     return;
   }
   if (dueTime !== undefined && dueTime !== null && !isValidDueTime(dueTime)) {
@@ -259,16 +282,18 @@ router.post("/tasks", async (req, res): Promise<void> => {
   const autoPoint = assignPoints(title, priority);
   const resolvedCategory = category && VALID_CATEGORIES.has(category) ? category : autoPoint.category;
 
+  // Anchored quests have no deadline: force a null date/time regardless of input.
   const [task] = await db.insert(tasksTable).values({
     userId,
     title,
     description,
     points: autoPoint.points,
-    dueDate,
-    dueTime: dueTime ?? null,
+    dueDate: anchored ? null : dueDate,
+    dueTime: anchored ? null : (dueTime ?? null),
     priority,
     category: resolvedCategory,
     estimatedMinutes: estimatedMinutes ?? null,
+    isAnchored: anchored,
   }).returning();
 
   res.status(201).json(formatTask(task));
@@ -356,7 +381,7 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
   if (!existing) { res.status(404).json({ error: "Task not found" }); return; }
 
   // Points are server-assigned by auto-points logic and are not client-editable.
-  const { title, description, dueDate, dueTime, priority, estimatedMinutes, actualMinutes, category } = req.body as {
+  const { title, description, dueDate, dueTime, priority, estimatedMinutes, actualMinutes, category, isAnchored } = req.body as {
     title?: string;
     description?: string;
     dueDate?: string;
@@ -365,6 +390,7 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
     estimatedMinutes?: number;
     actualMinutes?: number;
     category?: string;
+    isAnchored?: boolean;
   };
 
   const updates: Partial<typeof tasksTable.$inferInsert> = {};
@@ -398,6 +424,19 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
   if (priority != null) updates.priority = priority;
   if (estimatedMinutes != null) updates.estimatedMinutes = estimatedMinutes;
   if (category != null && VALID_CATEGORIES.has(category)) updates.category = category;
+  if (isAnchored !== undefined) {
+    if (isAnchored) {
+      // Anchoring drops the deadline entirely.
+      updates.isAnchored = true;
+      updates.dueDate = null;
+      updates.dueTime = null;
+    } else {
+      updates.isAnchored = false;
+      // Un-anchoring re-enters the dated flow; default to today unless the same
+      // request supplied an explicit date (handled above, which wins).
+      if (dueDate == null) updates.dueDate = new Date().toISOString().split("T")[0]!;
+    }
+  }
 
   // The WHERE clause re-checks completed=false as a safety guard against a race
   // between the read above and this write.
