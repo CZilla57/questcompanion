@@ -425,7 +425,7 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
   if (estimatedMinutes != null) updates.estimatedMinutes = estimatedMinutes;
   if (category != null && VALID_CATEGORIES.has(category)) updates.category = category;
   if (isAnchored !== undefined) {
-    if (isAnchored) {
+    if (isAnchored === true) {
       // Anchoring drops the deadline entirely.
       updates.isAnchored = true;
       updates.dueDate = null;
