@@ -21,6 +21,8 @@ import AvatarPage from "@/pages/avatar";
 import DopamineMenu from "@/pages/dopamine-menu";
 import Focus from "@/pages/focus";
 import PartnerDetail from "@/pages/partner-detail";
+import Questlines from "@/pages/questlines";
+import QuestlineDetail from "@/pages/questline-detail";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -152,6 +154,8 @@ function Router() {
       <Switch>
         <Route path="/" component={Dashboard} />
         <Route path="/tasks" component={Tasks} />
+        <Route path="/questlines/:id" component={QuestlineDetail} />
+        <Route path="/questlines" component={Questlines} />
         <Route path="/focus" component={Focus} />
         <Route path="/recurring" component={Recurring} />
         <Route path="/progress" component={Progress} />

@@ -48,6 +48,7 @@ import type {
   GetMyXpHistoryParams,
   GetNudgesParams,
   GetPartnerDetailParams,
+  GetQuestlinesParams,
   GetTaskRecommendationParams,
   GetTasksParams,
   HandleBrowserLoginCallbackParams,
@@ -67,6 +68,10 @@ import type {
   ParsedQuickAdd,
   PartnerRequestInput,
   Partnership,
+  Questline,
+  QuestlineClaimResult,
+  QuestlineDetail,
+  QuestlineInput,
   RecurringTask,
   RecurringTaskInput,
   RecurringTaskUpdate,
@@ -2496,6 +2501,450 @@ export const useDeleteTaskSteps = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteTaskStepsMutationOptions(options));
+    }
+
+export const getGetQuestlinesUrl = (params?: GetQuestlinesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/questlines?${stringifiedParams}` : `/api/questlines`
+}
+
+/**
+ * @summary List the current user's questlines with derived progress
+ */
+export const getQuestlines = async (params?: GetQuestlinesParams, options?: RequestInit): Promise<Questline[]> => {
+
+  return customFetch<Questline[]>(getGetQuestlinesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetQuestlinesQueryKey = (params?: GetQuestlinesParams,) => {
+    return [
+    `/api/questlines`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetQuestlinesQueryOptions = <TData = Awaited<ReturnType<typeof getQuestlines>>, TError = ErrorType<unknown>>(params?: GetQuestlinesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQuestlines>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetQuestlinesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getQuestlines>>> = ({ signal }) => getQuestlines(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getQuestlines>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetQuestlinesQueryResult = NonNullable<Awaited<ReturnType<typeof getQuestlines>>>
+export type GetQuestlinesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the current user's questlines with derived progress
+ */
+
+export function useGetQuestlines<TData = Awaited<ReturnType<typeof getQuestlines>>, TError = ErrorType<unknown>>(
+ params?: GetQuestlinesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQuestlines>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetQuestlinesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateQuestlineUrl = () => {
+
+
+
+
+  return `/api/questlines`
+}
+
+/**
+ * @summary Create a questline
+ */
+export const createQuestline = async (questlineInput: QuestlineInput, options?: RequestInit): Promise<Questline> => {
+
+  return customFetch<Questline>(getCreateQuestlineUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      questlineInput,)
+  }
+);}
+
+
+
+
+export const getCreateQuestlineMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createQuestline>>, TError,{data: BodyType<QuestlineInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createQuestline>>, TError,{data: BodyType<QuestlineInput>}, TContext> => {
+
+const mutationKey = ['createQuestline'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createQuestline>>, {data: BodyType<QuestlineInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createQuestline(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateQuestlineMutationResult = NonNullable<Awaited<ReturnType<typeof createQuestline>>>
+    export type CreateQuestlineMutationBody = BodyType<QuestlineInput>
+    export type CreateQuestlineMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a questline
+ */
+export const useCreateQuestline = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createQuestline>>, TError,{data: BodyType<QuestlineInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createQuestline>>,
+        TError,
+        {data: BodyType<QuestlineInput>},
+        TContext
+      > => {
+      return useMutation(getCreateQuestlineMutationOptions(options));
+    }
+
+export const getGetQuestlineUrl = (id: number,) => {
+
+
+
+
+  return `/api/questlines/${id}`
+}
+
+/**
+ * @summary Get one questline with its quests
+ */
+export const getQuestline = async (id: number, options?: RequestInit): Promise<QuestlineDetail> => {
+
+  return customFetch<QuestlineDetail>(getGetQuestlineUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetQuestlineQueryKey = (id: number,) => {
+    return [
+    `/api/questlines/${id}`
+    ] as const;
+    }
+
+
+export const getGetQuestlineQueryOptions = <TData = Awaited<ReturnType<typeof getQuestline>>, TError = ErrorType<ErrorEnvelope>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQuestline>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetQuestlineQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getQuestline>>> = ({ signal }) => getQuestline(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getQuestline>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetQuestlineQueryResult = NonNullable<Awaited<ReturnType<typeof getQuestline>>>
+export type GetQuestlineQueryError = ErrorType<ErrorEnvelope>
+
+
+/**
+ * @summary Get one questline with its quests
+ */
+
+export function useGetQuestline<TData = Awaited<ReturnType<typeof getQuestline>>, TError = ErrorType<ErrorEnvelope>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQuestline>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetQuestlineQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateQuestlineUrl = (id: number,) => {
+
+
+
+
+  return `/api/questlines/${id}`
+}
+
+/**
+ * @summary Update a questline's title/description/color
+ */
+export const updateQuestline = async (id: number,
+    questlineInput: QuestlineInput, options?: RequestInit): Promise<Questline> => {
+
+  return customFetch<Questline>(getUpdateQuestlineUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      questlineInput,)
+  }
+);}
+
+
+
+
+export const getUpdateQuestlineMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateQuestline>>, TError,{id: number;data: BodyType<QuestlineInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateQuestline>>, TError,{id: number;data: BodyType<QuestlineInput>}, TContext> => {
+
+const mutationKey = ['updateQuestline'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateQuestline>>, {id: number;data: BodyType<QuestlineInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateQuestline(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateQuestlineMutationResult = NonNullable<Awaited<ReturnType<typeof updateQuestline>>>
+    export type UpdateQuestlineMutationBody = BodyType<QuestlineInput>
+    export type UpdateQuestlineMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update a questline's title/description/color
+ */
+export const useUpdateQuestline = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateQuestline>>, TError,{id: number;data: BodyType<QuestlineInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateQuestline>>,
+        TError,
+        {id: number;data: BodyType<QuestlineInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateQuestlineMutationOptions(options));
+    }
+
+export const getDeleteQuestlineUrl = (id: number,) => {
+
+
+
+
+  return `/api/questlines/${id}`
+}
+
+/**
+ * @summary Delete a questline (its quests are unlinked, not deleted)
+ */
+export const deleteQuestline = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteQuestlineUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteQuestlineMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteQuestline>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteQuestline>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteQuestline'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteQuestline>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteQuestline(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteQuestlineMutationResult = NonNullable<Awaited<ReturnType<typeof deleteQuestline>>>
+
+    export type DeleteQuestlineMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a questline (its quests are unlinked, not deleted)
+ */
+export const useDeleteQuestline = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteQuestline>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteQuestline>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteQuestlineMutationOptions(options));
+    }
+
+export const getClaimQuestlineUrl = (id: number,) => {
+
+
+
+
+  return `/api/questlines/${id}/claim`
+}
+
+/**
+ * @summary Claim the reward for a fully-completed questline
+ */
+export const claimQuestline = async (id: number, options?: RequestInit): Promise<QuestlineClaimResult> => {
+
+  return customFetch<QuestlineClaimResult>(getClaimQuestlineUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getClaimQuestlineMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof claimQuestline>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof claimQuestline>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['claimQuestline'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof claimQuestline>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  claimQuestline(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClaimQuestlineMutationResult = NonNullable<Awaited<ReturnType<typeof claimQuestline>>>
+
+    export type ClaimQuestlineMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Claim the reward for a fully-completed questline
+ */
+export const useClaimQuestline = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof claimQuestline>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof claimQuestline>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getClaimQuestlineMutationOptions(options));
     }
 
 export const getGetFocusPresetsUrl = () => {

@@ -9,6 +9,7 @@ export const MILESTONE_TYPES = [
   "badge_earned",
   "streak_milestone",
   "all_day_bonus",
+  "questline_complete",
 ] as const;
 
 export type MilestoneType = (typeof MILESTONE_TYPES)[number];

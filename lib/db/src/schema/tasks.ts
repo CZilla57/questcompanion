@@ -2,6 +2,7 @@ import { pgTable, serial, text, integer, boolean, timestamp, date, unique } from
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
+import { questlinesTable } from "./questlines";
 
 export const tasksTable = pgTable("tasks", {
   id: serial("id").primaryKey(),
@@ -35,6 +36,7 @@ export const tasksTable = pgTable("tasks", {
   dueDate: text("due_date"),
   dueTime: text("due_time"),
   isAnchored: boolean("is_anchored").notNull().default(false),
+  questlineId: integer("questline_id").references(() => questlinesTable.id, { onDelete: "set null" }),
   priority: text("priority").notNull().default("medium"),
   category: text("category").notNull().default("default"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

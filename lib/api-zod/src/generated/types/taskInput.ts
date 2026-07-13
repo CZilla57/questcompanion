@@ -34,4 +34,9 @@ export interface TaskInput {
   dueTime?: string;
   /** Create a no-deadline anchored quest (dueDate is ignored) */
   isAnchored?: boolean;
+  /**
+     * Assign the new quest to a questline (one-off quests only)
+     * @nullable
+     */
+  questlineId?: number | null;
 }

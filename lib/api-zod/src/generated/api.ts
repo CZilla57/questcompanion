@@ -271,7 +271,8 @@ export const GetTaskRecommendationResponse = zod.object({
   "text": zod.string(),
   "position": zod.number(),
   "done": zod.boolean()
-})).describe('AI-generated first-step checklist attached to this quest')
+})).describe('AI-generated first-step checklist attached to this quest'),
+  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null')
 }),zod.null()]).optional(),
   "reason": zod.string(),
   "category": zod.string().optional(),
@@ -312,7 +313,8 @@ export const GetTasksResponseItem = zod.object({
   "text": zod.string(),
   "position": zod.number(),
   "done": zod.boolean()
-})).describe('AI-generated first-step checklist attached to this quest')
+})).describe('AI-generated first-step checklist attached to this quest'),
+  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null')
 })
 export const GetTasksResponse = zod.array(GetTasksResponseItem)
 
@@ -339,7 +341,8 @@ export const CreateTaskBody = zod.object({
   "estimatedMinutes": zod.number().min(1).max(createTaskBodyEstimatedMinutesMax).optional().describe('Optional time estimate in minutes'),
   "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'self_care', 'errands', 'travel', 'default']).optional().describe('Optional category override. Auto-detected from title if omitted.'),
   "dueTime": zod.string().regex(createTaskBodyDueTimeRegExp).optional().describe('Optional time of day (HH:mm, 24-hour)'),
-  "isAnchored": zod.boolean().default(createTaskBodyIsAnchoredDefault).describe('Create a no-deadline anchored quest (dueDate is ignored)')
+  "isAnchored": zod.boolean().default(createTaskBodyIsAnchoredDefault).describe('Create a no-deadline anchored quest (dueDate is ignored)'),
+  "questlineId": zod.number().nullish().describe('Assign the new quest to a questline (one-off quests only)')
 })
 
 
@@ -392,7 +395,8 @@ export const GetTaskResponse = zod.object({
   "text": zod.string(),
   "position": zod.number(),
   "done": zod.boolean()
-})).describe('AI-generated first-step checklist attached to this quest')
+})).describe('AI-generated first-step checklist attached to this quest'),
+  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null')
 })
 
 
@@ -419,7 +423,8 @@ export const UpdateTaskBody = zod.object({
   "actualMinutes": zod.number().min(1).max(updateTaskBodyActualMinutesMax).optional().describe('Actual time spent (updatable on completed tasks too)'),
   "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'self_care', 'errands', 'travel', 'default']).optional(),
   "dueTime": zod.string().regex(updateTaskBodyDueTimeRegExp).optional().describe('Optional time of day (HH:mm, 24-hour)'),
-  "isAnchored": zod.boolean().optional().describe('Toggle anchored (no-deadline) state; anchoring clears the due date')
+  "isAnchored": zod.boolean().optional().describe('Toggle anchored (no-deadline) state; anchoring clears the due date'),
+  "questlineId": zod.number().nullish().describe('Reassign the quest to a questline, or null to unlink (one-off quests only)')
 })
 
 export const UpdateTaskResponse = zod.object({
@@ -446,7 +451,8 @@ export const UpdateTaskResponse = zod.object({
   "text": zod.string(),
   "position": zod.number(),
   "done": zod.boolean()
-})).describe('AI-generated first-step checklist attached to this quest')
+})).describe('AI-generated first-step checklist attached to this quest'),
+  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null')
 })
 
 
@@ -478,7 +484,8 @@ export const CompleteTaskResponse = zod.object({
   "text": zod.string(),
   "position": zod.number(),
   "done": zod.boolean()
-})).describe('AI-generated first-step checklist attached to this quest')
+})).describe('AI-generated first-step checklist attached to this quest'),
+  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null')
 }),
   "pointsAwarded": zod.number().describe('Total XP awarded (base + streak bonus + all-day bonus)'),
   "bonusAwarded": zod.boolean(),
@@ -683,7 +690,8 @@ export const UncompleteTaskResponse = zod.object({
   "text": zod.string(),
   "position": zod.number(),
   "done": zod.boolean()
-})).describe('AI-generated first-step checklist attached to this quest')
+})).describe('AI-generated first-step checklist attached to this quest'),
+  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null')
 })
 
 
@@ -718,7 +726,8 @@ export const PatchTaskFocusResponse = zod.object({
   "text": zod.string(),
   "position": zod.number(),
   "done": zod.boolean()
-})).describe('AI-generated first-step checklist attached to this quest')
+})).describe('AI-generated first-step checklist attached to this quest'),
+  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null')
 })
 
 
@@ -734,6 +743,147 @@ export const PatchTaskStepResponse = zod.object({
   "text": zod.string(),
   "position": zod.number(),
   "done": zod.boolean()
+})
+
+
+/**
+ * @summary List the current user's questlines with derived progress
+ */
+export const GetQuestlinesQueryParams = zod.object({
+  "status": zod.enum(['active', 'completed']).optional().describe('Optional status filter')
+})
+
+export const GetQuestlinesResponseItem = zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "color": zod.string().nullish(),
+  "status": zod.enum(['active', 'completed']),
+  "total": zod.number().describe('Number of quests in this questline'),
+  "done": zod.number().describe('Number of completed quests'),
+  "ready": zod.boolean().describe('True when active, non-empty, and every quest is done'),
+  "rewardXpAwarded": zod.number().nullish(),
+  "completedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const GetQuestlinesResponse = zod.array(GetQuestlinesResponseItem)
+
+
+/**
+ * @summary Create a questline
+ */
+export const createQuestlineBodyTitleMax = 120;
+
+
+
+export const CreateQuestlineBody = zod.object({
+  "title": zod.string().min(1).max(createQuestlineBodyTitleMax),
+  "description": zod.string().nullish(),
+  "color": zod.string().nullish()
+})
+
+
+/**
+ * @summary Get one questline with its quests
+ */
+export const GetQuestlineResponse = zod.object({
+  "questline": zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "color": zod.string().nullish(),
+  "status": zod.enum(['active', 'completed']),
+  "total": zod.number().describe('Number of quests in this questline'),
+  "done": zod.number().describe('Number of completed quests'),
+  "ready": zod.boolean().describe('True when active, non-empty, and every quest is done'),
+  "rewardXpAwarded": zod.number().nullish(),
+  "completedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+}),
+  "quests": zod.array(zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "points": zod.number(),
+  "completed": zod.boolean(),
+  "completedAt": zod.string().nullish(),
+  "dueDate": zod.string().nullable(),
+  "priority": zod.enum(['low', 'medium', 'high']),
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'self_care', 'errands', 'travel', 'default']),
+  "categoryLabel": zod.string(),
+  "createdAt": zod.string(),
+  "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
+  "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
+  "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
+  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus'),
+  "isAnchored": zod.boolean().optional().describe('A no-deadline quest that stays visible until completed'),
+  "dueTime": zod.string().nullish().describe('Optional time of day (HH:mm, 24-hour)'),
+  "steps": zod.array(zod.object({
+  "id": zod.number(),
+  "text": zod.string(),
+  "position": zod.number(),
+  "done": zod.boolean()
+})).describe('AI-generated first-step checklist attached to this quest'),
+  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null')
+}))
+})
+
+
+/**
+ * @summary Update a questline's title/description/color
+ */
+export const updateQuestlineBodyTitleMax = 120;
+
+
+
+export const UpdateQuestlineBody = zod.object({
+  "title": zod.string().min(1).max(updateQuestlineBodyTitleMax),
+  "description": zod.string().nullish(),
+  "color": zod.string().nullish()
+})
+
+export const UpdateQuestlineResponse = zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "color": zod.string().nullish(),
+  "status": zod.enum(['active', 'completed']),
+  "total": zod.number().describe('Number of quests in this questline'),
+  "done": zod.number().describe('Number of completed quests'),
+  "ready": zod.boolean().describe('True when active, non-empty, and every quest is done'),
+  "rewardXpAwarded": zod.number().nullish(),
+  "completedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Claim the reward for a fully-completed questline
+ */
+export const ClaimQuestlineResponse = zod.object({
+  "questline": zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "color": zod.string().nullish(),
+  "status": zod.enum(['active', 'completed']),
+  "total": zod.number().describe('Number of quests in this questline'),
+  "done": zod.number().describe('Number of completed quests'),
+  "ready": zod.boolean().describe('True when active, non-empty, and every quest is done'),
+  "rewardXpAwarded": zod.number().nullish(),
+  "completedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+}),
+  "xpAwarded": zod.number(),
+  "totalPoints": zod.number(),
+  "currentLevel": zod.number(),
+  "levelName": zod.string(),
+  "leveledUp": zod.boolean()
 })
 
 

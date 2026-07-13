@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, Clock, Plus, Filter, Target, Zap, Info, Sparkles, X, RefreshCw, ChevronRight } from "lucide-react";
-import { Task, useGetTasks, useCreateTask, useUpdateTask, useBreakdownTask, TaskPriority } from "@workspace/api-client-react";
+import { Task, useGetTasks, useCreateTask, useUpdateTask, useBreakdownTask, useGetQuestlines, TaskPriority } from "@workspace/api-client-react";
 import { TaskItem } from "@/components/task-item";
 import { QuickAddBar } from "@/components/quick-add-bar";
 import { Button } from "@/components/ui/button";
@@ -192,6 +192,7 @@ export default function Tasks() {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [filter, setFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [questlineFilter, setQuestlineFilter] = useState<string>("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDesc, setNewTaskDesc] = useState("");
@@ -199,6 +200,7 @@ export default function Tasks() {
   const [newTaskEstimate, setNewTaskEstimate] = useState("");
   const [newTaskCategory, setNewTaskCategory] = useState("");
   const [newTaskAnchored, setNewTaskAnchored] = useState(false);
+  const [newTaskQuestlineId, setNewTaskQuestlineId] = useState<string>("none");
   const [categoryManuallySet, setCategoryManuallySet] = useState(false);
   const [createdTask, setCreatedTask] = useState<Task | null>(null);
 
@@ -210,6 +212,7 @@ export default function Tasks() {
   const [editCategory, setEditCategory] = useState("");
   const [editDueDate, setEditDueDate] = useState<Date | undefined>(undefined);
   const [editAnchored, setEditAnchored] = useState(false);
+  const [editQuestlineId, setEditQuestlineId] = useState<string>("none");
 
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [excludedIds, setExcludedIds] = useState<number[]>([]);
@@ -257,6 +260,12 @@ export default function Tasks() {
     category: categoryFilter !== "all" ? (categoryFilter as any) : undefined,
   });
 
+  const { data: questlines } = useGetQuestlines({ status: "active" });
+
+  const visibleTasks = (tasks ?? []).filter((t) =>
+    questlineFilter === "all" ? true : String(t.questlineId ?? "") === questlineFilter,
+  );
+
   const createMutation = useCreateTask();
   const updateMutation = useUpdateTask();
   const breakdownMutation = useBreakdownTask();
@@ -285,6 +294,7 @@ export default function Tasks() {
           : { dueDate: format(date!, 'yyyy-MM-dd') }),
         ...(estimatedMinutes && estimatedMinutes > 0 ? { estimatedMinutes } : {}),
         ...(newTaskCategory ? { category: newTaskCategory as any } : {}),
+        ...(newTaskQuestlineId !== "none" ? { questlineId: parseInt(newTaskQuestlineId, 10) } : {}),
       }
     }, {
       onSuccess: (task) => {
@@ -307,6 +317,7 @@ export default function Tasks() {
     setNewTaskEstimate("");
     setNewTaskCategory("");
     setNewTaskAnchored(false);
+    setNewTaskQuestlineId("none");
     setCategoryManuallySet(false);
     setCreatedTask(null);
   };
@@ -340,6 +351,7 @@ export default function Tasks() {
     setEditCategory(task.category ?? "default");
     setEditDueDate(task.dueDate ? parseDueDate(task.dueDate) : undefined);
     setEditAnchored(task.isAnchored ?? false);
+    setEditQuestlineId(task.questlineId != null ? String(task.questlineId) : "none");
   };
 
   const handleSaveEdit = (e: React.FormEvent) => {
@@ -360,6 +372,7 @@ export default function Tasks() {
           : (editDueDate ? { dueDate: toDueDateString(editDueDate) } : {})),
         ...(estimatedMinutes && estimatedMinutes > 0 ? { estimatedMinutes } : {}),
         category: editCategory as any,
+        questlineId: editQuestlineId !== "none" ? parseInt(editQuestlineId, 10) : null,
       }
     }, {
       onSuccess: () => {
@@ -448,6 +461,18 @@ export default function Tasks() {
           </SelectContent>
         </Select>
 
+        <Select value={questlineFilter} onValueChange={setQuestlineFilter}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue placeholder="All questlines" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All questlines</SelectItem>
+            {(questlines ?? []).map((ql) => (
+              <SelectItem key={ql.id} value={String(ql.id)}>{ql.title}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         {date && (
           <Button variant="ghost" onClick={() => setDate(undefined)} className="w-full sm:w-auto text-muted-foreground">
             Clear Date
@@ -491,8 +516,8 @@ export default function Tasks() {
           Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="h-24 bg-muted/20 animate-pulse rounded-xl border border-border" />
           ))
-        ) : tasks && tasks.length > 0 ? (
-          tasks.map(task => (
+        ) : visibleTasks.length > 0 ? (
+          visibleTasks.map(task => (
             <TaskItem key={task.id} task={task} onEdit={handleOpenEdit} />
           ))
         ) : (
@@ -605,6 +630,19 @@ export default function Tasks() {
             </div>
 
             <div>
+              <label className="text-sm text-muted-foreground">Questline (optional)</label>
+              <Select value={newTaskQuestlineId} onValueChange={setNewTaskQuestlineId}>
+                <SelectTrigger className="border-primary/20"><SelectValue placeholder="None" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {(questlines ?? []).map((ql) => (
+                    <SelectItem key={ql.id} value={String(ql.id)}>{ql.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
               <label className="text-sm font-medium text-foreground mb-1 block">Details (Optional)</label>
               <Textarea
                 value={newTaskDesc}
@@ -701,6 +739,19 @@ export default function Tasks() {
                         {c.label}
                       </span>
                     </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm text-muted-foreground">Questline (optional)</label>
+              <Select value={editQuestlineId} onValueChange={setEditQuestlineId}>
+                <SelectTrigger className="border-primary/20"><SelectValue placeholder="None" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {(questlines ?? []).map((ql) => (
+                    <SelectItem key={ql.id} value={String(ql.id)}>{ql.title}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

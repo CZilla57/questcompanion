@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and, or, desc, count, inArray } from "drizzle-orm";
 import { applyMultiplier } from "../lib/xp-multiplier";
-import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable, taskStepsTable } from "@workspace/db";
+import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable, taskStepsTable, questlinesTable } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, DAILY_BONUS_POINTS } from "../lib/gamification";
 import { assignPoints, CATEGORY_LABELS, VALID_CATEGORIES, MORNING_FOCUS_CATEGORIES, EVENING_WINDDOWN_CATEGORIES } from "../lib/auto-points";
 import { advanceHabitStreak, reverseHabitStreak, type HabitStreakPreviousState } from "../lib/habit-streaks";
@@ -16,6 +16,7 @@ import { parseQuickAdd } from "@workspace/quick-add";
 import { buildQuickAddPrompt, parseQuickAddResult, QuickAddParseError } from "../lib/ai/quick-add-parse";
 import { parseCooldown } from "../lib/ai/parse-cooldown";
 import { isBonusGatingTask, countsAsTodayCompletion } from "../lib/anchored-tasks";
+import { isQuestlineAssignable } from "../lib/questlines";
 
 const router: IRouter = Router();
 
@@ -34,7 +35,7 @@ function isUniqueViolation(err: unknown, constraint: string): boolean {
   return code === "23505" && name === constraint;
 }
 
-function formatTask(
+export function formatTask(
   task: typeof tasksTable.$inferSelect,
   steps: (typeof taskStepsTable.$inferSelect)[] = [],
 ) {
@@ -57,11 +58,32 @@ function formatTask(
     isDailyFocus: task.isDailyFocus,
     focusDate: task.focusDate ?? null,
     isAnchored: task.isAnchored,
+    questlineId: task.questlineId ?? null,
     steps: steps
       .slice()
       .sort((a, b) => a.position - b.position)
       .map((s) => ({ id: s.id, text: s.text, position: s.position, done: s.done })),
   };
+}
+
+// Resolve a client-supplied questlineId for a create/update. Returns:
+//  - { ok: true, value }  -> use `value` (a number to link, or null to unlink)
+//  - { ok: false, error } -> reject with a 422
+// A quest may only join a questline the user owns, and only if it is one-off.
+async function resolveQuestlineId(
+  userId: number,
+  questlineId: number | null | undefined,
+  task: { recurringTaskId: number | null },
+): Promise<{ ok: true; value: number | null } | { ok: false; error: string }> {
+  if (questlineId === undefined) return { ok: true, value: null };
+  if (questlineId === null) return { ok: true, value: null };
+  if (!isQuestlineAssignable(task)) {
+    return { ok: false, error: "Recurring quests can't join a questline" };
+  }
+  const [ql] = await db.select({ id: questlinesTable.id }).from(questlinesTable)
+    .where(and(eq(questlinesTable.id, questlineId), eq(questlinesTable.userId, userId)));
+  if (!ql) return { ok: false, error: "Questline not found" };
+  return { ok: true, value: questlineId };
 }
 
 router.get("/tasks/recommend", async (req, res): Promise<void> => {
@@ -254,7 +276,7 @@ router.post("/tasks", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;
 
-  const { title, description, dueDate, dueTime, priority = "medium", estimatedMinutes, category, isAnchored } = req.body as {
+  const { title, description, dueDate, dueTime, priority = "medium", estimatedMinutes, category, isAnchored, questlineId } = req.body as {
     title?: string;
     description?: string;
     dueDate?: string;
@@ -263,6 +285,7 @@ router.post("/tasks", async (req, res): Promise<void> => {
     estimatedMinutes?: number;
     category?: string;
     isAnchored?: boolean;
+    questlineId?: number | null;
   };
 
   const anchored = isAnchored === true;
@@ -283,6 +306,9 @@ router.post("/tasks", async (req, res): Promise<void> => {
   const autoPoint = assignPoints(title, priority);
   const resolvedCategory = category && VALID_CATEGORIES.has(category) ? category : autoPoint.category;
 
+  const qlResult = await resolveQuestlineId(userId, questlineId, { recurringTaskId: null });
+  if (!qlResult.ok) { res.status(422).json({ error: qlResult.error }); return; }
+
   // Anchored quests have no deadline: force a null date/time regardless of input.
   const [task] = await db.insert(tasksTable).values({
     userId,
@@ -295,6 +321,7 @@ router.post("/tasks", async (req, res): Promise<void> => {
     category: resolvedCategory,
     estimatedMinutes: estimatedMinutes ?? null,
     isAnchored: anchored,
+    questlineId: qlResult.value,
   }).returning();
 
   res.status(201).json(formatTask(task));
@@ -376,13 +403,13 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
   // Fetch task upfront to enforce ownership.
-  const [existing] = await db.select({ completed: tasksTable.completed })
+  const [existing] = await db.select({ completed: tasksTable.completed, recurringTaskId: tasksTable.recurringTaskId })
     .from(tasksTable)
     .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)));
   if (!existing) { res.status(404).json({ error: "Task not found" }); return; }
 
   // Points are server-assigned by auto-points logic and are not client-editable.
-  const { title, description, dueDate, dueTime, priority, estimatedMinutes, actualMinutes, category, isAnchored } = req.body as {
+  const { title, description, dueDate, dueTime, priority, estimatedMinutes, actualMinutes, category, isAnchored, questlineId } = req.body as {
     title?: string;
     description?: string;
     dueDate?: string;
@@ -392,6 +419,7 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
     actualMinutes?: number;
     category?: string;
     isAnchored?: boolean;
+    questlineId?: number | null;
   };
 
   const updates: Partial<typeof tasksTable.$inferInsert> = {};
@@ -430,6 +458,11 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
   if (priority != null) updates.priority = priority;
   if (estimatedMinutes != null) updates.estimatedMinutes = estimatedMinutes;
   if (category != null && VALID_CATEGORIES.has(category)) updates.category = category;
+  if (questlineId !== undefined) {
+    const qlResult = await resolveQuestlineId(userId, questlineId, { recurringTaskId: existing.recurringTaskId });
+    if (!qlResult.ok) { res.status(422).json({ error: qlResult.error }); return; }
+    updates.questlineId = qlResult.value;
+  }
   if (isAnchored !== undefined) {
     if (isAnchored === true) {
       // Anchoring drops the deadline entirely.

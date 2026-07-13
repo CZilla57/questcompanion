@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Anchor, CalendarClock, Check, Clock, Edit2, Flame, Pin, PinOff, Shield, Timer, Trash2, Zap } from "lucide-react";
+import { Anchor, CalendarClock, Check, Clock, Edit2, Flame, Pin, PinOff, Scroll, Shield, Timer, Trash2, Zap } from "lucide-react";
 import { format } from "date-fns";
 import { Task, TaskPriority, useCompleteTask, useDeleteTask, usePatchTaskFocus, useUncompleteTask, useUpdateTask, useGetMyStats } from "@workspace/api-client-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { getGetTasksQueryKey, getGetMyStatsQueryKey } from "@workspace/api-client-react";
+import { getGetTasksQueryKey, getGetMyStatsQueryKey, getGetQuestlinesQueryKey, getGetQuestlineQueryKey } from "@workspace/api-client-react";
 import { browserTimeZone } from "@/lib/timezone";
 import { formatTime12h } from "@/lib/format-time";
 import { dispatchQuestCompleted } from "./dopamine-overlay";
@@ -97,6 +97,10 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetMyStatsQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetQuestlinesQueryKey() });
+          if (task.questlineId != null) {
+            queryClient.invalidateQueries({ queryKey: getGetQuestlineQueryKey(task.questlineId) });
+          }
         }
       });
     } else {
@@ -104,6 +108,10 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
         onSuccess: (res) => {
           queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetMyStatsQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetQuestlinesQueryKey() });
+          if (task.questlineId != null) {
+            queryClient.invalidateQueries({ queryKey: getGetQuestlineQueryKey(task.questlineId) });
+          }
 
           const descParts: string[] = [];
           if ((res.streakBonus ?? 0) > 0) {
@@ -306,6 +314,12 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
           {task.category && task.category !== "default" && (
             <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${CATEGORY_COLORS[task.category] ?? CATEGORY_COLORS.default}`}>
               {CATEGORY_LABEL[task.category] ?? "General"}
+            </span>
+          )}
+
+          {task.questlineId != null && (
+            <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border border-primary/30 bg-primary/10 text-primary font-medium">
+              <Scroll className="w-2.5 h-2.5" /> Questline
             </span>
           )}
 
