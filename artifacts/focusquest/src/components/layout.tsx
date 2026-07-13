@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation } from "wouter";
 import { Link } from "wouter";
-import { Home, CheckSquare, BarChart2, BarChart3, Users, Trophy, X, Zap, Bell, BellOff, Repeat, Menu, User, LogOut, Coffee, Timer, Download } from "lucide-react";
+import { Home, CheckSquare, BarChart2, BarChart3, Users, Trophy, X, Zap, Bell, BellOff, Repeat, Menu, User, LogOut, Coffee, Timer, Download, Scroll } from "lucide-react";
 import { useGetNudges } from "@workspace/api-client-react";
 import { Button } from "./ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
@@ -141,6 +141,7 @@ function LogoutButton({ iconOnly = false }: { iconOnly?: boolean }) {
 const allNavItems = [
   { href: "/",               label: "Home",       icon: Home,        mobileShow: true },
   { href: "/tasks",          label: "Quests",     icon: CheckSquare, mobileShow: true },
+  { href: "/questlines",     label: "Questlines", icon: Scroll,      mobileShow: false },
   { href: "/focus",          label: "Focus",      icon: Timer,       mobileShow: true },
   { href: "/recurring",      label: "Recurring",  icon: Repeat,      mobileShow: false },
   { href: "/progress",       label: "Progress",   icon: BarChart2,   mobileShow: true },
