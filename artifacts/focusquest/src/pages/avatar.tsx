@@ -632,7 +632,7 @@ export default function AvatarPage() {
               </div>
             )}
 
-            <HeroVitality />
+            {!avatarLoading && <HeroVitality />}
 
             {/* Customization — collapsed by default so the panel stays clean on first load */}
             <details className="w-full group">

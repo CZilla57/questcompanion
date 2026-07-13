@@ -6,7 +6,6 @@ import {
   hungerWarning,
   shouldSendFlavorPush,
   flavorCandidateMinute,
-  type HungerStage,
 } from "./hero-care";
 
 const fed = new Date("2026-07-01T12:00:00Z");
@@ -27,12 +26,18 @@ describe("hungerStage", () => {
     expect(hungerStage(fed, hoursLater(168))).toBe("fainted");
     expect(hungerStage(fed, hoursLater(1000))).toBe("fainted");
   });
+  it("treats now before lastFedAt (clock skew) as well_fed", () => {
+    expect(hungerStage(fed, hoursLater(-5))).toBe("well_fed");
+  });
 });
 
 describe("moodFor", () => {
-  it("has non-empty mood text for every stage", () => {
-    const stages: HungerStage[] = ["well_fed", "peckish", "hungry", "starving", "fainted"];
-    for (const s of stages) expect(moodFor(s).length).toBeGreaterThan(0);
+  it("returns the exact mood line for every stage", () => {
+    expect(moodFor("well_fed")).toBe("Content and ready for adventure");
+    expect(moodFor("peckish")).toBe("Could use a hot meal");
+    expect(moodFor("hungry")).toBe("Stomach growling loudly");
+    expect(moodFor("starving")).toBe("Too weak to travel");
+    expect(moodFor("fainted")).toBe("Has succumbed to hunger…");
   });
 });
 
@@ -115,5 +120,10 @@ describe("shouldSendFlavorPush", () => {
     expect(shouldSendFlavorPush({ userId: 1, stage: "well_fed", lastFlavorPushAt: recent, now })).toBe(false);
     const old = new Date(now.getTime() - 49 * 60 * 60 * 1000);
     expect(shouldSendFlavorPush({ userId: 1, stage: "well_fed", lastFlavorPushAt: old, now })).toBe(true);
+  });
+  it("rate limit is half-open: exactly 48h since the last push allows sending", () => {
+    const now = nowOnCandidate(1, base);
+    const exactly = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+    expect(shouldSendFlavorPush({ userId: 1, stage: "well_fed", lastFlavorPushAt: exactly, now })).toBe(true);
   });
 });

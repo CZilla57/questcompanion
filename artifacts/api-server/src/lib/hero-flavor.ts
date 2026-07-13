@@ -4,12 +4,14 @@
 // heroes adventure, starving heroes huddle by the fire.
 import { hashSeed, type HungerStage } from "./hero-care";
 
+export type HeroClass = "fighter" | "mage" | "ranger" | "healer";
+
 export type Vignette = {
   id: string;
   text: string;
   stages: HungerStage[];
-  /** Restrict to avatar classes (fighter/mage/ranger/healer); omit = all classes. */
-  classes?: string[];
+  /** Restrict to avatar classes; omit = all classes. Literal union so a typo is a compile error. */
+  classes?: HeroClass[];
 };
 
 export const VIGNETTES: Vignette[] = [
@@ -68,7 +70,8 @@ export function currentVignette(
   now: Date,
 ): Vignette {
   const eligible = VIGNETTES.filter(
-    (v) => v.stages.includes(stage) && (!v.classes || v.classes.includes(avatarClass)),
+    // avatarClass stays string (raw DB value); widen classes for the lookup.
+    (v) => v.stages.includes(stage) && (!v.classes || (v.classes as readonly string[]).includes(avatarClass)),
   );
   const bucket = Math.floor(now.getTime() / BUCKET_MS);
   const idx = hashSeed(`${userId}:${bucket}`) % eligible.length;
