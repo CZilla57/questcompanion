@@ -15,6 +15,7 @@ import { TaskSteps } from "./task-steps";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { parseDueDate, toDueDateString, todayDueDate, tomorrowDueDate, nextWeekDueDate } from "@/lib/reschedule";
+import { apiErrorMessage } from "@/lib/api-error";
 
 interface TaskItemProps {
   task: Task;
@@ -85,7 +86,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
         });
       },
       onError: (err: any) => {
-        const msg = err?.response?.data?.error ?? err?.message ?? "Could not update focus";
+        const msg = apiErrorMessage(err, "Could not update focus");
         toast({ title: msg, variant: "destructive" });
       },
     });
@@ -216,7 +217,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
         });
       },
       onError: (err: any) => {
-        const msg = err?.response?.data?.error ?? err?.message ?? "Could not reschedule quest";
+        const msg = apiErrorMessage(err, "Could not reschedule quest");
         toast({ title: msg, variant: "destructive" });
       },
     });
@@ -238,7 +239,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
         });
       },
       onError: (err: any) => {
-        const msg = err?.response?.data?.error ?? err?.message ?? "Could not update anchor";
+        const msg = apiErrorMessage(err, "Could not update anchor");
         toast({ title: msg, variant: "destructive" });
       },
     });

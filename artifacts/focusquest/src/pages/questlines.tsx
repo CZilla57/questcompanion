@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { apiErrorMessage } from "@/lib/api-error";
 
 function ProgressBar({ done, total }: { done: number; total: number }) {
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
@@ -127,7 +128,7 @@ export default function Questlines() {
           navigate(`/questlines/${created.id}`);
         },
         onError: (err: any) => {
-          toast({ title: err?.response?.data?.error ?? "Could not create questline", variant: "destructive" });
+          toast({ title: apiErrorMessage(err, "Could not create questline"), variant: "destructive" });
         },
       },
     );

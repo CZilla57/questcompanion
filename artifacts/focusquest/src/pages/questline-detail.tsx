@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { TaskItem } from "@/components/task-item";
 import { dispatchQuestCompleted } from "@/components/dopamine-overlay";
 import { useToast } from "@/hooks/use-toast";
+import { apiErrorMessage } from "@/lib/api-error";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { QuickAddBar } from "@/components/quick-add-bar";
 import { QuestlineEditDialog } from "@/components/questline-edit-dialog";
@@ -42,7 +43,7 @@ export default function QuestlineDetail() {
         navigate("/questlines");
       },
       onError: (err: any) => {
-        toast({ title: err?.response?.data?.error ?? "Could not delete questline", variant: "destructive" });
+        toast({ title: apiErrorMessage(err, "Could not delete questline"), variant: "destructive" });
       },
     });
   };
@@ -61,7 +62,7 @@ export default function QuestlineDetail() {
         });
       },
       onError: (err: any) => {
-        toast({ title: err?.response?.data?.error ?? "Could not claim reward", variant: "destructive" });
+        toast({ title: apiErrorMessage(err, "Could not claim reward"), variant: "destructive" });
       },
     });
   };

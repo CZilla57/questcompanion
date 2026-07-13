@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { apiErrorMessage } from "@/lib/api-error";
 
 // Preset accent palette (theme-aligned); "None" clears the color to null.
 const QUESTLINE_COLORS = ["#22d3ee", "#a78bfa", "#34d399", "#fbbf24", "#fb7185", "#38bdf8", "#a3e635"];
@@ -53,7 +54,7 @@ export function QuestlineEditDialog({
           toast({ title: "Questline updated", className: "border-primary" });
         },
         onError: (err: any) => {
-          toast({ title: err?.response?.data?.error ?? "Could not update questline", variant: "destructive" });
+          toast({ title: apiErrorMessage(err, "Could not update questline"), variant: "destructive" });
         },
       },
     );

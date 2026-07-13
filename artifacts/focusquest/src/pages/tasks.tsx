@@ -17,6 +17,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getGetTasksQueryKey } from "@workspace/api-client-react";
 import { CATEGORIES, CATEGORY_COLORS, CATEGORY_HEX_COLORS } from "@/lib/categories";
 import { parseDueDate, toDueDateString } from "@/lib/reschedule";
+import { apiErrorMessage } from "@/lib/api-error";
 
 interface PointPreview {
   points: number;
@@ -386,7 +387,7 @@ export default function Tasks() {
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
       },
       onError: (err: any) => {
-        const msg = err?.response?.data?.error ?? err?.message ?? "Could not update quest";
+        const msg = apiErrorMessage(err, "Could not update quest");
         toast({ title: msg, variant: "destructive" });
       },
     });
