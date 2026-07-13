@@ -331,7 +331,7 @@ export default function Tasks() {
     setEditPriority((task.priority as TaskPriority) ?? TaskPriority.medium);
     setEditEstimate(task.estimatedMinutes ? String(task.estimatedMinutes) : "");
     setEditCategory(task.category ?? "default");
-    setEditDueDate(parseDueDate(task.dueDate));
+    setEditDueDate(task.dueDate ? parseDueDate(task.dueDate) : undefined);
   };
 
   const handleSaveEdit = (e: React.FormEvent) => {

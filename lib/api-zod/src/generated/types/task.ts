@@ -19,7 +19,8 @@ export interface Task {
   completed: boolean;
   /** @nullable */
   completedAt?: string | null;
-  dueDate: string;
+  /** @nullable */
+  dueDate: string | null;
   priority: TaskPriority;
   category: TaskCategory;
   categoryLabel: string;
@@ -41,6 +42,8 @@ export interface Task {
      * @nullable
      */
   focusDate?: string | null;
+  /** A no-deadline quest that stays visible until completed */
+  isAnchored?: boolean;
   /**
      * Optional time of day (HH:mm, 24-hour)
      * @nullable

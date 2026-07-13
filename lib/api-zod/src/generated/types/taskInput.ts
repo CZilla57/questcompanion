@@ -17,7 +17,7 @@ export interface TaskInput {
      * @maximum 100
      */
   points?: number;
-  dueDate: string;
+  dueDate?: string;
   priority?: TaskInputPriority;
   /**
      * Optional time estimate in minutes
@@ -32,4 +32,6 @@ export interface TaskInput {
      * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
      */
   dueTime?: string;
+  /** Create a no-deadline anchored quest (dueDate is ignored) */
+  isAnchored?: boolean;
 }
