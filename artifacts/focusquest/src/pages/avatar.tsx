@@ -9,6 +9,7 @@ import {
   useUnequipGear,
   useGetBattleCurrent,
   useEnterBattle,
+  useGetHeroStatus,
   getGetAvatarQueryKey,
   getGetGearStoreQueryKey,
   getGetBattleCurrentQueryKey,
@@ -16,6 +17,8 @@ import {
 import type { GearStoreItem, AvatarUpdateInput } from "@workspace/api-client-react";
 import { PixelHero } from "@/components/pixel-hero";
 import { HeroCredits } from "@/components/hero-credits";
+import { HeroVitality } from "@/components/hero-vitality";
+import { heroSpriteEffect, type HungerStage } from "@/lib/hero-vitality";
 import type { AvatarClass, HeroLook, Build, Skin, HairStyle, HairColor, FaceId, EquippedGearLook } from "@/lib/hero/types";
 import { skins as SKIN_OPTIONS, hairColors as HAIR_COLOR_OPTIONS } from "@workspace/hero-options";
 import { Button } from "@/components/ui/button";
@@ -455,6 +458,7 @@ export default function AvatarPage() {
   const { toast } = useToast();
 
   const { data: avatarData, isLoading: avatarLoading } = useGetAvatar();
+  const { data: heroStatus } = useGetHeroStatus();
   const { data: storeData, isLoading: storeLoading } = useGetGearStore();
   const updateAvatar = useUpdateAvatar();
   const buyGear = useBuyGear();
@@ -620,8 +624,15 @@ export default function AvatarPage() {
             {avatarLoading ? (
               <div className="w-[160px] h-[160px] rounded-lg bg-muted/30 animate-pulse" />
             ) : (
-              <PixelHero look={heroLook} size={160} />
+              <div className="relative" style={heroSpriteEffect(heroStatus?.stage as HungerStage | undefined)}>
+                <PixelHero look={heroLook} size={160} />
+                {heroStatus?.stage === "fainted" && (
+                  <span className="absolute top-0 right-0 text-xl" aria-hidden>💫</span>
+                )}
+              </div>
             )}
+
+            <HeroVitality />
 
             {/* Customization — collapsed by default so the panel stays clean on first load */}
             <details className="w-full group">
