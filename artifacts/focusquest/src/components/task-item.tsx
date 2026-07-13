@@ -214,6 +214,28 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
     });
   };
 
+  const handleToggleAnchor = () => {
+    if (updateMutation.isPending) return;
+    const nextAnchored = !task.isAnchored;
+    updateMutation.mutate({
+      id: task.id,
+      // Un-anchoring restores a date; send local today so it lands on the user's day.
+      data: nextAnchored ? { isAnchored: true } : { isAnchored: false, dueDate: todayDueDate() },
+    }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+        toast({
+          title: nextAnchored ? "Quest anchored — no deadline" : "Anchor removed",
+          className: nextAnchored ? "border-primary" : "",
+        });
+      },
+      onError: (err: any) => {
+        const msg = err?.response?.data?.error ?? err?.message ?? "Could not update anchor";
+        toast({ title: msg, variant: "destructive" });
+      },
+    });
+  };
+
   const isBusy = completeMutation.isPending || uncompleteMutation.isPending;
 
   const hasEstimate = !!task.estimatedMinutes;
@@ -354,6 +376,19 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
 
       {/* Actions — always visible on mobile, hover-reveal on desktop */}
       <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5">
+        {!task.completed && (
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={task.isAnchored ? "Remove anchor" : "Anchor (no deadline)"}
+            title={task.isAnchored ? "Remove anchor" : "Anchor — no deadline, keep until done"}
+            className={`h-9 w-9 cursor-pointer ${task.isAnchored ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
+            onClick={handleToggleAnchor}
+            disabled={updateMutation.isPending}
+          >
+            <Anchor className="w-4 h-4" />
+          </Button>
+        )}
         {!task.completed && (
           <Button
             variant="ghost"
