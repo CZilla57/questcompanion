@@ -368,10 +368,6 @@ export const ParseQuickAddResponse = zod.object({
 /**
  * @summary Get a single task
  */
-export const GetTaskParams = zod.object({
-  "id": zod.coerce.number()
-})
-
 export const GetTaskResponse = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
@@ -403,10 +399,6 @@ export const GetTaskResponse = zod.object({
 /**
  * @summary Update a task
  */
-export const UpdateTaskParams = zod.object({
-  "id": zod.coerce.number()
-})
-
 
 export const updateTaskBodyPointsMax = 100;
 
@@ -459,20 +451,8 @@ export const UpdateTaskResponse = zod.object({
 
 
 /**
- * @summary Delete a task
- */
-export const DeleteTaskParams = zod.object({
-  "id": zod.coerce.number()
-})
-
-
-/**
  * @summary Mark a task complete and award points
  */
-export const CompleteTaskParams = zod.object({
-  "id": zod.coerce.number()
-})
-
 export const CompleteTaskResponse = zod.object({
   "task": zod.object({
   "id": zod.number(),
@@ -589,10 +569,6 @@ export const CreateRecurringTaskBody = zod.object({
 /**
  * @summary Get a single recurring task template
  */
-export const GetRecurringTaskParams = zod.object({
-  "id": zod.coerce.number()
-})
-
 export const GetRecurringTaskResponse = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
@@ -618,10 +594,6 @@ export const GetRecurringTaskResponse = zod.object({
 /**
  * @summary Update a recurring task template
  */
-export const UpdateRecurringTaskParams = zod.object({
-  "id": zod.coerce.number()
-})
-
 
 
 
@@ -660,20 +632,8 @@ export const UpdateRecurringTaskResponse = zod.object({
 
 
 /**
- * @summary Delete a recurring task template
- */
-export const DeleteRecurringTaskParams = zod.object({
-  "id": zod.coerce.number()
-})
-
-
-/**
  * @summary Enable or disable a recurring task template
  */
-export const ToggleRecurringTaskParams = zod.object({
-  "id": zod.coerce.number()
-})
-
 export const ToggleRecurringTaskResponse = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
@@ -699,10 +659,6 @@ export const ToggleRecurringTaskResponse = zod.object({
 /**
  * @summary Mark a task as incomplete (undo)
  */
-export const UncompleteTaskParams = zod.object({
-  "id": zod.coerce.number()
-})
-
 export const UncompleteTaskResponse = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
@@ -734,10 +690,6 @@ export const UncompleteTaskResponse = zod.object({
 /**
  * @summary Pin or unpin a task as a daily focus quest
  */
-export const PatchTaskFocusParams = zod.object({
-  "id": zod.coerce.number()
-})
-
 export const PatchTaskFocusBody = zod.object({
   "pin": zod.boolean()
 })
@@ -771,21 +723,8 @@ export const PatchTaskFocusResponse = zod.object({
 
 
 /**
- * @summary Generate an AI first-step breakdown for a quest (replaces existing steps)
- */
-export const BreakdownTaskParams = zod.object({
-  "id": zod.coerce.number()
-})
-
-
-/**
  * @summary Toggle a breakdown step's done state
  */
-export const PatchTaskStepParams = zod.object({
-  "id": zod.coerce.number(),
-  "stepId": zod.coerce.number()
-})
-
 export const PatchTaskStepBody = zod.object({
   "done": zod.boolean()
 })
@@ -795,14 +734,6 @@ export const PatchTaskStepResponse = zod.object({
   "text": zod.string(),
   "position": zod.number(),
   "done": zod.boolean()
-})
-
-
-/**
- * @summary Remove all breakdown steps for a quest
- */
-export const DeleteTaskStepsParams = zod.object({
-  "id": zod.coerce.number()
 })
 
 
@@ -891,10 +822,6 @@ export const GetActiveFocusSessionResponse = zod.union([zod.object({
 /**
  * @summary Credit a completed focus interval
  */
-export const CreditFocusIntervalParams = zod.object({
-  "id": zod.coerce.number()
-})
-
 
 
 
@@ -929,10 +856,6 @@ export const CreditFocusIntervalResponse = zod.object({
 /**
  * @summary End a focus session early
  */
-export const CompleteFocusSessionParams = zod.object({
-  "id": zod.coerce.number()
-})
-
 export const completeFocusSessionBodyPartialSecondsMin = 0;
 
 
@@ -1014,7 +937,15 @@ export const GetPartnersResponseItem = zod.object({
   "totalPoints": zod.number(),
   "streakDays": zod.number().optional()
 }).optional(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "progress": zod.object({
+  "questsDueToday": zod.number(),
+  "questsCompletedToday": zod.number(),
+  "allDoneToday": zod.boolean()
+}).optional(),
+  "hasFreshMilestone": zod.boolean().optional(),
+  "sentTodayPoke": zod.boolean().optional(),
+  "sentTodayCheer": zod.boolean().optional()
 })
 export const GetPartnersResponse = zod.array(GetPartnersResponseItem)
 
@@ -1030,10 +961,6 @@ export const SendPartnerRequestBody = zod.object({
 /**
  * @summary Accept a partnership request
  */
-export const AcceptPartnerRequestParams = zod.object({
-  "id": zod.coerce.number()
-})
-
 export const AcceptPartnerRequestResponse = zod.object({
   "id": zod.number(),
   "requesterId": zod.number(),
@@ -1049,17 +976,21 @@ export const AcceptPartnerRequestResponse = zod.object({
   "totalPoints": zod.number(),
   "streakDays": zod.number().optional()
 }).optional(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "progress": zod.object({
+  "questsDueToday": zod.number(),
+  "questsCompletedToday": zod.number(),
+  "allDoneToday": zod.boolean()
+}).optional(),
+  "hasFreshMilestone": zod.boolean().optional(),
+  "sentTodayPoke": zod.boolean().optional(),
+  "sentTodayCheer": zod.boolean().optional()
 })
 
 
 /**
  * @summary Decline or remove a partnership
  */
-export const DeclinePartnerRequestParams = zod.object({
-  "id": zod.coerce.number()
-})
-
 export const DeclinePartnerRequestResponse = zod.object({
   "id": zod.number(),
   "requesterId": zod.number(),
@@ -1075,17 +1006,21 @@ export const DeclinePartnerRequestResponse = zod.object({
   "totalPoints": zod.number(),
   "streakDays": zod.number().optional()
 }).optional(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "progress": zod.object({
+  "questsDueToday": zod.number(),
+  "questsCompletedToday": zod.number(),
+  "allDoneToday": zod.boolean()
+}).optional(),
+  "hasFreshMilestone": zod.boolean().optional(),
+  "sentTodayPoke": zod.boolean().optional(),
+  "sentTodayCheer": zod.boolean().optional()
 })
 
 
 /**
  * @summary Get recent activity for a partner
  */
-export const GetPartnerFeedParams = zod.object({
-  "id": zod.coerce.number()
-})
-
 export const GetPartnerFeedResponseItem = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
@@ -1096,6 +1031,126 @@ export const GetPartnerFeedResponseItem = zod.object({
   "createdAt": zod.string()
 })
 export const GetPartnerFeedResponse = zod.array(GetPartnerFeedResponseItem)
+
+
+/**
+ * @summary Expanded ally profile (hero, badges, progress, milestones)
+ */
+export const GetPartnerDetailQueryParams = zod.object({
+  "tz": zod.coerce.string().optional()
+})
+
+export const GetPartnerDetailResponse = zod.object({
+  "partner": zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "displayName": zod.string().nullish(),
+  "avatarColor": zod.string().optional(),
+  "currentLevel": zod.number(),
+  "levelName": zod.string().optional(),
+  "totalPoints": zod.number(),
+  "streakDays": zod.number().optional()
+}),
+  "progress": zod.object({
+  "questsDueToday": zod.number(),
+  "questsCompletedToday": zod.number(),
+  "allDoneToday": zod.boolean()
+}),
+  "hero": zod.object({
+  "avatarColor": zod.string(),
+  "avatarClass": zod.string(),
+  "avatarSkin": zod.string(),
+  "avatarHairStyle": zod.string().optional(),
+  "avatarHairColor": zod.string().optional(),
+  "avatarBodyBuild": zod.string().optional(),
+  "avatarFace": zod.string().optional(),
+  "avatarBeardStyle": zod.string().optional(),
+  "avatarBeardColor": zod.string().optional(),
+  "avatarGlasses": zod.string().optional(),
+  "avatarEarrings": zod.string().optional(),
+  "level": zod.number(),
+  "battlePower": zod.number(),
+  "equippedGear": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slot": zod.enum(['weapon', 'helmet', 'armor', 'boots', 'accessory']),
+  "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
+  "statPower": zod.number(),
+  "icon": zod.string(),
+  "spriteId": zod.string().nullish()
+}))
+}).optional(),
+  "badges": zod.array(zod.object({
+  "badge": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "icon": zod.string(),
+  "category": zod.enum(['streak', 'tasks', 'points', 'social', 'level', 'habit_streak']),
+  "requirement": zod.number()
+}),
+  "earnedAt": zod.string()
+})),
+  "milestones": zod.array(zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "username": zod.string().optional(),
+  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_earned', 'focus_session', 'focus_complete']),
+  "description": zod.string(),
+  "points": zod.number(),
+  "createdAt": zod.string()
+})),
+  "sentTodayPoke": zod.boolean(),
+  "sentTodayCheer": zod.boolean()
+})
+
+
+/**
+ * @summary Send a poke or cheer to an ally
+ */
+export const SendNudgeBody = zod.object({
+  "kind": zod.enum(['poke', 'cheer']),
+  "reaction": zod.string(),
+  "contextType": zod.string().optional()
+})
+
+
+/**
+ * @summary List nudges received by the current user
+ */
+export const GetNudgesResponseItem = zod.object({
+  "id": zod.number(),
+  "kind": zod.enum(['poke', 'cheer']),
+  "reaction": zod.string(),
+  "reactionLabel": zod.string().nullish(),
+  "contextType": zod.string().nullish(),
+  "sender": zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "displayName": zod.string().nullish(),
+  "avatarColor": zod.string().optional(),
+  "currentLevel": zod.number(),
+  "levelName": zod.string().optional(),
+  "totalPoints": zod.number(),
+  "streakDays": zod.number().optional()
+}).optional(),
+  "createdAt": zod.string(),
+  "readAt": zod.string().nullable()
+})
+export const GetNudgesResponse = zod.array(GetNudgesResponseItem)
+
+
+/**
+ * @summary Mark received nudges as read
+ */
+export const MarkNudgesReadBody = zod.object({
+  "ids": zod.array(zod.number()).optional()
+})
+
+export const MarkNudgesReadResponse = zod.object({
+  "success": zod.boolean(),
+  "updated": zod.number()
+})
 
 
 /**
@@ -1273,10 +1328,6 @@ export const GetGearStoreResponse = zod.object({
 /**
  * @summary Purchase a gear item (deducts XP)
  */
-export const BuyGearParams = zod.object({
-  "id": zod.coerce.number()
-})
-
 export const BuyGearResponse = zod.object({
   "success": zod.boolean(),
   "xpSpent": zod.number(),
@@ -1287,10 +1338,6 @@ export const BuyGearResponse = zod.object({
 /**
  * @summary Equip a gear item (unequips same-slot item automatically)
  */
-export const EquipGearParams = zod.object({
-  "id": zod.coerce.number()
-})
-
 export const EquipGearResponse = zod.object({
   "success": zod.boolean()
 })
@@ -1299,10 +1346,6 @@ export const EquipGearResponse = zod.object({
 /**
  * @summary Unequip a gear item
  */
-export const UnequipGearParams = zod.object({
-  "id": zod.coerce.number()
-})
-
 export const UnequipGearResponse = zod.object({
   "success": zod.boolean()
 })
@@ -1369,10 +1412,6 @@ export const CreateDopamineRewardBody = zod.object({
 /**
  * @summary Delete a dopamine reward
  */
-export const DeleteDopamineRewardParams = zod.object({
-  "id": zod.coerce.number()
-})
-
 export const DeleteDopamineRewardResponse = zod.object({
   "success": zod.boolean()
 })

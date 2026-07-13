@@ -653,6 +653,12 @@ export const PartnershipStatus = {
   declined: 'declined',
 } as const;
 
+export interface AllyProgress {
+  questsDueToday: number;
+  questsCompletedToday: number;
+  allDoneToday: boolean;
+}
+
 export interface Partnership {
   id: number;
   requesterId: number;
@@ -660,21 +666,14 @@ export interface Partnership {
   status: PartnershipStatus;
   partner?: UserSummary;
   createdAt: string;
+  progress?: AllyProgress;
+  hasFreshMilestone?: boolean;
+  sentTodayPoke?: boolean;
+  sentTodayCheer?: boolean;
 }
 
 export interface PartnerRequestInput {
   recipientId: number;
-}
-
-export interface LeaderboardEntry {
-  rank: number;
-  user: UserSummary;
-  points: number;
-  tasksCompleted?: number;
-}
-
-export interface SuccessEnvelope {
-  success: boolean;
 }
 
 export type EquippedGearItemSlot = typeof EquippedGearItemSlot[keyof typeof EquippedGearItemSlot];
@@ -706,6 +705,99 @@ export interface EquippedGearItem {
   statPower: number;
   icon: string;
   spriteId?: string | null;
+}
+
+export interface HeroLook {
+  avatarColor: string;
+  avatarClass: string;
+  avatarSkin: string;
+  avatarHairStyle?: string;
+  avatarHairColor?: string;
+  avatarBodyBuild?: string;
+  avatarFace?: string;
+  avatarBeardStyle?: string;
+  avatarBeardColor?: string;
+  avatarGlasses?: string;
+  avatarEarrings?: string;
+  level: number;
+  battlePower: number;
+  equippedGear: EquippedGearItem[];
+}
+
+export interface AllyDetail {
+  partner: UserSummary;
+  progress: AllyProgress;
+  hero?: HeroLook;
+  badges: UserBadge[];
+  milestones: ActivityItem[];
+  sentTodayPoke: boolean;
+  sentTodayCheer: boolean;
+}
+
+export type NudgeInputKind = typeof NudgeInputKind[keyof typeof NudgeInputKind];
+
+
+export const NudgeInputKind = {
+  poke: 'poke',
+  cheer: 'cheer',
+} as const;
+
+export interface NudgeInput {
+  kind: NudgeInputKind;
+  reaction: string;
+  contextType?: string;
+}
+
+export type SentNudgeKind = typeof SentNudgeKind[keyof typeof SentNudgeKind];
+
+
+export const SentNudgeKind = {
+  poke: 'poke',
+  cheer: 'cheer',
+} as const;
+
+export interface SentNudge {
+  id: number;
+  kind: SentNudgeKind;
+  reaction: string;
+  createdAt: string;
+}
+
+export type NudgeKind = typeof NudgeKind[keyof typeof NudgeKind];
+
+
+export const NudgeKind = {
+  poke: 'poke',
+  cheer: 'cheer',
+} as const;
+
+export interface Nudge {
+  id: number;
+  kind: NudgeKind;
+  reaction: string;
+  /** @nullable */
+  reactionLabel?: string | null;
+  /** @nullable */
+  contextType?: string | null;
+  sender?: UserSummary;
+  createdAt: string;
+  /** @nullable */
+  readAt: string | null;
+}
+
+export interface MarkNudgesReadInput {
+  ids?: number[];
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  user: UserSummary;
+  points: number;
+  tasksCompleted?: number;
+}
+
+export interface SuccessEnvelope {
+  success: boolean;
 }
 
 export type AvatarProfileAvatarClass = typeof AvatarProfileAvatarClass[keyof typeof AvatarProfileAvatarClass];
@@ -1125,6 +1217,15 @@ export type ListFocusSessionsParams = {
  * @maximum 100
  */
 limit?: number;
+};
+
+export type GetPartnerDetailParams = {
+tz?: string;
+};
+
+export type MarkNudgesRead200 = {
+  success: boolean;
+  updated: number;
 };
 
 export type GetLeaderboardParams = {
