@@ -260,7 +260,8 @@ export default function Tasks() {
     category: categoryFilter !== "all" ? (categoryFilter as any) : undefined,
   });
 
-  const { data: questlines } = useGetQuestlines({ status: "active" });
+  const { data: questlines } = useGetQuestlines();
+  const activeQuestlines = (questlines ?? []).filter((q) => q.status === "active");
 
   const visibleTasks = (tasks ?? []).filter((t) =>
     questlineFilter === "all" ? true : String(t.questlineId ?? "") === questlineFilter,
@@ -468,7 +469,9 @@ export default function Tasks() {
           <SelectContent>
             <SelectItem value="all">All questlines</SelectItem>
             {(questlines ?? []).map((ql) => (
-              <SelectItem key={ql.id} value={String(ql.id)}>{ql.title}</SelectItem>
+              <SelectItem key={ql.id} value={String(ql.id)}>
+                {ql.title}{ql.status === "completed" ? " · done" : ""}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -635,7 +638,7 @@ export default function Tasks() {
                 <SelectTrigger className="border-primary/20"><SelectValue placeholder="None" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
-                  {(questlines ?? []).map((ql) => (
+                  {activeQuestlines.map((ql) => (
                     <SelectItem key={ql.id} value={String(ql.id)}>{ql.title}</SelectItem>
                   ))}
                 </SelectContent>
@@ -751,7 +754,9 @@ export default function Tasks() {
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
                   {(questlines ?? []).map((ql) => (
-                    <SelectItem key={ql.id} value={String(ql.id)}>{ql.title}</SelectItem>
+                    <SelectItem key={ql.id} value={String(ql.id)}>
+                      {ql.title}{ql.status === "completed" ? " · done" : ""}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>

@@ -94,6 +94,7 @@ export * from './questlineClaimResult';
 export * from './questlineDetail';
 export * from './questlineInput';
 export * from './questlineStatus';
+export * from './questlineUpdate';
 export * from './recurringTask';
 export * from './recurringTaskCategory';
 export * from './recurringTaskInput';

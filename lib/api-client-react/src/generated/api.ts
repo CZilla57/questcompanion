@@ -72,6 +72,7 @@ import type {
   QuestlineClaimResult,
   QuestlineDetail,
   QuestlineInput,
+  QuestlineUpdate,
   RecurringTask,
   RecurringTaskInput,
   RecurringTaskUpdate,
@@ -2747,7 +2748,7 @@ export const getUpdateQuestlineUrl = (id: number,) => {
  * @summary Update a questline's title/description/color
  */
 export const updateQuestline = async (id: number,
-    questlineInput: QuestlineInput, options?: RequestInit): Promise<Questline> => {
+    questlineUpdate: QuestlineUpdate, options?: RequestInit): Promise<Questline> => {
 
   return customFetch<Questline>(getUpdateQuestlineUrl(id),
   {
@@ -2755,7 +2756,7 @@ export const updateQuestline = async (id: number,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      questlineInput,)
+      questlineUpdate,)
   }
 );}
 
@@ -2763,8 +2764,8 @@ export const updateQuestline = async (id: number,
 
 
 export const getUpdateQuestlineMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateQuestline>>, TError,{id: number;data: BodyType<QuestlineInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateQuestline>>, TError,{id: number;data: BodyType<QuestlineInput>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateQuestline>>, TError,{id: number;data: BodyType<QuestlineUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateQuestline>>, TError,{id: number;data: BodyType<QuestlineUpdate>}, TContext> => {
 
 const mutationKey = ['updateQuestline'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -2776,7 +2777,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateQuestline>>, {id: number;data: BodyType<QuestlineInput>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateQuestline>>, {id: number;data: BodyType<QuestlineUpdate>}> = (props) => {
           const {id,data} = props ?? {};
 
           return  updateQuestline(id,data,requestOptions)
@@ -2790,18 +2791,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type UpdateQuestlineMutationResult = NonNullable<Awaited<ReturnType<typeof updateQuestline>>>
-    export type UpdateQuestlineMutationBody = BodyType<QuestlineInput>
+    export type UpdateQuestlineMutationBody = BodyType<QuestlineUpdate>
     export type UpdateQuestlineMutationError = ErrorType<unknown>
 
     /**
  * @summary Update a questline's title/description/color
  */
 export const useUpdateQuestline = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateQuestline>>, TError,{id: number;data: BodyType<QuestlineInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateQuestline>>, TError,{id: number;data: BodyType<QuestlineUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof updateQuestline>>,
         TError,
-        {id: number;data: BodyType<QuestlineInput>},
+        {id: number;data: BodyType<QuestlineUpdate>},
         TContext
       > => {
       return useMutation(getUpdateQuestlineMutationOptions(options));

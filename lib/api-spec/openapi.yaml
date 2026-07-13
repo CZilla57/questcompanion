@@ -793,7 +793,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/QuestlineInput"
+              $ref: "#/components/schemas/QuestlineUpdate"
       responses:
         "200":
           description: Updated questline
@@ -1931,6 +1931,19 @@ components:
     QuestlineInput:
       type: object
       required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: ["string", "null"]
+        color:
+          type: ["string", "null"]
+
+    QuestlineUpdate:
+      type: object
+      description: Partial update — every field optional.
       properties:
         title:
           type: string
