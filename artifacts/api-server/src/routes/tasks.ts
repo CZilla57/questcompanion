@@ -15,6 +15,7 @@ import { isValidDueTime, isValidDueDate } from "../lib/task-datetime";
 import { parseQuickAdd } from "@workspace/quick-add";
 import { buildQuickAddPrompt, parseQuickAddResult, QuickAddParseError } from "../lib/ai/quick-add-parse";
 import { parseCooldown } from "../lib/ai/parse-cooldown";
+import { isBonusGatingTask, countsAsTodayCompletion } from "../lib/anchored-tasks";
 
 const router: IRouter = Router();
 
@@ -540,12 +541,18 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     const { totalPoints: boostedBase, streakBonus, multiplierInfo } = applyMultiplier(task.points, user.streakDays);
     let pointsToAdd = boostedBase;
 
-    // Daily bonus check: read today's tasks inside the transaction for consistency.
-    const todayTasks = await tx.select().from(tasksTable)
-      .where(and(eq(tasksTable.userId, userId), eq(tasksTable.dueDate, today)));
-    const allDone = todayTasks.every((t) => t.id === id || t.completed);
+    // Daily bonus check: the gating set is tasks due today plus anchored tasks past
+    // their one-day grace (created before today). Fetch the superset in-transaction,
+    // then filter with the pure predicate so grace logic stays unit-tested.
+    const candidateTasks = await tx.select().from(tasksTable)
+      .where(and(
+        eq(tasksTable.userId, userId),
+        or(eq(tasksTable.dueDate, today), eq(tasksTable.isAnchored, true)),
+      ));
+    const gatingTasks = candidateTasks.filter((t) => isBonusGatingTask(t, today));
+    const allDone = gatingTasks.every((t) => t.id === id || t.completed);
     let bonusAwarded = false;
-    if (allDone && todayTasks.length > 0) {
+    if (allDone && gatingTasks.length > 0) {
       const recentBonus = await tx.select().from(activityTable)
         .where(and(eq(activityTable.userId, userId), eq(activityTable.type, "all_day_bonus")))
         .orderBy(desc(activityTable.createdAt))
@@ -893,14 +900,18 @@ router.post("/tasks/:id/uncomplete", async (req, res): Promise<void> => {
     // Only restore if this task was the sole contributor of today's streak advancement,
     // i.e., no other completed task remains for today.
     const today = new Date().toISOString().split("T")[0];
-    const otherCompletedToday = await tx.select({ id: tasksTable.id })
+    // Streak restore only if this task was the sole contributor to today's activity.
+    // A "today contribution" is a task due today OR an anchored task completed today.
+    const completedTodayCandidates = await tx.select()
       .from(tasksTable)
       .where(and(
         eq(tasksTable.userId, userId),
         eq(tasksTable.completed, true),
-        eq(tasksTable.dueDate, today),
+        or(eq(tasksTable.dueDate, today), eq(tasksTable.isAnchored, true)),
       ));
-    const hasOtherCompletedToday = otherCompletedToday.some((t) => t.id !== id);
+    const hasOtherCompletedToday = completedTodayCandidates.some(
+      (t) => t.id !== id && countsAsTodayCompletion(t, today),
+    );
 
     let newStreakDays = user.streakDays;
     let newLongestStreak = user.longestStreak;
