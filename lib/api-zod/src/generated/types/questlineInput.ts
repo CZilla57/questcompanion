@@ -16,4 +16,9 @@ export interface QuestlineInput {
   description?: string | null;
   /** @nullable */
   color?: string | null;
+  /**
+     * Optional quest titles to create (anchored) with the questline.
+     * @maxItems 12
+     */
+  questTitles?: string[];
 }

@@ -1,17 +1,19 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Scroll, Plus, Trophy, ChevronRight } from "lucide-react";
+import { Scroll, Plus, Trophy, ChevronRight, Sparkles, X } from "lucide-react";
 import {
   Questline,
   useGetQuestlines,
   useCreateQuestline,
+  useSuggestQuestlineQuests,
   getGetQuestlinesQueryKey,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 
 function ProgressBar({ done, total }: { done: number; total: number }) {
@@ -78,18 +80,51 @@ export default function Questlines() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [, navigate] = useLocation();
+  const suggestMutation = useSuggestQuestlineQuests();
+  const [draftQuests, setDraftQuests] = useState<{ id: string; text: string; included: boolean }[]>([]);
+
+  const resetDialog = () => {
+    setTitle("");
+    setDescription("");
+    setDraftQuests([]);
+    setIsCreateOpen(false);
+  };
+
+  const handleDraft = () => {
+    if (!title.trim()) return;
+    suggestMutation.mutate({ data: { goal: title.trim() } }, {
+      onSuccess: (res) => {
+        setDraftQuests(res.quests.map((text) => ({ id: crypto.randomUUID(), text, included: true })));
+      },
+      onError: (err: any) => {
+        const status = err?.status ?? err?.response?.status;
+        const msg =
+          status === 503 ? "AI drafting isn't set up yet."
+          : status === 429 ? "Give it a moment and try again."
+          : "Couldn't draft quests — add them manually.";
+        toast({ title: msg, variant: "destructive" });
+      },
+    });
+  };
 
   const handleCreate = () => {
     if (!title.trim()) return;
+    const kept = draftQuests.filter((d) => d.included && d.text.trim()).map((d) => d.text.trim());
     createMutation.mutate(
-      { data: { title: title.trim(), description: description.trim() || null } },
       {
-        onSuccess: () => {
+        data: {
+          title: title.trim(),
+          description: description.trim() || null,
+          ...(kept.length ? { questTitles: kept } : {}),
+        },
+      },
+      {
+        onSuccess: (created) => {
           queryClient.invalidateQueries({ queryKey: getGetQuestlinesQueryKey() });
-          setTitle("");
-          setDescription("");
-          setIsCreateOpen(false);
+          resetDialog();
           toast({ title: "Questline created", className: "border-primary" });
+          navigate(`/questlines/${created.id}`);
         },
         onError: (err: any) => {
           toast({ title: err?.response?.data?.error ?? "Could not create questline", variant: "destructive" });
@@ -123,15 +158,66 @@ export default function Questlines() {
         </div>
       )}
 
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+      <Dialog open={isCreateOpen} onOpenChange={(o) => (o ? setIsCreateOpen(true) : resetDialog())}>
         <DialogContent>
           <DialogHeader><DialogTitle>New Questline</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <Input placeholder="Title (e.g. Run a 5K)" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus
               onKeyDown={(e) => { if (e.key === "Enter") handleCreate(); }} />
             <Textarea placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} />
+
+            <div className="flex items-center justify-between">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1"
+                onClick={handleDraft}
+                disabled={!title.trim() || suggestMutation.isPending}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                {suggestMutation.isPending ? "Drafting…" : "Draft quests with AI"}
+              </Button>
+              {draftQuests.length > 0 && (
+                <span className="text-xs text-muted-foreground">Uncheck any you don't want</span>
+              )}
+            </div>
+
+            {draftQuests.length > 0 && (
+              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                {draftQuests.map((d, i) => (
+                  <div key={d.id} className="flex items-center gap-2">
+                    <Checkbox
+                      checked={d.included}
+                      onCheckedChange={(v) =>
+                        setDraftQuests((prev) => prev.map((q, j) => (j === i ? { ...q, included: v === true } : q)))
+                      }
+                      aria-label={`Include quest ${i + 1}`}
+                    />
+                    <Input
+                      value={d.text}
+                      onChange={(e) =>
+                        setDraftQuests((prev) => prev.map((q, j) => (j === i ? { ...q, text: e.target.value } : q)))
+                      }
+                      className={d.included ? "" : "opacity-50 line-through"}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0"
+                      aria-label={`Remove quest ${i + 1}`}
+                      onClick={() => setDraftQuests((prev) => prev.filter((_, j) => j !== i))}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+              <Button variant="ghost" onClick={resetDialog}>Cancel</Button>
               <Button onClick={handleCreate} disabled={!title.trim() || createMutation.isPending}>
                 {createMutation.isPending ? "Creating…" : "Create"}
               </Button>

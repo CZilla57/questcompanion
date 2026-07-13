@@ -775,12 +775,17 @@ export const GetQuestlinesResponse = zod.array(GetQuestlinesResponseItem)
  */
 export const createQuestlineBodyTitleMax = 120;
 
+export const createQuestlineBodyQuestTitlesItemMax = 120;
+
+export const createQuestlineBodyQuestTitlesMax = 12;
+
 
 
 export const CreateQuestlineBody = zod.object({
   "title": zod.string().min(1).max(createQuestlineBodyTitleMax),
   "description": zod.string().nullish(),
-  "color": zod.string().nullish()
+  "color": zod.string().nullish(),
+  "questTitles": zod.array(zod.string().max(createQuestlineBodyQuestTitlesItemMax)).max(createQuestlineBodyQuestTitlesMax).optional().describe('Optional quest titles to create (anchored) with the questline.')
 })
 
 
@@ -884,6 +889,22 @@ export const ClaimQuestlineResponse = zod.object({
   "currentLevel": zod.number(),
   "levelName": zod.string(),
   "leveledUp": zod.boolean()
+})
+
+
+/**
+ * @summary Suggest quest titles for a goal (AI, creates nothing)
+ */
+export const suggestQuestlineQuestsBodyGoalMax = 200;
+
+
+
+export const SuggestQuestlineQuestsBody = zod.object({
+  "goal": zod.string().min(1).max(suggestQuestlineQuestsBodyGoalMax)
+})
+
+export const SuggestQuestlineQuestsResponse = zod.object({
+  "quests": zod.array(zod.string())
 })
 
 

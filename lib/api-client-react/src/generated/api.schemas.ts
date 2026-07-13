@@ -548,6 +548,11 @@ export interface QuestlineInput {
   description?: string | null;
   /** @nullable */
   color?: string | null;
+  /**
+     * Optional quest titles to create (anchored) with the questline.
+     * @maxItems 12
+     */
+  questTitles?: string[];
 }
 
 /**
@@ -577,6 +582,18 @@ export interface QuestlineClaimResult {
   currentLevel: number;
   levelName: string;
   leveledUp: boolean;
+}
+
+export interface SuggestQuestlineQuestsInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  goal: string;
+}
+
+export interface SuggestedQuestlineQuests {
+  quests: string[];
 }
 
 export type RecurringTaskPriority = typeof RecurringTaskPriority[keyof typeof RecurringTaskPriority];
