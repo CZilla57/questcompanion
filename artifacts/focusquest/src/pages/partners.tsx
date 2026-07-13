@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "wouter";
 import { useGetPartners, useGetMe, useSearchUsers, useSendPartnerRequest, useAcceptPartnerRequest, useDeclinePartnerRequest, PartnershipStatus } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ import { Users, Search, Check, X, UserPlus, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetPartnersQueryKey } from "@workspace/api-client-react";
+import { NudgePicker } from "@/components/nudge-picker";
 
 /** Pull a human-readable message out of an API error, falling back if absent. */
 function errorMessage(err: unknown, fallback: string): string {
@@ -123,15 +125,41 @@ export default function Partners() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {activePartners.map(p => (
                 <Card key={p.id} className="bg-card border-border hover:border-primary/50 transition-colors">
-                  <CardContent className="p-6 text-center">
-                    <div className="w-16 h-16 bg-muted rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold text-muted-foreground border-2 border-primary/20">
-                      {p.partner?.username.charAt(0).toUpperCase()}
-                    </div>
-                    <h3 className="font-bold text-lg">{p.partner?.username}</h3>
-                    <p className="text-sm text-primary font-medium">{p.partner?.levelName}</p>
+                  <CardContent className="p-6">
+                    <Link href={`/partners/${p.partner?.id}`} className="block text-center cursor-pointer">
+                      <div className="w-16 h-16 bg-muted rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold text-muted-foreground border-2 border-primary/20">
+                        {p.partner?.username.charAt(0).toUpperCase()}
+                      </div>
+                      <h3 className="font-bold text-lg">{p.partner?.username}</h3>
+                      <p className="text-sm text-primary font-medium">{p.partner?.levelName}</p>
+                    </Link>
+
                     <div className="mt-4 pt-4 border-t border-border flex justify-around text-sm text-muted-foreground">
                       <div><span className="font-bold text-foreground block">{p.partner?.totalPoints}</span>XP</div>
                       <div><span className="font-bold text-foreground block">{p.partner?.streakDays}</span>Streak</div>
+                      {p.progress && (
+                        <div>
+                          <span className="font-bold text-foreground block">
+                            {p.progress.questsCompletedToday}/{p.progress.questsDueToday}
+                          </span>
+                          Today
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-4 flex justify-center gap-2">
+                      <NudgePicker
+                        partnerId={p.partner!.id}
+                        kind="poke"
+                        disabled={p.sentTodayPoke}
+                        emphasized={!!p.progress && !p.progress.allDoneToday && p.progress.questsDueToday > 0}
+                      />
+                      <NudgePicker
+                        partnerId={p.partner!.id}
+                        kind="cheer"
+                        disabled={p.sentTodayCheer}
+                        emphasized={p.hasFreshMilestone}
+                      />
                     </div>
                   </CardContent>
                 </Card>
