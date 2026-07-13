@@ -252,7 +252,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
 
   return (
     <div className={`
-      relative group flex items-start gap-4 p-4 rounded-xl border transition-all duration-300
+      relative group flex items-start gap-4 flex-wrap md:flex-nowrap p-4 rounded-xl border transition-all duration-300
       ${task.completed
         ? "bg-muted/30 border-muted opacity-70"
         : "bg-card border-border hover:border-primary/50 hover:shadow-[0_0_15px_rgba(0,255,255,0.1)]"}
@@ -389,8 +389,8 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
         <TaskSteps task={task} />
       </div>
 
-      {/* Actions — always visible on mobile, hover-reveal on desktop */}
-      <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5">
+      {/* Actions — bottom-right on mobile (wraps to own row), hover-reveal inline on desktop */}
+      <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0 w-full justify-end md:w-auto md:justify-normal mt-0.5">
         {!task.completed && (
           <Button
             variant="ghost"
