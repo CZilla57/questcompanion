@@ -3,6 +3,8 @@ import { db, tasksTable, usersTable, activityTable, pushSubscriptionsTable } fro
 import { sendPushNotification } from "./push-notifications";
 import { logger } from "./logger";
 import { spawnRecurringTasksForToday } from "../routes/recurring-tasks";
+import { hungerStage, hungerWarning, shouldSendFlavorPush } from "./hero-care";
+import { currentVignette } from "./hero-flavor";
 
 const DEFAULT_USER_ID = 1;
 
@@ -162,6 +164,38 @@ async function sendDailySummary() {
   }
 }
 
+async function checkHeroCare() {
+  const now = new Date();
+  const hour = now.getHours();
+  if (hour < 7 || hour >= 22) return;
+
+  // Hero care is per-user (unlike the legacy DEFAULT_USER_ID passes above).
+  const users = await db.select().from(usersTable);
+  for (const user of users) {
+    const stage = hungerStage(user.lastFedAt, now);
+
+    // Hunger warnings: once per stage per episode. Recorded even for users
+    // with no push subscriptions (notify() no-ops) so in-app state stays the
+    // source of truth and a late subscription doesn't trigger stale warnings.
+    const warning = hungerWarning(stage, user.hungerNotifiedStage);
+    if (warning) {
+      await notify(user.id, warning.title, warning.body, warning.tag);
+      await db.update(usersTable)
+        .set({ hungerNotifiedStage: stage })
+        .where(eq(usersTable.id, user.id));
+      continue; // a warning and a flavor push never share a tick
+    }
+
+    if (shouldSendFlavorPush({ userId: user.id, stage, lastFlavorPushAt: user.lastFlavorPushAt, now })) {
+      const vignette = currentVignette(user.id, stage, user.avatarClass, now);
+      await notify(user.id, "Word from your hero", `Your hero is ${vignette.text}.`, "hero-flavor");
+      await db.update(usersTable)
+        .set({ lastFlavorPushAt: now })
+        .where(eq(usersTable.id, user.id));
+    }
+  }
+}
+
 async function spawnRecurringTasks() {
   const created = await spawnRecurringTasksForToday();
   if (created > 0) {
@@ -180,6 +214,9 @@ export async function tick() {
 
   await sendDailySummary();
   ran.push("daily-summary");
+
+  await checkHeroCare();
+  ran.push("hero-care");
 
   return ran;
 }
