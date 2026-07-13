@@ -26,6 +26,9 @@ export const usersTable = pgTable("users", {
   avatarBeardColor: text("avatar_beard_color").notNull().default("brown"),
   avatarGlasses: text("avatar_glasses").notNull().default("none"),
   avatarEarrings: text("avatar_earrings").notNull().default("none"),
+  lastFedAt: timestamp("last_fed_at").notNull().defaultNow(),
+  hungerNotifiedStage: text("hunger_notified_stage"),
+  lastFlavorPushAt: timestamp("last_flavor_push_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
