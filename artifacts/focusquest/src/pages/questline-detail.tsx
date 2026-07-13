@@ -38,7 +38,7 @@ export default function QuestlineDetail() {
     deleteMutation.mutate({ id }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetQuestlinesQueryKey() });
-        toast({ title: "Questline deleted", variant: "destructive" });
+        toast({ title: "Questline deleted" });
         navigate("/questlines");
       },
       onError: (err: any) => {
@@ -116,7 +116,7 @@ export default function QuestlineDetail() {
 
       {questline.status !== "completed" && (
         <div className="mb-4">
-          <QuickAddBar selectedDate={new Date()} questlineId={questline.id} />
+          <QuickAddBar selectedDate={new Date()} questlineId={questline.id} autoFocus={false} />
         </div>
       )}
 
