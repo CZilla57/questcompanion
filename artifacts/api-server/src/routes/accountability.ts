@@ -1,8 +1,12 @@
 import { Router, type IRouter } from "express";
-import { eq, or, and, desc, inArray } from "drizzle-orm";
-import { db, usersTable, partnershipsTable, activityTable } from "@workspace/db";
+import { eq, or, and, desc, inArray, gte } from "drizzle-orm";
+import { db, usersTable, partnershipsTable, activityTable, tasksTable, allyNudgesTable } from "@workspace/db";
 import { getLevelInfo } from "../lib/gamification";
 import { resolvePartnerRequest } from "../lib/partnerships";
+import { buildHeroLook } from "./avatar";
+import { getEarnedBadges } from "./badges";
+import { MILESTONE_TYPES } from "../lib/ally-milestones";
+import { resolveTimeZone, localDateKey } from "../lib/date-buckets";
 
 const router: IRouter = Router();
 
@@ -17,6 +21,38 @@ function formatUserSummary(u: typeof usersTable.$inferSelect) {
     levelName: lvl.name,
     totalPoints: u.totalPoints,
     streakDays: u.streakDays,
+  };
+}
+
+/**
+ * Returns the accepted partnership row linking `userId` and `otherId` (in either
+ * direction), or null if there is none / it is not accepted.
+ */
+async function requireAcceptedPartnership(userId: number, otherId: number) {
+  const [p] = await db.select().from(partnershipsTable).where(
+    and(
+      eq(partnershipsTable.status, "accepted"),
+      or(
+        and(eq(partnershipsTable.requesterId, userId), eq(partnershipsTable.recipientId, otherId)),
+        and(eq(partnershipsTable.requesterId, otherId), eq(partnershipsTable.recipientId, userId)),
+      ),
+    ),
+  );
+  return p ?? null;
+}
+
+/** Count today's sent nudges of each kind for a sender→recipient pair. */
+async function sentTodayFlags(senderId: number, recipientId: number, dayStart: Date) {
+  const rows = await db.select().from(allyNudgesTable).where(
+    and(
+      eq(allyNudgesTable.senderId, senderId),
+      eq(allyNudgesTable.recipientId, recipientId),
+      gte(allyNudgesTable.createdAt, dayStart),
+    ),
+  );
+  return {
+    sentTodayPoke:  rows.some((r) => r.kind === "poke"),
+    sentTodayCheer: rows.some((r) => r.kind === "cheer"),
   };
 }
 
@@ -207,6 +243,65 @@ router.get("/accountability/partners/:id/feed", async (req, res): Promise<void> 
     points: a.points,
     createdAt: a.createdAt.toISOString(),
   })));
+});
+
+router.get("/accountability/partners/:id/detail", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const partnerId = parseInt(raw, 10);
+  if (isNaN(partnerId)) { res.status(400).json({ error: "Invalid id" }); return; }
+  if (partnerId === userId) { res.status(400).json({ error: "Cannot view yourself as an ally" }); return; }
+
+  const partnership = await requireAcceptedPartnership(userId, partnerId);
+  if (!partnership) { res.status(403).json({ error: "Not an active ally" }); return; }
+
+  const [partner] = await db.select().from(usersTable).where(eq(usersTable.id, partnerId));
+  if (!partner) { res.status(404).json({ error: "Partner not found" }); return; }
+
+  const timeZone = resolveTimeZone(typeof req.query.tz === "string" ? req.query.tz : undefined);
+  const now = new Date();
+  const today = localDateKey(now, timeZone);
+  const dayStart = new Date(today + "T00:00:00Z");
+
+  const todayTasks = await db.select().from(tasksTable)
+    .where(and(eq(tasksTable.userId, partnerId), eq(tasksTable.dueDate, today)));
+  const questsDueToday = todayTasks.length;
+  const questsCompletedToday = todayTasks.filter((t) => t.completed).length;
+
+  const hero = await buildHeroLook(partnerId);
+  const badges = await getEarnedBadges(partnerId);
+
+  const milestones = await db.select().from(activityTable)
+    .where(and(
+      eq(activityTable.userId, partnerId),
+      inArray(activityTable.type, [...MILESTONE_TYPES]),
+    ))
+    .orderBy(desc(activityTable.createdAt))
+    .limit(20);
+
+  const flags = await sentTodayFlags(userId, partnerId, dayStart);
+
+  res.json({
+    partner: formatUserSummary(partner),
+    progress: {
+      questsDueToday,
+      questsCompletedToday,
+      allDoneToday: questsDueToday > 0 && questsCompletedToday === questsDueToday,
+    },
+    hero,
+    badges,
+    milestones: milestones.map((a) => ({
+      id: a.id,
+      userId: a.userId,
+      type: a.type,
+      description: a.description,
+      points: a.points,
+      createdAt: a.createdAt.toISOString(),
+    })),
+    ...flags,
+  });
 });
 
 export default router;
