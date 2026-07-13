@@ -125,8 +125,8 @@ existing 7am–10pm window:
   - `hungry`: slight desaturation
   - `starving`: heavy grayscale + subtle droop (small rotation/translate)
   - `fainted`: rotated to lie on the ground, grayscaled, small 💫 overlay
-- **Revival moment** — completion response `heroRevived: true` fires the existing
-  dopamine-overlay celebration ("Your hero rises, renewed!") and invalidates the
+- **Revival moment** — completion response `heroRevived: true` shows a
+  celebration toast ("Your hero rises, renewed!") and invalidates the
   hero-status query key. All task-completion mutations must invalidate the
   hero-status key.
 
