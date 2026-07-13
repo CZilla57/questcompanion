@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
-import { resolveDeviceSubscribed } from "@/lib/push";
+import {
+  resolveDeviceSubscribed,
+  type SubscribeOutcome,
+  type UnsubscribeOutcome,
+} from "@/lib/push";
 
 const SW_PATH = "/sw.js";
 const SUBSCRIBE_URL = "/api/notifications/subscribe";
@@ -69,13 +73,14 @@ export function useNotifications() {
     };
   }, [supported]);
 
-  const subscribe = useCallback(async (): Promise<boolean> => {
-    if (!supported) return false;
+  const subscribe = useCallback(async (): Promise<SubscribeOutcome> => {
+    if (!supported) return "unsupported";
 
     try {
       const permission = await Notification.requestPermission();
       setState(permission as NotificationState);
-      if (permission !== "granted") return false;
+      if (permission === "denied") return "denied";
+      if (permission !== "granted") return "dismissed"; // "default": prompt closed
 
       // Register service worker
       const reg = await navigator.serviceWorker.register(SW_PATH, { scope: "/" });
@@ -84,7 +89,7 @@ export function useNotifications() {
       // Get VAPID public key from server
       const keyRes = await fetch(VAPID_KEY_URL);
       const { publicKey } = (await keyRes.json()) as { publicKey: string };
-      if (!publicKey) return false;
+      if (!publicKey) return "error";
 
       const applicationServerKey = urlBase64ToUint8Array(publicKey);
 
@@ -94,7 +99,7 @@ export function useNotifications() {
       });
 
       const json = sub.toJSON();
-      if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) return false;
+      if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) return "error";
 
       // Save subscription to server
       await fetch(SUBSCRIBE_URL, {
@@ -107,20 +112,23 @@ export function useNotifications() {
       });
 
       setIsSubscribed(true);
-      return true;
+      return "subscribed";
     } catch (err) {
       console.error("Push subscription failed:", err);
-      return false;
+      return "error";
     }
   }, [supported]);
 
-  const unsubscribe = useCallback(async (): Promise<boolean> => {
-    if (!supported) return false;
+  const unsubscribe = useCallback(async (): Promise<UnsubscribeOutcome> => {
+    if (!supported) return "unsupported";
     try {
       const reg = await navigator.serviceWorker.getRegistration(SW_PATH);
-      if (!reg) return false;
-      const sub = await reg.pushManager.getSubscription();
-      if (!sub) return false;
+      const sub = reg ? await reg.pushManager.getSubscription() : null;
+      if (!sub) {
+        // Nothing to remove on this browser — reconcile the bell to "off".
+        setIsSubscribed(false);
+        return "not-subscribed";
+      }
 
       const endpoint = sub.endpoint;
       await sub.unsubscribe();
@@ -132,10 +140,10 @@ export function useNotifications() {
       });
 
       setIsSubscribed(false);
-      return true;
+      return "unsubscribed";
     } catch (err) {
       console.error("Unsubscribe failed:", err);
-      return false;
+      return "error";
     }
   }, [supported]);
 
