@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { useGetPartners, useGetMe, useSearchUsers, useSendPartnerRequest, useAcceptPartnerRequest, useDeclinePartnerRequest, PartnershipStatus } from "@workspace/api-client-react";
+import { useGetPartners, useGetMe, useSearchUsers, useSendPartnerRequest, useAcceptPartnerRequest, useDeclinePartnerRequest, useGetNudges, useMarkNudgesRead, getGetNudgesQueryKey, PartnershipStatus } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Search, Check, X, UserPlus, Shield } from "lucide-react";
+import { Users, Search, Check, X, UserPlus, Shield, Bell } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetPartnersQueryKey } from "@workspace/api-client-react";
@@ -42,6 +42,18 @@ export default function Partners() {
   const sendReq = useSendPartnerRequest();
   const acceptReq = useAcceptPartnerRequest();
   const declineReq = useDeclinePartnerRequest();
+
+  const { data: nudges } = useGetNudges({ query: { queryKey: ["nudges"] } });
+  const markRead = useMarkNudgesRead();
+  const unreadCount = (nudges ?? []).filter((n) => !n.readAt).length;
+
+  const handleOpenInbox = (value: string) => {
+    if (value === "inbox" && unreadCount > 0) {
+      markRead.mutate({ data: {} }, {
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetNudgesQueryKey() }),
+      });
+    }
+  };
 
   const activePartners = partners?.filter(p => p.status === PartnershipStatus.accepted) || [];
   // Incoming requests are the pending ones addressed to me.
@@ -101,7 +113,7 @@ export default function Partners() {
         <p className="text-muted-foreground mt-1">Stay on track together. Share progress and keep the streak alive.</p>
       </div>
 
-      <Tabs defaultValue="allies" className="w-full">
+      <Tabs defaultValue="allies" className="w-full" onValueChange={handleOpenInbox}>
         <TabsList className="bg-card border border-border w-full justify-start rounded-lg p-1">
           <TabsTrigger value="allies" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary rounded-md">
             My Allies ({activePartners.length})
@@ -111,6 +123,9 @@ export default function Partners() {
           </TabsTrigger>
           <TabsTrigger value="find" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary rounded-md">
             Find Allies
+          </TabsTrigger>
+          <TabsTrigger value="inbox" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary rounded-md">
+            Inbox {unreadCount > 0 && <span className="ml-2 bg-destructive text-destructive-foreground px-2 py-0.5 rounded-full text-xs">{unreadCount}</span>}
           </TabsTrigger>
         </TabsList>
 
@@ -246,6 +261,30 @@ export default function Partners() {
               <div className="text-center text-muted-foreground py-8">No users found matching "{debouncedSearch}"</div>
             ) : null}
           </div>
+        </TabsContent>
+
+        <TabsContent value="inbox" className="mt-6 space-y-3">
+          {(nudges ?? []).length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <Bell className="w-10 h-10 mx-auto mb-3 opacity-40" />
+              No nudges yet. Your allies' pokes and cheers will show up here.
+            </div>
+          ) : (
+            (nudges ?? []).map((n) => (
+              <div key={n.id} className={`flex items-center gap-4 p-4 rounded-xl border ${n.readAt ? "bg-card border-border" : "bg-primary/5 border-primary/30"}`}>
+                <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center font-bold shrink-0">
+                  {n.sender?.username.charAt(0).toUpperCase() ?? "?"}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm">
+                    <span className="font-bold">{n.sender?.username ?? "An ally"}</span>
+                    {" "}{n.kind === "poke" ? "poked you" : "cheered you"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">{n.reactionLabel ?? n.reaction}</p>
+                </div>
+              </div>
+            ))
+          )}
         </TabsContent>
       </Tabs>
     </div>

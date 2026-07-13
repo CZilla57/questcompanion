@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLocation } from "wouter";
 import { Link } from "wouter";
 import { Home, CheckSquare, BarChart2, BarChart3, Users, Trophy, X, Zap, Bell, BellOff, Repeat, Menu, User, LogOut, Coffee, Timer, Download } from "lucide-react";
+import { useGetNudges } from "@workspace/api-client-react";
 import { Button } from "./ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
@@ -165,6 +166,8 @@ const mobileNavItems = allNavItems.filter(i => i.mobileShow);
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { data: navNudges } = useGetNudges({ query: { queryKey: ["nudges"] } });
+  const allyUnread = (navNudges ?? []).filter((n) => !n.readAt).length;
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row overflow-hidden font-sans dark">
@@ -222,7 +225,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className="block"
+                className="block relative"
                 onClick={() => setSidebarOpen(false)}
               >
                 <div className={`
@@ -234,6 +237,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <item.icon
                     className={`w-5 h-5 flex-shrink-0 ${isActive ? "drop-shadow-[0_0_5px_rgba(0,255,255,0.8)]" : ""}`}
                   />
+                  {item.href === "/partners" && allyUnread > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] min-w-4 h-4 px-1 rounded-full flex items-center justify-center">
+                      {allyUnread}
+                    </span>
+                  )}
                   <span className="font-medium">
                     {item.label === "Board" ? "Leaderboard" : item.label}
                   </span>
@@ -277,7 +285,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Link
               key={item.href}
               href={item.href}
-              className="flex-1"
+              className="flex-1 relative"
               aria-label={item.label}
               aria-current={isActive ? "page" : undefined}
             >
@@ -288,6 +296,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <item.icon
                   className={`w-5 h-5 flex-shrink-0 transition-all ${isActive ? "drop-shadow-[0_0_5px_rgba(0,255,255,0.8)]" : ""}`}
                 />
+                {item.href === "/partners" && allyUnread > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] min-w-4 h-4 px-1 rounded-full flex items-center justify-center">
+                    {allyUnread}
+                  </span>
+                )}
                 <span className={`text-[10px] font-medium leading-none tracking-wide ${isActive ? "text-primary" : "text-muted-foreground"}`}>
                   {item.label}
                 </span>
