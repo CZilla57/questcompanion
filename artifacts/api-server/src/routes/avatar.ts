@@ -14,7 +14,7 @@ function calcBattlePower(level: number, equippedPower: number): number {
   return 30 + level * 5 + equippedPower;
 }
 
-async function buildAvatarResponse(userId: number) {
+export async function buildHeroLook(userId: number) {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   if (!user) return null;
 
@@ -51,6 +51,14 @@ async function buildAvatarResponse(userId: number) {
       icon:      g.gear.icon,
       spriteId:  g.gear.spriteId ?? null,
     })),
+  };
+}
+
+async function buildAvatarResponse(userId: number) {
+  const hero = await buildHeroLook(userId);
+  if (!hero) return null;
+  return {
+    ...hero,
     availableColors:  ids(colors),
     availableClasses: ids(classes),
     availableSkins:   ids(skins),

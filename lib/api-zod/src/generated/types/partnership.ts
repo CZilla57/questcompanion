@@ -5,6 +5,7 @@
  * FocusQuest API - ADHD gamified task tracker
  * OpenAPI spec version: 0.1.0
  */
+import type { AllyProgress } from './allyProgress';
 import type { PartnershipStatus } from './partnershipStatus';
 import type { UserSummary } from './userSummary';
 
@@ -15,4 +16,8 @@ export interface Partnership {
   status: PartnershipStatus;
   partner?: UserSummary;
   createdAt: string;
+  progress?: AllyProgress;
+  hasFreshMilestone?: boolean;
+  sentTodayPoke?: boolean;
+  sentTodayCheer?: boolean;
 }

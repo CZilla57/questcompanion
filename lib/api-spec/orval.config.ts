@@ -63,6 +63,17 @@ export default defineConfig({
             body: ['bigint', 'date'],
             response: ['bigint', 'date'],
           },
+          // The typescript-schemas generator (schemas.type: "typescript" above) names
+          // an operation's query-params type `${OperationName}Params` with no
+          // distinguishing suffix — the same name the zod plugin uses here for an
+          // operation's *path*-params validation schema. That's a silent collision
+          // (TS2308) for any operation with both path and query params, e.g.
+          // `getPartnerDetail`. No @workspace/api-zod consumer imports these path-param
+          // schemas (verified repo-wide), so disable generating them to avoid the clash;
+          // path-param validation still exists at the route layer.
+          generate: {
+            param: false,
+          },
         },
         useDates: true,
         useBigInt: true,

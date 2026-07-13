@@ -956,6 +956,92 @@ paths:
                 items:
                   $ref: "#/components/schemas/ActivityItem"
 
+  /accountability/partners/{id}/detail:
+    get:
+      operationId: getPartnerDetail
+      tags: [accountability]
+      summary: Expanded ally profile (hero, badges, progress, milestones)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: tz
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Ally detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllyDetail"
+
+  /accountability/partners/{id}/nudge:
+    post:
+      operationId: sendNudge
+      tags: [accountability]
+      summary: Send a poke or cheer to an ally
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NudgeInput"
+      responses:
+        "201":
+          description: Nudge sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SentNudge"
+
+  /accountability/nudges:
+    get:
+      operationId: getNudges
+      tags: [accountability]
+      summary: List nudges received by the current user
+      responses:
+        "200":
+          description: Received nudges
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Nudge"
+
+  /accountability/nudges/read:
+    post:
+      operationId: markNudgesRead
+      tags: [accountability]
+      summary: Mark received nudges as read
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MarkNudgesReadInput"
+      responses:
+        "200":
+          description: Marked read
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, updated]
+                properties:
+                  success: { type: boolean }
+                  updated: { type: integer }
+
   /leaderboard:
     get:
       operationId: getLeaderboard
@@ -1849,6 +1935,14 @@ components:
           $ref: "#/components/schemas/UserSummary"
         createdAt:
           type: string
+        progress:
+          $ref: "#/components/schemas/AllyProgress"
+        hasFreshMilestone:
+          type: boolean
+        sentTodayPoke:
+          type: boolean
+        sentTodayCheer:
+          type: boolean
 
     PartnerRequestInput:
       type: object
@@ -1856,6 +1950,112 @@ components:
       properties:
         recipientId:
           type: integer
+
+    AllyProgress:
+      type: object
+      required: [questsDueToday, questsCompletedToday, allDoneToday]
+      properties:
+        questsDueToday:
+          type: integer
+        questsCompletedToday:
+          type: integer
+        allDoneToday:
+          type: boolean
+
+    HeroLook:
+      type: object
+      required: [avatarColor, avatarClass, avatarSkin, level, battlePower, equippedGear]
+      properties:
+        avatarColor: { type: string }
+        avatarClass: { type: string }
+        avatarSkin: { type: string }
+        avatarHairStyle: { type: string }
+        avatarHairColor: { type: string }
+        avatarBodyBuild: { type: string }
+        avatarFace: { type: string }
+        avatarBeardStyle: { type: string }
+        avatarBeardColor: { type: string }
+        avatarGlasses: { type: string }
+        avatarEarrings: { type: string }
+        level: { type: integer }
+        battlePower: { type: integer }
+        equippedGear:
+          type: array
+          items:
+            $ref: "#/components/schemas/EquippedGearItem"
+
+    AllyDetail:
+      type: object
+      required: [partner, progress, badges, milestones, sentTodayPoke, sentTodayCheer]
+      properties:
+        partner:
+          $ref: "#/components/schemas/UserSummary"
+        progress:
+          $ref: "#/components/schemas/AllyProgress"
+        hero:
+          $ref: "#/components/schemas/HeroLook"
+        badges:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserBadge"
+        milestones:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityItem"
+        sentTodayPoke:
+          type: boolean
+        sentTodayCheer:
+          type: boolean
+
+    NudgeInput:
+      type: object
+      required: [kind, reaction]
+      properties:
+        kind:
+          type: string
+          enum: [poke, cheer]
+        reaction:
+          type: string
+        contextType:
+          type: string
+
+    SentNudge:
+      type: object
+      required: [id, kind, reaction, createdAt]
+      properties:
+        id: { type: integer }
+        kind:
+          type: string
+          enum: [poke, cheer]
+        reaction: { type: string }
+        createdAt: { type: string }
+
+    Nudge:
+      type: object
+      required: [id, kind, reaction, createdAt, readAt]
+      properties:
+        id: { type: integer }
+        kind:
+          type: string
+          enum: [poke, cheer]
+        reaction: { type: string }
+        reactionLabel:
+          type: ["string", "null"]
+        contextType:
+          type: ["string", "null"]
+        sender:
+          $ref: "#/components/schemas/UserSummary"
+        createdAt: { type: string }
+        readAt:
+          type: ["string", "null"]
+
+    MarkNudgesReadInput:
+      type: object
+      properties:
+        ids:
+          type: array
+          items:
+            type: integer
 
     ActivityItem:
       type: object

@@ -20,6 +20,7 @@ import Recurring from "@/pages/recurring";
 import AvatarPage from "@/pages/avatar";
 import DopamineMenu from "@/pages/dopamine-menu";
 import Focus from "@/pages/focus";
+import PartnerDetail from "@/pages/partner-detail";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -155,6 +156,7 @@ function Router() {
         <Route path="/recurring" component={Recurring} />
         <Route path="/progress" component={Progress} />
         <Route path="/insights" component={Insights} />
+        <Route path="/partners/:id" component={PartnerDetail} />
         <Route path="/partners" component={Partners} />
         <Route path="/leaderboard" component={Leaderboard} />
         <Route path="/avatar" component={AvatarPage} />

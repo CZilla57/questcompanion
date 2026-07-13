@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
-import { useGetPartners, useGetMe, useSearchUsers, useSendPartnerRequest, useAcceptPartnerRequest, useDeclinePartnerRequest, PartnershipStatus } from "@workspace/api-client-react";
+import { Link } from "wouter";
+import { useGetPartners, useGetMe, useSearchUsers, useSendPartnerRequest, useAcceptPartnerRequest, useDeclinePartnerRequest, useGetNudges, useMarkNudgesRead, getGetNudgesQueryKey, PartnershipStatus } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Search, Check, X, UserPlus, Shield } from "lucide-react";
+import { Users, Search, Check, X, UserPlus, Shield, Bell } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetPartnersQueryKey } from "@workspace/api-client-react";
+import { NudgePicker } from "@/components/nudge-picker";
 
 /** Pull a human-readable message out of an API error, falling back if absent. */
 function errorMessage(err: unknown, fallback: string): string {
@@ -40,6 +42,18 @@ export default function Partners() {
   const sendReq = useSendPartnerRequest();
   const acceptReq = useAcceptPartnerRequest();
   const declineReq = useDeclinePartnerRequest();
+
+  const { data: nudges } = useGetNudges();
+  const markRead = useMarkNudgesRead();
+  const unreadCount = (nudges ?? []).filter((n) => !n.readAt).length;
+
+  const handleOpenInbox = (value: string) => {
+    if (value === "inbox" && unreadCount > 0) {
+      markRead.mutate({ data: {} }, {
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetNudgesQueryKey() }),
+      });
+    }
+  };
 
   const activePartners = partners?.filter(p => p.status === PartnershipStatus.accepted) || [];
   // Incoming requests are the pending ones addressed to me.
@@ -99,7 +113,7 @@ export default function Partners() {
         <p className="text-muted-foreground mt-1">Stay on track together. Share progress and keep the streak alive.</p>
       </div>
 
-      <Tabs defaultValue="allies" className="w-full">
+      <Tabs defaultValue="allies" className="w-full" onValueChange={handleOpenInbox}>
         <TabsList className="bg-card border border-border w-full justify-start rounded-lg p-1">
           <TabsTrigger value="allies" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary rounded-md">
             My Allies ({activePartners.length})
@@ -109,6 +123,9 @@ export default function Partners() {
           </TabsTrigger>
           <TabsTrigger value="find" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary rounded-md">
             Find Allies
+          </TabsTrigger>
+          <TabsTrigger value="inbox" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary rounded-md">
+            Inbox {unreadCount > 0 && <span className="ml-2 bg-destructive text-destructive-foreground px-2 py-0.5 rounded-full text-xs">{unreadCount}</span>}
           </TabsTrigger>
         </TabsList>
 
@@ -123,16 +140,44 @@ export default function Partners() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {activePartners.map(p => (
                 <Card key={p.id} className="bg-card border-border hover:border-primary/50 transition-colors">
-                  <CardContent className="p-6 text-center">
-                    <div className="w-16 h-16 bg-muted rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold text-muted-foreground border-2 border-primary/20">
-                      {p.partner?.username.charAt(0).toUpperCase()}
-                    </div>
-                    <h3 className="font-bold text-lg">{p.partner?.username}</h3>
-                    <p className="text-sm text-primary font-medium">{p.partner?.levelName}</p>
+                  <CardContent className="p-6">
+                    <Link href={`/partners/${p.partner?.id}`} className="block text-center cursor-pointer">
+                      <div className="w-16 h-16 bg-muted rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold text-muted-foreground border-2 border-primary/20">
+                        {p.partner?.username.charAt(0).toUpperCase()}
+                      </div>
+                      <h3 className="font-bold text-lg">{p.partner?.username}</h3>
+                      <p className="text-sm text-primary font-medium">{p.partner?.levelName}</p>
+                    </Link>
+
                     <div className="mt-4 pt-4 border-t border-border flex justify-around text-sm text-muted-foreground">
                       <div><span className="font-bold text-foreground block">{p.partner?.totalPoints}</span>XP</div>
                       <div><span className="font-bold text-foreground block">{p.partner?.streakDays}</span>Streak</div>
+                      {p.progress && (
+                        <div>
+                          <span className="font-bold text-foreground block">
+                            {p.progress.questsCompletedToday}/{p.progress.questsDueToday}
+                          </span>
+                          Today
+                        </div>
+                      )}
                     </div>
+
+                    {p.partner && (
+                      <div className="mt-4 flex justify-center gap-2">
+                        <NudgePicker
+                          partnerId={p.partner.id}
+                          kind="poke"
+                          disabled={p.sentTodayPoke}
+                          emphasized={!!p.progress && !p.progress.allDoneToday && p.progress.questsDueToday > 0}
+                        />
+                        <NudgePicker
+                          partnerId={p.partner.id}
+                          kind="cheer"
+                          disabled={p.sentTodayCheer}
+                          emphasized={p.hasFreshMilestone}
+                        />
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -218,6 +263,30 @@ export default function Partners() {
               <div className="text-center text-muted-foreground py-8">No users found matching "{debouncedSearch}"</div>
             ) : null}
           </div>
+        </TabsContent>
+
+        <TabsContent value="inbox" className="mt-6 space-y-3">
+          {(nudges ?? []).length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <Bell className="w-10 h-10 mx-auto mb-3 opacity-40" />
+              No nudges yet. Your allies' pokes and cheers will show up here.
+            </div>
+          ) : (
+            (nudges ?? []).map((n) => (
+              <div key={n.id} className={`flex items-center gap-4 p-4 rounded-xl border ${n.readAt ? "bg-card border-border" : "bg-primary/5 border-primary/30"}`}>
+                <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center font-bold shrink-0">
+                  {n.sender?.username.charAt(0).toUpperCase() ?? "?"}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm">
+                    <span className="font-bold">{n.sender?.username ?? "An ally"}</span>
+                    {" "}{n.kind === "poke" ? "poked you" : "cheered you"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">{n.reactionLabel ?? n.reaction}</p>
+                </div>
+              </div>
+            ))
+          )}
         </TabsContent>
       </Tabs>
     </div>

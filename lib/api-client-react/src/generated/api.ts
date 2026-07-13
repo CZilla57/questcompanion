@@ -21,6 +21,7 @@ import type {
 
 import type {
   ActivityItem,
+  AllyDetail,
   AuthUserEnvelope,
   AvatarProfile,
   AvatarUpdateInput,
@@ -45,6 +46,7 @@ import type {
   GetMyInsightsParams,
   GetMyStatsParams,
   GetMyXpHistoryParams,
+  GetPartnerDetailParams,
   GetTaskRecommendationParams,
   GetTasksParams,
   HandleBrowserLoginCallbackParams,
@@ -54,8 +56,12 @@ import type {
   LeaderboardEntry,
   ListFocusSessionsParams,
   LogoutSuccess,
+  MarkNudgesRead200,
+  MarkNudgesReadInput,
   MobileTokenExchangeRequest,
   MobileTokenExchangeSuccess,
+  Nudge,
+  NudgeInput,
   ParseQuickAddInput,
   ParsedQuickAdd,
   PartnerRequestInput,
@@ -64,6 +70,7 @@ import type {
   RecurringTaskInput,
   RecurringTaskUpdate,
   SearchUsersParams,
+  SentNudge,
   StartFocusSessionInput,
   StepToggleInput,
   StreakFreezeResult,
@@ -3461,6 +3468,315 @@ export function useGetPartnerFeed<TData = Awaited<ReturnType<typeof getPartnerFe
 
 
 
+
+export const getGetPartnerDetailUrl = (id: number,
+    params?: GetPartnerDetailParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/accountability/partners/${id}/detail?${stringifiedParams}` : `/api/accountability/partners/${id}/detail`
+}
+
+/**
+ * @summary Expanded ally profile (hero, badges, progress, milestones)
+ */
+export const getPartnerDetail = async (id: number,
+    params?: GetPartnerDetailParams, options?: RequestInit): Promise<AllyDetail> => {
+
+  return customFetch<AllyDetail>(getGetPartnerDetailUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPartnerDetailQueryKey = (id: number,
+    params?: GetPartnerDetailParams,) => {
+    return [
+    `/api/accountability/partners/${id}/detail`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetPartnerDetailQueryOptions = <TData = Awaited<ReturnType<typeof getPartnerDetail>>, TError = ErrorType<unknown>>(id: number,
+    params?: GetPartnerDetailParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPartnerDetail>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPartnerDetailQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPartnerDetail>>> = ({ signal }) => getPartnerDetail(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPartnerDetail>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPartnerDetailQueryResult = NonNullable<Awaited<ReturnType<typeof getPartnerDetail>>>
+export type GetPartnerDetailQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Expanded ally profile (hero, badges, progress, milestones)
+ */
+
+export function useGetPartnerDetail<TData = Awaited<ReturnType<typeof getPartnerDetail>>, TError = ErrorType<unknown>>(
+ id: number,
+    params?: GetPartnerDetailParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPartnerDetail>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPartnerDetailQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSendNudgeUrl = (id: number,) => {
+
+
+
+
+  return `/api/accountability/partners/${id}/nudge`
+}
+
+/**
+ * @summary Send a poke or cheer to an ally
+ */
+export const sendNudge = async (id: number,
+    nudgeInput: NudgeInput, options?: RequestInit): Promise<SentNudge> => {
+
+  return customFetch<SentNudge>(getSendNudgeUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      nudgeInput,)
+  }
+);}
+
+
+
+
+export const getSendNudgeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendNudge>>, TError,{id: number;data: BodyType<NudgeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendNudge>>, TError,{id: number;data: BodyType<NudgeInput>}, TContext> => {
+
+const mutationKey = ['sendNudge'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendNudge>>, {id: number;data: BodyType<NudgeInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  sendNudge(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendNudgeMutationResult = NonNullable<Awaited<ReturnType<typeof sendNudge>>>
+    export type SendNudgeMutationBody = BodyType<NudgeInput>
+    export type SendNudgeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Send a poke or cheer to an ally
+ */
+export const useSendNudge = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendNudge>>, TError,{id: number;data: BodyType<NudgeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendNudge>>,
+        TError,
+        {id: number;data: BodyType<NudgeInput>},
+        TContext
+      > => {
+      return useMutation(getSendNudgeMutationOptions(options));
+    }
+
+export const getGetNudgesUrl = () => {
+
+
+
+
+  return `/api/accountability/nudges`
+}
+
+/**
+ * @summary List nudges received by the current user
+ */
+export const getNudges = async ( options?: RequestInit): Promise<Nudge[]> => {
+
+  return customFetch<Nudge[]>(getGetNudgesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetNudgesQueryKey = () => {
+    return [
+    `/api/accountability/nudges`
+    ] as const;
+    }
+
+
+export const getGetNudgesQueryOptions = <TData = Awaited<ReturnType<typeof getNudges>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNudges>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetNudgesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNudges>>> = ({ signal }) => getNudges({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getNudges>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetNudgesQueryResult = NonNullable<Awaited<ReturnType<typeof getNudges>>>
+export type GetNudgesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List nudges received by the current user
+ */
+
+export function useGetNudges<TData = Awaited<ReturnType<typeof getNudges>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNudges>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetNudgesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getMarkNudgesReadUrl = () => {
+
+
+
+
+  return `/api/accountability/nudges/read`
+}
+
+/**
+ * @summary Mark received nudges as read
+ */
+export const markNudgesRead = async (markNudgesReadInput?: MarkNudgesReadInput, options?: RequestInit): Promise<MarkNudgesRead200> => {
+
+  return customFetch<MarkNudgesRead200>(getMarkNudgesReadUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      markNudgesReadInput,)
+  }
+);}
+
+
+
+
+export const getMarkNudgesReadMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markNudgesRead>>, TError,{data?: BodyType<MarkNudgesReadInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markNudgesRead>>, TError,{data?: BodyType<MarkNudgesReadInput>}, TContext> => {
+
+const mutationKey = ['markNudgesRead'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markNudgesRead>>, {data?: BodyType<MarkNudgesReadInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  markNudgesRead(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkNudgesReadMutationResult = NonNullable<Awaited<ReturnType<typeof markNudgesRead>>>
+    export type MarkNudgesReadMutationBody = BodyType<MarkNudgesReadInput> | undefined
+    export type MarkNudgesReadMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Mark received nudges as read
+ */
+export const useMarkNudgesRead = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markNudgesRead>>, TError,{data?: BodyType<MarkNudgesReadInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markNudgesRead>>,
+        TError,
+        {data?: BodyType<MarkNudgesReadInput>},
+        TContext
+      > => {
+      return useMutation(getMarkNudgesReadMutationOptions(options));
+    }
 
 export const getGetLeaderboardUrl = (params?: GetLeaderboardParams,) => {
   const normalizedParams = new URLSearchParams();
