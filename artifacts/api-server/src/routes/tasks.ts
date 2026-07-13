@@ -148,8 +148,8 @@ router.get("/tasks/recommend", async (req, res): Promise<void> => {
       reasons.push(`adds ${ap.categoryLabel} variety`);
     }
 
-    // Overdue bonus
-    if (task.dueDate < today) {
+    // Overdue bonus (anchored tasks have no deadline and are never overdue).
+    if (task.dueDate && task.dueDate < today) {
       score += 20;
       reasons.push("overdue");
     }
