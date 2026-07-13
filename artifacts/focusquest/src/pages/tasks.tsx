@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetTasksQueryKey } from "@workspace/api-client-react";
@@ -197,6 +198,7 @@ export default function Tasks() {
   const [newTaskPriority, setNewTaskPriority] = useState<TaskPriority>(TaskPriority.medium);
   const [newTaskEstimate, setNewTaskEstimate] = useState("");
   const [newTaskCategory, setNewTaskCategory] = useState("");
+  const [newTaskAnchored, setNewTaskAnchored] = useState(false);
   const [categoryManuallySet, setCategoryManuallySet] = useState(false);
   const [createdTask, setCreatedTask] = useState<Task | null>(null);
 
@@ -207,6 +209,7 @@ export default function Tasks() {
   const [editEstimate, setEditEstimate] = useState("");
   const [editCategory, setEditCategory] = useState("");
   const [editDueDate, setEditDueDate] = useState<Date | undefined>(undefined);
+  const [editAnchored, setEditAnchored] = useState(false);
 
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [excludedIds, setExcludedIds] = useState<number[]>([]);
@@ -267,7 +270,8 @@ export default function Tasks() {
 
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTaskTitle.trim() || !date) return;
+    if (!newTaskTitle.trim()) return;
+    if (!newTaskAnchored && !date) return;
 
     const estimatedMinutes = newTaskEstimate ? parseInt(newTaskEstimate, 10) : undefined;
 
@@ -276,7 +280,9 @@ export default function Tasks() {
         title: newTaskTitle,
         description: newTaskDesc,
         priority: newTaskPriority as any,
-        dueDate: format(date, 'yyyy-MM-dd'),
+        ...(newTaskAnchored
+          ? { isAnchored: true }
+          : { dueDate: format(date!, 'yyyy-MM-dd') }),
         ...(estimatedMinutes && estimatedMinutes > 0 ? { estimatedMinutes } : {}),
         ...(newTaskCategory ? { category: newTaskCategory as any } : {}),
       }
@@ -300,6 +306,7 @@ export default function Tasks() {
     setNewTaskPriority(TaskPriority.medium);
     setNewTaskEstimate("");
     setNewTaskCategory("");
+    setNewTaskAnchored(false);
     setCategoryManuallySet(false);
     setCreatedTask(null);
   };
@@ -332,6 +339,7 @@ export default function Tasks() {
     setEditEstimate(task.estimatedMinutes ? String(task.estimatedMinutes) : "");
     setEditCategory(task.category ?? "default");
     setEditDueDate(task.dueDate ? parseDueDate(task.dueDate) : undefined);
+    setEditAnchored(task.isAnchored ?? false);
   };
 
   const handleSaveEdit = (e: React.FormEvent) => {
@@ -346,7 +354,10 @@ export default function Tasks() {
         title: editTitle,
         description: editDesc,
         priority: editPriority as any,
-        ...(editDueDate ? { dueDate: toDueDateString(editDueDate) } : {}),
+        isAnchored: editAnchored,
+        ...(editAnchored
+          ? {}
+          : (editDueDate ? { dueDate: toDueDateString(editDueDate) } : {})),
         ...(estimatedMinutes && estimatedMinutes > 0 ? { estimatedMinutes } : {}),
         category: editCategory as any,
       }
@@ -603,6 +614,14 @@ export default function Tasks() {
               />
             </div>
 
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <Checkbox
+                checked={newTaskAnchored}
+                onCheckedChange={(v) => setNewTaskAnchored(v === true)}
+              />
+              <span className="text-sm text-foreground">Anchor — no deadline, keep until done</span>
+            </label>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-sm font-medium text-foreground mb-1 block">Priority</label>
@@ -687,6 +706,7 @@ export default function Tasks() {
               </Select>
             </div>
 
+            {!editAnchored && (
             <div>
               <label className="text-sm font-medium text-foreground mb-1 block">Due date</label>
               <Popover>
@@ -705,6 +725,15 @@ export default function Tasks() {
                 </PopoverContent>
               </Popover>
             </div>
+            )}
+
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <Checkbox
+                checked={editAnchored}
+                onCheckedChange={(v) => setEditAnchored(v === true)}
+              />
+              <span className="text-sm text-foreground">Anchor — no deadline, keep until done</span>
+            </label>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
