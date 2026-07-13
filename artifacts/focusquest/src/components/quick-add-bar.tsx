@@ -15,7 +15,7 @@ function dateLabel(iso: string): string {
   return format(new Date(y, m - 1, d), "EEE MMM d");
 }
 
-export function QuickAddBar({ selectedDate, questlineId }: { selectedDate: Date | undefined; questlineId?: number }) {
+export function QuickAddBar({ selectedDate, questlineId, autoFocus = true }: { selectedDate: Date | undefined; questlineId?: number; autoFocus?: boolean }) {
   const [text, setText] = useState("");
   const [aiFields, setAiFields] = useState<ParsedQuickAdd | null>(null);
   const [xp, setXp] = useState<number | null>(null);
@@ -121,7 +121,7 @@ export function QuickAddBar({ selectedDate, questlineId }: { selectedDate: Date 
           placeholder="Quick add — e.g. Email Sam tomorrow 3pm #work !high"
           aria-label="Quick add a quest in natural language"
           className="border-primary/20 focus:border-primary"
-          autoFocus
+          autoFocus={autoFocus}
         />
         <Button onClick={handleCreate} disabled={!canCreate} className="bg-primary hover:bg-primary/90 text-primary-foreground shrink-0">
           <Plus className="w-4 h-4 mr-1" /> Add

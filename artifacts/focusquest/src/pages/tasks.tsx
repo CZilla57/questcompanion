@@ -17,6 +17,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getGetTasksQueryKey } from "@workspace/api-client-react";
 import { CATEGORIES, CATEGORY_COLORS, CATEGORY_HEX_COLORS } from "@/lib/categories";
 import { parseDueDate, toDueDateString } from "@/lib/reschedule";
+import { apiErrorMessage } from "@/lib/api-error";
 
 interface PointPreview {
   points: number;
@@ -160,6 +161,10 @@ function formatMinutes(minutes: number | null | undefined): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
+function questlineLabel(ql: { title: string; status: string }): string {
+  return ql.status === "completed" ? `${ql.title} · done` : ql.title;
 }
 
 function TimeInput({
@@ -382,7 +387,7 @@ export default function Tasks() {
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
       },
       onError: (err: any) => {
-        const msg = err?.response?.data?.error ?? err?.message ?? "Could not update quest";
+        const msg = apiErrorMessage(err, "Could not update quest");
         toast({ title: msg, variant: "destructive" });
       },
     });
@@ -470,7 +475,7 @@ export default function Tasks() {
             <SelectItem value="all">All questlines</SelectItem>
             {(questlines ?? []).map((ql) => (
               <SelectItem key={ql.id} value={String(ql.id)}>
-                {ql.title}{ql.status === "completed" ? " · done" : ""}
+                {questlineLabel(ql)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -755,7 +760,7 @@ export default function Tasks() {
                   <SelectItem value="none">None</SelectItem>
                   {(questlines ?? []).map((ql) => (
                     <SelectItem key={ql.id} value={String(ql.id)}>
-                      {ql.title}{ql.status === "completed" ? " · done" : ""}
+                      {questlineLabel(ql)}
                     </SelectItem>
                   ))}
                 </SelectContent>

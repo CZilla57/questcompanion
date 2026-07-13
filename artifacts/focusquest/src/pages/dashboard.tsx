@@ -21,6 +21,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetMyStatsQueryKey, getGetTasksQueryKey } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
+import { apiErrorMessage } from "@/lib/api-error";
 
 const FREEZE_COST = 50;
 
@@ -153,7 +154,7 @@ export default function Dashboard() {
       onError: (err: any) => {
         toast({
           title: "Can't buy freeze",
-          description: err?.response?.data?.error ?? "Something went wrong.",
+          description: apiErrorMessage(err, "Something went wrong."),
           variant: "destructive",
         });
       },

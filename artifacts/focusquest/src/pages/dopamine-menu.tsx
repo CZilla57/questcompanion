@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { apiErrorMessage } from "@/lib/api-error";
 import { Plus, Trash2, Coffee, Sparkles } from "lucide-react";
 
 const EXAMPLES = [
@@ -39,7 +40,7 @@ export default function DopamineMenu() {
           queryClient.invalidateQueries({ queryKey: getGetDopamineRewardsQueryKey() });
         },
         onError: (err: any) => {
-          const msg = err?.response?.data?.error ?? "Failed to add reward";
+          const msg = apiErrorMessage(err, "Failed to add reward");
           toast({ title: msg, variant: "destructive" });
         },
       },

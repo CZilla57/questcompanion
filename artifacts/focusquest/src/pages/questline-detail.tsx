@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { TaskItem } from "@/components/task-item";
 import { dispatchQuestCompleted } from "@/components/dopamine-overlay";
 import { useToast } from "@/hooks/use-toast";
+import { apiErrorMessage } from "@/lib/api-error";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { QuickAddBar } from "@/components/quick-add-bar";
 import { QuestlineEditDialog } from "@/components/questline-edit-dialog";
@@ -38,11 +39,11 @@ export default function QuestlineDetail() {
     deleteMutation.mutate({ id }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetQuestlinesQueryKey() });
-        toast({ title: "Questline deleted", variant: "destructive" });
+        toast({ title: "Questline deleted" });
         navigate("/questlines");
       },
       onError: (err: any) => {
-        toast({ title: err?.response?.data?.error ?? "Could not delete questline", variant: "destructive" });
+        toast({ title: apiErrorMessage(err, "Could not delete questline"), variant: "destructive" });
       },
     });
   };
@@ -61,7 +62,7 @@ export default function QuestlineDetail() {
         });
       },
       onError: (err: any) => {
-        toast({ title: err?.response?.data?.error ?? "Could not claim reward", variant: "destructive" });
+        toast({ title: apiErrorMessage(err, "Could not claim reward"), variant: "destructive" });
       },
     });
   };
@@ -116,7 +117,7 @@ export default function QuestlineDetail() {
 
       {questline.status !== "completed" && (
         <div className="mb-4">
-          <QuickAddBar selectedDate={new Date()} questlineId={questline.id} />
+          <QuickAddBar selectedDate={new Date()} questlineId={questline.id} autoFocus={false} />
         </div>
       )}
 
