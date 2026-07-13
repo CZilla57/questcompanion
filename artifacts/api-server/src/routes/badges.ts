@@ -16,10 +16,7 @@ router.get("/badges", async (_req, res): Promise<void> => {
   })));
 });
 
-router.get("/users/me/badges", async (req, res): Promise<void> => {
-  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
-  const userId = req.gameUserId;
-
+export async function getEarnedBadges(userId: number) {
   const userBadges = await db.select({
     id: badgesTable.id,
     name: badgesTable.name,
@@ -32,7 +29,7 @@ router.get("/users/me/badges", async (req, res): Promise<void> => {
     .innerJoin(badgesTable, eq(userBadgesTable.badgeId, badgesTable.id))
     .where(eq(userBadgesTable.userId, userId));
 
-  res.json(userBadges.map((ub) => ({
+  return userBadges.map((ub) => ({
     badge: {
       id: ub.id,
       name: ub.name,
@@ -42,7 +39,12 @@ router.get("/users/me/badges", async (req, res): Promise<void> => {
       requirement: ub.requirement,
     },
     earnedAt: ub.earnedAt.toISOString(),
-  })));
+  }));
+}
+
+router.get("/users/me/badges", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  res.json(await getEarnedBadges(req.gameUserId));
 });
 
 export default router;
