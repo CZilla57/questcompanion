@@ -6,7 +6,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { getGetTasksQueryKey, getGetMyStatsQueryKey } from "@workspace/api-client-react";
+import { getGetTasksQueryKey, getGetMyStatsQueryKey, getGetQuestlinesQueryKey, getGetQuestlineQueryKey } from "@workspace/api-client-react";
 import { browserTimeZone } from "@/lib/timezone";
 import { formatTime12h } from "@/lib/format-time";
 import { dispatchQuestCompleted } from "./dopamine-overlay";
@@ -97,6 +97,10 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetMyStatsQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetQuestlinesQueryKey() });
+          if (task.questlineId != null) {
+            queryClient.invalidateQueries({ queryKey: getGetQuestlineQueryKey(task.questlineId) });
+          }
         }
       });
     } else {
@@ -104,6 +108,10 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
         onSuccess: (res) => {
           queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetMyStatsQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetQuestlinesQueryKey() });
+          if (task.questlineId != null) {
+            queryClient.invalidateQueries({ queryKey: getGetQuestlineQueryKey(task.questlineId) });
+          }
 
           const descParts: string[] = [];
           if ((res.streakBonus ?? 0) > 0) {
