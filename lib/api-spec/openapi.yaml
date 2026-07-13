@@ -1931,6 +1931,9 @@ components:
         focusBonusPoints:
           type: integer
           description: XP awarded for completing all 3 focus quests
+        heroRevived:
+          type: boolean
+          description: True when this completion revived a fainted hero (fed after ≥7 days)
 
     Questline:
       type: object

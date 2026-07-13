@@ -32,4 +32,6 @@ export interface TaskCompletionResult {
   focusBonusAwarded?: boolean;
   /** XP awarded for completing all 3 focus quests */
   focusBonusPoints?: number;
+  /** True when this completion revived a fainted hero (fed after ≥7 days) */
+  heroRevived?: boolean;
 }

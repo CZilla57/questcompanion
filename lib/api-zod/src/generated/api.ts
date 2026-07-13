@@ -524,7 +524,8 @@ export const CompleteTaskResponse = zod.object({
 }),zod.null()]).optional().describe('Gear item awarded (present when type=gear)')
 }),zod.null()]).optional().describe('Random bonus reward triggered on ~12% of completions'),
   "focusBonusAwarded": zod.boolean().optional().describe('Whether the all-3-focus-quests bonus was awarded'),
-  "focusBonusPoints": zod.number().optional().describe('XP awarded for completing all 3 focus quests')
+  "focusBonusPoints": zod.number().optional().describe('XP awarded for completing all 3 focus quests'),
+  "heroRevived": zod.boolean().optional().describe('True when this completion revived a fainted hero (fed after ≥7 days)')
 })
 
 

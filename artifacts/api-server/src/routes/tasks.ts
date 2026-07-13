@@ -17,6 +17,7 @@ import { buildQuickAddPrompt, parseQuickAddResult, QuickAddParseError } from "..
 import { parseCooldown } from "../lib/ai/parse-cooldown";
 import { isBonusGatingTask, countsAsTodayCompletion } from "../lib/anchored-tasks";
 import { isQuestlineAssignable } from "../lib/questlines";
+import { hungerStage } from "../lib/hero-care";
 
 const router: IRouter = Router();
 
@@ -552,6 +553,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
         newStreak: number;
         oldStreak: number;
         freezeConsumed: boolean;
+        heroRevived: boolean;
       };
 
   const outcome = await db.transaction(async (tx): Promise<TxOutcome> => {
@@ -574,6 +576,10 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       if (!existing) return { status: "not_found" };
       return { status: "already_completed", existingTask: existing, userPoints: user.totalPoints };
     }
+
+    // Hero care: completing any quest feeds the hero. Revival happens when the
+    // hero was fainted (≥7 days unfed) at the moment this completion landed.
+    const heroRevived = hungerStage(user.lastFedAt, now) === "fainted";
 
     const oldLevel = getLevelInfo(user.totalPoints);
     const { totalPoints: boostedBase, streakBonus, multiplierInfo } = applyMultiplier(task.points, user.streakDays);
@@ -653,6 +659,8 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       streakDays: newStreak,
       longestStreak: newLongestStreak,
       lastActiveDate: today,
+      lastFedAt: now,
+      hungerNotifiedStage: null,
       ...(freezeConsumed ? { streakFreezes: user.streakFreezes - 1 } : {}),
     }).where(eq(usersTable.id, userId));
 
@@ -684,6 +692,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       newStreak,
       oldStreak: user.streakDays,
       freezeConsumed,
+      heroRevived,
     };
   });
   // ─────────────────────────────────────────────────────────────────────────────
@@ -706,12 +715,13 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       newLevel: lvl.level,
       leveledUp: false,
       newBadges: [],
+      heroRevived: false,
     });
     return;
   }
 
   const { task, boostedBase, pointsToAdd, bonusAwarded, focusBonusAwarded, streakBonus, multiplierLabel, multiplierValue,
-    newTotalPoints, newLevel, leveledUp, newStreak, oldStreak, freezeConsumed } = outcome;
+    newTotalPoints, newLevel, leveledUp, newStreak, oldStreak, freezeConsumed, heroRevived } = outcome;
 
   // ─── Post-transaction side effects ───────────────────────────────────────────
   // These run outside the transaction.  Any failure here leaves the user with
@@ -885,6 +895,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     surpriseReward: surpriseReward ?? null,
     focusBonusAwarded,
     focusBonusPoints: focusBonusAwarded ? FOCUS_BONUS_POINTS : 0,
+    heroRevived,
   });
 });
 
