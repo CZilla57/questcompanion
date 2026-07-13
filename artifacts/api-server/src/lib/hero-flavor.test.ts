@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { VIGNETTES, currentVignette } from "./hero-flavor";
+import { VIGNETTES, currentVignette, type HeroClass } from "./hero-flavor";
 import type { HungerStage } from "./hero-care";
 
 const STAGES: HungerStage[] = ["well_fed", "peckish", "hungry", "starving", "fainted"];
-const CLASSES = ["fighter", "mage", "ranger", "healer"];
+const CLASSES: HeroClass[] = ["fighter", "mage", "ranger", "healer"];
 
 describe("VIGNETTES catalog", () => {
   it("has unique ids", () => {

@@ -15,8 +15,12 @@ describe("stageSegments", () => {
 });
 
 describe("stageLabel", () => {
-  it("has a human label for every stage", () => {
-    for (const s of STAGES) expect(stageLabel(s).length).toBeGreaterThan(0);
+  it("returns the exact label for every stage", () => {
+    expect(stageLabel("well_fed")).toBe("Well Fed");
+    expect(stageLabel("peckish")).toBe("Peckish");
+    expect(stageLabel("hungry")).toBe("Hungry");
+    expect(stageLabel("starving")).toBe("Starving");
+    expect(stageLabel("fainted")).toBe("Fainted");
   });
 });
 
