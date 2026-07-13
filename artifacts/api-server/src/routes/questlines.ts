@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
 import { eq, and, desc, inArray } from "drizzle-orm";
-import { db, questlinesTable, tasksTable, taskStepsTable, type Questline } from "@workspace/db";
-import { computeProgress, isReadyToClaim } from "../lib/questlines";
+import { db, questlinesTable, tasksTable, taskStepsTable, usersTable, activityTable, type Questline } from "@workspace/db";
+import { computeProgress, isReadyToClaim, computeRewardXp } from "../lib/questlines";
+import { getLevelInfo } from "../lib/gamification";
 import { formatTask } from "./tasks";
 
 const router: IRouter = Router();
@@ -159,6 +160,83 @@ router.delete("/questlines/:id", async (req, res): Promise<void> => {
   if (!row) { res.status(404).json({ error: "Questline not found" }); return; }
 
   res.sendStatus(204);
+});
+
+// Claim the one-time XP reward for a fully-completed questline.
+router.post("/questlines/:id/claim", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+  const id = parseId(req.params.id);
+  if (id == null) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  type Outcome =
+    | { status: "not_found" }
+    | { status: "not_ready" }
+    | { status: "ok"; row: Questline; progress: { total: number; done: number }; xp: number; totalPoints: number; level: number; levelName: string; leveledUp: boolean };
+
+  const outcome = await db.transaction(async (tx): Promise<Outcome> => {
+    // Lock the user row so concurrent claims can't double-award or read stale totals.
+    const [user] = await tx.select().from(usersTable).where(eq(usersTable.id, userId)).for("update");
+    if (!user) return { status: "not_found" };
+
+    const [row] = await tx.select().from(questlinesTable)
+      .where(and(eq(questlinesTable.id, id), eq(questlinesTable.userId, userId)))
+      .for("update");
+    if (!row) return { status: "not_found" };
+
+    const members = await tx.select({ completed: tasksTable.completed }).from(tasksTable)
+      .where(and(eq(tasksTable.questlineId, id), eq(tasksTable.userId, userId)));
+    const progress = computeProgress(members);
+
+    if (!isReadyToClaim(row, progress)) return { status: "not_ready" };
+
+    const xp = computeRewardXp(progress.total);
+    const newTotal = user.totalPoints + xp;
+    const beforeLevel = getLevelInfo(user.totalPoints).level;
+    const afterLevel = getLevelInfo(newTotal);
+
+    await tx.update(usersTable).set({
+      totalPoints: newTotal,
+      weeklyPoints: user.weeklyPoints + xp,
+      currentLevel: afterLevel.level,
+    }).where(eq(usersTable.id, userId));
+
+    const [updated] = await tx.update(questlinesTable).set({
+      status: "completed",
+      completedAt: new Date(),
+      rewardXpAwarded: xp,
+    }).where(eq(questlinesTable.id, id)).returning();
+
+    await tx.insert(activityTable).values({
+      userId,
+      type: "questline_complete",
+      description: `Completed questline · ${row.title}`,
+      points: xp,
+    });
+
+    return {
+      status: "ok",
+      row: updated,
+      progress,
+      xp,
+      totalPoints: newTotal,
+      level: afterLevel.level,
+      levelName: afterLevel.name,
+      leveledUp: afterLevel.level > beforeLevel,
+    };
+  });
+
+  if (outcome.status === "not_found") { res.status(404).json({ error: "Questline not found" }); return; }
+  if (outcome.status === "not_ready") { res.status(409).json({ error: "Questline is not ready to claim" }); return; }
+
+  res.status(200).json({
+    questline: formatQuestline(outcome.row, outcome.progress),
+    xpAwarded: outcome.xp,
+    totalPoints: outcome.totalPoints,
+    currentLevel: outcome.level,
+    levelName: outcome.levelName,
+    leveledUp: outcome.leveledUp,
+  });
 });
 
 export default router;
