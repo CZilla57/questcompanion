@@ -54,6 +54,7 @@ import type {
   HandleBrowserLoginCallbackParams,
   HealthStatus,
   HeatmapResponse,
+  HeroStatus,
   InsightsResponse,
   LeaderboardEntry,
   ListFocusSessionsParams,
@@ -864,6 +865,83 @@ export function useGetMyStats<TData = Awaited<ReturnType<typeof getMyStats>>, TE
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetMyStatsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetHeroStatusUrl = () => {
+
+
+
+
+  return `/api/users/me/hero-status`
+}
+
+/**
+ * @summary Hero hunger stage, mood, and current ambient activity
+ */
+export const getHeroStatus = async ( options?: RequestInit): Promise<HeroStatus> => {
+
+  return customFetch<HeroStatus>(getGetHeroStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetHeroStatusQueryKey = () => {
+    return [
+    `/api/users/me/hero-status`
+    ] as const;
+    }
+
+
+export const getGetHeroStatusQueryOptions = <TData = Awaited<ReturnType<typeof getHeroStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHeroStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetHeroStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getHeroStatus>>> = ({ signal }) => getHeroStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getHeroStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetHeroStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getHeroStatus>>>
+export type GetHeroStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Hero hunger stage, mood, and current ambient activity
+ */
+
+export function useGetHeroStatus<TData = Awaited<ReturnType<typeof getHeroStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHeroStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetHeroStatusQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

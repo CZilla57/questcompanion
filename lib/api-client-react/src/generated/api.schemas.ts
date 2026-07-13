@@ -131,6 +131,34 @@ export interface UserStats {
   recentActivity: ActivityItem[];
 }
 
+export type HeroStatusStage = typeof HeroStatusStage[keyof typeof HeroStatusStage];
+
+
+export const HeroStatusStage = {
+  well_fed: 'well_fed',
+  peckish: 'peckish',
+  hungry: 'hungry',
+  starving: 'starving',
+  fainted: 'fainted',
+} as const;
+
+/**
+ * Current ambient "hero life" vignette (rotates every ~3h)
+ */
+export type HeroStatusActivity = {
+  id: string;
+  text: string;
+};
+
+export interface HeroStatus {
+  stage: HeroStatusStage;
+  /** Short mood line matching the stage */
+  mood: string;
+  lastFedAt: string;
+  /** Current ambient "hero life" vignette (rotates every ~3h) */
+  activity: HeroStatusActivity;
+}
+
 export interface StreakFreezeResult {
   streakFreezes: number;
   totalPoints: number;

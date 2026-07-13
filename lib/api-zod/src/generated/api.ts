@@ -174,6 +174,20 @@ export const GetMyStatsResponse = zod.object({
 
 
 /**
+ * @summary Hero hunger stage, mood, and current ambient activity
+ */
+export const GetHeroStatusResponse = zod.object({
+  "stage": zod.enum(['well_fed', 'peckish', 'hungry', 'starving', 'fainted']),
+  "mood": zod.string().describe('Short mood line matching the stage'),
+  "lastFedAt": zod.coerce.date(),
+  "activity": zod.object({
+  "id": zod.string(),
+  "text": zod.string()
+}).describe('Current ambient \"hero life\" vignette (rotates every ~3h)')
+})
+
+
+/**
  * @summary Spend 50 XP to buy a streak freeze (max 1 held at a time)
  */
 export const BuyStreakFreezeResponse = zod.object({
