@@ -1,12 +1,14 @@
 import { Router, type IRouter } from "express";
 import { eq, or, and, desc, inArray, gte } from "drizzle-orm";
-import { db, usersTable, partnershipsTable, activityTable, tasksTable, allyNudgesTable } from "@workspace/db";
+import { db, usersTable, partnershipsTable, activityTable, tasksTable, allyNudgesTable, pushSubscriptionsTable } from "@workspace/db";
 import { getLevelInfo } from "../lib/gamification";
 import { resolvePartnerRequest } from "../lib/partnerships";
 import { buildHeroLook } from "./avatar";
 import { getEarnedBadges } from "./badges";
 import { MILESTONE_TYPES } from "../lib/ally-milestones";
 import { resolveTimeZone, localDateKey } from "../lib/date-buckets";
+import { sendPushNotification } from "../lib/push-notifications";
+import { isValidKind, isValidReaction, reactionLabel, canSendNudge, type NudgeKind } from "../lib/nudges";
 
 const router: IRouter = Router();
 
@@ -301,6 +303,76 @@ router.get("/accountability/partners/:id/detail", async (req, res): Promise<void
       createdAt: a.createdAt.toISOString(),
     })),
     ...flags,
+  });
+});
+
+router.post("/accountability/partners/:id/nudge", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const recipientId = parseInt(raw, 10);
+  if (isNaN(recipientId)) { res.status(400).json({ error: "Invalid id" }); return; }
+  if (recipientId === userId) { res.status(400).json({ error: "Cannot nudge yourself" }); return; }
+
+  const { kind, reaction, contextType } = req.body as {
+    kind?: string; reaction?: string; contextType?: string;
+  };
+  if (!kind || !isValidKind(kind)) { res.status(400).json({ error: "Invalid nudge kind" }); return; }
+  if (!reaction || !isValidReaction(kind, reaction)) {
+    res.status(400).json({ error: "Invalid reaction" }); return;
+  }
+
+  const partnership = await requireAcceptedPartnership(userId, recipientId);
+  if (!partnership) { res.status(403).json({ error: "Not an active ally" }); return; }
+
+  // Rate limit: one nudge of this kind per recipient per local day.
+  const timeZone = resolveTimeZone(typeof req.query.tz === "string" ? req.query.tz : undefined);
+  const dayStart = new Date(localDateKey(new Date(), timeZone) + "T00:00:00Z");
+  const priorToday = await db.select().from(allyNudgesTable).where(
+    and(
+      eq(allyNudgesTable.senderId, userId),
+      eq(allyNudgesTable.recipientId, recipientId),
+      eq(allyNudgesTable.kind, kind),
+      gte(allyNudgesTable.createdAt, dayStart),
+    ),
+  );
+  if (!canSendNudge(priorToday.length)) {
+    res.status(429).json({
+      error: kind === "poke" ? "You've already poked this ally today." : "You've already cheered this ally today.",
+    });
+    return;
+  }
+
+  const [nudge] = await db.insert(allyNudgesTable).values({
+    senderId: userId,
+    recipientId,
+    kind,
+    reaction,
+    contextType: typeof contextType === "string" ? contextType : null,
+  }).returning();
+
+  // Best-effort push to the recipient; never blocks persistence.
+  const [sender] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  const label = reactionLabel(kind as NudgeKind, reaction) ?? "";
+  const title = `${sender?.username ?? "An ally"} ${kind === "poke" ? "poked" : "cheered"} you`;
+  const subs = await db.select().from(pushSubscriptionsTable)
+    .where(eq(pushSubscriptionsTable.userId, recipientId));
+  for (const sub of subs) {
+    const ok = await sendPushNotification(
+      { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
+      { title, body: label, tag: `nudge-${kind}` },
+    );
+    if (!ok) {
+      await db.delete(pushSubscriptionsTable).where(eq(pushSubscriptionsTable.endpoint, sub.endpoint));
+    }
+  }
+
+  res.status(201).json({
+    id: nudge.id,
+    kind: nudge.kind,
+    reaction: nudge.reaction,
+    createdAt: nudge.createdAt.toISOString(),
   });
 });
 
