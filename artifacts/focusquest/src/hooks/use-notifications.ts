@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { resolveDeviceSubscribed } from "@/lib/push";
 
 const SW_PATH = "/sw.js";
 const SUBSCRIBE_URL = "/api/notifications/subscribe";
@@ -31,11 +32,41 @@ export function useNotifications() {
     }
     setState(Notification.permission as NotificationState);
 
-    // Check server subscription status
-    fetch(SUBSCRIBED_URL)
-      .then((r) => r.json())
-      .then((data: { subscribed: boolean }) => setIsSubscribed(data.subscribed))
-      .catch(() => {});
+    let cancelled = false;
+    void (async () => {
+      // Authoritative for THIS browser: does a local push subscription exist?
+      // register() is idempotent and returns the existing registration, so this
+      // is safe alongside the on-load registration in main.tsx.
+      let hasLocalSubscription = false;
+      try {
+        const reg = await navigator.serviceWorker.register(SW_PATH, { scope: "/" });
+        hasLocalSubscription = (await reg.pushManager.getSubscription()) != null;
+      } catch {
+        hasLocalSubscription = false;
+      }
+
+      // Per-user flag from the server — may reflect OTHER devices (e.g. the
+      // user's phone), so it must NOT drive this browser's bell. Kept for
+      // context/future sync; resolveDeviceSubscribed deliberately ignores it.
+      let serverHasAnySubscription = false;
+      try {
+        const res = await fetch(SUBSCRIBED_URL);
+        const data = (await res.json()) as { subscribed: boolean };
+        serverHasAnySubscription = data.subscribed;
+      } catch {
+        // ignore — treat as no server subscription
+      }
+
+      if (!cancelled) {
+        setIsSubscribed(
+          resolveDeviceSubscribed({ hasLocalSubscription, serverHasAnySubscription }),
+        );
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [supported]);
 
   const subscribe = useCallback(async (): Promise<boolean> => {
