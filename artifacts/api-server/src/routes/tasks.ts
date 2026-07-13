@@ -414,7 +414,12 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
   // Incomplete task: allow full edit.
   if (title != null) updates.title = title;
   if (description != null) updates.description = description;
-  if (dueDate != null) updates.dueDate = dueDate;
+  if (dueDate != null) {
+    updates.dueDate = dueDate;
+    // Giving a quest a concrete date takes it out of the anchored (no-deadline)
+    // state, unless this same request is explicitly re-anchoring it below.
+    if (isAnchored !== true) updates.isAnchored = false;
+  }
   if (dueTime !== undefined) {
     if (dueTime !== null && !isValidDueTime(dueTime)) {
       res.status(400).json({ error: "dueTime must be HH:mm (24-hour)" });
