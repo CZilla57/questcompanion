@@ -846,6 +846,43 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
 
+  /questlines/suggest-quests:
+    post:
+      operationId: suggestQuestlineQuests
+      tags: [questlines]
+      summary: Suggest quest titles for a goal (AI, creates nothing)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SuggestQuestlineQuestsInput"
+      responses:
+        "200":
+          description: Suggested quest titles
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestedQuestlineQuests"
+        "429":
+          description: Cooldown — too many suggestion requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "502":
+          description: Model or parse failure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "503":
+          description: AI drafting not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
   /focus-sessions/presets:
     get:
       operationId: getFocusPresets
@@ -1940,6 +1977,13 @@ components:
           type: ["string", "null"]
         color:
           type: ["string", "null"]
+        questTitles:
+          type: array
+          maxItems: 12
+          items:
+            type: string
+            maxLength: 120
+          description: Optional quest titles to create (anchored) with the questline.
 
     QuestlineUpdate:
       type: object
@@ -1981,6 +2025,24 @@ components:
           type: string
         leveledUp:
           type: boolean
+
+    SuggestQuestlineQuestsInput:
+      type: object
+      required: [goal]
+      properties:
+        goal:
+          type: string
+          minLength: 1
+          maxLength: 200
+
+    SuggestedQuestlineQuests:
+      type: object
+      required: [quests]
+      properties:
+        quests:
+          type: array
+          items:
+            type: string
 
     SurpriseReward:
       type: object

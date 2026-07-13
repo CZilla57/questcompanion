@@ -82,6 +82,8 @@ import type {
   StepToggleInput,
   StreakFreezeResult,
   SuccessEnvelope,
+  SuggestQuestlineQuestsInput,
+  SuggestedQuestlineQuests,
   Task,
   TaskCompletionResult,
   TaskInput,
@@ -2946,6 +2948,77 @@ export const useClaimQuestline = <TError = ErrorType<ErrorEnvelope>,
         TContext
       > => {
       return useMutation(getClaimQuestlineMutationOptions(options));
+    }
+
+export const getSuggestQuestlineQuestsUrl = () => {
+
+
+
+
+  return `/api/questlines/suggest-quests`
+}
+
+/**
+ * @summary Suggest quest titles for a goal (AI, creates nothing)
+ */
+export const suggestQuestlineQuests = async (suggestQuestlineQuestsInput: SuggestQuestlineQuestsInput, options?: RequestInit): Promise<SuggestedQuestlineQuests> => {
+
+  return customFetch<SuggestedQuestlineQuests>(getSuggestQuestlineQuestsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      suggestQuestlineQuestsInput,)
+  }
+);}
+
+
+
+
+export const getSuggestQuestlineQuestsMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof suggestQuestlineQuests>>, TError,{data: BodyType<SuggestQuestlineQuestsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof suggestQuestlineQuests>>, TError,{data: BodyType<SuggestQuestlineQuestsInput>}, TContext> => {
+
+const mutationKey = ['suggestQuestlineQuests'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof suggestQuestlineQuests>>, {data: BodyType<SuggestQuestlineQuestsInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  suggestQuestlineQuests(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SuggestQuestlineQuestsMutationResult = NonNullable<Awaited<ReturnType<typeof suggestQuestlineQuests>>>
+    export type SuggestQuestlineQuestsMutationBody = BodyType<SuggestQuestlineQuestsInput>
+    export type SuggestQuestlineQuestsMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Suggest quest titles for a goal (AI, creates nothing)
+ */
+export const useSuggestQuestlineQuests = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof suggestQuestlineQuests>>, TError,{data: BodyType<SuggestQuestlineQuestsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof suggestQuestlineQuests>>,
+        TError,
+        {data: BodyType<SuggestQuestlineQuestsInput>},
+        TContext
+      > => {
+      return useMutation(getSuggestQuestlineQuestsMutationOptions(options));
     }
 
 export const getGetFocusPresetsUrl = () => {
