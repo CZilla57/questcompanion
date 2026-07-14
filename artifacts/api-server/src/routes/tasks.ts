@@ -385,7 +385,10 @@ router.post(
   // The global parser is express.json() only, which ignores audio bodies —
   // this scoped raw parser fills req.body with a Buffer for the two container
   // types MediaRecorder actually produces (type matching ignores codec params).
-  // Oversized bodies get an automatic 413 from the limit.
+  // Oversized bodies get an automatic 413 from the limit — with Express's
+  // default error body, not our ErrorEnvelope (no shaping middleware exists).
+  // Acceptable: the 60s cap keeps real clips ~1MB, and the client maps any
+  // unexpected status to a generic toast.
   express.raw({ type: ["audio/webm", "audio/mp4"], limit: "10mb" }),
   async (req, res): Promise<void> => {
     if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }

@@ -39,7 +39,7 @@ Use Groq's Whisper transcription endpoint (`whisper-large-v3-turbo`), not a new 
   - `503` if `GROQ_API_KEY` is unset (`isAiConfigured()` returns false)
   - `429` if the cooldown hasn't elapsed
   - `400` if the body is empty or the `Content-Type` isn't one of the accepted audio types (i.e. `req.body` isn't a non-empty `Buffer` — `express.raw` leaves the body undefined for unmatched types); checked before touching Groq
-  - `413` on oversize body (automatic from the `express.raw` limit)
+  - `413` on oversize body — automatic from the `express.raw` limit, but carrying Express's default error body rather than `ErrorEnvelope` (the server has no error-shaping middleware). Acceptable because the 60s cap keeps real clips ~1MB (the limit is unreachable from the app) and the frontend maps unknown statuses to its generic toast.
   - `502` on `AiClientError` (network failure, non-OK Groq response, malformed response body) — same mapping the parse and breakdown routes use
 
 ## Frontend
