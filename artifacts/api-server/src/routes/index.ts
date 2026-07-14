@@ -3,6 +3,7 @@ import healthRouter from "./health";
 import authRouter from "./auth";
 import usersRouter from "./users";
 import tasksRouter from "./tasks";
+import momentumRouter from "./momentum";
 import badgesRouter from "./badges";
 import accountabilityRouter from "./accountability";
 import leaderboardRouter from "./leaderboard";
@@ -24,6 +25,8 @@ router.use(healthRouter);
 router.use(cronRouter);
 router.use(authRouter);
 router.use(usersRouter);
+// /tasks/momentum must beat tasksRouter's /tasks/:id — order matters.
+router.use(momentumRouter);
 router.use(tasksRouter);
 router.use(recurringTasksRouter);
 router.use(badgesRouter);

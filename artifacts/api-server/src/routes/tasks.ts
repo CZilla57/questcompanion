@@ -3,7 +3,7 @@ import { eq, and, or, desc, count, inArray } from "drizzle-orm";
 import { applyMultiplier } from "../lib/xp-multiplier";
 import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable, taskStepsTable, questlinesTable } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, DAILY_BONUS_POINTS } from "../lib/gamification";
-import { assignPoints, CATEGORY_LABELS, VALID_CATEGORIES, MORNING_FOCUS_CATEGORIES, EVENING_WINDDOWN_CATEGORIES } from "../lib/auto-points";
+import { assignPoints, CATEGORY_LABELS, VALID_CATEGORIES } from "../lib/auto-points";
 import { advanceHabitStreak, reverseHabitStreak, type HabitStreakPreviousState } from "../lib/habit-streaks";
 import { awardStreakGear, getStreakGearRarity, type GearRewardInfo } from "../lib/gear-rewards";
 import { rollSurpriseReward, type SurpriseRewardResult } from "../lib/surprise-rewards";
@@ -90,133 +90,6 @@ async function resolveQuestlineId(
   if (!ql) return { ok: false, error: "Questline not found" };
   return { ok: true, value: questlineId };
 }
-
-router.get("/tasks/recommend", async (req, res): Promise<void> => {
-  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
-  const userId = req.gameUserId;
-
-  const excludeParam = String(req.query.exclude ?? "");
-  const excludeIds = excludeParam
-    ? excludeParam.split(",").map(Number).filter(n => !isNaN(n) && n > 0)
-    : [];
-
-  // Fetch all incomplete tasks for this user
-  const allTasks = await db
-    .select()
-    .from(tasksTable)
-    .where(and(eq(tasksTable.userId, userId), eq(tasksTable.completed, false)));
-
-  if (!allTasks.length) {
-    res.json({ task: null, reason: "No pending quests found." });
-    return;
-  }
-
-  // Fetch today's completed tasks to compute category balance
-  const today = new Date().toISOString().split("T")[0]!;
-  const todayCompleted = await db
-    .select()
-    .from(tasksTable)
-    .where(and(eq(tasksTable.userId, userId), eq(tasksTable.completed, true)));
-
-  const completedTodayCategories = new Set<string>();
-  for (const t of todayCompleted) {
-    if (t.completedAt && t.completedAt.toISOString().split("T")[0] === today) {
-      completedTodayCategories.add(assignPoints(t.title, t.priority).category);
-    }
-  }
-
-  const utcHour = new Date().getUTCHours();
-  const isMorning   = utcHour >= 6  && utcHour < 11;
-  const isAfternoon = utcHour >= 11 && utcHour < 17;
-  const isEvening   = utcHour >= 17 && utcHour < 21;
-
-  const candidates = allTasks.filter(t => !excludeIds.includes(t.id));
-  if (!candidates.length) {
-    res.json({ task: null, reason: "You've seen all pending quests." });
-    return;
-  }
-
-  type ScoredTask = { task: typeof tasksTable.$inferSelect; score: number; reasons: string[] };
-  const scored: ScoredTask[] = candidates.map(task => {
-    const ap = assignPoints(task.title, task.priority);
-    const category = ap.category;
-    let score = 0;
-    const reasons: string[] = [];
-
-    // Priority bonus
-    if (task.priority === "high")        { score += 15; reasons.push("high priority"); }
-    else if (task.priority === "medium") { score += 5; }
-
-    // Time-of-day boost
-    if (isMorning) {
-      if (MORNING_FOCUS_CATEGORIES.has(category)) {
-        score += 20;
-        reasons.push("ideal for morning focus");
-      }
-    } else if (isEvening) {
-      if (EVENING_WINDDOWN_CATEGORIES.has(category)) {
-        score += 20;
-        reasons.push("perfect for your evening wind-down");
-      }
-      if (task.estimatedMinutes && task.estimatedMinutes <= 30) {
-        score += 10;
-        reasons.push("quick win");
-      }
-    }
-
-    // Days in queue (cap at 7)
-    const daysOld = Math.min(7, Math.floor((Date.now() - task.createdAt.getTime()) / 86_400_000));
-    if (daysOld >= 2) {
-      score += daysOld * 3;
-      reasons.push(`waiting ${daysOld} day${daysOld === 1 ? "" : "s"}`);
-    }
-
-    // Category balance: boost uncompleted categories
-    if (!completedTodayCategories.has(category)) {
-      score += 15;
-      reasons.push(`adds ${ap.categoryLabel} variety`);
-    }
-
-    // Overdue bonus (anchored tasks have no deadline and are never overdue).
-    if (task.dueDate && task.dueDate < today) {
-      score += 20;
-      reasons.push("overdue");
-    }
-
-    // Short task boost when no estimate context
-    if (task.estimatedMinutes && task.estimatedMinutes <= 20 && !isEvening) {
-      score += 5;
-    }
-
-    return { task, score, reasons };
-  });
-
-  scored.sort((a, b) => b.score - a.score);
-  const best = scored[0]!;
-  const ap = assignPoints(best.task.title, best.task.priority);
-
-  let reason: string;
-  if (best.reasons.includes("overdue")) {
-    reason = "This quest is overdue — a great one to tackle now.";
-  } else if (best.reasons.includes("ideal for morning focus")) {
-    reason = `A great ${ap.categoryLabel.toLowerCase()} quest to kick off your morning.`;
-  } else if (best.reasons.some(r => r.includes("evening"))) {
-    reason = `Good choice for your evening — light and achievable.`;
-  } else if (best.reasons.includes("high priority")) {
-    reason = "High priority — this one moves the needle most.";
-  } else if (best.reasons.some(r => r.includes("waiting"))) {
-    const daysReason = best.reasons.find(r => r.includes("waiting")) ?? "waiting a few days";
-    reason = `This has been ${daysReason} — a great time to knock it out.`;
-  } else if (best.reasons.some(r => r.includes("variety"))) {
-    reason = `Branch out into ${ap.categoryLabel} — you haven't touched it today.`;
-  } else {
-    reason = isAfternoon
-      ? "Good momentum builder for the afternoon."
-      : "A solid next step to keep things moving.";
-  }
-
-  res.json({ task: formatTask(best.task), reason, category: ap.category, categoryLabel: ap.categoryLabel });
-});
 
 router.get("/tasks/suggest-points", (req, res): void => {
   const title = String(req.query.title ?? "");
