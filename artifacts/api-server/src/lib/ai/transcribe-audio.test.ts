@@ -55,7 +55,7 @@ describe("transcribeAudio", () => {
     const fetchMock = vi.fn(async () => groqTranscription("ok"));
     vi.stubGlobal("fetch", fetchMock);
     await transcribeAudio(AUDIO, "audio/mp4;codecs=mp4a.40.2");
-    const [, init] = fetchMock.mock.calls[0]! as [string, RequestInit];
+    const [, init] = fetchMock.mock.calls[0]! as unknown as [string, RequestInit];
     const form = init.body as FormData;
     const file = form.get("file") as File;
     expect(file.name).toBe("clip.mp4");
@@ -67,7 +67,7 @@ describe("transcribeAudio", () => {
     const fetchMock = vi.fn(async () => groqTranscription("ok"));
     vi.stubGlobal("fetch", fetchMock);
     await transcribeAudio(AUDIO, "audio/webm;codecs=opus");
-    const [, init] = fetchMock.mock.calls[0]! as [string, RequestInit];
+    const [, init] = fetchMock.mock.calls[0]! as unknown as [string, RequestInit];
     expect(((init.body as FormData).get("file") as File).name).toBe("clip.webm");
   });
 
@@ -76,7 +76,7 @@ describe("transcribeAudio", () => {
     vi.stubGlobal("fetch", fetchMock);
     vi.stubEnv("GROQ_API_KEY", "secret-key");
     await transcribeAudio(AUDIO, "audio/webm");
-    const [url, init] = fetchMock.mock.calls[0]! as [string, RequestInit];
+    const [url, init] = fetchMock.mock.calls[0]! as unknown as [string, RequestInit];
     expect(url).not.toContain("secret-key");
     expect((init.headers as Record<string, string>).authorization).toBe("Bearer secret-key");
   });
