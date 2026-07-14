@@ -124,15 +124,23 @@ export default function Tasks() {
   const [skippedIds, setSkippedIds] = useState<number[]>([]);
   const [altIndex, setAltIndex] = useState(0);
   const [momentumMinutes, setMomentumMinutes] = useState<number | null>(() => {
-    const raw = sessionStorage.getItem("momentumMinutes");
-    if (!raw) return null;
-    const [day, val] = raw.split(":");
-    return day === todayStrKey ? Number(val) || null : null; // cleared daily
+    try {
+      const raw = sessionStorage.getItem("momentumMinutes");
+      if (!raw) return null;
+      const [day, val] = raw.split(":");
+      return day === todayStrKey ? Number(val) || null : null; // cleared daily
+    } catch {
+      return null; // storage unavailable — chips just don't persist
+    }
   });
   const setMinutes = (m: number | null) => {
     setMomentumMinutes(m);
-    if (m) sessionStorage.setItem("momentumMinutes", `${todayStrKey}:${m}`);
-    else sessionStorage.removeItem("momentumMinutes");
+    try {
+      if (m) sessionStorage.setItem("momentumMinutes", `${todayStrKey}:${m}`);
+      else sessionStorage.removeItem("momentumMinutes");
+    } catch {
+      // storage unavailable — in-memory state still works for this visit
+    }
   };
   const { data: momentum, isFetching: momentumLoading } = useGetTasksMomentum({
     tz,
@@ -147,7 +155,10 @@ export default function Tasks() {
     if (visibleSuggestions.length > 1) {
       setAltIndex((i) => i + 1);
     } else {
-      setSkippedIds((ids) => [...ids, current.task.id]);
+      // Exclude EVERY suggestion the user walked past in this batch — a
+      // rejected suggestion must not resurface on the refetch.
+      const batchIds = (momentum?.suggestions ?? []).map((s) => s.task.id);
+      setSkippedIds((ids) => [...ids, ...batchIds.filter((id) => !ids.includes(id))]);
       setAltIndex(0);
     }
   };

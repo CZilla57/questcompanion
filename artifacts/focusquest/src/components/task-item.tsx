@@ -6,7 +6,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { getGetTasksQueryKey, getGetMyStatsQueryKey, getGetQuestlinesQueryKey, getGetQuestlineQueryKey, getGetHeroStatusQueryKey } from "@workspace/api-client-react";
+import { getGetTasksQueryKey, getGetMyStatsQueryKey, getGetQuestlinesQueryKey, getGetQuestlineQueryKey, getGetHeroStatusQueryKey, getGetTasksMomentumQueryKey } from "@workspace/api-client-react";
 import { browserTimeZone } from "@/lib/timezone";
 import { formatTime12h } from "@/lib/format-time";
 import { dispatchQuestCompleted } from "./dopamine-overlay";
@@ -82,6 +82,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
     focusMutation.mutate({ id: task.id, data: { pin: !isPinned } }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetTasksMomentumQueryKey() });
         toast({
           title: isPinned ? "Quest unpinned" : "Quest pinned to Today's Focus",
           className: isPinned ? "" : "border-primary",

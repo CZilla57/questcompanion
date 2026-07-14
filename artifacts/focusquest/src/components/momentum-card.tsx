@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { format } from "date-fns";
 import { Clock, LifeBuoy, Pin, RefreshCw, Sparkles, Check, Play, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -34,7 +35,7 @@ export function MomentumCard({ suggestion, minutes, onMinutes, onSkip, skipping 
   // A new suggestion resets any in-flight micro-start.
   useEffect(() => { dispatch({ type: "reset" }); }, [task.id]);
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = format(new Date(), "yyyy-MM-dd");
   const isPinned = task.isDailyFocus && task.focusDate === todayStr;
 
   const handlePin = () => {
