@@ -71,6 +71,12 @@ describe("momentumBoardState", () => {
     expect(momentumBoardState([done], [], TODAY)).toEqual({ kind: "all-done", suggestion: null });
   });
 
+  it("never offers a completed quest as the suggestion (stale cache guard)", () => {
+    const done = task({ isDailyFocus: true, focusDate: TODAY, completed: true });
+    const s = momentumBoardState([done], [sugg(done)], TODAY);
+    expect(s).toEqual({ kind: "all-done", suggestion: null });
+  });
+
   it("suggesting with pins but exhausted suggestions keeps the pinned list", () => {
     const open = task({ isDailyFocus: true, focusDate: TODAY });
     const s = momentumBoardState([open], [], TODAY);

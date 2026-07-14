@@ -165,8 +165,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { data: brainState } = useGetBrainState({ tz: browserTimeZone() });
 
   return (
-    <EmergencyModeProvider renderRescue={(task, close) => (
-      <RescueSheet task={task} open onOpenChange={(o) => { if (!o) close(); }} />
+    <EmergencyModeProvider renderRescue={(task, close, onRejected) => (
+      <RescueSheet task={task} open onOpenChange={(o) => { if (!o) close(); }} onRejected={onRejected} />
     )}>
     <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row overflow-hidden font-sans dark">
 

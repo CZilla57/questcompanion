@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { Sparkles, CalendarClock, Zap, Plus, RefreshCw, Mic, Square } from "lucide-react";
 import { parseQuickAdd, type ParsedQuickAdd } from "@workspace/quick-add";
-import { useCreateTask, useParseQuickAdd, getGetTasksQueryKey, getGetQuestlinesQueryKey, getGetQuestlineQueryKey, customFetch, type TranscribeResult } from "@workspace/api-client-react";
+import { useCreateTask, useParseQuickAdd, getGetTasksQueryKey, getGetTasksMomentumQueryKey, getGetQuestlinesQueryKey, getGetQuestlineQueryKey, customFetch, type TranscribeResult } from "@workspace/api-client-react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -80,6 +80,7 @@ export function QuickAddBar({ selectedDate, questlineId, autoFocus = true }: { s
         setText("");
         setAiFields(null);
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetTasksMomentumQueryKey() });
         if (questlineId != null) {
           queryClient.invalidateQueries({ queryKey: getGetQuestlinesQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetQuestlineQueryKey(questlineId) });

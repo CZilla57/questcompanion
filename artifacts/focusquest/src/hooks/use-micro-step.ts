@@ -33,7 +33,7 @@ export function useMicroStep(task: Task | null) {
     queryClient.invalidateQueries({ queryKey: getGetTasksMomentumQueryKey() });
   };
 
-  const complete = () => {
+  const complete = (onDone?: () => void) => {
     if (!task) return;
     if (firstOpenStep) {
       patchStep.mutate(
@@ -48,6 +48,7 @@ export function useMicroStep(task: Task | null) {
             invalidate();
             const t = initiationToast(res.initiationXp);
             if (t) toast({ ...t, className: "border-primary" });
+            onDone?.();
           },
           onError: (err: any) => toast({ title: apiErrorMessage(err, "Couldn't check that off"), variant: "destructive" }),
         },
@@ -67,6 +68,7 @@ export function useMicroStep(task: Task | null) {
             }
             queryClient.invalidateQueries({ queryKey: getGetHeroStatusQueryKey() });
             dispatchQuestCompleted();
+            onDone?.();
           },
           onError: (err: any) => toast({ title: apiErrorMessage(err, "Couldn't complete that"), variant: "destructive" }),
         },

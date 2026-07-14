@@ -100,6 +100,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
       uncompleteMutation.mutate({ id: task.id }, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetTasksMomentumQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetMyStatsQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetQuestlinesQueryKey() });
           if (task.questlineId != null) {
@@ -111,6 +112,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
       completeMutation.mutate({ id: task.id }, {
         onSuccess: (res) => {
           queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetTasksMomentumQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetMyStatsQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetQuestlinesQueryKey() });
           if (task.questlineId != null) {
@@ -198,6 +200,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
       onSuccess: () => {
         toast({ title: "Quest abandoned", variant: "destructive" });
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetTasksMomentumQueryKey() });
       }
     });
   };
@@ -213,6 +216,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
         toast({ title: `⏱ Time logged: ${formatMinutes(mins)}`, className: "border-primary" });
         setLoggingTime(false);
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetTasksMomentumQueryKey() });
       }
     });
   };
@@ -223,6 +227,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
       onSuccess: () => {
         setRescheduleOpen(false);
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetTasksMomentumQueryKey() });
         toast({
           title: `Rescheduled to ${format(parseDueDate(dueDate), "MMM d")}`,
           className: "border-primary",
@@ -245,6 +250,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
     }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetTasksMomentumQueryKey() });
         toast({
           title: nextAnchored ? "Quest anchored — no deadline" : "Anchor removed",
           className: nextAnchored ? "border-primary" : "",

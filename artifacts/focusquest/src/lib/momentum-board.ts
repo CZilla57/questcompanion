@@ -14,7 +14,7 @@ export function momentumBoardState(
 ): MomentumBoardState {
   const pinnedToday = tasks.filter((t) => t.isDailyFocus && t.focusDate === todayStr);
   const openPins = pinnedToday.filter((t) => !t.completed);
-  const suggestion = suggestions.find((s) => s.kind === "primary") ?? suggestions[0] ?? null;
+  const suggestion = suggestions.find((s) => s.kind === "primary" && !s.task.completed) ?? suggestions.find((s) => !s.task.completed) ?? null;
 
   if (pinnedToday.length > 0 && openPins.length === 0) {
     // Victory state — the optional extra win must never point at a completed pin.

@@ -28,10 +28,11 @@ const OPTIONS: { blocker: Blocker; label: string; hint: string }[] = [
   { blocker: "wrong_quest", label: "This isn't the right quest right now",  hint: "Show me something else" },
 ];
 
-export function RescueSheet({ task, open, onOpenChange }: {
+export function RescueSheet({ task, open, onOpenChange, onRejected }: {
   task: Task;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onRejected?: (taskId: number) => void;
 }) {
   const tz = browserTimeZone();
   const { toast } = useToast();
@@ -95,6 +96,7 @@ export function RescueSheet({ task, open, onOpenChange }: {
         break;
       case "wrong_quest":
         log("wrong_quest", "reroll");
+        onRejected?.(task.id);
         setView("reroll");
         void fetchAlt();
         break;

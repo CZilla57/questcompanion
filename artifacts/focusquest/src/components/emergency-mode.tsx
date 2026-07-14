@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { Task, useGetTasksMomentum, useCreateBrainCheckin, BrainMode, getGetBrainStateQueryKey } from "@workspace/api-client-react";
+import { Task, useGetTasksMomentum, useCreateBrainCheckin, BrainMode, getGetBrainStateQueryKey, getGetTasksMomentumQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "./ui/button";
 import { X, Check, LifeBuoy } from "lucide-react";
@@ -19,11 +19,12 @@ export const useEmergencyMode = () => useContext(EmergencyModeContext);
 
 function EmergencyOverlay({ onExit, renderRescue }: {
   onExit: () => void;
-  renderRescue?: (task: Task, close: () => void) => React.ReactNode;
+  renderRescue?: (task: Task, close: () => void, onRejected: (taskId: number) => void) => React.ReactNode;
 }) {
   const tz = browserTimeZone();
+  const [excludeIds, setExcludeIds] = useState<number[]>([]);
   // One small thing, sized for a frozen brain.
-  const { data, isLoading } = useGetTasksMomentum({ minutes: 10, tz });
+  const { data, isLoading } = useGetTasksMomentum({ minutes: 10, tz, ...(excludeIds.length ? { exclude: excludeIds.join(",") } : {}) });
   const suggestion = data?.suggestions?.[0] ?? null;
   const task = suggestion?.task ?? null;
 
@@ -40,21 +41,25 @@ function EmergencyOverlay({ onExit, renderRescue }: {
   }, [task, clock.status]);
 
   const handleDidIt = () => {
-    complete();
-    setCelebrating(true);
+    complete(() => setCelebrating(true));
   };
 
   const handleFeelingBetter = () => {
     checkin.mutate(
       // Generated BrainCheckinSource is a literal union — "emergency_exit" is a member.
       { data: { mode: BrainMode.focused, source: "emergency_exit", tz } },
-      { onSettled: () => queryClient.invalidateQueries({ queryKey: getGetBrainStateQueryKey() }) },
+      {
+        onSettled: () => {
+          queryClient.invalidateQueries({ queryKey: getGetBrainStateQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetTasksMomentumQueryKey() });
+        },
+      },
     );
     onExit();
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-background flex flex-col items-center justify-center p-6 text-center">
+    <div className="fixed inset-0 z-40 bg-background flex flex-col items-center justify-center p-6 text-center">
       {/* Always-visible exit — never a trap. */}
       <Button variant="ghost" size="icon" onClick={onExit} aria-label="Exit emergency mode"
         className="absolute top-[calc(1rem+env(safe-area-inset-top))] right-4 text-muted-foreground">
@@ -63,12 +68,6 @@ function EmergencyOverlay({ onExit, renderRescue }: {
 
       {isLoading ? (
         <p className="text-muted-foreground">Finding one small thing…</p>
-      ) : !task ? (
-        <div className="space-y-4 max-w-sm">
-          <p className="text-lg font-semibold">Nothing in the log.</p>
-          <p className="text-sm text-muted-foreground">Add one tiny thing first — then come back here if you want.</p>
-          <Button onClick={onExit}>Back</Button>
-        </div>
       ) : celebrating ? (
         <div className="space-y-5 max-w-sm">
           <p className="text-2xl font-bold text-primary">You started. That's the whole game.</p>
@@ -79,6 +78,12 @@ function EmergencyOverlay({ onExit, renderRescue }: {
             <Button variant="secondary" onClick={handleFeelingBetter}>Feeling better — Focused</Button>
             <Button variant="ghost" onClick={onExit}>Exit</Button>
           </div>
+        </div>
+      ) : !task ? (
+        <div className="space-y-4 max-w-sm">
+          <p className="text-lg font-semibold">Nothing in the log.</p>
+          <p className="text-sm text-muted-foreground">Add one tiny thing first — then come back here if you want.</p>
+          <Button onClick={onExit}>Back</Button>
         </div>
       ) : (
         <div className="space-y-6 max-w-sm w-full">
@@ -108,14 +113,18 @@ function EmergencyOverlay({ onExit, renderRescue }: {
           </div>
         </div>
       )}
-      {rescueOpen && task && renderRescue?.(task, () => setRescueOpen(false))}
+      {rescueOpen && task && renderRescue?.(
+        task,
+        () => setRescueOpen(false),
+        (id) => setExcludeIds((xs) => xs.includes(id) ? xs : [...xs, id]),
+      )}
     </div>
   );
 }
 
 export function EmergencyModeProvider({ children, renderRescue }: {
   children: React.ReactNode;
-  renderRescue?: (task: Task, close: () => void) => React.ReactNode;
+  renderRescue?: (task: Task, close: () => void, onRejected: (taskId: number) => void) => React.ReactNode;
 }) {
   const [active, setActive] = useState(false);
   const api = useMemo<EmergencyModeApi>(

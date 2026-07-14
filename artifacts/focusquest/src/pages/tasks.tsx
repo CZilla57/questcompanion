@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { getGetTasksQueryKey } from "@workspace/api-client-react";
+import { getGetTasksQueryKey, getGetTasksMomentumQueryKey } from "@workspace/api-client-react";
 import { CATEGORIES, CATEGORY_HEX_COLORS } from "@/lib/categories";
 import { parseDueDate, toDueDateString } from "@/lib/reschedule";
 import { momentumBoardState } from "@/lib/momentum-board";
@@ -148,7 +148,9 @@ export default function Tasks() {
     ...(skippedIds.length ? { exclude: skippedIds.join(",") } : {}),
   });
   // "Not this one": walk the returned alternates first (instant), then refetch with exclude.
-  const visibleSuggestions = (momentum?.suggestions ?? []).slice(altIndex);
+  const batch = momentum?.suggestions ?? [];
+  // Clamp: an invalidation-driven refetch can shrink the batch below a stale altIndex.
+  const visibleSuggestions = batch.slice(altIndex < batch.length ? altIndex : 0);
   const handleSkip = () => {
     const current = visibleSuggestions[0];
     if (!current) return;
@@ -157,7 +159,7 @@ export default function Tasks() {
     } else {
       // Exclude EVERY suggestion the user walked past in this batch — a
       // rejected suggestion must not resurface on the refetch.
-      const batchIds = (momentum?.suggestions ?? []).map((s) => s.task.id);
+      const batchIds = batch.map((s) => s.task.id);
       setSkippedIds((ids) => [...ids, ...batchIds.filter((id) => !ids.includes(id))]);
       setAltIndex(0);
     }
@@ -215,6 +217,7 @@ export default function Tasks() {
         });
         setCreatedTask(task);
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetTasksMomentumQueryKey() });
       }
     });
   };
@@ -237,6 +240,7 @@ export default function Tasks() {
     breakdownMutation.mutate({ id: createdTask.id }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetTasksMomentumQueryKey() });
         toast({ title: "Broke it into first steps ✦", className: "border-primary" });
         handleCloseCreate();
       },
@@ -289,6 +293,7 @@ export default function Tasks() {
         toast({ title: "Quest updated", className: "border-primary" });
         setEditTask(null);
         queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetTasksMomentumQueryKey() });
       },
       onError: (err: any) => {
         const msg = apiErrorMessage(err, "Could not update quest");
