@@ -38,6 +38,14 @@ export function useVoiceRecording({ onClip, onError }: UseVoiceRecordingOptions)
   const cleanup = useCallback(() => {
     window.clearInterval(timersRef.current.tick);
     window.clearTimeout(timersRef.current.cap);
+    const recorder = recorderRef.current;
+    if (recorder) {
+      // Detach handlers before stopping tracks — ending tracks can fire a
+      // late onstop, which would deliver a phantom clip after cleanup.
+      recorder.ondataavailable = null;
+      recorder.onstop = null;
+      recorder.onerror = null;
+    }
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     recorderRef.current = null;

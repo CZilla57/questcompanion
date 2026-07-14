@@ -382,6 +382,11 @@ router.post("/tasks/parse", async (req, res): Promise<void> => {
 
 router.post(
   "/tasks/transcribe",
+  // Reject unauthenticated requests before express.raw buffers up to 10MB.
+  (req, res, next) => {
+    if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+    next();
+  },
   // The global parser is express.json() only, which ignores audio bodies —
   // this scoped raw parser fills req.body with a Buffer for the two container
   // types MediaRecorder actually produces (type matching ignores codec params).
