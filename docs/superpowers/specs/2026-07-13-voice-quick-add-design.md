@@ -67,7 +67,7 @@ Use Groq's Whisper transcription endpoint (`whisper-large-v3-turbo`), not a new 
 ## Testing
 
 - `transcribeAudio()` unit tests mirror `client.test.ts`: mocked `fetch` covering the happy path (`{ text }` extracted), non-OK status → `AiClientError`, network failure → `AiClientError`, missing key → `AiClientError`, and the filename-extension mapping for both `audio/webm` and `audio/mp4` inputs (including codec-parameter stripping).
-- Route tests mirror the existing `/tasks/parse` route tests: 401 unauthenticated, 503 unconfigured, 429 cooldown, 400 empty/wrong-content-type body, 502 on `AiClientError`, 200 happy path with the transcription lib stubbed.
+- The route itself follows repo convention: routes aren't unit-tested (no supertest infrastructure exists), so all route-level decisions that can be pure functions (content-type → extension mapping, body validation predicates) live in the tested lib, and the route stays a thin status-code dispatcher gated by typecheck.
 - Frontend tests: mic button absent when `MediaRecorder`/`mediaDevices` are missing; successful transcript populates the field and triggers Smart-parse with the *transcript* text (regression test for the stale-closure gotcha); empty-transcript and sub-500ms paths toast without uploading. `useVoiceRecording` gets a minimal `MediaRecorder` test double — jsdom has no recording machinery, which is exactly why the hook keeps browser calls at the edge.
 - Manual verification must include a real iPhone via the deployed HTTPS URL: the `audio/mp4` path, PWA mic-permission prompts, and mic-indicator release simply cannot be exercised on desktop, and a LAN HTTP dev server isn't a secure context so the mic API won't exist there.
 
