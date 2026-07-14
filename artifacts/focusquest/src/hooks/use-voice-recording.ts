@@ -12,7 +12,9 @@ interface UseVoiceRecordingOptions {
  * Owns the MediaRecorder lifecycle: permission request, container probe,
  * elapsed ticker, the 60s auto-stop cap, and mic release. All mic teardown
  * funnels through one cleanup so the OS recording indicator can't stay lit
- * after stop, auto-stop, or unmount.
+ * after stop, auto-stop, or unmount — including a start() still awaiting
+ * permission when the user cancels, double-taps, or navigates away, which
+ * is invalidated via a session token checked after the getUserMedia await.
  */
 export function useVoiceRecording({ onClip, onError }: UseVoiceRecordingOptions) {
   const [recording, setRecording] = useState(false);
@@ -24,6 +26,9 @@ export function useVoiceRecording({ onClip, onError }: UseVoiceRecordingOptions)
   const startedAtRef = useRef(0);
   const autoStoppedRef = useRef(false);
   const timersRef = useRef<{ tick?: number; cap?: number }>({});
+  // Bumped to invalidate an in-flight start() (unmount, stop-during-start,
+  // or a superseding start) so the awaited stream is released, not leaked.
+  const sessionRef = useRef(0);
 
   const supported =
     typeof navigator !== "undefined" &&
@@ -40,25 +45,44 @@ export function useVoiceRecording({ onClip, onError }: UseVoiceRecordingOptions)
     setElapsedMs(0);
   }, []);
 
-  // Release the mic if the component unmounts mid-recording.
-  useEffect(() => cleanup, [cleanup]);
+  // Release the mic if the component unmounts mid-recording — and cancel a
+  // start() still awaiting permission so it can't revive the mic afterwards.
+  useEffect(
+    () => () => {
+      sessionRef.current++;
+      cleanup();
+    },
+    [cleanup],
+  );
 
   const stop = useCallback((autoStopped = false) => {
     const recorder = recorderRef.current;
-    // state check makes stop idempotent against double-taps racing onstop.
-    if (!recorder || recorder.state === "inactive") return;
+    if (!recorder || recorder.state === "inactive") {
+      // Nothing recording yet: cancel any start() still awaiting permission.
+      sessionRef.current++;
+      return;
+    }
     autoStoppedRef.current = autoStopped;
     recorder.stop(); // fires onstop → clip assembly + cleanup
   }, []);
 
   const start = useCallback(async () => {
     if (recorderRef.current) return; // already recording
+    const session = ++sessionRef.current;
 
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch (err) {
+      if (sessionRef.current !== session) return; // cancelled while pending
       onError((err as DOMException)?.name === "NotAllowedError" ? "denied" : "failed");
+      return;
+    }
+
+    // Unmounted, cancelled via stop(), or superseded by a newer start() while
+    // permission was pending — release the just-acquired stream, don't leak it.
+    if (sessionRef.current !== session || recorderRef.current) {
+      stream.getTracks().forEach((track) => track.stop());
       return;
     }
 
@@ -96,5 +120,7 @@ export function useVoiceRecording({ onClip, onError }: UseVoiceRecordingOptions)
     timersRef.current.cap = window.setTimeout(() => stop(true), MAX_RECORDING_MS);
   }, [cleanup, onClip, onError, stop]);
 
-  return { supported, recording, elapsedMs, start, stop: () => stop(false) };
+  const stopRecording = useCallback(() => stop(false), [stop]);
+
+  return { supported, recording, elapsedMs, start, stop: stopRecording };
 }
