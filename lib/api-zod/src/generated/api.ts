@@ -254,47 +254,6 @@ export const GetMyInsightsResponse = zod.object({
 
 
 /**
- * @summary Get a recommended next task using scoring logic
- */
-export const GetTaskRecommendationQueryParams = zod.object({
-  "exclude": zod.coerce.string().optional().describe('Comma-separated task IDs to exclude from consideration')
-})
-
-export const GetTaskRecommendationResponse = zod.object({
-  "task": zod.union([zod.object({
-  "id": zod.number(),
-  "userId": zod.number(),
-  "title": zod.string(),
-  "description": zod.string().nullish(),
-  "points": zod.number(),
-  "completed": zod.boolean(),
-  "completedAt": zod.string().nullish(),
-  "dueDate": zod.string().nullable(),
-  "priority": zod.enum(['low', 'medium', 'high']),
-  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'self_care', 'errands', 'travel', 'default']),
-  "categoryLabel": zod.string(),
-  "createdAt": zod.string(),
-  "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
-  "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
-  "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
-  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus'),
-  "isAnchored": zod.boolean().optional().describe('A no-deadline quest that stays visible until completed'),
-  "dueTime": zod.string().nullish().describe('Optional time of day (HH:mm, 24-hour)'),
-  "steps": zod.array(zod.object({
-  "id": zod.number(),
-  "text": zod.string(),
-  "position": zod.number(),
-  "done": zod.boolean()
-})).describe('AI-generated first-step checklist attached to this quest'),
-  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null')
-}),zod.null()]).optional(),
-  "reason": zod.string(),
-  "category": zod.string().optional(),
-  "categoryLabel": zod.string().optional()
-})
-
-
-/**
  * @summary List tasks for the current user
  */
 export const GetTasksQueryParams = zod.object({
@@ -751,6 +710,86 @@ export const PatchTaskFocusResponse = zod.object({
   "done": zod.boolean()
 })).describe('AI-generated first-step checklist attached to this quest'),
   "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null')
+})
+
+
+/**
+ * @summary Mode- and time-aware next-win suggestions (supersedes /tasks/recommend)
+ */
+export const GetTasksMomentumQueryParams = zod.object({
+  "minutes": zod.coerce.number().nullish().describe('Available minutes right now (optional)'),
+  "tz": zod.coerce.string().optional().describe('IANA timezone for local-hour and local-day scoring'),
+  "exclude": zod.coerce.string().optional().describe('Comma-separated task IDs to exclude (skip loop)')
+})
+
+export const GetTasksMomentumResponse = zod.object({
+  "mode": zod.enum(['focused', 'distracted', 'frozen', 'hyperfocus', 'neutral']),
+  "suggestions": zod.array(zod.object({
+  "task": zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "points": zod.number(),
+  "completed": zod.boolean(),
+  "completedAt": zod.string().nullish(),
+  "dueDate": zod.string().nullable(),
+  "priority": zod.enum(['low', 'medium', 'high']),
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'self_care', 'errands', 'travel', 'default']),
+  "categoryLabel": zod.string(),
+  "createdAt": zod.string(),
+  "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
+  "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
+  "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
+  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus'),
+  "isAnchored": zod.boolean().optional().describe('A no-deadline quest that stays visible until completed'),
+  "dueTime": zod.string().nullish().describe('Optional time of day (HH:mm, 24-hour)'),
+  "steps": zod.array(zod.object({
+  "id": zod.number(),
+  "text": zod.string(),
+  "position": zod.number(),
+  "done": zod.boolean()
+})).describe('AI-generated first-step checklist attached to this quest'),
+  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null')
+}),
+  "reason": zod.string(),
+  "kind": zod.enum(['primary', 'alternate'])
+}))
+})
+
+
+/**
+ * @summary Current derived brain mode (4h TTL, local-day bound)
+ */
+export const GetBrainStateQueryParams = zod.object({
+  "tz": zod.coerce.string().optional().describe('IANA timezone for expiry and checkedInToday derivation')
+})
+
+export const GetBrainStateResponse = zod.object({
+  "mode": zod.enum(['focused', 'distracted', 'frozen', 'hyperfocus', 'neutral']),
+  "since": zod.coerce.date().nullable(),
+  "expiresAt": zod.coerce.date().nullable(),
+  "checkedInToday": zod.boolean()
+})
+
+
+/**
+ * @summary One-tap brain check-in
+ */
+export const CreateBrainCheckinBody = zod.object({
+  "mode": zod.enum(['focused', 'distracted', 'frozen', 'hyperfocus', 'neutral']),
+  "source": zod.enum(['tap', 'daily_prompt', 'emergency_exit']).optional(),
+  "tz": zod.string()
+})
+
+
+/**
+ * @summary Log a taken rescue intervention (fire-and-forget)
+ */
+export const CreateRescueEventBody = zod.object({
+  "taskId": zod.number().nullish(),
+  "blocker": zod.enum(['too_big', 'cant_start', 'overwhelmed', 'wrong_quest']),
+  "intervention": zod.enum(['breakdown', 'micro_start', 'emergency_mode', 'reroll'])
 })
 
 

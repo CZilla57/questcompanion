@@ -300,25 +300,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/InsightsResponse"
 
-  /tasks/recommend:
-    get:
-      operationId: getTaskRecommendation
-      tags: [tasks]
-      summary: Get a recommended next task using scoring logic
-      parameters:
-        - name: exclude
-          in: query
-          schema:
-            type: string
-          description: Comma-separated task IDs to exclude from consideration
-      responses:
-        "200":
-          description: Recommended task or null
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TaskRecommendation"
-
   /tasks:
     get:
       operationId: getTasks
@@ -677,6 +658,114 @@ paths:
                 $ref: "#/components/schemas/Task"
         "400":
           description: Validation error (e.g. already 3 focus quests today)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /tasks/momentum:
+    get:
+      operationId: getTasksMomentum
+      tags: [tasks]
+      summary: Mode- and time-aware next-win suggestions (supersedes /tasks/recommend)
+      parameters:
+        - name: minutes
+          in: query
+          schema:
+            type: ["integer", "null"]
+          description: Available minutes right now (optional)
+        - name: tz
+          in: query
+          schema:
+            type: string
+          description: IANA timezone for local-hour and local-day scoring
+        - name: exclude
+          in: query
+          schema:
+            type: string
+          description: Comma-separated task IDs to exclude (skip loop)
+      responses:
+        "200":
+          description: Ranked suggestions, primary first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MomentumResponse"
+
+  /brain/state:
+    get:
+      operationId: getBrainState
+      tags: [brain]
+      summary: Current derived brain mode (4h TTL, local-day bound)
+      parameters:
+        - name: tz
+          in: query
+          schema:
+            type: string
+          description: IANA timezone for expiry and checkedInToday derivation
+      responses:
+        "200":
+          description: Derived state — single source of truth for chip, board, momentum
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrainState"
+
+  /brain/checkins:
+    post:
+      operationId: createBrainCheckin
+      tags: [brain]
+      summary: One-tap brain check-in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrainCheckinRequest"
+      responses:
+        "201":
+          description: Derived state after this check-in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrainState"
+        "422":
+          description: Unknown mode or source
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /rescue/events:
+    post:
+      operationId: createRescueEvent
+      tags: [brain]
+      summary: Log a taken rescue intervention (fire-and-forget)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RescueEventRequest"
+      responses:
+        "201":
+          description: Logged
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id]
+                properties:
+                  id:
+                    type: integer
+        "404":
+          description: taskId given but not owned by the caller
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422":
+          description: Unknown blocker or intervention
           content:
             application/json:
               schema:
@@ -2699,20 +2788,75 @@ components:
         remainingXp:
           type: integer
 
-    TaskRecommendation:
+    BrainMode:
+      type: string
+      enum: [focused, distracted, frozen, hyperfocus, neutral]
+
+    BrainCheckinSource:
+      type: string
+      enum: [tap, daily_prompt, emergency_exit]
+
+    BrainState:
       type: object
-      required: [reason]
+      required: [mode, since, expiresAt, checkedInToday]
+      properties:
+        mode:
+          $ref: "#/components/schemas/BrainMode"
+        since:
+          type: ["string", "null"]
+          format: date-time
+        expiresAt:
+          type: ["string", "null"]
+          format: date-time
+        checkedInToday:
+          type: boolean
+
+    BrainCheckinRequest:
+      type: object
+      required: [mode, tz]
+      properties:
+        mode:
+          $ref: "#/components/schemas/BrainMode"
+        source:
+          $ref: "#/components/schemas/BrainCheckinSource"
+        tz:
+          type: string
+
+    MomentumSuggestion:
+      type: object
+      required: [task, reason, kind]
       properties:
         task:
-          oneOf:
-            - $ref: "#/components/schemas/Task"
-            - type: "null"
+          $ref: "#/components/schemas/Task"
         reason:
           type: string
-        category:
+        kind:
           type: string
-        categoryLabel:
+          enum: [primary, alternate]
+
+    MomentumResponse:
+      type: object
+      required: [mode, suggestions]
+      properties:
+        mode:
+          $ref: "#/components/schemas/BrainMode"
+        suggestions:
+          type: array
+          items:
+            $ref: "#/components/schemas/MomentumSuggestion"
+
+    RescueEventRequest:
+      type: object
+      required: [blocker, intervention]
+      properties:
+        taskId:
+          type: ["integer", "null"]
+        blocker:
           type: string
+          enum: [too_big, cant_start, overwhelmed, wrong_quest]
+        intervention:
+          type: string
+          enum: [breakdown, micro_start, emergency_mode, reroll]
 
     InsightsCategoryBreakdown:
       type: object

@@ -29,8 +29,11 @@ import type {
   BattleResult,
   BattleStatus,
   BeginBrowserLoginParams,
+  BrainCheckinRequest,
+  BrainState,
   BuyGearResult,
   BuyStreakFreeze400,
+  CreateRescueEvent201,
   DopamineReward,
   DopamineRewardInput,
   ErrorEnvelope,
@@ -42,6 +45,7 @@ import type {
   FocusSessionResult,
   FocusToggleInput,
   GearStoreResponse,
+  GetBrainStateParams,
   GetCalendarHeatmapParams,
   GetLeaderboardParams,
   GetMyInsightsParams,
@@ -50,7 +54,7 @@ import type {
   GetNudgesParams,
   GetPartnerDetailParams,
   GetQuestlinesParams,
-  GetTaskRecommendationParams,
+  GetTasksMomentumParams,
   GetTasksParams,
   HandleBrowserLoginCallbackParams,
   HealthStatus,
@@ -64,6 +68,7 @@ import type {
   MarkNudgesReadInput,
   MobileTokenExchangeRequest,
   MobileTokenExchangeSuccess,
+  MomentumResponse,
   Nudge,
   NudgeInput,
   ParseQuickAddInput,
@@ -79,6 +84,7 @@ import type {
   RecurringTask,
   RecurringTaskInput,
   RecurringTaskUpdate,
+  RescueEventRequest,
   SearchUsersParams,
   SentNudge,
   StartFocusSessionInput,
@@ -92,7 +98,6 @@ import type {
   Task,
   TaskCompletionResult,
   TaskInput,
-  TaskRecommendation,
   TaskUpdate,
   TranscribeResult,
   User,
@@ -1184,90 +1189,6 @@ export function useGetMyInsights<TData = Awaited<ReturnType<typeof getMyInsights
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetMyInsightsQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-
-
-
-
-
-
-export const getGetTaskRecommendationUrl = (params?: GetTaskRecommendationParams,) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0 ? `/api/tasks/recommend?${stringifiedParams}` : `/api/tasks/recommend`
-}
-
-/**
- * @summary Get a recommended next task using scoring logic
- */
-export const getTaskRecommendation = async (params?: GetTaskRecommendationParams, options?: RequestInit): Promise<TaskRecommendation> => {
-
-  return customFetch<TaskRecommendation>(getGetTaskRecommendationUrl(params),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetTaskRecommendationQueryKey = (params?: GetTaskRecommendationParams,) => {
-    return [
-    `/api/tasks/recommend`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getGetTaskRecommendationQueryOptions = <TData = Awaited<ReturnType<typeof getTaskRecommendation>>, TError = ErrorType<unknown>>(params?: GetTaskRecommendationParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTaskRecommendation>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetTaskRecommendationQueryKey(params);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTaskRecommendation>>> = ({ signal }) => getTaskRecommendation(params, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTaskRecommendation>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetTaskRecommendationQueryResult = NonNullable<Awaited<ReturnType<typeof getTaskRecommendation>>>
-export type GetTaskRecommendationQueryError = ErrorType<unknown>
-
-
-/**
- * @summary Get a recommended next task using scoring logic
- */
-
-export function useGetTaskRecommendation<TData = Awaited<ReturnType<typeof getTaskRecommendation>>, TError = ErrorType<unknown>>(
- params?: GetTaskRecommendationParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTaskRecommendation>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetTaskRecommendationQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -2443,6 +2364,316 @@ export const usePatchTaskFocus = <TError = ErrorType<ErrorEnvelope>,
         TContext
       > => {
       return useMutation(getPatchTaskFocusMutationOptions(options));
+    }
+
+export const getGetTasksMomentumUrl = (params?: GetTasksMomentumParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/tasks/momentum?${stringifiedParams}` : `/api/tasks/momentum`
+}
+
+/**
+ * @summary Mode- and time-aware next-win suggestions (supersedes /tasks/recommend)
+ */
+export const getTasksMomentum = async (params?: GetTasksMomentumParams, options?: RequestInit): Promise<MomentumResponse> => {
+
+  return customFetch<MomentumResponse>(getGetTasksMomentumUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTasksMomentumQueryKey = (params?: GetTasksMomentumParams,) => {
+    return [
+    `/api/tasks/momentum`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetTasksMomentumQueryOptions = <TData = Awaited<ReturnType<typeof getTasksMomentum>>, TError = ErrorType<unknown>>(params?: GetTasksMomentumParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTasksMomentum>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTasksMomentumQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTasksMomentum>>> = ({ signal }) => getTasksMomentum(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTasksMomentum>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTasksMomentumQueryResult = NonNullable<Awaited<ReturnType<typeof getTasksMomentum>>>
+export type GetTasksMomentumQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Mode- and time-aware next-win suggestions (supersedes /tasks/recommend)
+ */
+
+export function useGetTasksMomentum<TData = Awaited<ReturnType<typeof getTasksMomentum>>, TError = ErrorType<unknown>>(
+ params?: GetTasksMomentumParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTasksMomentum>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTasksMomentumQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetBrainStateUrl = (params?: GetBrainStateParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/brain/state?${stringifiedParams}` : `/api/brain/state`
+}
+
+/**
+ * @summary Current derived brain mode (4h TTL, local-day bound)
+ */
+export const getBrainState = async (params?: GetBrainStateParams, options?: RequestInit): Promise<BrainState> => {
+
+  return customFetch<BrainState>(getGetBrainStateUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBrainStateQueryKey = (params?: GetBrainStateParams,) => {
+    return [
+    `/api/brain/state`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetBrainStateQueryOptions = <TData = Awaited<ReturnType<typeof getBrainState>>, TError = ErrorType<unknown>>(params?: GetBrainStateParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBrainState>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBrainStateQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBrainState>>> = ({ signal }) => getBrainState(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBrainState>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBrainStateQueryResult = NonNullable<Awaited<ReturnType<typeof getBrainState>>>
+export type GetBrainStateQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Current derived brain mode (4h TTL, local-day bound)
+ */
+
+export function useGetBrainState<TData = Awaited<ReturnType<typeof getBrainState>>, TError = ErrorType<unknown>>(
+ params?: GetBrainStateParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBrainState>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBrainStateQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateBrainCheckinUrl = () => {
+
+
+
+
+  return `/api/brain/checkins`
+}
+
+/**
+ * @summary One-tap brain check-in
+ */
+export const createBrainCheckin = async (brainCheckinRequest: BrainCheckinRequest, options?: RequestInit): Promise<BrainState> => {
+
+  return customFetch<BrainState>(getCreateBrainCheckinUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      brainCheckinRequest,)
+  }
+);}
+
+
+
+
+export const getCreateBrainCheckinMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBrainCheckin>>, TError,{data: BodyType<BrainCheckinRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createBrainCheckin>>, TError,{data: BodyType<BrainCheckinRequest>}, TContext> => {
+
+const mutationKey = ['createBrainCheckin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createBrainCheckin>>, {data: BodyType<BrainCheckinRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createBrainCheckin(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateBrainCheckinMutationResult = NonNullable<Awaited<ReturnType<typeof createBrainCheckin>>>
+    export type CreateBrainCheckinMutationBody = BodyType<BrainCheckinRequest>
+    export type CreateBrainCheckinMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary One-tap brain check-in
+ */
+export const useCreateBrainCheckin = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBrainCheckin>>, TError,{data: BodyType<BrainCheckinRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createBrainCheckin>>,
+        TError,
+        {data: BodyType<BrainCheckinRequest>},
+        TContext
+      > => {
+      return useMutation(getCreateBrainCheckinMutationOptions(options));
+    }
+
+export const getCreateRescueEventUrl = () => {
+
+
+
+
+  return `/api/rescue/events`
+}
+
+/**
+ * @summary Log a taken rescue intervention (fire-and-forget)
+ */
+export const createRescueEvent = async (rescueEventRequest: RescueEventRequest, options?: RequestInit): Promise<CreateRescueEvent201> => {
+
+  return customFetch<CreateRescueEvent201>(getCreateRescueEventUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      rescueEventRequest,)
+  }
+);}
+
+
+
+
+export const getCreateRescueEventMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRescueEvent>>, TError,{data: BodyType<RescueEventRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createRescueEvent>>, TError,{data: BodyType<RescueEventRequest>}, TContext> => {
+
+const mutationKey = ['createRescueEvent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createRescueEvent>>, {data: BodyType<RescueEventRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createRescueEvent(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateRescueEventMutationResult = NonNullable<Awaited<ReturnType<typeof createRescueEvent>>>
+    export type CreateRescueEventMutationBody = BodyType<RescueEventRequest>
+    export type CreateRescueEventMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Log a taken rescue intervention (fire-and-forget)
+ */
+export const useCreateRescueEvent = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRescueEvent>>, TError,{data: BodyType<RescueEventRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createRescueEvent>>,
+        TError,
+        {data: BodyType<RescueEventRequest>},
+        TContext
+      > => {
+      return useMutation(getCreateRescueEventMutationOptions(options));
     }
 
 export const getBreakdownTaskUrl = (id: number,) => {
