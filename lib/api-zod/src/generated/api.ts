@@ -757,6 +757,10 @@ export const PatchTaskFocusResponse = zod.object({
 /**
  * @summary Toggle a breakdown step's done state
  */
+export const PatchTaskStepQueryParams = zod.object({
+  "tz": zod.coerce.string().optional().describe('IANA timezone for local-day boundaries (falls back to UTC)')
+})
+
 export const PatchTaskStepBody = zod.object({
   "done": zod.boolean()
 })
@@ -766,7 +770,15 @@ export const PatchTaskStepResponse = zod.object({
   "text": zod.string(),
   "position": zod.number(),
   "done": zod.boolean()
-})
+}).and(zod.object({
+  "initiationXp": zod.object({
+  "total": zod.number(),
+  "awards": zod.array(zod.object({
+  "kind": zod.enum(['session_start', 'first_step', 'questline_kickoff', 'first_move']),
+  "points": zod.number()
+}))
+}).describe('Initiation XP granted by this action (Celebrate Starting). Zero\/empty when nothing was granted.')
+}))
 
 
 /**
@@ -983,6 +995,10 @@ export const ListFocusSessionsResponse = zod.array(ListFocusSessionsResponseItem
 /**
  * @summary Start a focus session
  */
+export const StartFocusSessionQueryParams = zod.object({
+  "tz": zod.coerce.string().optional().describe('IANA timezone for local-day boundaries (falls back to UTC)')
+})
+
 export const StartFocusSessionBody = zod.object({
   "preset": zod.enum(['classic', 'deep', 'short']),
   "taskId": zod.number().optional().describe('Optional quest to focus on')
