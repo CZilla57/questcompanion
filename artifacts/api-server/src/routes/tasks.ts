@@ -20,6 +20,8 @@ import { transcribeCooldown } from "../lib/ai/transcribe-cooldown";
 import { isBonusGatingTask, countsAsTodayCompletion } from "../lib/anchored-tasks";
 import { isQuestlineAssignable } from "../lib/questlines";
 import { hungerStage } from "../lib/hero-care";
+import { grantInitiationAwards } from "../lib/initiation-grant";
+import type { InitiationXp } from "../lib/initiation";
 
 const router: IRouter = Router();
 
@@ -1165,18 +1167,56 @@ router.patch("/tasks/:id/steps/:stepId", async (req, res): Promise<void> => {
     res.status(400).json({ error: "done must be a boolean" });
     return;
   }
+  const tz = typeof req.query.tz === "string" ? req.query.tz : undefined;
 
-  const [updated] = await db.update(taskStepsTable)
-    .set({ done })
-    .where(and(
-      eq(taskStepsTable.id, stepId),
-      eq(taskStepsTable.taskId, id),
-      eq(taskStepsTable.userId, userId),
-    ))
-    .returning();
-  if (!updated) { res.status(404).json({ error: "Step not found" }); return; }
+  type Outcome =
+    | { status: "not_found" }
+    | { status: "ok"; step: { id: number; text: string; position: number; done: boolean }; initiationXp: InitiationXp };
 
-  res.json({ id: updated.id, text: updated.text, position: updated.position, done: updated.done });
+  const outcome = await db.transaction(async (tx): Promise<Outcome> => {
+    // Lock the user row: initiation awards read and update point totals.
+    const [user] = await tx.select().from(usersTable).where(eq(usersTable.id, userId)).for("update");
+    if (!user) return { status: "not_found" };
+
+    const [current] = await tx.select().from(taskStepsTable)
+      .where(and(
+        eq(taskStepsTable.id, stepId),
+        eq(taskStepsTable.taskId, id),
+        eq(taskStepsTable.userId, userId),
+      ));
+    if (!current) return { status: "not_found" };
+
+    const [updated] = await tx.update(taskStepsTable)
+      .set({ done })
+      .where(eq(taskStepsTable.id, current.id))
+      .returning();
+
+    // Initiation XP only on a false→true transition; unchecking never refunds.
+    let initiationXp: InitiationXp = { total: 0, awards: [] };
+    if (done && !current.done) {
+      const [task] = await tx.select().from(tasksTable)
+        .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)));
+      if (task) {
+        const siblings = await tx.select().from(taskStepsTable)
+          .where(and(eq(taskStepsTable.taskId, id), eq(taskStepsTable.userId, userId)));
+        const otherStepsAlreadyDone = siblings.some((s) => s.id !== stepId && s.done);
+        initiationXp = await grantInitiationAwards(tx, user, {
+          type: "step_check",
+          task: { id: task.id, title: task.title, questlineId: task.questlineId ?? null },
+          otherStepsAlreadyDone,
+        }, tz);
+      }
+    }
+
+    return {
+      status: "ok",
+      step: { id: updated.id, text: updated.text, position: updated.position, done: updated.done },
+      initiationXp,
+    };
+  });
+
+  if (outcome.status === "not_found") { res.status(404).json({ error: "Step not found" }); return; }
+  res.json({ ...outcome.step, initiationXp: outcome.initiationXp });
 });
 
 router.delete("/tasks/:id/steps", async (req, res): Promise<void> => {
