@@ -725,32 +725,41 @@ git commit -m "feat(web): useVoiceRecording hook — MediaRecorder lifecycle wit
 
 ### Task 6: Quick-Add bar integration
 
+> **Amended after Task 3:** orval v8 JSON.stringifies binary request bodies, so the generated `useTranscribeAudio` would send the literal string `"{}"` instead of the audio (empirically confirmed; the octet-stream fallback doesn't help). This one endpoint is therefore consumed via a thin `useMutation` + `customFetch` wrapper — the OpenAPI operation and generated `TranscribeResult` type remain the source of truth, and error shaping (`ApiError.status`) still comes from the shared client. Bonus: per-call headers use `blob.type` directly, eliminating the hook-creation-time header staleness workaround.
+
 **Files:**
+- Modify: `lib/api-client-react/src/index.ts` (add `export * from "./custom-fetch";` — hand-authored file, NOT under `generated/`)
 - Modify: `artifacts/focusquest/src/components/quick-add-bar.tsx`
 
 **Interfaces:**
-- Consumes: `useTranscribeAudio` from `@workspace/api-client-react` (Task 3); `useVoiceRecording` from `@/hooks/use-voice-recording` (Task 5); `pickRecordingMimeType`, `isTooShortToTranscribe`, `formatElapsed` from `@/lib/voice-recording` (Task 4).
-- Produces: the user-facing feature. No new exports.
+- Consumes: `customFetch` + generated `TranscribeResult` type from `@workspace/api-client-react` (index re-export added in this task); `useMutation` from `@tanstack/react-query`; `useVoiceRecording` from `@/hooks/use-voice-recording` (Task 5); `isTooShortToTranscribe`, `formatElapsed` from `@/lib/voice-recording` (Task 4).
+- Produces: the user-facing feature. No new exports beyond the `custom-fetch` re-export.
 
 Component is typecheck-gated per repo convention (no jsdom). Exact toast copy comes from the spec — use the strings verbatim.
 
-- [ ] **Step 1: Update imports**
+- [ ] **Step 1: Re-export custom-fetch and update imports**
+
+In `lib/api-client-react/src/index.ts`, append:
+
+```ts
+export * from "./custom-fetch";
+```
 
 In `artifacts/focusquest/src/components/quick-add-bar.tsx`:
 
-Line 1: add `useMemo` is already imported; no change. Line 3: extend the lucide import:
+Line 3: extend the lucide import:
 
 ```ts
 import { Sparkles, CalendarClock, Zap, Plus, RefreshCw, Mic, Square } from "lucide-react";
 ```
 
-Line 5: add `useTranscribeAudio` to the `@workspace/api-client-react` import list.
+Line 5: add `customFetch` and `type TranscribeResult` to the `@workspace/api-client-react` import list. Line 6: add `useMutation` to the `@tanstack/react-query` import.
 
 After the existing local imports add:
 
 ```ts
 import { useVoiceRecording } from "@/hooks/use-voice-recording";
-import { pickRecordingMimeType, isTooShortToTranscribe, formatElapsed } from "@/lib/voice-recording";
+import { isTooShortToTranscribe, formatElapsed } from "@/lib/voice-recording";
 ```
 
 - [ ] **Step 2: Refactor `handleSmartParse` to accept explicit text**
@@ -797,18 +806,18 @@ const handleSmartParse = (next?: string) => {
 Add inside the component, **after the `handleSmartParse` definition** (the `onClip` callback references it — placing it earlier trips no-use-before-define):
 
 ```ts
-// The container is deterministic per browser (webm on Chrome/Firefox, mp4 on
-// iOS Safari), so probe once and bake it into the request headers — the
-// per-call options replace orval's hardcoded Content-Type in customFetch.
-const recordingContentType = useMemo(
-  () =>
-    (typeof MediaRecorder !== "undefined" &&
-      pickRecordingMimeType((t) => MediaRecorder.isTypeSupported(t))) ||
-    "audio/webm",
-  [],
-);
-const transcribeMutation = useTranscribeAudio({
-  request: { headers: { "content-type": recordingContentType } },
+// orval's generated useTranscribeAudio JSON.stringifies its Blob body (v8
+// limitation with binary request bodies), which would silently discard the
+// audio — so this one endpoint calls customFetch directly. The /api base and
+// error shaping (ApiError.status) still come from the shared client, and the
+// generated TranscribeResult type keeps the response contract typed.
+const transcribeMutation = useMutation({
+  mutationFn: (blob: Blob) =>
+    customFetch<TranscribeResult>("/api/tasks/transcribe", {
+      method: "POST",
+      headers: { "content-type": blob.type || "audio/webm" },
+      body: blob,
+    }),
 });
 
 const voice = useVoiceRecording({
@@ -820,7 +829,7 @@ const voice = useVoiceRecording({
     if (autoStopped) {
       toast({ title: "Hit the 60-second limit — transcribing what I got." });
     }
-    transcribeMutation.mutate({ data: blob }, {
+    transcribeMutation.mutate(blob, {
       onSuccess: ({ text: transcript }) => {
         if (!transcript.trim()) {
           toast({ title: "Didn't catch that — try again or type it.", variant: "destructive" });
