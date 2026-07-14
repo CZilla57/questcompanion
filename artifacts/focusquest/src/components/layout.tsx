@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/tooltip";
 import { DopamineOverlay } from "./dopamine-overlay";
 import { InstallBanner } from "./install-banner";
+import { EmergencyModeProvider } from "./emergency-mode";
 
 function NotificationBell() {
   const { state, isSubscribed, supported, subscribe, unsubscribe } = useNotifications();
@@ -160,6 +161,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const allyUnread = (navNudges ?? []).filter((n) => !n.readAt).length;
 
   return (
+    <EmergencyModeProvider>
     <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row overflow-hidden font-sans dark">
 
       {/* ── Mobile header ─────────────────────────────────── */}
@@ -302,5 +304,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       <DopamineOverlay />
     </div>
+    </EmergencyModeProvider>
   );
 }
