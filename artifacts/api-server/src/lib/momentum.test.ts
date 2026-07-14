@@ -149,3 +149,41 @@ describe("rankMomentum", () => {
     expect(rankMomentum([plain], ctx())[0]!.reason).toBe("A solid next step to keep things moving.");
   });
 });
+
+describe("pinned structural precedence (absorption override)", () => {
+  it("an unestimated pin still outranks a fitting past-due quest when minutes are given", () => {
+    const pinned = task({ isDailyFocus: true, focusDate: TODAY }); // no estimate
+    const fitting = task({ estimatedMinutes: 20, dueDate: "2026-07-10" });
+    const ranked = rankMomentum([fitting, pinned], ctx({ minutes: 30 }));
+    expect(ranked[0]!.taskId).toBe(pinned.id);
+  });
+
+  it("a pin that overshoots the time budget loses precedence and its boost", () => {
+    const bigPin = task({ isDailyFocus: true, focusDate: TODAY, estimatedMinutes: 60 });
+    const tinyFit = task({ estimatedMinutes: 5 });
+    const ranked = rankMomentum([bigPin, tinyFit], ctx({ minutes: 5 }));
+    expect(ranked[0]!.taskId).toBe(tinyFit.id);
+  });
+
+  it("frozen mode disqualifies big or unestimated pins in favor of tiny wins", () => {
+    const bigPin = task({ isDailyFocus: true, focusDate: TODAY, estimatedMinutes: 60 });
+    const unestimatedPin = task({ isDailyFocus: true, focusDate: TODAY });
+    const tiny = task({ estimatedMinutes: 5 });
+    const ranked = rankMomentum([bigPin, unestimatedPin, tiny], ctx({ mode: "frozen" }));
+    expect(ranked[0]!.taskId).toBe(tiny.id);
+  });
+
+  it("distracted mode keeps a genuinely tiny pin on top", () => {
+    const tinyPin = task({ isDailyFocus: true, focusDate: TODAY, estimatedMinutes: 10 });
+    const tinier = task({ estimatedMinutes: 5 });
+    const ranked = rankMomentum([tinier, tinyPin], ctx({ mode: "distracted" }));
+    expect(ranked[0]!.taskId).toBe(tinyPin.id);
+  });
+
+  it("two eligible pins order by score between themselves", () => {
+    const pinA = task({ isDailyFocus: true, focusDate: TODAY, estimatedMinutes: 10 });
+    const pinB = task({ isDailyFocus: true, focusDate: TODAY });
+    const ranked = rankMomentum([pinB, pinA], ctx({ minutes: 15 }));
+    expect(ranked[0]!.taskId).toBe(pinA.id); // fit boost outranks noEstimate penalty within pins
+  });
+});

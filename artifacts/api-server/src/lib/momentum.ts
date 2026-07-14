@@ -1,4 +1,4 @@
-import { assignPoints, MORNING_FOCUS_CATEGORIES, EVENING_WINDDOWN_CATEGORIES } from "./auto-points";
+import { assignPoints, CATEGORY_LABELS, MORNING_FOCUS_CATEGORIES, EVENING_WINDDOWN_CATEGORIES } from "./auto-points";
 import type { BrainMode } from "./brain-mode";
 
 export interface MomentumTask {
@@ -92,15 +92,23 @@ function reasonFor(signal: Signal, t: MomentumTask, ctx: MomentumContext, catego
 /** Stored category unless it's the legacy 'default', then keyword inference. */
 function resolveCategory(t: MomentumTask): { category: string; label: string } {
   if (t.category && t.category !== "default") {
-    const ap = assignPoints(t.title, t.priority);
-    // assignPoints also yields the label for its own category; for stored
-    // categories reuse its label map indirectly via a second call only when
-    // they differ. Simpler: label is looked up by the route via CATEGORY_LABELS;
-    // here we only need a human word for reason templates.
-    return { category: t.category, label: ap.category === t.category ? ap.categoryLabel : t.category.replace(/_/g, " ") };
+    return { category: t.category, label: CATEGORY_LABELS[t.category] ?? t.category.replace(/_/g, " ") };
   }
   const ap = assignPoints(t.title, t.priority);
   return { category: ap.category, label: ap.categoryLabel };
+}
+
+/**
+ * A pinned-today quest loses its structural precedence (and its pin boost)
+ * only when the context explicitly disqualifies it: it overshoots the stated
+ * time budget, or the mode needs provably tiny wins and the pin isn't one.
+ */
+function pinDisqualified(t: MomentumTask, ctx: MomentumContext): boolean {
+  const est = t.estimatedMinutes;
+  if (ctx.minutes !== undefined && est !== null && est > ctx.minutes) return true;
+  if (ctx.mode === "distracted" && (est === null || est > 15)) return true;
+  if (ctx.mode === "frozen" && (est === null || est > 10)) return true;
+  return false;
 }
 
 export function rankMomentum(tasks: MomentumTask[], ctx: MomentumContext): MomentumScored[] {
@@ -117,8 +125,13 @@ export function rankMomentum(tasks: MomentumTask[], ctx: MomentumContext): Momen
       if (signal && points > 0) signals.set(signal, (signals.get(signal) ?? 0) + points);
     };
 
-    // Absorption: today's pins dominate.
-    if (t.isDailyFocus && t.focusDate === ctx.todayStr) add("pinned", WEIGHTS.pinnedToday);
+    // Absorption guarantee (structural): an eligible pin takes rank precedence
+    // over every non-pin; a disqualified pin gets no boost and competes as an
+    // ordinary task. One predicate drives both, so the "pinned" reason can
+    // never appear on a pin the context disqualified.
+    const pinnedToday = t.isDailyFocus && t.focusDate === ctx.todayStr;
+    const pinEligible = pinnedToday && !pinDisqualified(t, ctx);
+    if (pinEligible) add("pinned", WEIGHTS.pinnedToday);
 
     // Available-time fit.
     if (ctx.minutes !== undefined) {
@@ -176,10 +189,11 @@ export function rankMomentum(tasks: MomentumTask[], ctx: MomentumContext): Momen
       if (pts > best) { best = pts; reason = reasonFor(signal, t, ctx, label); }
     }
 
-    return { taskId: t.id, score, reason, createdAt: t.createdAt };
+    return { taskId: t.id, score, reason, createdAt: t.createdAt, pinEligible };
   });
 
   scored.sort((a, b) =>
+    (b.pinEligible ? 1 : 0) - (a.pinEligible ? 1 : 0) ||
     b.score - a.score ||
     a.createdAt.getTime() - b.createdAt.getTime() ||
     a.taskId - b.taskId,
