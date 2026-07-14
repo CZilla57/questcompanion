@@ -735,6 +735,12 @@ paths:
           required: true
           schema:
             type: integer
+        - name: tz
+          in: query
+          required: false
+          description: IANA timezone for local-day boundaries (falls back to UTC)
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -747,7 +753,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TaskStep"
+                $ref: "#/components/schemas/StepToggleResponse"
         "400":
           description: Invalid payload
           content:
@@ -985,6 +991,13 @@ paths:
       operationId: startFocusSession
       tags: [focus]
       summary: Start a focus session
+      parameters:
+        - name: tz
+          in: query
+          required: false
+          description: IANA timezone for local-day boundaries (falls back to UTC)
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -997,7 +1010,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/FocusSession"
+                $ref: "#/components/schemas/FocusSessionCreated"
         "409":
           description: A session is already active
 
@@ -2468,7 +2481,7 @@ components:
           type: string
         type:
           type: string
-          enum: [task_completed, badge_earned, level_up, streak_milestone, all_day_bonus, streak_freeze_bought, streak_freeze_used, gear_earned, focus_session, focus_complete]
+          enum: [task_completed, badge_earned, level_up, streak_milestone, all_day_bonus, streak_freeze_bought, streak_freeze_used, gear_earned, focus_session, focus_complete, initiation]
         description:
           type: string
         points:
@@ -2927,6 +2940,46 @@ components:
           type: ["string", "null"]
         createdAt:
           type: string
+
+    InitiationAward:
+      type: object
+      required: [kind, points]
+      properties:
+        kind:
+          type: string
+          enum: [session_start, first_step, questline_kickoff, first_move]
+        points:
+          type: integer
+
+    InitiationXp:
+      type: object
+      required: [total, awards]
+      description: Initiation XP granted by this action (Celebrate Starting). Zero/empty when nothing was granted.
+      properties:
+        total:
+          type: integer
+        awards:
+          type: array
+          items:
+            $ref: "#/components/schemas/InitiationAward"
+
+    FocusSessionCreated:
+      allOf:
+        - $ref: "#/components/schemas/FocusSession"
+        - type: object
+          required: [initiationXp]
+          properties:
+            initiationXp:
+              $ref: "#/components/schemas/InitiationXp"
+
+    StepToggleResponse:
+      allOf:
+        - $ref: "#/components/schemas/TaskStep"
+        - type: object
+          required: [initiationXp]
+          properties:
+            initiationXp:
+              $ref: "#/components/schemas/InitiationXp"
 
     FocusSessionResult:
       type: object

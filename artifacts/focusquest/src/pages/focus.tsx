@@ -13,6 +13,8 @@ import {
   type FocusSession,
 } from "@workspace/api-client-react";
 import { reconstructTimerState, isStaleGap, type TimerConfig } from "@/lib/pomodoro";
+import { initiationToast } from "@/lib/initiation-toast";
+import { browserTimeZone } from "@/lib/timezone";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -126,12 +128,15 @@ export default function Focus() {
 
   function handleStart() {
     startMut.mutate(
-      { data: { preset: presetKey, taskId: taskId ?? undefined } },
+      { data: { preset: presetKey, taskId: taskId ?? undefined }, params: { tz: browserTimeZone() } },
       {
-        onSuccess: () => {
+        onSuccess: (res) => {
           pausedAccumRef.current = 0;
           setPausedAtMs(null);
+          const t = initiationToast(res.initiationXp);
+          if (t) toast({ ...t, className: "border-primary" });
           qc.invalidateQueries({ queryKey: getGetActiveFocusSessionQueryKey() });
+          qc.invalidateQueries({ queryKey: getGetMyStatsQueryKey() });
         },
         onError: () => {
           // A 409 means a session is already active — just refetch and resume it.

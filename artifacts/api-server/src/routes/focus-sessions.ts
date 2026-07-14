@@ -2,6 +2,8 @@ import { Router, type IRouter } from "express";
 import { eq, and, desc } from "drizzle-orm";
 import { db, usersTable, tasksTable, activityTable, focusSessionsTable, type FocusSession } from "@workspace/db";
 import { PRESETS, getPreset, computeIntervalXp, computePartialXp, expectedElapsedSeconds, FULL_SET_BONUS, GRACE_SECONDS } from "../lib/focus-sessions";
+import { grantInitiationAwards } from "../lib/initiation-grant";
+import type { InitiationXp } from "../lib/initiation";
 
 const router: IRouter = Router();
 
@@ -57,6 +59,7 @@ router.post("/focus-sessions", async (req, res): Promise<void> => {
   const userId = req.gameUserId;
 
   const { preset, taskId } = req.body as { preset?: string; taskId?: number };
+  const tz = typeof req.query.tz === "string" ? req.query.tz : undefined;
   const config = preset ? getPreset(preset) : undefined;
   if (!config) { res.status(400).json({ error: "Unknown preset" }); return; }
 
@@ -69,7 +72,7 @@ router.post("/focus-sessions", async (req, res): Promise<void> => {
     | { status: "already_active"; existing: FocusSession }
     | { status: "bad_task" }
     | { status: "completed_task" }
-    | { status: "ok"; session: FocusSession };
+    | { status: "ok"; session: FocusSession; initiationXp: InitiationXp };
 
   const outcome = await db.transaction(async (tx): Promise<TxOutcome> => {
     const [user] = await tx.select().from(usersTable)
@@ -81,11 +84,13 @@ router.post("/focus-sessions", async (req, res): Promise<void> => {
       .where(and(eq(focusSessionsTable.userId, userId), eq(focusSessionsTable.status, "active")));
     if (existingActive) return { status: "already_active", existing: existingActive };
 
+    let eventTask: { id: number; title: string; questlineId: number | null } | null = null;
     if (taskId != null) {
       const [task] = await tx.select().from(tasksTable)
         .where(and(eq(tasksTable.id, taskId), eq(tasksTable.userId, userId)));
       if (!task) return { status: "bad_task" };
       if (task.completed) return { status: "completed_task" };
+      eventTask = { id: task.id, title: task.title, questlineId: task.questlineId ?? null };
     }
 
     const [session] = await tx.insert(focusSessionsTable).values({
@@ -99,7 +104,11 @@ router.post("/focus-sessions", async (req, res): Promise<void> => {
       plannedCycles: config.plannedCycles,
     }).returning();
 
-    return { status: "ok", session };
+    const initiationXp = await grantInitiationAwards(
+      tx, user, { type: "session_start", task: eventTask }, tz,
+    );
+
+    return { status: "ok", session, initiationXp };
   });
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -111,7 +120,7 @@ router.post("/focus-sessions", async (req, res): Promise<void> => {
   if (outcome.status === "bad_task") { res.status(400).json({ error: "Task not found" }); return; }
   if (outcome.status === "completed_task") { res.status(400).json({ error: "Cannot focus on a completed quest" }); return; }
 
-  res.status(201).json(formatSession(outcome.session));
+  res.status(201).json({ ...formatSession(outcome.session), initiationXp: outcome.initiationXp });
 });
 
 // Credit the NEXT completed focus interval. Idempotent on intervalIndex; XP is

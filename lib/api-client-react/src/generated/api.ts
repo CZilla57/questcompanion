@@ -38,6 +38,7 @@ import type {
   FocusIntervalInput,
   FocusPreset,
   FocusSession,
+  FocusSessionCreated,
   FocusSessionResult,
   FocusToggleInput,
   GearStoreResponse,
@@ -69,6 +70,7 @@ import type {
   ParsedQuickAdd,
   PartnerRequestInput,
   Partnership,
+  PatchTaskStepParams,
   Questline,
   QuestlineClaimResult,
   QuestlineDetail,
@@ -80,7 +82,9 @@ import type {
   SearchUsersParams,
   SentNudge,
   StartFocusSessionInput,
+  StartFocusSessionParams,
   StepToggleInput,
+  StepToggleResponse,
   StreakFreezeResult,
   SuccessEnvelope,
   SuggestQuestlineQuestsInput,
@@ -89,7 +93,6 @@ import type {
   TaskCompletionResult,
   TaskInput,
   TaskRecommendation,
-  TaskStep,
   TaskUpdate,
   TranscribeResult,
   User,
@@ -2513,12 +2516,20 @@ export const useBreakdownTask = <TError = ErrorType<ErrorEnvelope>,
     }
 
 export const getPatchTaskStepUrl = (id: number,
-    stepId: number,) => {
+    stepId: number,
+    params?: PatchTaskStepParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/tasks/${id}/steps/${stepId}`
+  return stringifiedParams.length > 0 ? `/api/tasks/${id}/steps/${stepId}?${stringifiedParams}` : `/api/tasks/${id}/steps/${stepId}`
 }
 
 /**
@@ -2526,9 +2537,10 @@ export const getPatchTaskStepUrl = (id: number,
  */
 export const patchTaskStep = async (id: number,
     stepId: number,
-    stepToggleInput: StepToggleInput, options?: RequestInit): Promise<TaskStep> => {
+    stepToggleInput: StepToggleInput,
+    params?: PatchTaskStepParams, options?: RequestInit): Promise<StepToggleResponse> => {
 
-  return customFetch<TaskStep>(getPatchTaskStepUrl(id,stepId),
+  return customFetch<StepToggleResponse>(getPatchTaskStepUrl(id,stepId,params),
   {
     ...options,
     method: 'PATCH',
@@ -2542,8 +2554,8 @@ export const patchTaskStep = async (id: number,
 
 
 export const getPatchTaskStepMutationOptions = <TError = ErrorType<ErrorEnvelope>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchTaskStep>>, TError,{id: number;stepId: number;data: BodyType<StepToggleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof patchTaskStep>>, TError,{id: number;stepId: number;data: BodyType<StepToggleInput>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchTaskStep>>, TError,{id: number;stepId: number;data: BodyType<StepToggleInput>;params?: PatchTaskStepParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof patchTaskStep>>, TError,{id: number;stepId: number;data: BodyType<StepToggleInput>;params?: PatchTaskStepParams}, TContext> => {
 
 const mutationKey = ['patchTaskStep'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -2555,10 +2567,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchTaskStep>>, {id: number;stepId: number;data: BodyType<StepToggleInput>}> = (props) => {
-          const {id,stepId,data} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchTaskStep>>, {id: number;stepId: number;data: BodyType<StepToggleInput>;params?: PatchTaskStepParams}> = (props) => {
+          const {id,stepId,data,params} = props ?? {};
 
-          return  patchTaskStep(id,stepId,data,requestOptions)
+          return  patchTaskStep(id,stepId,data,params,requestOptions)
         }
 
 
@@ -2576,11 +2588,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Toggle a breakdown step's done state
  */
 export const usePatchTaskStep = <TError = ErrorType<ErrorEnvelope>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchTaskStep>>, TError,{id: number;stepId: number;data: BodyType<StepToggleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchTaskStep>>, TError,{id: number;stepId: number;data: BodyType<StepToggleInput>;params?: PatchTaskStepParams}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof patchTaskStep>>,
         TError,
-        {id: number;stepId: number;data: BodyType<StepToggleInput>},
+        {id: number;stepId: number;data: BodyType<StepToggleInput>;params?: PatchTaskStepParams},
         TContext
       > => {
       return useMutation(getPatchTaskStepMutationOptions(options));
@@ -3332,20 +3344,28 @@ export function useListFocusSessions<TData = Awaited<ReturnType<typeof listFocus
 
 
 
-export const getStartFocusSessionUrl = () => {
+export const getStartFocusSessionUrl = (params?: StartFocusSessionParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/focus-sessions`
+  return stringifiedParams.length > 0 ? `/api/focus-sessions?${stringifiedParams}` : `/api/focus-sessions`
 }
 
 /**
  * @summary Start a focus session
  */
-export const startFocusSession = async (startFocusSessionInput: StartFocusSessionInput, options?: RequestInit): Promise<FocusSession> => {
+export const startFocusSession = async (startFocusSessionInput: StartFocusSessionInput,
+    params?: StartFocusSessionParams, options?: RequestInit): Promise<FocusSessionCreated> => {
 
-  return customFetch<FocusSession>(getStartFocusSessionUrl(),
+  return customFetch<FocusSessionCreated>(getStartFocusSessionUrl(params),
   {
     ...options,
     method: 'POST',
@@ -3359,8 +3379,8 @@ export const startFocusSession = async (startFocusSessionInput: StartFocusSessio
 
 
 export const getStartFocusSessionMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startFocusSession>>, TError,{data: BodyType<StartFocusSessionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof startFocusSession>>, TError,{data: BodyType<StartFocusSessionInput>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startFocusSession>>, TError,{data: BodyType<StartFocusSessionInput>;params?: StartFocusSessionParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startFocusSession>>, TError,{data: BodyType<StartFocusSessionInput>;params?: StartFocusSessionParams}, TContext> => {
 
 const mutationKey = ['startFocusSession'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -3372,10 +3392,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startFocusSession>>, {data: BodyType<StartFocusSessionInput>}> = (props) => {
-          const {data} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startFocusSession>>, {data: BodyType<StartFocusSessionInput>;params?: StartFocusSessionParams}> = (props) => {
+          const {data,params} = props ?? {};
 
-          return  startFocusSession(data,requestOptions)
+          return  startFocusSession(data,params,requestOptions)
         }
 
 
@@ -3393,11 +3413,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Start a focus session
  */
 export const useStartFocusSession = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startFocusSession>>, TError,{data: BodyType<StartFocusSessionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startFocusSession>>, TError,{data: BodyType<StartFocusSessionInput>;params?: StartFocusSessionParams}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof startFocusSession>>,
         TError,
-        {data: BodyType<StartFocusSessionInput>},
+        {data: BodyType<StartFocusSessionInput>;params?: StartFocusSessionParams},
         TContext
       > => {
       return useMutation(getStartFocusSessionMutationOptions(options));

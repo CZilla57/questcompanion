@@ -99,6 +99,7 @@ export const ActivityItemType = {
   gear_earned: 'gear_earned',
   focus_session: 'focus_session',
   focus_complete: 'focus_complete',
+  initiation: 'initiation',
 } as const;
 
 export interface ActivityItem {
@@ -1226,6 +1227,37 @@ export interface FocusSession {
   createdAt: string;
 }
 
+export type InitiationAwardKind = typeof InitiationAwardKind[keyof typeof InitiationAwardKind];
+
+
+export const InitiationAwardKind = {
+  session_start: 'session_start',
+  first_step: 'first_step',
+  questline_kickoff: 'questline_kickoff',
+  first_move: 'first_move',
+} as const;
+
+export interface InitiationAward {
+  kind: InitiationAwardKind;
+  points: number;
+}
+
+/**
+ * Initiation XP granted by this action (Celebrate Starting). Zero/empty when nothing was granted.
+ */
+export interface InitiationXp {
+  total: number;
+  awards: InitiationAward[];
+}
+
+export type FocusSessionCreated = FocusSession & {
+  initiationXp: InitiationXp;
+};
+
+export type StepToggleResponse = TaskStep & {
+  initiationXp: InitiationXp;
+};
+
 export interface FocusSessionResult {
   session: FocusSession;
   xpDelta: number;
@@ -1348,6 +1380,13 @@ export const GetTasksCategory = {
   default: 'default',
 } as const;
 
+export type PatchTaskStepParams = {
+/**
+ * IANA timezone for local-day boundaries (falls back to UTC)
+ */
+tz?: string;
+};
+
 export type GetQuestlinesParams = {
 /**
  * Optional status filter
@@ -1369,6 +1408,13 @@ export type ListFocusSessionsParams = {
  * @maximum 100
  */
 limit?: number;
+};
+
+export type StartFocusSessionParams = {
+/**
+ * IANA timezone for local-day boundaries (falls back to UTC)
+ */
+tz?: string;
 };
 
 export type GetPartnerDetailParams = {
