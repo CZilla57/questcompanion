@@ -20,6 +20,7 @@ import { DopamineOverlay } from "./dopamine-overlay";
 import { InstallBanner } from "./install-banner";
 import { EmergencyModeProvider } from "./emergency-mode";
 import { BrainModeChip } from "./brain-mode-chip";
+import { RescueSheet } from "./rescue-sheet";
 
 function NotificationBell() {
   const { state, isSubscribed, supported, subscribe, unsubscribe } = useNotifications();
@@ -164,7 +165,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { data: brainState } = useGetBrainState({ tz: browserTimeZone() });
 
   return (
-    <EmergencyModeProvider>
+    <EmergencyModeProvider renderRescue={(task, close) => (
+      <RescueSheet task={task} open onOpenChange={(o) => { if (!o) close(); }} />
+    )}>
     <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row overflow-hidden font-sans dark">
 
       {/* ── Mobile header ─────────────────────────────────── */}

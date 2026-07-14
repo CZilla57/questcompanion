@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Anchor, CalendarClock, Check, Clock, Edit2, Flame, Pin, PinOff, Scroll, Shield, Timer, Trash2, Zap } from "lucide-react";
+import { Anchor, CalendarClock, Check, Clock, Edit2, Flame, LifeBuoy, Pin, PinOff, Scroll, Shield, Timer, Trash2, Zap } from "lucide-react";
 import { format } from "date-fns";
 import { Task, TaskPriority, useCompleteTask, useDeleteTask, usePatchTaskFocus, useUncompleteTask, useUpdateTask, useGetMyStats } from "@workspace/api-client-react";
 import { Button } from "./ui/button";
@@ -16,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { parseDueDate, toDueDateString, todayDueDate, tomorrowDueDate, nextWeekDueDate } from "@/lib/reschedule";
 import { apiErrorMessage } from "@/lib/api-error";
+import { RescueSheet } from "./rescue-sheet";
 
 interface TaskItemProps {
   task: Task;
@@ -63,6 +64,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
   const [loggingTime, setLoggingTime] = useState(false);
   const [actualInput, setActualInput] = useState(task.actualMinutes ? String(task.actualMinutes) : "");
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
+  const [rescueOpen, setRescueOpen] = useState(false);
 
   const { data: stats } = useGetMyStats({ tz: browserTimeZone() });
   const multiplier = !task.completed && stats ? getMultiplierDisplay(stats.streakDays) : null;
@@ -484,6 +486,18 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
             </PopoverContent>
           </Popover>
         )}
+        {!task.completed && (
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="I'm stuck"
+            title="I'm stuck"
+            className="h-9 w-9 cursor-pointer text-muted-foreground hover:text-primary"
+            onClick={() => setRescueOpen(true)}
+          >
+            <LifeBuoy className="w-4 h-4" />
+          </Button>
+        )}
         {task.completed && !loggingTime && (
           <Button
             variant="ghost"
@@ -518,6 +532,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
           <Trash2 className="w-4 h-4" />
         </Button>
       </div>
+      <RescueSheet task={task} open={rescueOpen} onOpenChange={setRescueOpen} />
     </div>
   );
 }
