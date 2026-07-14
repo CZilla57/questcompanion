@@ -184,10 +184,13 @@ entirely while hyperfocus is active. Dismissing is silent — no badge, no re-as
   what the alternates are for), *Pin it*, and *I'm stuck*. An optional "How long do you
   have?" chip row (5 / 15 / 30 / 60 min) feeds the `minutes` param (sessionStorage, cleared
   daily).
-- **Pinned quests** below, ordered by their momentum score, with the board's existing
-  done-count chip. Pin/unpin controls stay everywhere they are today. When the primary
-  suggestion *is* a pinned quest (pins usually win), it appears only in the suggestion card
-  and is omitted from the pinned list — no duplicate rows.
+- **Pinned quests** below, in the task list's existing order (amended during
+  implementation: the momentum response exposes reasons, not scores, so the client cannot
+  sort by score; at ≤3 pins the ordering is immaterial and the momentum-ranked pick still
+  surfaces as the primary card), with the board's existing done-count chip. Pin/unpin
+  controls stay everywhere they are today. When the primary suggestion *is* a pinned quest
+  (pins usually win), it appears only in the suggestion card and is omitted from the pinned
+  list — no duplicate rows.
 - **States**: nothing pinned + no candidates → quick-add invitation; pins all done →
   existing celebration line plus a gentle, optional "one more tiny win?" suggestion;
   otherwise → suggestion card + pinned list.
