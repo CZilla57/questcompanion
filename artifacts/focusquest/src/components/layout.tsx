@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { useLocation } from "wouter";
 import { Link } from "wouter";
 import { Home, CheckSquare, BarChart2, BarChart3, Users, Trophy, X, Zap, Bell, BellOff, Repeat, Menu, User, LogOut, Coffee, Timer, Download, Scroll } from "lucide-react";
-import { useGetNudges } from "@workspace/api-client-react";
+import { useGetNudges, useGetBrainState, BrainMode } from "@workspace/api-client-react";
 import { Button } from "./ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
 import { usePwaInstall } from "@/hooks/use-pwa-install";
 import { shouldShowInstallButton } from "@/lib/pwa";
 import { subscribeToast, unsubscribeToast } from "@/lib/push";
+import { browserTimeZone } from "@/lib/timezone";
 import {
   Tooltip,
   TooltipContent,
@@ -18,6 +19,7 @@ import {
 import { DopamineOverlay } from "./dopamine-overlay";
 import { InstallBanner } from "./install-banner";
 import { EmergencyModeProvider } from "./emergency-mode";
+import { BrainModeChip } from "./brain-mode-chip";
 
 function NotificationBell() {
   const { state, isSubscribed, supported, subscribe, unsubscribe } = useNotifications();
@@ -159,6 +161,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { data: navNudges } = useGetNudges();
   const allyUnread = (navNudges ?? []).filter((n) => !n.readAt).length;
+  const { data: brainState } = useGetBrainState({ tz: browserTimeZone() });
 
   return (
     <EmergencyModeProvider>
@@ -171,6 +174,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <span className="font-bold text-base tracking-wider uppercase">FocusQuest</span>
         </div>
         <div className="flex items-center gap-1">
+          <BrainModeChip />
           <InstallButton />
           <NotificationBell />
           <TooltipProvider>
@@ -205,6 +209,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </span>
           </div>
           <div className="flex items-center gap-1">
+            <BrainModeChip />
             <InstallButton />
             <NotificationBell />
           </div>
@@ -261,6 +266,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* ── Main content ─────────────────────────────────── */}
       <main className="flex-1 relative overflow-y-auto overflow-x-hidden p-4 md:p-8 pb-24 md:pb-8">
         <div className="max-w-5xl mx-auto">
+          {brainState?.mode === BrainMode.hyperfocus && (
+            <div className="mb-4 rounded-lg border border-primary/20 bg-primary/[0.04] px-3 py-2 text-xs text-muted-foreground">
+              Flow protected — check-in prompts muted. Break when you're ready.
+            </div>
+          )}
           <InstallBanner />
           {children}
         </div>

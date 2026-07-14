@@ -3,6 +3,7 @@ import { format, differenceInDays, parseISO } from "date-fns";
 import { ActivityItem, Task, TaskPriority, useGetMyStats, useGetTasks, useBuyStreakFreeze, useUpdateTask } from "@workspace/api-client-react";
 import { TaskItem } from "@/components/task-item";
 import { browserTimeZone } from "@/lib/timezone";
+import { BrainCheckinPrompt } from "@/components/brain-checkin-prompt";
 import { ActivityHeatmap } from "@/components/activity-heatmap";
 import { HeroSummary } from "@/components/hero-summary";
 import { RecentBadges } from "@/components/recent-badges";
@@ -179,6 +180,8 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+      <BrainCheckinPrompt />
 
       {/* ── Stat cards ───────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
