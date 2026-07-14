@@ -313,6 +313,10 @@ export interface ParsedQuickAdd {
   category?: ParsedQuickAddCategory;
 }
 
+export interface TranscribeResult {
+  text: string;
+}
+
 export type TaskInputPriority = typeof TaskInputPriority[keyof typeof TaskInputPriority];
 
 

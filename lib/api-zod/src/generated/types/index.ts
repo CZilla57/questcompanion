@@ -131,6 +131,7 @@ export * from './taskStep';
 export * from './taskUpdate';
 export * from './taskUpdateCategory';
 export * from './taskUpdatePriority';
+export * from './transcribeResult';
 export * from './user';
 export * from './userBadge';
 export * from './userStats';

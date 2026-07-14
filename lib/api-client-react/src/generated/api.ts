@@ -91,6 +91,7 @@ import type {
   TaskRecommendation,
   TaskStep,
   TaskUpdate,
+  TranscribeResult,
   User,
   UserBadge,
   UserStats,
@@ -1500,6 +1501,77 @@ export const useParseQuickAdd = <TError = ErrorType<ErrorEnvelope>,
         TContext
       > => {
       return useMutation(getParseQuickAddMutationOptions(options));
+    }
+
+export const getTranscribeAudioUrl = () => {
+
+
+
+
+  return `/api/tasks/transcribe`
+}
+
+/**
+ * @summary Transcribe a short voice clip into Quick-Add text
+ */
+export const transcribeAudio = async (transcribeAudioBody: Blob, options?: RequestInit): Promise<TranscribeResult> => {
+
+  return customFetch<TranscribeResult>(getTranscribeAudioUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'audio/webm', ...options?.headers },
+    body: JSON.stringify(
+      transcribeAudioBody,)
+  }
+);}
+
+
+
+
+export const getTranscribeAudioMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof transcribeAudio>>, TError,{data: BodyType<Blob>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof transcribeAudio>>, TError,{data: BodyType<Blob>}, TContext> => {
+
+const mutationKey = ['transcribeAudio'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof transcribeAudio>>, {data: BodyType<Blob>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  transcribeAudio(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TranscribeAudioMutationResult = NonNullable<Awaited<ReturnType<typeof transcribeAudio>>>
+    export type TranscribeAudioMutationBody = BodyType<Blob>
+    export type TranscribeAudioMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Transcribe a short voice clip into Quick-Add text
+ */
+export const useTranscribeAudio = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof transcribeAudio>>, TError,{data: BodyType<Blob>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof transcribeAudio>>,
+        TError,
+        {data: BodyType<Blob>},
+        TContext
+      > => {
+      return useMutation(getTranscribeAudioMutationOptions(options));
     }
 
 export const getGetTaskUrl = (id: number,) => {
