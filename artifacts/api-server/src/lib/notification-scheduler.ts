@@ -131,7 +131,7 @@ async function sendDailySummary() {
 
   if (totalTasks > 0 && doneCount > 0 && remainingCount > 0) {
     const xpLine = xpToday > 0 ? ` · ${xpToday} XP earned` : "";
-    const streakLine = streakSafe ? ` Streak safe (${streakDays}d).` : " Streak at risk!";
+    const streakLine = streakSafe ? ` Streak safe (${streakDays}d).` : " A quick quest keeps the momentum going.";
     await notify(
       DEFAULT_USER_ID,
       "Evening Debrief",
@@ -147,8 +147,8 @@ async function sendDailySummary() {
       : "";
     await notify(
       DEFAULT_USER_ID,
-      "Streak Alert! ⚠️",
-      `Your ${streakDays}-day streak ends at midnight.${taskLine} Complete one quest to keep it alive!`,
+      "Keep the flame going 🔥",
+      `Your ${streakDays}-day streak is one small quest away from continuing.${taskLine}`,
       "daily-summary",
     );
     return;

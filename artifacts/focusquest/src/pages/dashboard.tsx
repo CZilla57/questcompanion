@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Flame, Trophy, Target, Award, Zap, Check,
-  Shield, ShieldCheck, ShieldOff, AlertTriangle, X, TrendingDown, Clock, Timer, Play,
+  Shield, ShieldCheck, ShieldOff, X, Clock, Timer, Play, Sunrise, Sparkles,
 } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -303,17 +303,17 @@ export default function Dashboard() {
           className="relative flex items-start gap-4 p-4 rounded-xl border border-amber-500/40 bg-amber-500/8 shadow-[0_0_20px_rgba(251,191,36,0.08)] animate-in fade-in slide-in-from-top-2 duration-300"
         >
           <div className="flex-shrink-0 p-2 rounded-lg bg-amber-500/15 border border-amber-500/30 mt-0.5">
-            <TrendingDown className="w-5 h-5 text-amber-400" aria-hidden />
+            <Sunrise className="w-5 h-5 text-amber-400" aria-hidden />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <AlertTriangle className="w-4 h-4 text-amber-400" aria-hidden />
-              <span className="text-sm font-bold uppercase tracking-wider text-amber-400">XP Ranking Sliding</span>
+              <Sparkles className="w-4 h-4 text-amber-400" aria-hidden />
+              <span className="text-sm font-bold uppercase tracking-wider text-amber-400">{daysSinceActive >= 999 ? "Ready for quest one?" : "Welcome back"}</span>
             </div>
             <p className="text-sm text-muted-foreground">
               {daysSinceActive >= 999
                 ? "No quests completed yet — your weekly XP ranking hasn't started. Complete your first quest to get on the board."
-                : `You've been away for ${daysSinceActive} day${daysSinceActive === 1 ? "" : "s"}. Weekly XP rankings reset every Monday — every quest you skip lets others pull ahead.`
+                : `It's been ${daysSinceActive} day${daysSinceActive === 1 ? "" : "s"} — today starts fresh. One small quest gets your week moving.`
               }
             </p>
             <Button
@@ -321,7 +321,7 @@ export default function Dashboard() {
               size="sm"
               className="mt-3 bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 hover:text-amber-200 h-8 px-4 cursor-pointer"
             >
-              <Link href="/tasks">Get Back on Track →</Link>
+              <Link href="/tasks">Pick a small quest →</Link>
             </Button>
           </div>
           <button
