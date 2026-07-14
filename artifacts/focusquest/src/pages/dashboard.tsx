@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Flame, Trophy, Target, Award, Zap, Check,
-  Shield, ShieldCheck, ShieldOff, AlertTriangle, X, TrendingDown, Clock, Timer,
+  Shield, ShieldCheck, ShieldOff, AlertTriangle, X, TrendingDown, Clock, Timer, Play,
 } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -451,6 +451,7 @@ export default function Dashboard() {
                       {activity.type === 'streak_freeze_used'   && <ShieldCheck className="w-4 h-4 text-cyan-400" />}
                       {activity.type === 'focus_session'        && <Timer       className="w-4 h-4 text-primary" />}
                       {activity.type === 'focus_complete'       && <Timer       className="w-4 h-4 text-primary" />}
+                      {activity.type === 'initiation'           && <Play        className="w-4 h-4 text-primary" />}
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground leading-snug">{activity.description}</p>
