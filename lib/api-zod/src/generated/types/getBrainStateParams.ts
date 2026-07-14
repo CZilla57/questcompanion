@@ -6,9 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type GetTaskRecommendationParams = {
+export type GetBrainStateParams = {
 /**
- * Comma-separated task IDs to exclude from consideration
+ * IANA timezone for expiry and checkedInToday derivation
  */
-exclude?: string;
+tz?: string;
 };

@@ -1051,11 +1051,85 @@ export interface BuyGearResult {
   remainingXp: number;
 }
 
-export interface TaskRecommendation {
-  task?: Task | null;
+export type BrainMode = typeof BrainMode[keyof typeof BrainMode];
+
+
+export const BrainMode = {
+  focused: 'focused',
+  distracted: 'distracted',
+  frozen: 'frozen',
+  hyperfocus: 'hyperfocus',
+  neutral: 'neutral',
+} as const;
+
+export type BrainCheckinSource = typeof BrainCheckinSource[keyof typeof BrainCheckinSource];
+
+
+export const BrainCheckinSource = {
+  tap: 'tap',
+  daily_prompt: 'daily_prompt',
+  emergency_exit: 'emergency_exit',
+} as const;
+
+export interface BrainState {
+  mode: BrainMode;
+  /** @nullable */
+  since: string | null;
+  /** @nullable */
+  expiresAt: string | null;
+  checkedInToday: boolean;
+}
+
+export interface BrainCheckinRequest {
+  mode: BrainMode;
+  source?: BrainCheckinSource;
+  tz: string;
+}
+
+export type MomentumSuggestionKind = typeof MomentumSuggestionKind[keyof typeof MomentumSuggestionKind];
+
+
+export const MomentumSuggestionKind = {
+  primary: 'primary',
+  alternate: 'alternate',
+} as const;
+
+export interface MomentumSuggestion {
+  task: Task;
   reason: string;
-  category?: string;
-  categoryLabel?: string;
+  kind: MomentumSuggestionKind;
+}
+
+export interface MomentumResponse {
+  mode: BrainMode;
+  suggestions: MomentumSuggestion[];
+}
+
+export type RescueEventRequestBlocker = typeof RescueEventRequestBlocker[keyof typeof RescueEventRequestBlocker];
+
+
+export const RescueEventRequestBlocker = {
+  too_big: 'too_big',
+  cant_start: 'cant_start',
+  overwhelmed: 'overwhelmed',
+  wrong_quest: 'wrong_quest',
+} as const;
+
+export type RescueEventRequestIntervention = typeof RescueEventRequestIntervention[keyof typeof RescueEventRequestIntervention];
+
+
+export const RescueEventRequestIntervention = {
+  breakdown: 'breakdown',
+  micro_start: 'micro_start',
+  emergency_mode: 'emergency_mode',
+  reroll: 'reroll',
+} as const;
+
+export interface RescueEventRequest {
+  /** @nullable */
+  taskId?: number | null;
+  blocker: RescueEventRequestBlocker;
+  intervention: RescueEventRequestIntervention;
 }
 
 export interface InsightsCategoryBreakdown {
@@ -1339,13 +1413,6 @@ days?: number;
 tz?: string;
 };
 
-export type GetTaskRecommendationParams = {
-/**
- * Comma-separated task IDs to exclude from consideration
- */
-exclude?: string;
-};
-
 export type GetTasksParams = {
 /**
  * Filter by date (YYYY-MM-DD). Defaults to today.
@@ -1379,6 +1446,33 @@ export const GetTasksCategory = {
   travel: 'travel',
   default: 'default',
 } as const;
+
+export type GetTasksMomentumParams = {
+/**
+ * Available minutes right now (optional)
+ * @nullable
+ */
+minutes?: number | null;
+/**
+ * IANA timezone for local-hour and local-day scoring
+ */
+tz?: string;
+/**
+ * Comma-separated task IDs to exclude (skip loop)
+ */
+exclude?: string;
+};
+
+export type GetBrainStateParams = {
+/**
+ * IANA timezone for expiry and checkedInToday derivation
+ */
+tz?: string;
+};
+
+export type CreateRescueEvent201 = {
+  id: number;
+};
 
 export type PatchTaskStepParams = {
 /**

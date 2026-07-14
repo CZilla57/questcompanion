@@ -3,6 +3,7 @@ import healthRouter from "./health";
 import authRouter from "./auth";
 import usersRouter from "./users";
 import tasksRouter from "./tasks";
+import momentumRouter from "./momentum";
 import badgesRouter from "./badges";
 import accountabilityRouter from "./accountability";
 import leaderboardRouter from "./leaderboard";
@@ -16,6 +17,8 @@ import cronRouter from "./cron";
 import calendarRouter from "./calendar";
 import focusSessionsRouter from "./focus-sessions";
 import questlinesRouter from "./questlines";
+import brainRouter from "./brain";
+import rescueRouter from "./rescue";
 
 const router: IRouter = Router();
 
@@ -23,6 +26,8 @@ router.use(healthRouter);
 router.use(cronRouter);
 router.use(authRouter);
 router.use(usersRouter);
+// /tasks/momentum must beat tasksRouter's /tasks/:id — order matters.
+router.use(momentumRouter);
 router.use(tasksRouter);
 router.use(recurringTasksRouter);
 router.use(badgesRouter);
@@ -36,5 +41,7 @@ router.use(dopamineRewardsRouter);
 router.use(calendarRouter);
 router.use(focusSessionsRouter);
 router.use(questlinesRouter);
+router.use(brainRouter);
+router.use(rescueRouter);
 
 export default router;

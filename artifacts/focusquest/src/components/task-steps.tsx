@@ -6,6 +6,7 @@ import {
   useDeleteTaskSteps,
   getGetTasksQueryKey,
   getGetMyStatsQueryKey,
+  getGetTasksMomentumQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "./ui/button";
@@ -57,6 +58,7 @@ export function TaskSteps({ task }: { task: Task }) {
       {
         onSuccess: (res) => {
           invalidate();
+          queryClient.invalidateQueries({ queryKey: getGetTasksMomentumQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetMyStatsQueryKey() });
           const t = initiationToast(res.initiationXp);
           if (t) toast({ ...t, className: "border-primary" });

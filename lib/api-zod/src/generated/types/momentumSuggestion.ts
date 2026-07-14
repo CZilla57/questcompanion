@@ -5,11 +5,11 @@
  * FocusQuest API - ADHD gamified task tracker
  * OpenAPI spec version: 0.1.0
  */
+import type { MomentumSuggestionKind } from './momentumSuggestionKind';
 import type { Task } from './task';
 
-export interface TaskRecommendation {
-  task?: Task | null;
+export interface MomentumSuggestion {
+  task: Task;
   reason: string;
-  category?: string;
-  categoryLabel?: string;
+  kind: MomentumSuggestionKind;
 }
