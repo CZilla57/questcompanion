@@ -18,6 +18,7 @@ import calendarRouter from "./calendar";
 import focusSessionsRouter from "./focus-sessions";
 import questlinesRouter from "./questlines";
 import brainRouter from "./brain";
+import rescueRouter from "./rescue";
 
 const router: IRouter = Router();
 
@@ -41,5 +42,6 @@ router.use(calendarRouter);
 router.use(focusSessionsRouter);
 router.use(questlinesRouter);
 router.use(brainRouter);
+router.use(rescueRouter);
 
 export default router;
