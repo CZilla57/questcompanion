@@ -16,6 +16,7 @@ import cronRouter from "./cron";
 import calendarRouter from "./calendar";
 import focusSessionsRouter from "./focus-sessions";
 import questlinesRouter from "./questlines";
+import brainRouter from "./brain";
 
 const router: IRouter = Router();
 
@@ -36,5 +37,6 @@ router.use(dopamineRewardsRouter);
 router.use(calendarRouter);
 router.use(focusSessionsRouter);
 router.use(questlinesRouter);
+router.use(brainRouter);
 
 export default router;
