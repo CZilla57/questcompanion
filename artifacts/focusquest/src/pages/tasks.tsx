@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Clock, Plus, Filter, Target, Zap, Info, Sparkles, X, RefreshCw, ChevronRight } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Plus, Filter, Target, Zap, Info, Sparkles, X, RefreshCw, ChevronRight, Pin } from "lucide-react";
 import { Task, useGetTasks, useCreateTask, useUpdateTask, useBreakdownTask, useGetQuestlines, TaskPriority } from "@workspace/api-client-react";
 import { TaskItem } from "@/components/task-item";
 import { QuickAddBar } from "@/components/quick-add-bar";
@@ -17,6 +17,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getGetTasksQueryKey } from "@workspace/api-client-react";
 import { CATEGORIES, CATEGORY_COLORS, CATEGORY_HEX_COLORS } from "@/lib/categories";
 import { parseDueDate, toDueDateString } from "@/lib/reschedule";
+import { focusBoardState } from "@/lib/focus-board";
 import { apiErrorMessage } from "@/lib/api-error";
 
 interface PointPreview {
@@ -491,27 +492,44 @@ export default function Tasks() {
       {/* Today's Focus section */}
       {(() => {
         const todayStr = format(new Date(), 'yyyy-MM-dd');
-        const focusTasks = (tasks ?? []).filter(
-          (t) => t.isDailyFocus && t.focusDate === todayStr && !t.completed
+        const board = focusBoardState(tasks ?? [], todayStr);
+        const heading = (
+          <div className="flex items-center gap-2">
+            <Target className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-primary">Today's Focus</h2>
+          </div>
         );
-        if (focusTasks.length === 0) return null;
-        const completedFocus = (tasks ?? []).filter(
-          (t) => t.isDailyFocus && t.focusDate === todayStr && t.completed
-        );
-        const totalPinned = focusTasks.length + completedFocus.length;
+        if (board.kind === "empty") {
+          return (
+            <div className="mb-6">
+              <div className="mb-3">{heading}</div>
+              <div className="flex items-center gap-3 p-4 rounded-xl border-2 border-dashed border-primary/25 bg-primary/[0.03]">
+                <Pin className="w-4 h-4 text-primary/70 flex-shrink-0" aria-hidden />
+                <p className="text-sm text-muted-foreground">
+                  Pick up to three quests to focus on today — tap the pin on any quest below.
+                </p>
+              </div>
+            </div>
+          );
+        }
+        if (board.kind === "all-done") {
+          return (
+            <div className="mb-6">
+              <div className="mb-3">{heading}</div>
+              <p className="text-sm text-primary/90 px-1">Focus cleared for today ✦</p>
+            </div>
+          );
+        }
         return (
           <div className="mb-6">
             <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Target className="w-4 h-4 text-primary" />
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-primary">Today's Focus</h2>
-              </div>
+              {heading}
               <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-full bg-muted border border-border">
-                {completedFocus.length} / {totalPinned} done · {3 - totalPinned} slot{3 - totalPinned !== 1 ? "s" : ""} left
+                {board.completedCount} / {board.totalPinned} done · {3 - board.totalPinned} slot{3 - board.totalPinned !== 1 ? "s" : ""} left
               </span>
             </div>
             <div className="space-y-2 pl-1 border-l-2 border-primary/30">
-              {focusTasks.map(task => (
+              {board.focusTasks.map(task => (
                 <TaskItem key={task.id} task={task} onEdit={handleOpenEdit} />
               ))}
             </div>
