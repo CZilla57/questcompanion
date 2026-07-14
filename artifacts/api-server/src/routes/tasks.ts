@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import express, { Router, type IRouter } from "express";
 import { eq, and, or, desc, count, inArray } from "drizzle-orm";
 import { applyMultiplier } from "../lib/xp-multiplier";
 import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable, taskStepsTable, questlinesTable } from "@workspace/db";
@@ -15,6 +15,8 @@ import { isValidDueTime, isValidDueDate } from "../lib/task-datetime";
 import { parseQuickAdd } from "@workspace/quick-add";
 import { buildQuickAddPrompt, parseQuickAddResult, QuickAddParseError } from "../lib/ai/quick-add-parse";
 import { parseCooldown } from "../lib/ai/parse-cooldown";
+import { transcribeAudio, audioExtensionFor } from "../lib/ai/transcribe-audio";
+import { transcribeCooldown } from "../lib/ai/transcribe-cooldown";
 import { isBonusGatingTask, countsAsTodayCompletion } from "../lib/anchored-tasks";
 import { isQuestlineAssignable } from "../lib/questlines";
 import { hungerStage } from "../lib/hero-care";
@@ -377,6 +379,59 @@ router.post("/tasks/parse", async (req, res): Promise<void> => {
   if (deterministic.category) merged.category = deterministic.category;
   res.json(merged);
 });
+
+router.post(
+  "/tasks/transcribe",
+  // Reject unauthenticated requests before express.raw buffers up to 10MB.
+  (req, res, next) => {
+    if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+    next();
+  },
+  // The global parser is express.json() only, which ignores audio bodies —
+  // this scoped raw parser fills req.body with a Buffer for the two container
+  // types MediaRecorder actually produces (type matching ignores codec params).
+  // Oversized bodies get an automatic 413 from the limit — with Express's
+  // default error body, not our ErrorEnvelope (no shaping middleware exists).
+  // Acceptable: the 60s cap keeps real clips ~1MB, and the client maps any
+  // unexpected status to a generic toast.
+  express.raw({ type: ["audio/webm", "audio/mp4"], limit: "10mb" }),
+  async (req, res): Promise<void> => {
+    if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+    const userId = req.gameUserId;
+
+    const contentType = req.get("content-type") ?? "";
+    // A non-matching content type leaves req.body unparsed, so Buffer.isBuffer
+    // doubles as the unsupported-container check.
+    if (!audioExtensionFor(contentType) || !Buffer.isBuffer(req.body) || req.body.length === 0) {
+      res.status(400).json({ error: "An audio/webm or audio/mp4 body is required" });
+      return;
+    }
+
+    if (!isAiConfigured()) {
+      res.status(503).json({ error: "Voice transcription is not configured" });
+      return;
+    }
+    if (!transcribeCooldown.tryAcquire(userId)) {
+      res.status(429).json({ error: "Slow down a moment before transcribing again." });
+      return;
+    }
+
+    let text: string;
+    try {
+      text = await transcribeAudio(req.body, contentType);
+    } catch (err) {
+      if (err instanceof AiClientError) {
+        logger.warn({ err }, "voice transcription failed");
+        res.status(502).json({ error: "Couldn't transcribe, try typing it." });
+        return;
+      }
+      throw err;
+    }
+
+    // May legitimately be empty (silent clip) — the frontend handles that case.
+    res.json({ text });
+  },
+);
 
 router.get("/tasks/:id", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }

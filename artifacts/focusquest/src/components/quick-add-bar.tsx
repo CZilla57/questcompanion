@@ -1,14 +1,16 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
-import { Sparkles, CalendarClock, Zap, Plus, RefreshCw } from "lucide-react";
+import { Sparkles, CalendarClock, Zap, Plus, RefreshCw, Mic, Square } from "lucide-react";
 import { parseQuickAdd, type ParsedQuickAdd } from "@workspace/quick-add";
-import { useCreateTask, useParseQuickAdd, getGetTasksQueryKey, getGetQuestlinesQueryKey, getGetQuestlineQueryKey } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useCreateTask, useParseQuickAdd, getGetTasksQueryKey, getGetQuestlinesQueryKey, getGetQuestlineQueryKey, customFetch, type TranscribeResult } from "@workspace/api-client-react";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { CATEGORY_HEX_COLORS, CATEGORY_LABEL } from "@/lib/categories";
 import { formatTime12h } from "@/lib/format-time";
+import { useVoiceRecording } from "@/hooks/use-voice-recording";
+import { isTooShortToTranscribe, formatElapsed } from "@/lib/voice-recording";
 
 function dateLabel(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
@@ -87,9 +89,12 @@ export function QuickAddBar({ selectedDate, questlineId, autoFocus = true }: { s
     });
   };
 
-  const handleSmartParse = () => {
-    const requested = text;
-    parseMutation.mutate({ data: { text, today: format(new Date(), "yyyy-MM-dd") } }, {
+  const handleSmartParse = (next?: string) => {
+    const requested = next ?? text;
+    // Keep the stale-response guard in sync when invoked with text that hasn't
+    // rendered yet (the voice path calls this in the same tick as setText).
+    textRef.current = requested;
+    parseMutation.mutate({ data: { text: requested, today: format(new Date(), "yyyy-MM-dd") } }, {
       onSuccess: (result) => {
         // Ignore a response for text the user has since edited.
         if (textRef.current !== requested) return;
@@ -111,6 +116,62 @@ export function QuickAddBar({ selectedDate, questlineId, autoFocus = true }: { s
     });
   };
 
+  // orval's generated useTranscribeAudio JSON.stringifies its Blob body (v8
+  // limitation with binary request bodies), which would silently discard the
+  // audio — so this one endpoint calls customFetch directly. The /api base and
+  // error shaping (ApiError.status) still come from the shared client, and the
+  // generated TranscribeResult type keeps the response contract typed.
+  const transcribeMutation = useMutation({
+    mutationFn: (blob: Blob) =>
+      customFetch<TranscribeResult>("/api/tasks/transcribe", {
+        method: "POST",
+        headers: { "content-type": blob.type || "audio/webm" },
+        body: blob,
+      }),
+  });
+
+  const voice = useVoiceRecording({
+    onClip: (blob, durationMs, autoStopped) => {
+      if (isTooShortToTranscribe(durationMs)) {
+        toast({ title: "Didn't catch that — try again or type it.", variant: "destructive" });
+        return;
+      }
+      if (autoStopped) {
+        toast({ title: "Hit the 60-second limit — transcribing what I got." });
+      }
+      transcribeMutation.mutate(blob, {
+        onSuccess: ({ text: transcript }) => {
+          if (!transcript.trim()) {
+            toast({ title: "Didn't catch that — try again or type it.", variant: "destructive" });
+            return;
+          }
+          setText(transcript);
+          setAiFields(null);
+          // Spoken phrasing is free-form — run Smart parse without an extra tap.
+          // Cheap even when unneeded: /tasks/parse short-circuits server-side
+          // when the deterministic parser already resolved a date/time.
+          handleSmartParse(transcript);
+        },
+        onError: (err: any) => {
+          const status = err?.status;
+          const msg =
+            status === 503 ? "Voice input isn't set up yet."
+            : status === 429 ? "Give it a moment and try again."
+            : "Couldn't transcribe — try typing it.";
+          toast({ title: msg, variant: "destructive" });
+        },
+      });
+    },
+    onError: (kind) =>
+      toast({
+        title:
+          kind === "denied"
+            ? "Mic access is blocked — enable it in your browser settings."
+            : "Couldn't start recording.",
+        variant: "destructive",
+      }),
+  });
+
   return (
     <div className="bg-card border border-primary/30 rounded-xl p-3 space-y-2 shadow-[0_0_15px_rgba(0,255,255,0.06)]">
       <div className="flex gap-2">
@@ -123,6 +184,28 @@ export function QuickAddBar({ selectedDate, questlineId, autoFocus = true }: { s
           className="border-primary/20 focus:border-primary"
           autoFocus={autoFocus}
         />
+        {voice.supported && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => (voice.recording ? voice.stop() : voice.start())}
+            disabled={transcribeMutation.isPending}
+            aria-pressed={voice.recording}
+            aria-label={voice.recording ? "Stop recording" : "Start voice input"}
+            className={`shrink-0 border-primary/20 ${voice.recording ? "text-destructive" : "text-muted-foreground hover:text-primary"}`}
+          >
+            {voice.recording ? (
+              <span className="flex items-center gap-1">
+                <Square className="w-3 h-3 fill-current animate-pulse" />
+                <span className="text-xs tabular-nums">{formatElapsed(voice.elapsedMs)}</span>
+              </span>
+            ) : transcribeMutation.isPending ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <Mic className="w-4 h-4" />
+            )}
+          </Button>
+        )}
         <Button onClick={handleCreate} disabled={!canCreate} className="bg-primary hover:bg-primary/90 text-primary-foreground shrink-0">
           <Plus className="w-4 h-4 mr-1" /> Add
         </Button>
@@ -157,7 +240,7 @@ export function QuickAddBar({ selectedDate, questlineId, autoFocus = true }: { s
             </span>
           )}
           {showSmartParse && (
-            <Button variant="ghost" size="sm" onClick={handleSmartParse} disabled={parseMutation.isPending} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary gap-1">
+            <Button variant="ghost" size="sm" onClick={() => handleSmartParse()} disabled={parseMutation.isPending} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary gap-1">
               {parseMutation.isPending ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
               Smart parse
             </Button>

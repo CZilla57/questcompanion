@@ -383,6 +383,14 @@ export const ParseQuickAddResponse = zod.object({
 
 
 /**
+ * @summary Transcribe a short voice clip into Quick-Add text
+ */
+export const TranscribeAudioResponse = zod.object({
+  "text": zod.string()
+})
+
+
+/**
  * @summary Get a single task
  */
 export const GetTaskResponse = zod.object({
