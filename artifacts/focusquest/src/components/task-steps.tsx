@@ -5,6 +5,7 @@ import {
   usePatchTaskStep,
   useDeleteTaskSteps,
   getGetTasksQueryKey,
+  getGetMyStatsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "./ui/button";
@@ -17,6 +18,8 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { initiationToast } from "@/lib/initiation-toast";
+import { browserTimeZone } from "@/lib/timezone";
 
 function breakdownErrorMessage(err: any): string {
   const status = err?.status;
@@ -50,9 +53,14 @@ export function TaskSteps({ task }: { task: Task }) {
 
   const handleToggle = (stepId: number, done: boolean) => {
     patchStepMutation.mutate(
-      { id: task.id, stepId, data: { done } },
+      { id: task.id, stepId, data: { done }, params: { tz: browserTimeZone() } },
       {
-        onSuccess: () => invalidate(),
+        onSuccess: (res) => {
+          invalidate();
+          queryClient.invalidateQueries({ queryKey: getGetMyStatsQueryKey() });
+          const t = initiationToast(res.initiationXp);
+          if (t) toast({ ...t, className: "border-primary" });
+        },
         onError: () =>
           toast({ title: "Couldn't update that step — try again.", variant: "destructive" }),
       },
