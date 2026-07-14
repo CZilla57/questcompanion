@@ -111,6 +111,10 @@ describe("first_move", () => {
     const g = evaluateInitiationAwards(sessionEvent(), quietState({ lastFirstMoveAt: null }), NOW);
     expect(g.map((a) => a.kind)).toEqual(["first_move"]);
   });
+  it("fires on a step_check event too", () => {
+    const g = evaluateInitiationAwards(stepEvent(plainTask, true), quietState({ lastFirstMoveAt: null }), NOW);
+    expect(g).toEqual([{ kind: "first_move", points: FIRST_MOVE_XP, refId: null, description: "First move of the day" }]);
+  });
 });
 
 describe("stacking + summary", () => {

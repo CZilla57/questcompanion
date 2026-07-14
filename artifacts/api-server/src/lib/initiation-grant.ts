@@ -57,7 +57,7 @@ export async function grantInitiationAwards(
       questlineKickoffAwarded = await refAwarded("questline_kickoff", event.task.questlineId);
       if (!questlineKickoffAwarded) {
         const [ql] = await tx.select().from(questlinesTable)
-          .where(eq(questlinesTable.id, event.task.questlineId))
+          .where(and(eq(questlinesTable.id, event.task.questlineId), eq(questlinesTable.userId, user.id)))
           .limit(1);
         questlineTitle = ql?.title ?? null;
       }

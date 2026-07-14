@@ -1190,6 +1190,7 @@ router.patch("/tasks/:id/steps/:stepId", async (req, res): Promise<void> => {
       .set({ done })
       .where(eq(taskStepsTable.id, current.id))
       .returning();
+    if (!updated) return { status: "not_found" };
 
     // Initiation XP only on a false→true transition; unchecking never refunds.
     let initiationXp: InitiationXp = { total: 0, awards: [] };
