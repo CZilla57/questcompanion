@@ -9,6 +9,7 @@ import {
 import { Button } from "./ui/button";
 import { MODE_META, promptDismissedToday, dismissPromptToday } from "@/lib/brain-mode-meta";
 import { browserTimeZone } from "@/lib/timezone";
+import { useToast } from "@/hooks/use-toast";
 
 const PROMPT_MODES: BrainMode[] = [
   BrainMode.focused, BrainMode.distracted, BrainMode.frozen, BrainMode.hyperfocus,
@@ -21,10 +22,13 @@ export function BrainCheckinPrompt() {
   const { data: state } = useGetBrainState({ tz });
   const checkin = useCreateBrainCheckin();
   const queryClient = useQueryClient();
-  const [dismissed, setDismissed] = useState(() => promptDismissedToday(todayStr));
+  const { toast } = useToast();
+  const [dismissedDay, setDismissedDay] = useState<string | null>(() =>
+    promptDismissedToday(todayStr) ? todayStr : null,
+  );
 
   // checkedInToday covers "expired earlier today" — never re-summon (spec).
-  if (!state || state.checkedInToday || dismissed || state.mode === BrainMode.hyperfocus) return null;
+  if (!state || state.checkedInToday || dismissedDay === todayStr || state.mode === BrainMode.hyperfocus) return null;
 
   const pick = (mode: BrainMode) => {
     checkin.mutate(
@@ -34,13 +38,14 @@ export function BrainCheckinPrompt() {
           queryClient.invalidateQueries({ queryKey: getGetBrainStateQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetTasksMomentumQueryKey() });
         },
+        onError: () => toast({ title: "Couldn't save that — try again", variant: "destructive" }),
       },
     );
   };
 
   const dismiss = () => {
     dismissPromptToday(todayStr);
-    setDismissed(true);
+    setDismissedDay(todayStr);
   };
 
   return (

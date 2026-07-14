@@ -48,7 +48,7 @@ export function BrainModeChip() {
   };
 
   return (
-    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setFrozenOffer(false); }}>
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); setFrozenOffer(false); }}>
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
