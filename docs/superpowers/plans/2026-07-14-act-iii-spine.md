@@ -1312,6 +1312,7 @@ git commit -m "feat(api): POST /rescue/events with enum + ownership validation"
 - Test: `artifacts/focusquest/src/lib/brain-mode-meta.test.ts`
 - Create: `artifacts/focusquest/src/lib/countdown.ts`
 - Test: `artifacts/focusquest/src/lib/countdown.test.ts`
+- Create: `artifacts/focusquest/src/hooks/use-countdown.ts` (hook wrapping reducer + 1s interval — the ONE place the interval lives; components must not re-implement it)
 
 **Interfaces:**
 - Consumes: generated `BrainMode` enum from `@workspace/api-client-react` (Task 3).
@@ -1329,6 +1330,9 @@ export type CountdownAction = { type: "start"; seconds: number } | { type: "tick
 export const MICRO_START_SECONDS = 120;
 export function countdownReducer(state: CountdownState, action: CountdownAction): CountdownState;
 export const countdownIdle: CountdownState;
+export function formatClock(totalSeconds: number): string; // "2:00", "1:05", "0:00"
+// hooks/use-countdown.ts
+export function useCountdown(): [CountdownState, React.Dispatch<CountdownAction>]; // reducer + auto 1s interval while running
 ```
 
 - [ ] **Step 1: Write the failing tests**
@@ -1381,7 +1385,7 @@ describe("daily prompt dismissal", () => {
 
 ```ts
 import { describe, it, expect } from "vitest";
-import { countdownReducer, countdownIdle, MICRO_START_SECONDS } from "./countdown";
+import { countdownReducer, countdownIdle, formatClock, MICRO_START_SECONDS } from "./countdown";
 
 describe("countdownReducer", () => {
   it("starts at the requested seconds", () => {
@@ -1413,6 +1417,15 @@ describe("countdownReducer", () => {
   it("reset returns to idle", () => {
     let s = countdownReducer(countdownIdle, { type: "start", seconds: 120 });
     expect(countdownReducer(s, { type: "reset" })).toEqual(countdownIdle);
+  });
+});
+
+describe("formatClock", () => {
+  it("renders m:ss", () => {
+    expect(formatClock(120)).toBe("2:00");
+    expect(formatClock(65)).toBe("1:05");
+    expect(formatClock(9)).toBe("0:09");
+    expect(formatClock(0)).toBe("0:00");
   });
 });
 ```
@@ -1515,6 +1528,32 @@ export function countdownReducer(state: CountdownState, action: CountdownAction)
       return countdownIdle;
   }
 }
+
+/** m:ss for countdown displays. */
+export function formatClock(totalSeconds: number): string {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+```
+
+- [ ] **Step 4b: Write `artifacts/focusquest/src/hooks/use-countdown.ts`** (no unit test — hooks/components aren't unit-tested in this repo; the reducer it wraps is)
+
+```ts
+import { useEffect, useReducer, type Dispatch } from "react";
+import { countdownReducer, countdownIdle, type CountdownState, type CountdownAction } from "@/lib/countdown";
+
+/** Countdown state + dispatch with the 1-second tick interval managed here —
+ * the single home of the interval so components never re-implement it. */
+export function useCountdown(): [CountdownState, Dispatch<CountdownAction>] {
+  const [state, dispatch] = useReducer(countdownReducer, countdownIdle);
+  useEffect(() => {
+    if (state.status !== "running") return;
+    const t = setInterval(() => dispatch({ type: "tick" }), 1000);
+    return () => clearInterval(t);
+  }, [state.status]);
+  return [state, dispatch];
+}
 ```
 
 - [ ] **Step 5: Run tests to verify they pass**
@@ -1525,7 +1564,7 @@ Expected: PASS.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add artifacts/focusquest/src/lib/brain-mode-meta.ts artifacts/focusquest/src/lib/brain-mode-meta.test.ts artifacts/focusquest/src/lib/countdown.ts artifacts/focusquest/src/lib/countdown.test.ts
+git add artifacts/focusquest/src/lib/brain-mode-meta.ts artifacts/focusquest/src/lib/brain-mode-meta.test.ts artifacts/focusquest/src/lib/countdown.ts artifacts/focusquest/src/lib/countdown.test.ts artifacts/focusquest/src/hooks/use-countdown.ts
 git commit -m "feat(web): brain-mode metadata + shared micro-start countdown reducer"
 ```
 
@@ -1617,13 +1656,14 @@ Check `useCompleteTask`'s exact mutate shape and `dispatchQuestCompleted`'s sign
 - [ ] **Step 2: Write `artifacts/focusquest/src/components/emergency-mode.tsx`**
 
 ```tsx
-import { createContext, useContext, useEffect, useMemo, useReducer, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Task, useGetTasksMomentum, useCreateBrainCheckin, BrainMode, getGetBrainStateQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "./ui/button";
 import { X, Check, LifeBuoy } from "lucide-react";
 import { browserTimeZone } from "@/lib/timezone";
-import { countdownReducer, countdownIdle, MICRO_START_SECONDS } from "@/lib/countdown";
+import { formatClock, MICRO_START_SECONDS } from "@/lib/countdown";
+import { useCountdown } from "@/hooks/use-countdown";
 import { useMicroStep } from "@/hooks/use-micro-step";
 
 interface EmergencyModeApi {
@@ -1635,12 +1675,6 @@ interface EmergencyModeApi {
 const EmergencyModeContext = createContext<EmergencyModeApi>({ active: false, enter: () => {}, exit: () => {} });
 export const useEmergencyMode = () => useContext(EmergencyModeContext);
 
-function formatClock(totalSeconds: number): string {
-  const m = Math.floor(totalSeconds / 60);
-  const s = totalSeconds % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
-
 function EmergencyOverlay({ onExit, renderRescue }: {
   onExit: () => void;
   renderRescue?: (task: Task, close: () => void) => React.ReactNode;
@@ -1651,7 +1685,7 @@ function EmergencyOverlay({ onExit, renderRescue }: {
   const suggestion = data?.suggestions?.[0] ?? null;
   const task = suggestion?.task ?? null;
 
-  const [clock, dispatch] = useReducer(countdownReducer, countdownIdle);
+  const [clock, dispatch] = useCountdown();
   const [celebrating, setCelebrating] = useState(false);
   const [rescueOpen, setRescueOpen] = useState(false);
   const { targetLabel, complete, isPending } = useMicroStep(task);
@@ -1662,12 +1696,6 @@ function EmergencyOverlay({ onExit, renderRescue }: {
   useEffect(() => {
     if (task && clock.status === "idle") dispatch({ type: "start", seconds: MICRO_START_SECONDS });
   }, [task, clock.status]);
-
-  useEffect(() => {
-    if (clock.status !== "running") return;
-    const t = setInterval(() => dispatch({ type: "tick" }), 1000);
-    return () => clearInterval(t);
-  }, [clock.status]);
 
   const handleDidIt = () => {
     complete();
@@ -2027,7 +2055,7 @@ git commit -m "feat(web): brain mode chip, daily soft prompt, hyperfocus banner"
 - [ ] **Step 1: Write `artifacts/focusquest/src/components/rescue-sheet.tsx`**
 
 ```tsx
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, LifeBuoy } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -2039,7 +2067,8 @@ import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiErrorMessage } from "@/lib/api-error";
 import { browserTimeZone } from "@/lib/timezone";
-import { countdownReducer, countdownIdle, MICRO_START_SECONDS } from "@/lib/countdown";
+import { formatClock, MICRO_START_SECONDS } from "@/lib/countdown";
+import { useCountdown } from "@/hooks/use-countdown";
 import { useMicroStep } from "@/hooks/use-micro-step";
 import { useEmergencyMode } from "./emergency-mode";
 
@@ -2051,12 +2080,6 @@ const OPTIONS: { blocker: Blocker; label: string; hint: string }[] = [
   { blocker: "overwhelmed", label: "Too much everything",                   hint: "Hide it all — one thing only" },
   { blocker: "wrong_quest", label: "This isn't the right quest right now",  hint: "Show me something else" },
 ];
-
-function formatClock(totalSeconds: number): string {
-  const m = Math.floor(totalSeconds / 60);
-  const s = totalSeconds % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
 
 export function RescueSheet({ task, open, onOpenChange }: {
   task: Task;
@@ -2070,7 +2093,7 @@ export function RescueSheet({ task, open, onOpenChange }: {
   const breakdown = useBreakdownTask();
   const logEvent = useCreateRescueEvent();
   const [view, setView] = useState<"picker" | "micro" | "reroll">("picker");
-  const [clock, dispatch] = useReducer(countdownReducer, countdownIdle);
+  const [clock, dispatch] = useCountdown();
   // Breakdown returns the task WITH its fresh steps — micro-start must target
   // the new step 1, not the stale prop snapshot.
   const [freshTask, setFreshTask] = useState<Task | null>(null);
@@ -2085,12 +2108,6 @@ export function RescueSheet({ task, open, onOpenChange }: {
   useEffect(() => {
     if (!open) { setView("picker"); setFreshTask(null); dispatch({ type: "reset" }); }
   }, [open]);
-
-  useEffect(() => {
-    if (clock.status !== "running") return;
-    const t = setInterval(() => dispatch({ type: "tick" }), 1000);
-    return () => clearInterval(t);
-  }, [clock.status]);
 
   // Fire-and-forget: intervention success is what matters; logging must never block.
   const log = (blocker: Blocker, intervention: string) => {
@@ -2412,7 +2429,7 @@ Expected: PASS.
 Visual style ports from the deleted RecommendCard (border-primary/50, bg-primary/5, "What's Next" strip → renamed). Full component:
 
 ```tsx
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useState } from "react";
 import { Clock, LifeBuoy, Pin, RefreshCw, Sparkles, Check, Play, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -2423,17 +2440,12 @@ import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiErrorMessage } from "@/lib/api-error";
 import { CATEGORY_COLORS } from "@/lib/categories";
-import { countdownReducer, countdownIdle, MICRO_START_SECONDS } from "@/lib/countdown";
+import { formatClock, MICRO_START_SECONDS } from "@/lib/countdown";
+import { useCountdown } from "@/hooks/use-countdown";
 import { useMicroStep } from "@/hooks/use-micro-step";
 import { RescueSheet } from "./rescue-sheet";
 
 export const MINUTES_CHOICES = [5, 15, 30, 60] as const;
-
-function formatClock(totalSeconds: number): string {
-  const m = Math.floor(totalSeconds / 60);
-  const s = totalSeconds % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
 
 export function MomentumCard({ suggestion, minutes, onMinutes, onSkip, skipping }: {
   suggestion: MomentumSuggestion;
@@ -2447,14 +2459,8 @@ export function MomentumCard({ suggestion, minutes, onMinutes, onSkip, skipping 
   const queryClient = useQueryClient();
   const focusMutation = usePatchTaskFocus();
   const [rescueOpen, setRescueOpen] = useState(false);
-  const [clock, dispatch] = useReducer(countdownReducer, countdownIdle);
+  const [clock, dispatch] = useCountdown();
   const { targetLabel, complete, isPending } = useMicroStep(task);
-
-  useEffect(() => {
-    if (clock.status !== "running") return;
-    const t = setInterval(() => dispatch({ type: "tick" }), 1000);
-    return () => clearInterval(t);
-  }, [clock.status]);
 
   // A new suggestion resets any in-flight micro-start.
   useEffect(() => { dispatch({ type: "reset" }); }, [task.id]);
