@@ -29,6 +29,8 @@ tags:
     description: Focus sessions and Pomodoro timer
   - name: questlines
     description: Grouping quests into goal-oriented questlines
+  - name: brain
+    description: Brain check-ins, derived mode state, and rescue events
 paths:
   /auth/user:
     get:

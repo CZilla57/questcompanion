@@ -143,7 +143,7 @@ values — a single tuning table at the top of the file, adjusted only with test
 
 | Signal                    | Effect                                                                     |
 |---------------------------|----------------------------------------------------------------------------|
-| Pinned today & open       | **+30** — absorption guarantee: pins dominate unless a mode disqualifies them |
+| Pinned today & open       | **structural rank precedence** + a +30 signal (amended during implementation from additive-only, which broke under the minutes budget): an eligible open pin always outranks non-pins; it is disqualified — losing both precedence and boost — only when its estimate overshoots the stated minutes, or distracted/frozen mode needs provably tiny wins (est ≤15/≤10) and the pin isn't one |
 | Minutes fit (param given) | est ≤ minutes **+25**; est > minutes **−40** (soft exclusion); no estimate −5 |
 | `focused`                 | high priority +15; est ≥ 25 min +5                                          |
 | `distracted`              | est ≤ 15 +20; est ≤ 5 +5 more; routine categories (self_care, errands) +5   |
@@ -233,9 +233,10 @@ spec path. One "what now" brain remains.
   (no phantom data).
 - `POST /rescue/events` failures are swallowed client-side (logging must never block an
   intervention).
-- Emergency Mode with no candidates at all: don't offer it from the Frozen tap (nothing to
-  show); the popover says "Nothing in the log — add one tiny thing first" with the
-  quick-add focused.
+- Emergency Mode with no candidates at all: the overlay itself shows "Nothing in the log —
+  add one tiny thing first" with a calm exit (amended during implementation: checking
+  candidates before offering would need a task fetch in the layout chip; the in-overlay
+  fallback keeps the same guarantee).
 
 ## Testing
 
@@ -244,12 +245,13 @@ House style: vitest on pure functions first, thin route tests, client lib tests.
 - `brain-mode.test.ts` — TTL expiry at exactly 4h, local-day boundary west and east of UTC,
   `neutral` check-in clears (and does not resurrect an older mode), no check-ins, invalid tz
   fallback, `expiresAt` = min(4h, local midnight), `checkedInToday` across expiry.
-- `momentum.test.ts` — pinned dominance (absorption), minutes fit + overshoot exclusion,
+- `momentum.test.ts` — pinned structural precedence incl. disqualifiers (absorption), minutes fit + overshoot exclusion,
   each mode's weights (incl. frozen's high-priority penalty and hyperfocus's
   continue-the-thread), exclude list, variety, tie-break, empty candidates, reason template
   selection.
-- Route tests — checkin/rescue enum validation (422), auth (401), momentum param parsing,
-  recommend-path removal (404).
+- Validation logic (mode/source/blocker/intervention enums, momentum params) is unit-tested
+  at the lib level; routes stay thin per house style (no route-test harness exists in this
+  repo — amended during implementation).
 - Client — `momentum-board.test.ts` state machine (extends focus-board tests),
   countdown reducer (start/tick/zero/restart — and zero is not a failure state).
 - Pre-merge: anti-shame copy pass over every new user-facing string.
