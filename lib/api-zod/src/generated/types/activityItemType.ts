@@ -20,4 +20,5 @@ export const ActivityItemType = {
   gear_earned: 'gear_earned',
   focus_session: 'focus_session',
   focus_complete: 'focus_complete',
+  initiation: 'initiation',
 } as const;
