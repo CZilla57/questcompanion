@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation } from "wouter";
 import { Link } from "wouter";
-import { Home, CheckSquare, BarChart2, BarChart3, Users, Trophy, X, Zap, Bell, BellOff, Repeat, Menu, User, LogOut, Coffee, Timer, Download, Scroll } from "lucide-react";
+import { Home, CheckSquare, BarChart2, BarChart3, Users, Trophy, X, Zap, Bell, BellOff, Repeat, Menu, User, LogOut, Coffee, Timer, Download, Scroll, ShoppingBag } from "lucide-react";
 import { useGetNudges, useGetBrainState, BrainMode } from "@workspace/api-client-react";
 import { Button } from "./ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
@@ -156,6 +156,7 @@ const allNavItems = [
   { href: "/partners",       label: "Allies",     icon: Users,       mobileShow: true },
   { href: "/leaderboard",    label: "Board",      icon: Trophy,      mobileShow: false },
   { href: "/dopamine-menu",  label: "Rewards",    icon: Coffee,      mobileShow: false },
+  { href: "/rewards",       label: "Store",      icon: ShoppingBag, mobileShow: false },
 ];
 const mobileNavItems = allNavItems.filter(i => i.mobileShow);
 
