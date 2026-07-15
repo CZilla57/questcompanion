@@ -13,6 +13,7 @@ import {
   getGetAvatarQueryKey,
   getGetGearStoreQueryKey,
   getGetBattleCurrentQueryKey,
+  getGetCoinsQueryKey,
 } from "@workspace/api-client-react";
 import type { GearStoreItem, AvatarUpdateInput } from "@workspace/api-client-react";
 import { PixelHero } from "@/components/pixel-hero";
@@ -314,6 +315,9 @@ function BattlePanel() {
       const res = await enterBattle.mutateAsync();
       setFreshResult(res);
       await qc.invalidateQueries({ queryKey: getGetBattleCurrentQueryKey() });
+      if (res.result === "win") {
+        await qc.invalidateQueries({ queryKey: getGetCoinsQueryKey() });
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Something went wrong";
       toast({ title: "Battle error", description: msg, variant: "destructive" });

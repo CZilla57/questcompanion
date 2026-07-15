@@ -6,7 +6,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { getGetTasksQueryKey, getGetMyStatsQueryKey, getGetQuestlinesQueryKey, getGetQuestlineQueryKey, getGetHeroStatusQueryKey, getGetTasksMomentumQueryKey } from "@workspace/api-client-react";
+import { getGetTasksQueryKey, getGetMyStatsQueryKey, getGetQuestlinesQueryKey, getGetQuestlineQueryKey, getGetHeroStatusQueryKey, getGetTasksMomentumQueryKey, getGetCoinsQueryKey } from "@workspace/api-client-react";
 import { browserTimeZone } from "@/lib/timezone";
 import { formatTime12h } from "@/lib/format-time";
 import { dispatchQuestCompleted } from "./dopamine-overlay";
@@ -120,6 +120,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
             queryClient.invalidateQueries({ queryKey: getGetQuestlineQueryKey(task.questlineId) });
           }
           queryClient.invalidateQueries({ queryKey: getGetHeroStatusQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetCoinsQueryKey() });
 
           const descParts: string[] = [];
           if ((res.streakBonus ?? 0) > 0) {

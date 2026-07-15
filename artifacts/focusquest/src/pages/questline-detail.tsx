@@ -8,6 +8,7 @@ import {
   getGetQuestlineQueryKey,
   getGetQuestlinesQueryKey,
   getGetMyStatsQueryKey,
+  getGetCoinsQueryKey,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { TaskItem } from "@/components/task-item";
@@ -54,6 +55,7 @@ export default function QuestlineDetail() {
         queryClient.invalidateQueries({ queryKey: getGetQuestlineQueryKey(id) });
         queryClient.invalidateQueries({ queryKey: getGetQuestlinesQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetMyStatsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetCoinsQueryKey() });
         dispatchQuestCompleted();
         toast({
           title: `Questline complete! +${res.xpAwarded} XP`,
