@@ -27,6 +27,48 @@
 
 ---
 
+## PRE-FLIGHT AMENDMENT (2026-07-14) — test strategy follows repo convention
+
+**Confirmed before execution:** this repo has **no** supertest route-test harness and **no** React Testing Library / jsdom setup. Every test in `@workspace/api-server` and `@workspace/focusquest` is a pure lib-level `*.test.ts` (matches the Act I & Act III adjudications). Chad confirmed: **follow convention — add no test infra.** This block supersedes the test steps written inside Tasks 4, 5, 6, and 9.
+
+- **Do not create** `artifacts/api-server/src/routes/difficulty.test.ts` or `artifacts/focusquest/src/components/difficulty-controls.test.tsx`. Ignore the `agentFor`/`seedTask`/`resetDb` and `renderWithProviders` snippets in those tasks.
+- Extract the real decision-logic into **pure helpers** (unit-tested); keep routes + the React component thin, verified by `typecheck` + the **Task 10 browser e2e drive** (the integration gate for guard ordering, the swap transaction, struggle accrual, and the offer chip).
+
+**Task 3 adds these pure helpers** in `artifacts/api-server/src/lib/difficulty.ts`, with tests in `difficulty.test.ts`:
+
+```ts
+/** Forward reschedule of an incomplete quest is the "I keep avoiding this" signal. */
+export function struggleDeltaOnReschedule(existingDueDate: string | null, newDueDate: string): number {
+  return existingDueDate && newDueDate > existingDueDate ? 1 : 0;
+}
+/** A rescue on a quest; "too_big" is direct evidence it needs resizing. */
+export function struggleDeltaOnRescue(blocker: string): number {
+  return blocker === "too_big" ? 2 : 1;
+}
+/** First easier/harder use must draft the ladder; medium is the baseline (no draft). */
+export function needsVariantGeneration(hasVariants: boolean, level: DifficultyLevel): boolean {
+  return !hasVariants && level !== "medium";
+}
+```
+
+Test expectations: `struggleDeltaOnReschedule("2026-07-14","2026-07-20")===1`, `(…,"2026-07-10")===0`, `(null,"2026-07-20")===0`; `struggleDeltaOnRescue("too_big")===2`, `("cant_start")===1`; `needsVariantGeneration(false,"easy")===true`, `(false,"medium")===false`, `(true,"easy")===false`.
+
+**Task 9 adds** `artifacts/focusquest/src/lib/difficulty-controls.ts` with a lib-level `difficulty-controls.test.ts`:
+
+```ts
+import type { Task } from "@workspace/api-client-react";
+export function difficultyControlState(task: Pick<Task, "difficulty">) {
+  const level = task.difficulty ?? "medium";
+  return { canEasier: level !== "easy", canHarder: level !== "hard" };
+}
+```
+
+Test: medium → `{canEasier:true,canHarder:true}`; easy → `{false,true}`; hard → `{true,false}`.
+
+**Wiring changes:** Task 4 route uses `needsVariantGeneration(!!task.difficultyVariants, target)` (medium-noop branch stays); Task 5 uses `existing.struggleScore + struggleDeltaOnReschedule(existing.dueDate, dueDate)` and `task.struggleScore + struggleDeltaOnRescue(blocker)`; Task 6 keeps `evaluateDifficultyOffer` and adds a shared `toOfferInput(row)` mapper to avoid duplicating the row→OfferInput mapping across GET /tasks and momentum; Task 9's component consumes `difficultyControlState`. Tasks 4/5/6 end with `pnpm --filter @workspace/api-server typecheck`; Task 9 ends with `pnpm --filter @workspace/focusquest typecheck`.
+
+---
+
 ## File Structure
 
 **Create:**
