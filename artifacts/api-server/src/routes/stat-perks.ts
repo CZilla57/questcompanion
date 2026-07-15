@@ -64,6 +64,7 @@ router.post("/stat-perks/:id/buy", async (req, res): Promise<void> => {
   const perk = getPerk(id)!;
 
   type Outcome =
+    | { status: "not_found" }
     | { status: "insufficient"; balance: number; remaining: number }
     | { status: "at_max"; balance: number }
     | { status: "ok"; balance: number; expiresAt: string | null; owned: number | null };
@@ -75,7 +76,7 @@ router.post("/stat-perks/:id/buy", async (req, res): Promise<void> => {
     // check the shield cap, then decrement + apply + ledger) must be atomic so a
     // concurrent double-buy can neither overspend nor exceed the cap.
     const [user] = await tx.select().from(usersTable).where(eq(usersTable.id, userId)).for("update");
-    if (!user) return { status: "insufficient", balance: 0, remaining: perk.coinCost };
+    if (!user) return { status: "not_found" };
 
     // Shield stock cap takes precedence over affordability — being fully shielded
     // is reassurance, not a "you can't afford it" nudge.
@@ -113,6 +114,7 @@ router.post("/stat-perks/:id/buy", async (req, res): Promise<void> => {
     return { status: "ok", balance: user.coinBalance - perk.coinCost, expiresAt, owned };
   });
 
+  if (outcome.status === "not_found") { res.status(404).json({ error: "User not found" }); return; }
   if (outcome.status === "insufficient") {
     // Gentle, not an error: "N more to go". HTTP 200 so it never reads as failure.
     res.status(200).json({
