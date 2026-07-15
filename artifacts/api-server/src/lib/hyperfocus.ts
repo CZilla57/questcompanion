@@ -2,7 +2,10 @@ import type { HungerStage } from "./hero-care";
 
 export const FIRST_NUDGE_MIN = 90;
 export const INTERVAL_MIN = 60;
-export const STALE_SESSION_MIN = 30;
+// 60 >= the longest preset focus interval (deep = 50 min). lastIntervalAt is only
+// written when an interval completes, so a shorter window would make a genuine deep
+// session flicker "stale" between completions and push the first nudge past ~90 min.
+export const STALE_SESSION_MIN = 60;
 export const BEDTIME_HOUR = 23;
 export const DEEP_NIGHT_START = 2;
 export const MORNING = 7;

@@ -26,6 +26,12 @@ describe("protectedStretch", () => {
     expect(s.active).toBe(false);
   });
 
+  it("counts a fresh session with no completed interval yet (lastIntervalAt null)", () => {
+    const s = protectedStretch({ activeSessions: [{ startedAt: minAgo(20), lastIntervalAt: null }], mode: "neutral", hyperfocusSince: null, now: NOW });
+    expect(s.active).toBe(true);
+    expect(s.startedAt!.getTime()).toBe(minAgo(20).getTime());
+  });
+
   it("is active for held hyperfocus mode; startedAt = since", () => {
     const s = protectedStretch({ activeSessions: [], mode: "hyperfocus", hyperfocusSince: minAgo(90), now: NOW });
     expect(s.active).toBe(true);
