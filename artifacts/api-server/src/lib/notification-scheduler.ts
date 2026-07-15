@@ -1,10 +1,13 @@
-import { eq, and, gt } from "drizzle-orm";
-import { db, tasksTable, usersTable, activityTable, pushSubscriptionsTable } from "@workspace/db";
+import { eq, and, gt, desc } from "drizzle-orm";
+import { db, tasksTable, usersTable, activityTable, pushSubscriptionsTable, focusSessionsTable, brainCheckinsTable } from "@workspace/db";
 import { sendPushNotification } from "./push-notifications";
 import { logger } from "./logger";
 import { spawnRecurringTasksForToday } from "../routes/recurring-tasks";
 import { hungerStage, hungerWarning, shouldSendFlavorPush } from "./hero-care";
 import { currentVignette } from "./hero-flavor";
+import { deriveBrainState } from "./brain-mode";
+import { resolveTimeZone, localHour } from "./date-buckets";
+import { protectedStretch, selectProtectionNudge, type NudgeKind } from "./hyperfocus";
 
 const DEFAULT_USER_ID = 1;
 
@@ -202,6 +205,48 @@ async function checkHeroCare() {
   }
 }
 
+async function checkHyperfocusProtection() {
+  const now = new Date();
+  const users = await db.select().from(usersTable);
+  for (const user of users) {
+    try {
+      const tz = resolveTimeZone(user.timezone ?? "");
+      const [latest] = await db.select().from(brainCheckinsTable)
+        .where(eq(brainCheckinsTable.userId, user.id))
+        .orderBy(desc(brainCheckinsTable.createdAt), desc(brainCheckinsTable.id))
+        .limit(1);
+      const state = deriveBrainState(latest, now, tz);
+
+      const sessions = await db.select().from(focusSessionsTable)
+        .where(and(eq(focusSessionsTable.userId, user.id), eq(focusSessionsTable.status, "active")));
+
+      const stretch = protectedStretch({
+        activeSessions: sessions.map((s) => ({ startedAt: s.startedAt, lastIntervalAt: s.lastIntervalAt })),
+        mode: state.mode,
+        hyperfocusSince: state.mode === "hyperfocus" ? state.since : null,
+        now,
+      });
+
+      const chosen = selectProtectionNudge({
+        stretch, now, localHour: localHour(now, tz),
+        lastNudgedAt: user.hyperfocusNudgedAt,
+        lastKind: user.hyperfocusLastKind as NudgeKind | null,
+        hungerStage: hungerStage(user.lastFedAt, now),
+        pausedUntil: user.hyperfocusPausedUntil,
+      });
+
+      if (chosen) {
+        await notify(user.id, chosen.title, chosen.body, chosen.tag);
+        await db.update(usersTable)
+          .set({ hyperfocusNudgedAt: now, hyperfocusLastKind: chosen.kind })
+          .where(eq(usersTable.id, user.id));
+      }
+    } catch (err) {
+      logger.error({ err, userId: user.id }, "Hyperfocus-protection pass failed for user");
+    }
+  }
+}
+
 async function spawnRecurringTasks() {
   const created = await spawnRecurringTasksForToday();
   if (created > 0) {
@@ -223,6 +268,9 @@ export async function tick() {
 
   await checkHeroCare();
   ran.push("hero-care");
+
+  await checkHyperfocusProtection();
+  ran.push("hyperfocus-protection");
 
   return ran;
 }
