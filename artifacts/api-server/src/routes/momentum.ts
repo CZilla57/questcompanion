@@ -5,6 +5,8 @@ import { deriveBrainState } from "../lib/brain-mode";
 import { rankMomentum, type MomentumTask } from "../lib/momentum";
 import { resolveTimeZone, localDateKey, localHour } from "../lib/date-buckets";
 import { assignPoints } from "../lib/auto-points";
+import { evaluateDifficultyOffer, toOfferInput } from "../lib/difficulty";
+import { isAiConfigured } from "../lib/ai/client";
 import { formatTask } from "./tasks";
 
 const router: IRouter = Router();
@@ -82,11 +84,19 @@ router.get("/tasks/momentum", async (req, res): Promise<void> => {
   });
 
   const byId = new Map(open.map((t) => [t.id, t]));
-  const suggestions = ranked.slice(0, 3).map((s, i) => ({
-    task: formatTask(byId.get(s.taskId)!, stepsByTask.get(s.taskId) ?? []),
-    reason: s.reason,
-    kind: i === 0 ? "primary" : "alternate",
-  }));
+  const canOffer = isAiConfigured();
+  const suggestions = ranked.slice(0, 3).map((s, i) => {
+    const row = byId.get(s.taskId)!;
+    const offerable = canOffer && evaluateDifficultyOffer(
+      toOfferInput(row),
+      { now, todayStr, mode: state.mode },
+    );
+    return {
+      task: formatTask(row, stepsByTask.get(s.taskId) ?? [], { difficultyOfferable: offerable }),
+      reason: s.reason,
+      kind: i === 0 ? "primary" : "alternate",
+    };
+  });
 
   res.json({ mode: state.mode, suggestions });
 });

@@ -21,4 +21,8 @@ completed?: boolean | null;
  * Filter by category
  */
 category?: GetTasksCategory;
+/**
+ * IANA timezone; enables local-day adaptive-difficulty offer flags on returned quests
+ */
+tz?: string;
 };

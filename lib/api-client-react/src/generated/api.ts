@@ -22,6 +22,7 @@ import type {
 import type {
   ActivityItem,
   AllyDetail,
+  ApplyDifficultyInput,
   AuthUserEnvelope,
   AvatarProfile,
   AvatarUpdateInput,
@@ -87,6 +88,7 @@ import type {
   RescueEventRequest,
   SearchUsersParams,
   SentNudge,
+  SnoozeDifficultyOffer200,
   StartFocusSessionInput,
   StartFocusSessionParams,
   StepToggleInput,
@@ -2744,6 +2746,148 @@ export const useBreakdownTask = <TError = ErrorType<ErrorEnvelope>,
         TContext
       > => {
       return useMutation(getBreakdownTaskMutationOptions(options));
+    }
+
+export const getApplyDifficultyUrl = (id: number,) => {
+
+
+
+
+  return `/api/tasks/${id}/difficulty`
+}
+
+/**
+ * @summary Move a quest to an easy/medium/hard rung (drafts the ladder on first use)
+ */
+export const applyDifficulty = async (id: number,
+    applyDifficultyInput: ApplyDifficultyInput, options?: RequestInit): Promise<Task> => {
+
+  return customFetch<Task>(getApplyDifficultyUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      applyDifficultyInput,)
+  }
+);}
+
+
+
+
+export const getApplyDifficultyMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyDifficulty>>, TError,{id: number;data: BodyType<ApplyDifficultyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof applyDifficulty>>, TError,{id: number;data: BodyType<ApplyDifficultyInput>}, TContext> => {
+
+const mutationKey = ['applyDifficulty'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof applyDifficulty>>, {id: number;data: BodyType<ApplyDifficultyInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  applyDifficulty(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApplyDifficultyMutationResult = NonNullable<Awaited<ReturnType<typeof applyDifficulty>>>
+    export type ApplyDifficultyMutationBody = BodyType<ApplyDifficultyInput>
+    export type ApplyDifficultyMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Move a quest to an easy/medium/hard rung (drafts the ladder on first use)
+ */
+export const useApplyDifficulty = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyDifficulty>>, TError,{id: number;data: BodyType<ApplyDifficultyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof applyDifficulty>>,
+        TError,
+        {id: number;data: BodyType<ApplyDifficultyInput>},
+        TContext
+      > => {
+      return useMutation(getApplyDifficultyMutationOptions(options));
+    }
+
+export const getSnoozeDifficultyOfferUrl = (id: number,) => {
+
+
+
+
+  return `/api/tasks/${id}/difficulty/snooze`
+}
+
+/**
+ * @summary Dismiss the "smaller version" offer for this quest for a few days
+ */
+export const snoozeDifficultyOffer = async (id: number, options?: RequestInit): Promise<SnoozeDifficultyOffer200> => {
+
+  return customFetch<SnoozeDifficultyOffer200>(getSnoozeDifficultyOfferUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getSnoozeDifficultyOfferMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof snoozeDifficultyOffer>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof snoozeDifficultyOffer>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['snoozeDifficultyOffer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof snoozeDifficultyOffer>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  snoozeDifficultyOffer(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SnoozeDifficultyOfferMutationResult = NonNullable<Awaited<ReturnType<typeof snoozeDifficultyOffer>>>
+
+    export type SnoozeDifficultyOfferMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Dismiss the "smaller version" offer for this quest for a few days
+ */
+export const useSnoozeDifficultyOffer = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof snoozeDifficultyOffer>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof snoozeDifficultyOffer>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getSnoozeDifficultyOfferMutationOptions(options));
     }
 
 export const getPatchTaskStepUrl = (id: number,

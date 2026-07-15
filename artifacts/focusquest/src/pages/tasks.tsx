@@ -169,6 +169,8 @@ export default function Tasks() {
     date: date ? format(date, 'yyyy-MM-dd') : undefined,
     completed: filter === "completed" ? true : filter === "pending" ? false : undefined,
     category: categoryFilter !== "all" ? (categoryFilter as any) : undefined,
+    // Enables server-side adaptive-difficulty offer flags (local-day struggle math).
+    tz: browserTimeZone(),
   });
 
   const { data: questlines } = useGetQuestlines();

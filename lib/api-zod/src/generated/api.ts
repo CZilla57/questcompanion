@@ -259,7 +259,8 @@ export const GetMyInsightsResponse = zod.object({
 export const GetTasksQueryParams = zod.object({
   "date": zod.coerce.string().nullish().describe('Filter by date (YYYY-MM-DD). Defaults to today.'),
   "completed": zod.coerce.boolean().nullish(),
-  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'self_care', 'errands', 'travel', 'default']).optional().describe('Filter by category')
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'self_care', 'errands', 'travel', 'default']).optional().describe('Filter by category'),
+  "tz": zod.coerce.string().optional().describe('IANA timezone; enables local-day adaptive-difficulty offer flags on returned quests')
 })
 
 export const GetTasksResponseItem = zod.object({
@@ -287,7 +288,9 @@ export const GetTasksResponseItem = zod.object({
   "position": zod.number(),
   "done": zod.boolean()
 })).describe('AI-generated first-step checklist attached to this quest'),
-  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null')
+  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
+  "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
+  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)')
 })
 export const GetTasksResponse = zod.array(GetTasksResponseItem)
 
@@ -377,7 +380,9 @@ export const GetTaskResponse = zod.object({
   "position": zod.number(),
   "done": zod.boolean()
 })).describe('AI-generated first-step checklist attached to this quest'),
-  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null')
+  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
+  "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
+  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)')
 })
 
 
@@ -433,7 +438,9 @@ export const UpdateTaskResponse = zod.object({
   "position": zod.number(),
   "done": zod.boolean()
 })).describe('AI-generated first-step checklist attached to this quest'),
-  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null')
+  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
+  "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
+  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)')
 })
 
 
@@ -466,7 +473,9 @@ export const CompleteTaskResponse = zod.object({
   "position": zod.number(),
   "done": zod.boolean()
 })).describe('AI-generated first-step checklist attached to this quest'),
-  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null')
+  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
+  "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
+  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)')
 }),
   "pointsAwarded": zod.number().describe('Total XP awarded (base + streak bonus + all-day bonus)'),
   "bonusAwarded": zod.boolean(),
@@ -673,7 +682,9 @@ export const UncompleteTaskResponse = zod.object({
   "position": zod.number(),
   "done": zod.boolean()
 })).describe('AI-generated first-step checklist attached to this quest'),
-  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null')
+  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
+  "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
+  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)')
 })
 
 
@@ -709,7 +720,9 @@ export const PatchTaskFocusResponse = zod.object({
   "position": zod.number(),
   "done": zod.boolean()
 })).describe('AI-generated first-step checklist attached to this quest'),
-  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null')
+  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
+  "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
+  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)')
 })
 
 
@@ -750,7 +763,9 @@ export const GetTasksMomentumResponse = zod.object({
   "position": zod.number(),
   "done": zod.boolean()
 })).describe('AI-generated first-step checklist attached to this quest'),
-  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null')
+  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
+  "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
+  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)')
 }),
   "reason": zod.string(),
   "kind": zod.enum(['primary', 'alternate'])
@@ -790,6 +805,52 @@ export const CreateRescueEventBody = zod.object({
   "taskId": zod.number().nullish(),
   "blocker": zod.enum(['too_big', 'cant_start', 'overwhelmed', 'wrong_quest']),
   "intervention": zod.enum(['breakdown', 'micro_start', 'emergency_mode', 'reroll'])
+})
+
+
+/**
+ * @summary Move a quest to an easy/medium/hard rung (drafts the ladder on first use)
+ */
+export const ApplyDifficultyBody = zod.object({
+  "level": zod.enum(['easy', 'medium', 'hard'])
+})
+
+export const ApplyDifficultyResponse = zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "points": zod.number(),
+  "completed": zod.boolean(),
+  "completedAt": zod.string().nullish(),
+  "dueDate": zod.string().nullable(),
+  "priority": zod.enum(['low', 'medium', 'high']),
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'self_care', 'errands', 'travel', 'default']),
+  "categoryLabel": zod.string(),
+  "createdAt": zod.string(),
+  "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
+  "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
+  "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
+  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus'),
+  "isAnchored": zod.boolean().optional().describe('A no-deadline quest that stays visible until completed'),
+  "dueTime": zod.string().nullish().describe('Optional time of day (HH:mm, 24-hour)'),
+  "steps": zod.array(zod.object({
+  "id": zod.number(),
+  "text": zod.string(),
+  "position": zod.number(),
+  "done": zod.boolean()
+})).describe('AI-generated first-step checklist attached to this quest'),
+  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
+  "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
+  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)')
+})
+
+
+/**
+ * @summary Dismiss the "smaller version" offer for this quest for a few days
+ */
+export const SnoozeDifficultyOfferResponse = zod.object({
+  "ok": zod.boolean()
 })
 
 
@@ -906,7 +967,9 @@ export const GetQuestlineResponse = zod.object({
   "position": zod.number(),
   "done": zod.boolean()
 })).describe('AI-generated first-step checklist attached to this quest'),
-  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null')
+  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
+  "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
+  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)')
 }))
 })
 
