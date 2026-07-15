@@ -60,6 +60,32 @@ router.patch("/users/me", async (req, res): Promise<void> => {
   res.json(formatUser(user));
 });
 
+router.put("/users/me/timezone", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+  const tz = String((req.body as { tz?: unknown }).tz ?? "");
+  if (!tz) { res.status(400).json({ error: "tz is required" }); return; }
+  // Reject a bogus zone rather than silently storing garbage.
+  try { new Intl.DateTimeFormat(undefined, { timeZone: tz }); }
+  catch { res.status(400).json({ error: "invalid IANA timezone" }); return; }
+
+  await db.update(usersTable).set({ timezone: tz }).where(eq(usersTable.id, userId));
+  res.json({ ok: true });
+});
+
+router.post("/users/me/hyperfocus/pause", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+  const minutes = Number((req.body as { minutes?: unknown }).minutes);
+  if (!Number.isFinite(minutes) || minutes < 0 || minutes > 1440) {
+    res.status(400).json({ error: "minutes must be between 0 and 1440" });
+    return;
+  }
+  const pausedUntil = minutes > 0 ? new Date(Date.now() + minutes * 60_000) : null;
+  await db.update(usersTable).set({ hyperfocusPausedUntil: pausedUntil }).where(eq(usersTable.id, userId));
+  res.json({ pausedUntil: pausedUntil ? pausedUntil.toISOString() : null });
+});
+
 router.get("/users/me/stats", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;

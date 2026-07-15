@@ -1,17 +1,23 @@
 import { Router, type IRouter } from "express";
 import { desc, eq } from "drizzle-orm";
-import { db, brainCheckinsTable } from "@workspace/db";
+import { db, brainCheckinsTable, usersTable } from "@workspace/db";
 import { deriveBrainState, isBrainMode, isCheckinSource, type BrainState } from "../lib/brain-mode";
 
 const router: IRouter = Router();
 
-function serializeState(s: BrainState) {
+function serializeState(s: BrainState, hyperfocusPausedUntil: Date | null) {
   return {
     mode: s.mode,
     since: s.since ? s.since.toISOString() : null,
     expiresAt: s.expiresAt ? s.expiresAt.toISOString() : null,
     checkedInToday: s.checkedInToday,
+    hyperfocusPausedUntil: hyperfocusPausedUntil ? hyperfocusPausedUntil.toISOString() : null,
   };
+}
+
+async function pausedUntilFor(userId: number): Promise<Date | null> {
+  const [u] = await db.select({ p: usersTable.hyperfocusPausedUntil }).from(usersTable).where(eq(usersTable.id, userId));
+  return u?.p ?? null;
 }
 
 async function latestCheckin(userId: number) {
@@ -30,7 +36,8 @@ router.get("/brain/state", async (req, res): Promise<void> => {
   const tz = String(req.query.tz ?? "");
 
   const latest = await latestCheckin(userId);
-  res.json(serializeState(deriveBrainState(latest, new Date(), tz)));
+  const paused = await pausedUntilFor(userId);
+  res.json(serializeState(deriveBrainState(latest, new Date(), tz), paused));
 });
 
 router.post("/brain/checkins", async (req, res): Promise<void> => {
@@ -55,7 +62,7 @@ router.post("/brain/checkins", async (req, res): Promise<void> => {
     .values({ userId, mode, source })
     .returning();
 
-  res.status(201).json(serializeState(deriveBrainState(inserted!, new Date(), tz)));
+  res.status(201).json(serializeState(deriveBrainState(inserted!, new Date(), tz), await pausedUntilFor(userId)));
 });
 
 export default router;
