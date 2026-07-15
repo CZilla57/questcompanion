@@ -9,7 +9,9 @@ export type CoinReason =
   | "questline_complete"
   | "boss_win"
   | "redeem"
-  | "quest_uncomplete";
+  | "quest_uncomplete"
+  | "mystery_open"
+  | "mystery_bonus";
 
 // Append-only audit ledger. Not surfaced in the UI (v1); exists for integrity,
 // debuggability, and reconstructing the denormalized users.coinBalance.

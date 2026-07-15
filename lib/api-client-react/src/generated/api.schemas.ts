@@ -1326,6 +1326,55 @@ export interface RedeemResult {
   remaining: number;
 }
 
+export type MysteryStatusReason = typeof MysteryStatusReason[keyof typeof MysteryStatusReason];
+
+
+export const MysteryStatusReason = {
+  ok: 'ok',
+  no_rewards: 'no_rewards',
+  insufficient: 'insufficient',
+} as const;
+
+export interface MysteryStatus {
+  /** Coins a single pull costs */
+  cost: number;
+  balance: number;
+  /** Number of rewards in the Dopamine Menu the box draws from */
+  rewardCount: number;
+  canOpen: boolean;
+  reason: MysteryStatusReason;
+  /** Coins still needed to afford a pull (0 unless insufficient) */
+  remaining: number;
+}
+
+export interface MysteryReward {
+  id: number;
+  /** @maxLength 100 */
+  rewardText: string;
+}
+
+export type MysteryResultReason = typeof MysteryResultReason[keyof typeof MysteryResultReason];
+
+
+export const MysteryResultReason = {
+  ok: 'ok',
+  no_rewards: 'no_rewards',
+  insufficient: 'insufficient',
+} as const;
+
+export interface MysteryResult {
+  opened: boolean;
+  reason: MysteryResultReason;
+  cost: number;
+  /** Final balance after the spend and any bonus */
+  balance: number;
+  /** Coins still needed (present on the insufficient no-op) */
+  remaining?: number;
+  /** Upside-only coins credited back on a lucky pull (0 or positive, capped at cost) */
+  bonus?: number;
+  reward?: MysteryReward;
+}
+
 export interface HeatmapDay {
   /** Date in YYYY-MM-DD format */
   date: string;

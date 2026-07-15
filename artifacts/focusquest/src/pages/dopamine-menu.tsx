@@ -5,12 +5,14 @@ import {
   useCreateDopamineReward,
   useDeleteDopamineReward,
   getGetDopamineRewardsQueryKey,
+  getGetMysteryBoxQueryKey,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiErrorMessage } from "@/lib/api-error";
 import { Plus, Trash2, Coffee, Sparkles } from "lucide-react";
+import { MysteryBox } from "@/components/mystery-box";
 
 const EXAMPLES = [
   "Make a cup of coffee ☕",
@@ -38,6 +40,8 @@ export default function DopamineMenu() {
         onSuccess: () => {
           setText("");
           queryClient.invalidateQueries({ queryKey: getGetDopamineRewardsQueryKey() });
+          // Adding the first reward unlocks the Mystery Box — refresh its state.
+          queryClient.invalidateQueries({ queryKey: getGetMysteryBoxQueryKey() });
         },
         onError: (err: any) => {
           const msg = apiErrorMessage(err, "Failed to add reward");
@@ -53,6 +57,7 @@ export default function DopamineMenu() {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetDopamineRewardsQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetMysteryBoxQueryKey() });
         },
       },
     );
@@ -79,6 +84,9 @@ export default function DopamineMenu() {
           After each completion, one will be suggested at random.
         </p>
       </div>
+
+      {/* Mystery Box — coin-gated pull from this menu */}
+      <MysteryBox />
 
       {/* Add reward */}
       <div className="bg-card rounded-xl border border-border p-5 space-y-4">
