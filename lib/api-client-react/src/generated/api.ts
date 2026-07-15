@@ -100,6 +100,8 @@ import type {
   SnoozeDifficultyOffer200,
   StartFocusSessionInput,
   StartFocusSessionParams,
+  StatPerkPurchaseResult,
+  StatPerks,
   StepToggleInput,
   StepToggleResponse,
   StreakFreezeResult,
@@ -6484,6 +6486,153 @@ export const useOpenMysteryBox = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getOpenMysteryBoxMutationOptions(options));
+    }
+
+export const getGetStatPerksUrl = () => {
+
+
+
+
+  return `/api/stat-perks`
+}
+
+/**
+ * @summary Coin-priced Stat Perks catalog with the current user's live state
+ */
+export const getStatPerks = async ( options?: RequestInit): Promise<StatPerks> => {
+
+  return customFetch<StatPerks>(getGetStatPerksUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStatPerksQueryKey = () => {
+    return [
+    `/api/stat-perks`
+    ] as const;
+    }
+
+
+export const getGetStatPerksQueryOptions = <TData = Awaited<ReturnType<typeof getStatPerks>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStatPerks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStatPerksQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStatPerks>>> = ({ signal }) => getStatPerks({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStatPerks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStatPerksQueryResult = NonNullable<Awaited<ReturnType<typeof getStatPerks>>>
+export type GetStatPerksQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Coin-priced Stat Perks catalog with the current user's live state
+ */
+
+export function useGetStatPerks<TData = Awaited<ReturnType<typeof getStatPerks>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStatPerks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStatPerksQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getBuyStatPerkUrl = (id: 'xp_boost' | 'focus_boost' | 'streak_shield',) => {
+
+
+
+
+  return `/api/stat-perks/${id}/buy`
+}
+
+/**
+ * @summary Spend coins to buy a Stat Perk (gentle no-op if unaffordable or maxed)
+ */
+export const buyStatPerk = async (id: 'xp_boost' | 'focus_boost' | 'streak_shield', options?: RequestInit): Promise<StatPerkPurchaseResult> => {
+
+  return customFetch<StatPerkPurchaseResult>(getBuyStatPerkUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getBuyStatPerkMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyStatPerk>>, TError,{id: 'xp_boost' | 'focus_boost' | 'streak_shield'}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof buyStatPerk>>, TError,{id: 'xp_boost' | 'focus_boost' | 'streak_shield'}, TContext> => {
+
+const mutationKey = ['buyStatPerk'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyStatPerk>>, {id: 'xp_boost' | 'focus_boost' | 'streak_shield'}> = (props) => {
+          const {id} = props ?? {};
+
+          return  buyStatPerk(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyStatPerkMutationResult = NonNullable<Awaited<ReturnType<typeof buyStatPerk>>>
+
+    export type BuyStatPerkMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Spend coins to buy a Stat Perk (gentle no-op if unaffordable or maxed)
+ */
+export const useBuyStatPerk = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyStatPerk>>, TError,{id: 'xp_boost' | 'focus_boost' | 'streak_shield'}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof buyStatPerk>>,
+        TError,
+        {id: 'xp_boost' | 'focus_boost' | 'streak_shield'},
+        TContext
+      > => {
+      return useMutation(getBuyStatPerkMutationOptions(options));
     }
 
 export const getGetCalendarHeatmapUrl = (params?: GetCalendarHeatmapParams,) => {

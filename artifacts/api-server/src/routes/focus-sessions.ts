@@ -6,6 +6,7 @@ import { grantInitiationAwards } from "../lib/initiation-grant";
 import type { InitiationXp } from "../lib/initiation";
 import { awardCoins } from "../lib/award-coins";
 import { COIN_EARN } from "../lib/coins";
+import { isBoostActive, boostBonusPoints, FOCUS_BOOST_BONUS } from "../lib/stat-perks";
 
 const router: IRouter = Router();
 
@@ -173,7 +174,11 @@ router.post("/focus-sessions/:id/interval", async (req, res): Promise<void> => {
 
     const intervalXp = computeIntervalXp(session.focusMinutes);
     const isFinal = intervalIndex === session.plannedCycles;
-    const xpDelta = intervalXp + (isFinal ? FULL_SET_BONUS : 0);
+    const baseDelta = intervalXp + (isFinal ? FULL_SET_BONUS : 0);
+    // Act IV Stat Perk: an active Focus Boost adds a flat % to focus-session XP
+    // (upside-only). The activity-feed rows keep their base points; the session
+    // and user totals carry the boost.
+    const xpDelta = baseDelta + boostBonusPoints(baseDelta, isBoostActive(user.focusBoostExpiresAt, now), FOCUS_BOOST_BONUS);
 
     await tx.update(usersTable).set({
       totalPoints: user.totalPoints + xpDelta,
@@ -264,7 +269,9 @@ router.post("/focus-sessions/:id/complete", async (req, res): Promise<void> => {
     const sinceRefSec = Math.floor((now.getTime() - (session.lastIntervalAt ?? session.startedAt).getTime()) / 1000);
     const cappedSeconds = Math.max(0, Math.min(partialClaim, session.focusMinutes * 60, sinceRefSec));
     const partialMinutes = Math.floor(cappedSeconds / 60);
-    const xpDelta = computePartialXp(partialMinutes);
+    const basePartialXp = computePartialXp(partialMinutes);
+    // Focus Boost applies to the trailing partial credit too (upside-only).
+    const xpDelta = basePartialXp + boostBonusPoints(basePartialXp, isBoostActive(user.focusBoostExpiresAt, now), FOCUS_BOOST_BONUS);
 
     if (xpDelta > 0) {
       await tx.update(usersTable).set({
@@ -286,7 +293,7 @@ router.post("/focus-sessions/:id/complete", async (req, res): Promise<void> => {
         userId,
         type: "focus_session",
         description: `Focused ${partialMinutes} min`,
-        points: xpDelta,
+        points: basePartialXp,
       });
     }
 

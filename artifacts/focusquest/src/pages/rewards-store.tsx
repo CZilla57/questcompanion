@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiErrorMessage } from "@/lib/api-error";
+import { StatPerksSection } from "@/components/stat-perks-section";
 import { Coins, Plus, Trash2, Gift } from "lucide-react";
 
 const TIERS = [
@@ -97,6 +98,9 @@ export default function RewardsStore() {
           Real-life rewards you earn the right to enjoy. Complete quests to earn coins, then cash them in — no rush, coins never expire.
         </p>
       </div>
+
+      {/* Stat Perks — in-game power-ups bought with coins */}
+      <StatPerksSection />
 
       {/* Add reward */}
       <div className="bg-card rounded-xl border border-border p-5 space-y-4">
