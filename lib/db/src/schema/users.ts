@@ -36,6 +36,8 @@ export const usersTable = pgTable("users", {
   hyperfocusNudgedAt: timestamp("hyperfocus_nudged_at"),
   hyperfocusLastKind: text("hyperfocus_last_kind"),
   hyperfocusPausedUntil: timestamp("hyperfocus_paused_until"),
+  // Act IV reward economy: spendable currency, decoupled from XP. Never negative.
+  coinBalance: integer("coin_balance").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
