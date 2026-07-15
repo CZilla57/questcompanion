@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import type { Task } from "@workspace/db";
 import {
   assembleLadder,
   snapshotMedium,
@@ -6,6 +7,7 @@ import {
   struggleDeltaOnReschedule,
   struggleDeltaOnRescue,
   needsVariantGeneration,
+  toOfferInput,
   OFFER_THRESHOLD,
   type OfferInput,
   type OfferContext,
@@ -46,6 +48,33 @@ describe("snapshotMedium", () => {
   it("captures the quest's current title/estimate and step texts", () => {
     expect(snapshotMedium({ title: "T", estimatedMinutes: null }, ["s1", "s2"]))
       .toEqual({ title: "T", estimatedMinutes: null, steps: ["s1", "s2"] });
+  });
+});
+
+describe("toOfferInput", () => {
+  it("copies the eight offer-relevant fields off a task row", () => {
+    const snoozedAt = new Date("2026-07-01T00:00:00Z");
+    const task = {
+      completed: true,
+      difficulty: "hard",
+      struggleScore: 5,
+      dueDate: "2026-07-01",
+      isAnchored: true,
+      isDailyFocus: true,
+      focusDate: "2026-07-09",
+      difficultyOfferSnoozedAt: snoozedAt,
+    } as Task;
+
+    expect(toOfferInput(task)).toEqual({
+      completed: true,
+      difficulty: "hard",
+      struggleScore: 5,
+      dueDate: "2026-07-01",
+      isAnchored: true,
+      isDailyFocus: true,
+      focusDate: "2026-07-09",
+      difficultyOfferSnoozedAt: snoozedAt,
+    });
   });
 });
 

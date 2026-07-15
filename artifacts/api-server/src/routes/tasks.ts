@@ -1,7 +1,7 @@
 import express, { Router, type IRouter } from "express";
 import { eq, and, or, desc, count, inArray } from "drizzle-orm";
 import { applyMultiplier } from "../lib/xp-multiplier";
-import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable, taskStepsTable, questlinesTable } from "@workspace/db";
+import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable, taskStepsTable, questlinesTable, brainCheckinsTable } from "@workspace/db";
 import type { DifficultyLevel, VariantLadder } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, DAILY_BONUS_POINTS } from "../lib/gamification";
 import { assignPoints, CATEGORY_LABELS, VALID_CATEGORIES } from "../lib/auto-points";
@@ -14,8 +14,10 @@ import { generateJson, isAiConfigured, AiClientError } from "../lib/ai/client";
 import { breakdownCooldown } from "../lib/ai/breakdown-cooldown";
 import { generateVariants, VariantsParseError } from "../lib/ai/difficulty-variants";
 import { variantsCooldown } from "../lib/ai/variants-cooldown";
-import { assembleLadder, snapshotMedium, needsVariantGeneration, struggleDeltaOnReschedule } from "../lib/difficulty";
+import { assembleLadder, snapshotMedium, needsVariantGeneration, struggleDeltaOnReschedule, evaluateDifficultyOffer, toOfferInput } from "../lib/difficulty";
 import { isValidDueTime, isValidDueDate } from "../lib/task-datetime";
+import { deriveBrainState } from "../lib/brain-mode";
+import { resolveTimeZone, localDateKey } from "../lib/date-buckets";
 import { parseQuickAdd } from "@workspace/quick-add";
 import { buildQuickAddPrompt, parseQuickAddResult, QuickAddParseError } from "../lib/ai/quick-add-parse";
 import { parseCooldown } from "../lib/ai/parse-cooldown";
@@ -47,6 +49,7 @@ function isUniqueViolation(err: unknown, constraint: string): boolean {
 export function formatTask(
   task: typeof tasksTable.$inferSelect,
   steps: (typeof taskStepsTable.$inferSelect)[] = [],
+  opts: { difficultyOfferable?: boolean } = {},
 ) {
   return {
     id: task.id,
@@ -68,6 +71,8 @@ export function formatTask(
     focusDate: task.focusDate ?? null,
     isAnchored: task.isAnchored,
     questlineId: task.questlineId ?? null,
+    difficulty: task.difficulty,
+    difficultyOfferable: opts.difficultyOfferable ?? false,
     steps: steps
       .slice()
       .sort((a, b) => a.position - b.position)
@@ -151,7 +156,24 @@ router.get("/tasks", async (req, res): Promise<void> => {
     stepsByTask.set(s.taskId, arr);
   }
 
-  res.json(tasks.map((t) => formatTask(t, stepsByTask.get(t.id) ?? [])));
+  // Adaptive-difficulty offers are opt-in per request (client sends tz). Without
+  // tz we can't do local-day math, so offers default off and only the manual
+  // controls (driven by `difficulty`) show.
+  const tzRaw = req.query.tz;
+  let offerFor: (t: typeof tasksTable.$inferSelect) => boolean = () => false;
+  if (typeof tzRaw === "string" && tzRaw && isAiConfigured()) {
+    const tz = resolveTimeZone(tzRaw);
+    const now = new Date();
+    const todayStr = localDateKey(now, tz);
+    const [latest] = await db.select().from(brainCheckinsTable)
+      .where(eq(brainCheckinsTable.userId, userId))
+      .orderBy(desc(brainCheckinsTable.createdAt), desc(brainCheckinsTable.id))
+      .limit(1);
+    const mode = deriveBrainState(latest, now, tz).mode;
+    offerFor = (t) => evaluateDifficultyOffer(toOfferInput(t), { now, todayStr, mode });
+  }
+
+  res.json(tasks.map((t) => formatTask(t, stepsByTask.get(t.id) ?? [], { difficultyOfferable: offerFor(t) })));
 });
 
 router.post("/tasks", async (req, res): Promise<void> => {

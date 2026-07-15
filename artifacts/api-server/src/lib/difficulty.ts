@@ -1,4 +1,4 @@
-import type { RungContent, VariantLadder, DifficultyLevel } from "@workspace/db";
+import type { RungContent, VariantLadder, DifficultyLevel, Task } from "@workspace/db";
 import type { VariantsResult } from "./ai/difficulty-variants";
 import type { BrainMode } from "./brain-mode";
 
@@ -35,6 +35,24 @@ export interface OfferContext {
   now: Date;
   todayStr: string;
   mode: BrainMode;
+}
+
+/**
+ * Maps a task row to the evaluator's input shape. The single source of truth
+ * for that mapping — both GET /tasks and momentum surfacing call this instead
+ * of hand-rolling the same field list, so the two call sites can't drift.
+ */
+export function toOfferInput(t: Task): OfferInput {
+  return {
+    completed: t.completed,
+    difficulty: t.difficulty,
+    struggleScore: t.struggleScore,
+    dueDate: t.dueDate,
+    isAnchored: t.isAnchored,
+    isDailyFocus: t.isDailyFocus,
+    focusDate: t.focusDate,
+    difficultyOfferSnoozedAt: t.difficultyOfferSnoozedAt,
+  };
 }
 
 function daysBetween(fromYmd: string, toYmd: string): number {
