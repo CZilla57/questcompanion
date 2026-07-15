@@ -14,7 +14,7 @@ import { generateJson, isAiConfigured, AiClientError } from "../lib/ai/client";
 import { breakdownCooldown } from "../lib/ai/breakdown-cooldown";
 import { generateVariants, VariantsParseError } from "../lib/ai/difficulty-variants";
 import { variantsCooldown } from "../lib/ai/variants-cooldown";
-import { assembleLadder, snapshotMedium, needsVariantGeneration } from "../lib/difficulty";
+import { assembleLadder, snapshotMedium, needsVariantGeneration, struggleDeltaOnReschedule } from "../lib/difficulty";
 import { isValidDueTime, isValidDueDate } from "../lib/task-datetime";
 import { parseQuickAdd } from "@workspace/quick-add";
 import { buildQuickAddPrompt, parseQuickAddResult, QuickAddParseError } from "../lib/ai/quick-add-parse";
@@ -338,7 +338,12 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
   // Fetch task upfront to enforce ownership.
-  const [existing] = await db.select({ completed: tasksTable.completed, recurringTaskId: tasksTable.recurringTaskId })
+  const [existing] = await db.select({
+    completed: tasksTable.completed,
+    recurringTaskId: tasksTable.recurringTaskId,
+    dueDate: tasksTable.dueDate,
+    struggleScore: tasksTable.struggleScore,
+  })
     .from(tasksTable)
     .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)));
   if (!existing) { res.status(404).json({ error: "Task not found" }); return; }
@@ -377,11 +382,19 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
   // Incomplete task: allow full edit.
   if (title != null) updates.title = title;
   if (description != null) updates.description = description;
+  // A re-worded quest is a new baseline: drop the stale ladder and return to medium.
+  if (title != null || description != null) {
+    updates.difficultyVariants = null;
+    updates.difficulty = "medium";
+  }
   if (dueDate != null) {
     updates.dueDate = dueDate;
     // Giving a quest a concrete date takes it out of the anchored (no-deadline)
     // state, unless this same request is explicitly re-anchoring it below.
     if (isAnchored !== true) updates.isAnchored = false;
+    // Pushing an incomplete quest to a later day is a silent "I keep avoiding this".
+    const rescheduleDelta = struggleDeltaOnReschedule(existing.dueDate, dueDate);
+    if (rescheduleDelta > 0) updates.struggleScore = existing.struggleScore + rescheduleDelta;
   }
   if (dueTime !== undefined) {
     if (dueTime !== null && !isValidDueTime(dueTime)) {
