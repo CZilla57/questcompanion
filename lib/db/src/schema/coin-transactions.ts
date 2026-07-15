@@ -8,7 +8,8 @@ export type CoinReason =
   | "streak_milestone"
   | "questline_complete"
   | "boss_win"
-  | "redeem";
+  | "redeem"
+  | "quest_uncomplete";
 
 // Append-only audit ledger. Not surfaced in the UI (v1); exists for integrity,
 // debuggability, and reconstructing the denormalized users.coinBalance.

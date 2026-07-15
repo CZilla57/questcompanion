@@ -45,3 +45,9 @@ export function isStreakMilestone(newStreak: number, oldStreak: number): boolean
     (newStreak === 3 || newStreak === 7 || newStreak === 14 || newStreak === 30 || newStreak % 30 === 0)
   );
 }
+
+// How many coins to actually remove when reversing an award: never more than the
+// user holds, never negative. Keeps the balance non-negative and the ledger consistent.
+export function coinsToReverse(requested: number, balance: number): number {
+  return Math.max(0, Math.min(requested, balance));
+}

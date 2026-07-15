@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { tierCost, isValidTier, redeemDecision, isStreakMilestone, COIN_EARN } from "./coins";
+import { tierCost, isValidTier, redeemDecision, isStreakMilestone, COIN_EARN, coinsToReverse } from "./coins";
 
 describe("tierCost", () => {
   it("maps each tier to its fixed cost", () => {
@@ -52,5 +52,19 @@ describe("COIN_EARN", () => {
     expect(COIN_EARN.streakMilestone).toBe(25);
     expect(COIN_EARN.questlineComplete).toBe(30);
     expect(COIN_EARN.bossWin).toBe(50);
+  });
+});
+
+describe("coinsToReverse", () => {
+  it("removes the requested amount when the balance covers it", () => {
+    expect(coinsToReverse(5, 10)).toBe(5);
+    expect(coinsToReverse(30, 30)).toBe(30);
+  });
+  it("clamps to the available balance (never negative)", () => {
+    expect(coinsToReverse(5, 3)).toBe(3);
+    expect(coinsToReverse(25, 0)).toBe(0);
+  });
+  it("handles a zero request", () => {
+    expect(coinsToReverse(0, 100)).toBe(0);
   });
 });

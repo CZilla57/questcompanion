@@ -32,6 +32,7 @@ export const tasksTable = pgTable("tasks", {
 
   // Snapshot written at completion time so uncomplete can reverse exactly what was granted.
   pointsAwarded: integer("points_awarded"),
+  coinsAwarded: integer("coins_awarded").notNull().default(0),
   dailyBonusAwarded: boolean("daily_bonus_awarded").notNull().default(false),
   streakDaysBefore: integer("streak_days_before"),
   longestStreakBefore: integer("longest_streak_before"),
