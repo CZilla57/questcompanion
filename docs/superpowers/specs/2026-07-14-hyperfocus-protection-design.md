@@ -48,7 +48,7 @@ Four columns on `usersTable` (`lib/db/src/schema/users.ts`), following the hero-
 
 `protectedStretch(input) → { active: boolean; startedAt: Date | null }` in a new pure module `artifacts/api-server/src/lib/hyperfocus.ts`. Input: `{ activeSessions, mode, latestCheckinAt, now }`.
 
-- **Focus signal:** among `activeSessions` (`status = 'active'`), a session counts only if its `lastIntervalAt ?? startedAt` is within `STALE_SESSION_MIN` (~30 min) of `now` — a live session updates intervals; an abandoned "active" tab does not. Its contribution to `startedAt` is `startedAt`.
+- **Focus signal:** among `activeSessions` (`status = 'active'`), a session counts only if its `lastIntervalAt ?? startedAt` is within `STALE_SESSION_MIN` (~60 min) of `now` — a live session updates intervals; an abandoned "active" tab does not. Its contribution to `startedAt` is `startedAt`. (60 ≥ the longest preset focus interval (`deep` = 50 min), so a genuine deep session never flickers "stale" between interval completions — otherwise the first nudge would slip past the 90-min mark.)
 - **Mode signal:** if `mode === 'hyperfocus'` (from `deriveBrainState`, reused), the stretch contributes `latestCheckinAt`.
 - `startedAt` = earliest of the valid contributions; `active` = at least one present. Duration = `now − startedAt`.
 
@@ -60,13 +60,13 @@ Order of evaluation (first match wins; `null` = send nothing this tick):
 
 1. **Suppressors →`null`:** no active stretch; `pausedUntil` in the future; stretch duration `< FIRST_NUDGE_MIN` (~90); `lastNudgedAt` is within this stretch **and** `now − lastNudgedAt < INTERVAL_MIN` (~60).
 2. **Deep-night stop:** if `localHour` is in `[DEEP_NIGHT_START, MORNING)` (~2:00–6:59) → `null` (never buzz through the small hours).
-3. **Bedtime:** if `localHour ≥ BEDTIME_HOUR` (~23) or `localHour < DEEP_NIGHT_START` (~<2) → `bedtime` — *"It's late and you're still going — want to start winding down soon? Tomorrow-you will thank you."* (An anti-shame invitation; the ≥1h spacing + deep-night stop cap it at ~1–2 a night.)
+3. **Bedtime:** if `localHour ≥ BEDTIME_HOUR` (~23) or `localHour < DEEP_NIGHT_START` (~<2) → `bedtime` — *"It's late and you're still going — want to start winding down soon? Tomorrow-you will thank you."* (An anti-shame invitation; the ≥1h spacing across the 23:00–01:59 window + the deep-night stop bound it to at most ~3 a night, and it never nags past 2am.)
 4. **Food:** else if `hungerStage` ∈ {hungry, starving} **or** `localHour` ∈ meal windows (~12–13, ~18–19) → `food` — *"Your hero's getting hungry — maybe grab a bite too?"*
 5. **Hydrate / Stretch:** else alternate by `lastKind` (if last was `hydrate` → `stretch`, else `hydrate`) — *"Deep in it for a while now — a sip of water?"* / *"You've been locked in. Stand up, roll the shoulders?"*
 
 **Variety rule:** when a non-context kind (hydrate/stretch) would repeat `lastKind`, pick the other. Bedtime/food are context-gated and may legitimately recur across ticks (still bounded by spacing).
 
-Tunable consts (one table, changed only with the tests that pin them): `FIRST_NUDGE_MIN=90`, `INTERVAL_MIN=60`, `STALE_SESSION_MIN=30`, `BEDTIME_HOUR=23`, `DEEP_NIGHT_START=2`, `MORNING=7`, meal windows `[[12,13],[18,19]]`.
+Tunable consts (one table, changed only with the tests that pin them): `FIRST_NUDGE_MIN=90`, `INTERVAL_MIN=60`, `STALE_SESSION_MIN=60`, `BEDTIME_HOUR=23`, `DEEP_NIGHT_START=2`, `MORNING=7`, meal windows `[[12,13],[18,19]]`.
 
 ## 4. Cron pass
 
@@ -110,7 +110,7 @@ Tunable consts (one table, changed only with the tests that pin them): `FIRST_NU
 - **Multiple active sessions:** take the earliest valid `startedAt`.
 - **Pause auto-expiry:** protection resumes automatically once `hyperfocus_paused_until` passes; no cleanup needed.
 - **Mode + session overlap:** whichever started earlier defines `startedAt`; a single stretch, a single nudge cadence.
-- **Deep-night session:** after `DEEP_NIGHT_START`, only bedtime (already owed) — otherwise silent until `MORNING`.
+- **Deep-night session:** the `[DEEP_NIGHT_START, MORNING)` window (~2:00–6:59) is *fully silent* — no nudges of any kind, so a late all-nighter is never buzzed through the small hours.
 
 ## 9. Testing strategy (pure-lib, per repo convention)
 
