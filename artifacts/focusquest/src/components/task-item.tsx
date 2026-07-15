@@ -12,6 +12,7 @@ import { formatTime12h } from "@/lib/format-time";
 import { dispatchQuestCompleted } from "./dopamine-overlay";
 import { CATEGORY_COLORS, CATEGORY_LABEL } from "@/lib/categories";
 import { TaskSteps } from "./task-steps";
+import { DifficultyControls } from "./difficulty-controls";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { parseDueDate, toDueDateString, todayDueDate, tomorrowDueDate, nextWeekDueDate } from "@/lib/reschedule";
@@ -405,6 +406,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
         )}
 
         <TaskSteps task={task} />
+        {!task.completed && <DifficultyControls task={task} />}
       </div>
 
       {/* Actions — bottom-right on mobile (wraps to own row), hover-reveal inline on desktop */}

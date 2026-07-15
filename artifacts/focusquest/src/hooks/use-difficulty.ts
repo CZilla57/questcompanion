@@ -5,6 +5,7 @@ import {
 } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiErrorMessage } from "@/lib/api-error";
+import { difficultyControlState } from "@/lib/difficulty-controls";
 
 type Level = "easy" | "medium" | "hard";
 
@@ -24,7 +25,7 @@ export function useDifficulty(task: Task | null) {
     queryClient.invalidateQueries({ queryKey: getGetTasksMomentumQueryKey() });
   };
 
-  const current = (task?.difficulty ?? "medium") as Level;
+  const { canEasier, canHarder } = difficultyControlState({ difficulty: task?.difficulty ?? "medium" });
 
   const applyLevel = (level: Level) => {
     if (!task) return;
@@ -49,7 +50,7 @@ export function useDifficulty(task: Task | null) {
     apply: applyLevel,
     snooze: snoozeOffer,
     isBusy: apply.isPending || snooze.isPending,
-    canEasier: current !== "easy",
-    canHarder: current !== "hard",
+    canEasier,
+    canHarder,
   };
 }
