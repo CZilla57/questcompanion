@@ -1794,6 +1794,107 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
 
+  /coins:
+    get:
+      operationId: getCoins
+      tags: [users]
+      summary: Get the current user's coin balance
+      responses:
+        "200":
+          description: Coin balance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Coins"
+
+  /rewards-store:
+    get:
+      operationId: getRewardStoreItems
+      tags: [users]
+      summary: List the current user's real-life reward catalog
+      responses:
+        "200":
+          description: Reward catalog with affordability
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RewardStoreItem"
+    post:
+      operationId: createRewardStoreItem
+      tags: [users]
+      summary: Add a real-life reward priced by size tier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RewardStoreItemInput"
+      responses:
+        "201":
+          description: Created reward
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RewardStoreItem"
+        "400":
+          description: Validation error or limit reached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /rewards-store/{id}:
+    delete:
+      operationId: deleteRewardStoreItem
+      tags: [users]
+      summary: Remove a reward from the catalog
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessEnvelope"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /rewards-store/{id}/redeem:
+    post:
+      operationId: redeemRewardStoreItem
+      tags: [users]
+      summary: Spend coins to redeem a reward (gentle no-op if unaffordable)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Redemption outcome (redeemed true, or affordable false with remaining)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RedeemResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
   /calendar/heatmap:
     get:
       operationId: getCalendarHeatmap
@@ -3190,6 +3291,63 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+
+    Coins:
+      type: object
+      required: [balance]
+      properties:
+        balance:
+          type: integer
+
+    RewardStoreItem:
+      type: object
+      required: [id, userId, label, tier, coinCost, createdAt, affordable, remaining]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        label:
+          type: string
+          maxLength: 100
+        tier:
+          type: string
+          enum: [small, medium, large, treat]
+        coinCost:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        affordable:
+          type: boolean
+        remaining:
+          type: integer
+          description: Coins still needed to afford this reward (0 when affordable)
+
+    RewardStoreItemInput:
+      type: object
+      required: [label, tier]
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 100
+        tier:
+          type: string
+          enum: [small, medium, large, treat]
+
+    RedeemResult:
+      type: object
+      required: [redeemed, balance, affordable, remaining]
+      properties:
+        redeemed:
+          type: boolean
+        balance:
+          type: integer
+        affordable:
+          type: boolean
+        remaining:
+          type: integer
 
     HeatmapDay:
       type: object

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation } from "wouter";
 import { Link } from "wouter";
-import { Home, CheckSquare, BarChart2, BarChart3, Users, Trophy, X, Zap, Bell, BellOff, Repeat, Menu, User, LogOut, Coffee, Timer, Download, Scroll } from "lucide-react";
+import { Home, CheckSquare, BarChart2, BarChart3, Users, Trophy, X, Zap, Bell, BellOff, Repeat, Menu, User, LogOut, Coffee, Timer, Download, Scroll, ShoppingBag } from "lucide-react";
 import { useGetNudges, useGetBrainState, BrainMode } from "@workspace/api-client-react";
 import { Button } from "./ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
@@ -20,6 +20,7 @@ import { DopamineOverlay } from "./dopamine-overlay";
 import { InstallBanner } from "./install-banner";
 import { EmergencyModeProvider } from "./emergency-mode";
 import { BrainModeChip } from "./brain-mode-chip";
+import { CoinChip } from "./coin-chip";
 import { RescueSheet } from "./rescue-sheet";
 import { ProtectionPause } from "./protection-pause";
 
@@ -155,6 +156,7 @@ const allNavItems = [
   { href: "/partners",       label: "Allies",     icon: Users,       mobileShow: true },
   { href: "/leaderboard",    label: "Board",      icon: Trophy,      mobileShow: false },
   { href: "/dopamine-menu",  label: "Rewards",    icon: Coffee,      mobileShow: false },
+  { href: "/rewards",       label: "Store",      icon: ShoppingBag, mobileShow: false },
 ];
 const mobileNavItems = allNavItems.filter(i => i.mobileShow);
 
@@ -178,6 +180,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <span className="font-bold text-base tracking-wider uppercase">FocusQuest</span>
         </div>
         <div className="flex items-center gap-1">
+          <CoinChip />
           <BrainModeChip />
           <InstallButton />
           <NotificationBell />
@@ -216,6 +219,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </span>
           </div>
           <div className="flex items-center gap-1 -ml-1">
+            <CoinChip />
             <BrainModeChip />
             <InstallButton />
             <NotificationBell />

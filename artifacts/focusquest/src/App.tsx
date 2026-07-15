@@ -23,6 +23,7 @@ import Focus from "@/pages/focus";
 import PartnerDetail from "@/pages/partner-detail";
 import Questlines from "@/pages/questlines";
 import QuestlineDetail from "@/pages/questline-detail";
+import RewardsStore from "@/pages/rewards-store";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -173,6 +174,7 @@ function Router() {
         <Route path="/leaderboard" component={Leaderboard} />
         <Route path="/avatar" component={AvatarPage} />
         <Route path="/dopamine-menu" component={DopamineMenu} />
+        <Route path="/rewards" component={RewardsStore} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

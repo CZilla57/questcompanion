@@ -28,6 +28,8 @@ import { isQuestlineAssignable } from "../lib/questlines";
 import { hungerStage } from "../lib/hero-care";
 import { grantInitiationAwards } from "../lib/initiation-grant";
 import type { InitiationXp } from "../lib/initiation";
+import { awardCoins, reverseCoins } from "../lib/award-coins";
+import { COIN_EARN, isStreakMilestone } from "../lib/coins";
 
 const router: IRouter = Router();
 
@@ -633,10 +635,19 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       ...(freezeConsumed ? { streakFreezes: user.streakFreezes - 1 } : {}),
     }).where(eq(usersTable.id, userId));
 
+    // Act IV coins: every completed quest pays out; streak milestones pay a bonus.
+    const coinMilestone = isStreakMilestone(newStreak, streakDaysBefore);
+    await awardCoins(tx, userId, COIN_EARN.questComplete, "quest_complete");
+    if (coinMilestone) {
+      await awardCoins(tx, userId, COIN_EARN.streakMilestone, "streak_milestone");
+    }
+    const coinsAwarded = COIN_EARN.questComplete + (coinMilestone ? COIN_EARN.streakMilestone : 0);
+
     // Write the full completion snapshot onto the task in the same transaction so
     // /uncomplete always sees a consistent state: completed=true ⟹ snapshot present.
     await tx.update(tasksTable).set({
       pointsAwarded: boostedBase,
+      coinsAwarded,
       dailyBonusAwarded: bonusAwarded,
       streakDaysBefore,
       longestStreakBefore,
@@ -755,7 +766,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
   }
 
   let accountGearReward: GearRewardInfo | null = null;
-  if (newStreak > oldStreak && (newStreak === 3 || newStreak === 7 || newStreak === 14 || newStreak === 30 || newStreak % 30 === 0)) {
+  if (isStreakMilestone(newStreak, oldStreak)) {
     await db.insert(activityTable).values({
       userId,
       type: "streak_milestone",
@@ -955,11 +966,14 @@ router.post("/tasks/:id/uncomplete", async (req, res): Promise<void> => {
       ...(freezesToRestore > 0 ? { streakFreezes: user.streakFreezes + freezesToRestore } : {}),
     }).where(eq(usersTable.id, userId));
 
+    await reverseCoins(tx, userId, task.coinsAwarded, "quest_uncomplete");
+
     const [updated] = await tx.update(tasksTable)
       .set({
         completed: false,
         completedAt: null,
         pointsAwarded: null,
+        coinsAwarded: 0,
         dailyBonusAwarded: false,
         streakDaysBefore: null,
         longestStreakBefore: null,

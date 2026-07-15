@@ -1768,6 +1768,66 @@ export const DeleteDopamineRewardResponse = zod.object({
 
 
 /**
+ * @summary Get the current user's coin balance
+ */
+export const GetCoinsResponse = zod.object({
+  "balance": zod.number()
+})
+
+
+/**
+ * @summary List the current user's real-life reward catalog
+ */
+export const getRewardStoreItemsResponseLabelMax = 100;
+
+
+
+export const GetRewardStoreItemsResponseItem = zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "label": zod.string().max(getRewardStoreItemsResponseLabelMax),
+  "tier": zod.enum(['small', 'medium', 'large', 'treat']),
+  "coinCost": zod.number(),
+  "createdAt": zod.coerce.date(),
+  "affordable": zod.boolean(),
+  "remaining": zod.number().describe('Coins still needed to afford this reward (0 when affordable)')
+})
+export const GetRewardStoreItemsResponse = zod.array(GetRewardStoreItemsResponseItem)
+
+
+/**
+ * @summary Add a real-life reward priced by size tier
+ */
+export const createRewardStoreItemBodyLabelMax = 100;
+
+
+
+export const CreateRewardStoreItemBody = zod.object({
+  "label": zod.string().min(1).max(createRewardStoreItemBodyLabelMax),
+  "tier": zod.enum(['small', 'medium', 'large', 'treat'])
+})
+
+
+/**
+ * @summary Remove a reward from the catalog
+ */
+export const DeleteRewardStoreItemResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Spend coins to redeem a reward (gentle no-op if unaffordable)
+ */
+export const RedeemRewardStoreItemResponse = zod.object({
+  "redeemed": zod.boolean(),
+  "balance": zod.number(),
+  "affordable": zod.boolean(),
+  "remaining": zod.number()
+})
+
+
+/**
  * @summary Get completion heatmap data for the last N days
  */
 export const getCalendarHeatmapQueryDaysDefault = 90;

@@ -9,6 +9,7 @@ import {
   useGetTasks,
   getGetActiveFocusSessionQueryKey,
   getGetMyStatsQueryKey,
+  getGetCoinsQueryKey,
   type FocusPreset,
   type FocusSession,
 } from "@workspace/api-client-react";
@@ -115,6 +116,7 @@ export default function Focus() {
             qc.invalidateQueries({ queryKey: getGetActiveFocusSessionQueryKey() });
             qc.invalidateQueries({ queryKey: getGetMyStatsQueryKey() });
             if (res.session.status === "completed") {
+              qc.invalidateQueries({ queryKey: getGetCoinsQueryKey() });
               toast({ title: "Session complete!", description: `Focused ${Math.round(res.session.focusedSeconds / 60)} min`, className: "border-primary" });
             }
           },

@@ -19,6 +19,8 @@ import focusSessionsRouter from "./focus-sessions";
 import questlinesRouter from "./questlines";
 import brainRouter from "./brain";
 import rescueRouter from "./rescue";
+import coinsRouter from "./coins";
+import rewardsStoreRouter from "./rewards-store";
 
 const router: IRouter = Router();
 
@@ -43,5 +45,7 @@ router.use(focusSessionsRouter);
 router.use(questlinesRouter);
 router.use(brainRouter);
 router.use(rescueRouter);
+router.use(coinsRouter);
+router.use(rewardsStoreRouter);
 
 export default router;

@@ -4,6 +4,8 @@ import { db, usersTable, tasksTable, activityTable, focusSessionsTable, type Foc
 import { PRESETS, getPreset, computeIntervalXp, computePartialXp, expectedElapsedSeconds, FULL_SET_BONUS, GRACE_SECONDS } from "../lib/focus-sessions";
 import { grantInitiationAwards } from "../lib/initiation-grant";
 import type { InitiationXp } from "../lib/initiation";
+import { awardCoins } from "../lib/award-coins";
+import { COIN_EARN } from "../lib/coins";
 
 const router: IRouter = Router();
 
@@ -206,6 +208,7 @@ router.post("/focus-sessions/:id/interval", async (req, res): Promise<void> => {
       points: intervalXp,
     });
     if (isFinal) {
+      await awardCoins(tx, userId, COIN_EARN.focusSession, "focus_session");
       await tx.insert(activityTable).values({
         userId,
         type: "focus_complete",

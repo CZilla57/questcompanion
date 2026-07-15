@@ -1273,6 +1273,59 @@ export interface DopamineRewardInput {
   rewardText: string;
 }
 
+export interface Coins {
+  balance: number;
+}
+
+export type RewardStoreItemTier = typeof RewardStoreItemTier[keyof typeof RewardStoreItemTier];
+
+
+export const RewardStoreItemTier = {
+  small: 'small',
+  medium: 'medium',
+  large: 'large',
+  treat: 'treat',
+} as const;
+
+export interface RewardStoreItem {
+  id: number;
+  userId: number;
+  /** @maxLength 100 */
+  label: string;
+  tier: RewardStoreItemTier;
+  coinCost: number;
+  createdAt: string;
+  affordable: boolean;
+  /** Coins still needed to afford this reward (0 when affordable) */
+  remaining: number;
+}
+
+export type RewardStoreItemInputTier = typeof RewardStoreItemInputTier[keyof typeof RewardStoreItemInputTier];
+
+
+export const RewardStoreItemInputTier = {
+  small: 'small',
+  medium: 'medium',
+  large: 'large',
+  treat: 'treat',
+} as const;
+
+export interface RewardStoreItemInput {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  label: string;
+  tier: RewardStoreItemInputTier;
+}
+
+export interface RedeemResult {
+  redeemed: boolean;
+  balance: number;
+  affordable: boolean;
+  remaining: number;
+}
+
 export interface HeatmapDay {
   /** Date in YYYY-MM-DD format */
   date: string;
