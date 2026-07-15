@@ -71,15 +71,6 @@ router.post("/battle/enter", async (req, res): Promise<void> => {
   const userId = req.gameUserId;
 
   const weekKey = getWeekKey();
-
-  const [already] = await db.select()
-    .from(weeklyBattlesTable)
-    .where(and(eq(weeklyBattlesTable.userId, userId), eq(weeklyBattlesTable.weekKey, weekKey)));
-
-  if (already) {
-    res.status(409).json({ error: "Already fought this week", existing: already }); return;
-  }
-
   const bossPower = getBossPower(weekKey);
   const yourPower = await getUserPower(userId);
 
@@ -88,15 +79,17 @@ router.post("/battle/enter", async (req, res): Promise<void> => {
   const result: "win" | "lose" = roll >= bossPower ? "win" : "lose";
   const xpAwarded = result === "win" ? BATTLE_WIN_XP : BATTLE_LOSE_XP;
 
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
-  if (!user) { res.status(404).json({ error: "User not found" }); return; }
+  type Outcome =
+    | { status: "not_found" }
+    | { status: "already"; existing: typeof weeklyBattlesTable.$inferSelect }
+    | { status: "ok" };
 
-  const newPoints = user.totalPoints + xpAwarded;
-  const newWeekly = user.weeklyPoints + xpAwarded;
-  const newLevel = getLevelInfo(newPoints).level;
-
-  await db.transaction(async (tx) => {
-    await tx.insert(weeklyBattlesTable).values({
+  const outcome = await db.transaction(async (tx): Promise<Outcome> => {
+    // The (user_id, week_key) unique constraint makes this insert the atomic
+    // dedup: two concurrent /battle/enter calls can't both claim the week, so
+    // XP/coins are awarded at most once. onConflictDoNothing → no row returned
+    // means the week was already fought and we award nothing.
+    const [inserted] = await tx.insert(weeklyBattlesTable).values({
       userId,
       weekKey,
       powerScore: yourPower,
@@ -104,7 +97,21 @@ router.post("/battle/enter", async (req, res): Promise<void> => {
       roll,
       result,
       xpAwarded,
-    });
+    }).onConflictDoNothing().returning();
+
+    if (!inserted) {
+      const [existing] = await tx.select().from(weeklyBattlesTable)
+        .where(and(eq(weeklyBattlesTable.userId, userId), eq(weeklyBattlesTable.weekKey, weekKey)));
+      return { status: "already", existing: existing! };
+    }
+
+    const [user] = await tx.select().from(usersTable).where(eq(usersTable.id, userId)).for("update");
+    if (!user) return { status: "not_found" };
+
+    const newPoints = user.totalPoints + xpAwarded;
+    const newWeekly = user.weeklyPoints + xpAwarded;
+    const newLevel = getLevelInfo(newPoints).level;
+
     await tx.update(usersTable)
       .set({ totalPoints: newPoints, weeklyPoints: newWeekly, currentLevel: newLevel })
       .where(eq(usersTable.id, userId));
@@ -119,7 +126,13 @@ router.post("/battle/enter", async (req, res): Promise<void> => {
         : `Weekly Battle: Defeated. Rolled ${roll} vs boss ${bossPower}.`,
       points: xpAwarded,
     });
+    return { status: "ok" };
   });
+
+  if (outcome.status === "not_found") { res.status(404).json({ error: "User not found" }); return; }
+  if (outcome.status === "already") {
+    res.status(409).json({ error: "Already fought this week", existing: outcome.existing }); return;
+  }
 
   res.json({ result, xpAwarded, bossPower, yourPower, roll, weekKey });
 });
