@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@workspace/auth-web";
-import { useGetMyStats, useUpdateMe, getGetMyStatsQueryKey } from "@workspace/api-client-react";
+import { useGetMyStats, useUpdateMe, usePutMyTimezone, getGetMyStatsQueryKey } from "@workspace/api-client-react";
 import { browserTimeZone } from "@/lib/timezone";
 import { Swords, Trophy } from "lucide-react";
 
@@ -129,6 +129,14 @@ function OnboardingScreen() {
 
 function OnboardingGate({ children }: { children: React.ReactNode }) {
   const { data: stats, isLoading } = useGetMyStats({ tz: browserTimeZone() });
+  const putTz = usePutMyTimezone();
+
+  useEffect(() => {
+    // Fire-and-forget: capture the browser's timezone once per authed load so
+    // cron can compute the user's local time (bedtime / quiet hours).
+    putTz.mutate({ data: { tz: browserTimeZone() } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (isLoading) {
     return (
