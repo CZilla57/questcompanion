@@ -1107,12 +1107,27 @@ export interface BrainState {
   /** @nullable */
   expiresAt: string | null;
   checkedInToday: boolean;
+  /**
+     * When protection is paused until, or null
+     * @nullable
+     */
+  hyperfocusPausedUntil: string | null;
 }
 
 export interface BrainCheckinRequest {
   mode: BrainMode;
   source?: BrainCheckinSource;
   tz: string;
+}
+
+export interface TimezoneInput {
+  /** IANA timezone */
+  tz: string;
+}
+
+export interface HyperfocusPauseInput {
+  /** Minutes to pause protection; 0 resumes */
+  minutes: number;
 }
 
 export type MomentumSuggestionKind = typeof MomentumSuggestionKind[keyof typeof MomentumSuggestionKind];
@@ -1501,6 +1516,15 @@ export type GetBrainStateParams = {
  * IANA timezone for expiry and checkedInToday derivation
  */
 tz?: string;
+};
+
+export type PutMyTimezone200 = {
+  ok: boolean;
+};
+
+export type PauseHyperfocus200 = {
+  /** @nullable */
+  pausedUntil: string | null;
 };
 
 export type CreateRescueEvent201 = {

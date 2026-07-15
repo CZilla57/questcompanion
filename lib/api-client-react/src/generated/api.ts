@@ -61,6 +61,7 @@ import type {
   HealthStatus,
   HeatmapResponse,
   HeroStatus,
+  HyperfocusPauseInput,
   InsightsResponse,
   LeaderboardEntry,
   ListFocusSessionsParams,
@@ -77,6 +78,8 @@ import type {
   PartnerRequestInput,
   Partnership,
   PatchTaskStepParams,
+  PauseHyperfocus200,
+  PutMyTimezone200,
   Questline,
   QuestlineClaimResult,
   QuestlineDetail,
@@ -101,6 +104,7 @@ import type {
   TaskCompletionResult,
   TaskInput,
   TaskUpdate,
+  TimezoneInput,
   TranscribeResult,
   User,
   UserBadge,
@@ -2605,6 +2609,148 @@ export const useCreateBrainCheckin = <TError = ErrorType<ErrorEnvelope>,
         TContext
       > => {
       return useMutation(getCreateBrainCheckinMutationOptions(options));
+    }
+
+export const getPutMyTimezoneUrl = () => {
+
+
+
+
+  return `/api/users/me/timezone`
+}
+
+/**
+ * @summary Persist the user's IANA timezone
+ */
+export const putMyTimezone = async (timezoneInput: TimezoneInput, options?: RequestInit): Promise<PutMyTimezone200> => {
+
+  return customFetch<PutMyTimezone200>(getPutMyTimezoneUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      timezoneInput,)
+  }
+);}
+
+
+
+
+export const getPutMyTimezoneMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putMyTimezone>>, TError,{data: BodyType<TimezoneInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof putMyTimezone>>, TError,{data: BodyType<TimezoneInput>}, TContext> => {
+
+const mutationKey = ['putMyTimezone'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putMyTimezone>>, {data: BodyType<TimezoneInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  putMyTimezone(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutMyTimezoneMutationResult = NonNullable<Awaited<ReturnType<typeof putMyTimezone>>>
+    export type PutMyTimezoneMutationBody = BodyType<TimezoneInput>
+    export type PutMyTimezoneMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Persist the user's IANA timezone
+ */
+export const usePutMyTimezone = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putMyTimezone>>, TError,{data: BodyType<TimezoneInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof putMyTimezone>>,
+        TError,
+        {data: BodyType<TimezoneInput>},
+        TContext
+      > => {
+      return useMutation(getPutMyTimezoneMutationOptions(options));
+    }
+
+export const getPauseHyperfocusUrl = () => {
+
+
+
+
+  return `/api/users/me/hyperfocus/pause`
+}
+
+/**
+ * @summary Pause (or resume) hyperfocus protection nudges
+ */
+export const pauseHyperfocus = async (hyperfocusPauseInput: HyperfocusPauseInput, options?: RequestInit): Promise<PauseHyperfocus200> => {
+
+  return customFetch<PauseHyperfocus200>(getPauseHyperfocusUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      hyperfocusPauseInput,)
+  }
+);}
+
+
+
+
+export const getPauseHyperfocusMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pauseHyperfocus>>, TError,{data: BodyType<HyperfocusPauseInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof pauseHyperfocus>>, TError,{data: BodyType<HyperfocusPauseInput>}, TContext> => {
+
+const mutationKey = ['pauseHyperfocus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof pauseHyperfocus>>, {data: BodyType<HyperfocusPauseInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  pauseHyperfocus(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PauseHyperfocusMutationResult = NonNullable<Awaited<ReturnType<typeof pauseHyperfocus>>>
+    export type PauseHyperfocusMutationBody = BodyType<HyperfocusPauseInput>
+    export type PauseHyperfocusMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Pause (or resume) hyperfocus protection nudges
+ */
+export const usePauseHyperfocus = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pauseHyperfocus>>, TError,{data: BodyType<HyperfocusPauseInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof pauseHyperfocus>>,
+        TError,
+        {data: BodyType<HyperfocusPauseInput>},
+        TContext
+      > => {
+      return useMutation(getPauseHyperfocusMutationOptions(options));
     }
 
 export const getCreateRescueEventUrl = () => {

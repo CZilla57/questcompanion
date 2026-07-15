@@ -744,6 +744,63 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
 
+  /users/me/timezone:
+    put:
+      operationId: putMyTimezone
+      tags: [users]
+      summary: Persist the user's IANA timezone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TimezoneInput"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties: { ok: { type: boolean } }
+        "400":
+          description: Missing or invalid timezone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /users/me/hyperfocus/pause:
+    post:
+      operationId: pauseHyperfocus
+      tags: [users]
+      summary: Pause (or resume) hyperfocus protection nudges
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HyperfocusPauseInput"
+      responses:
+        "200":
+          description: New paused-until (null when resumed)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [pausedUntil]
+                properties:
+                  pausedUntil:
+                    type: ["string", "null"]
+                    format: date-time
+        "400":
+          description: Invalid minutes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
   /rescue/events:
     post:
       operationId: createRescueEvent
@@ -2911,7 +2968,7 @@ components:
 
     BrainState:
       type: object
-      required: [mode, since, expiresAt, checkedInToday]
+      required: [mode, since, expiresAt, checkedInToday, hyperfocusPausedUntil]
       properties:
         mode:
           $ref: "#/components/schemas/BrainMode"
@@ -2923,6 +2980,10 @@ components:
           format: date-time
         checkedInToday:
           type: boolean
+        hyperfocusPausedUntil:
+          type: ["string", "null"]
+          format: date-time
+          description: When protection is paused until, or null
 
     BrainCheckinRequest:
       type: object
@@ -2934,6 +2995,22 @@ components:
           $ref: "#/components/schemas/BrainCheckinSource"
         tz:
           type: string
+
+    TimezoneInput:
+      type: object
+      required: [tz]
+      properties:
+        tz:
+          type: string
+          description: IANA timezone
+
+    HyperfocusPauseInput:
+      type: object
+      required: [minutes]
+      properties:
+        minutes:
+          type: integer
+          description: Minutes to pause protection; 0 resumes
 
     MomentumSuggestion:
       type: object
