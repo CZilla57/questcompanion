@@ -28,6 +28,8 @@ import { isQuestlineAssignable } from "../lib/questlines";
 import { hungerStage } from "../lib/hero-care";
 import { grantInitiationAwards } from "../lib/initiation-grant";
 import type { InitiationXp } from "../lib/initiation";
+import { awardCoins } from "../lib/award-coins";
+import { COIN_EARN, isStreakMilestone } from "../lib/coins";
 
 const router: IRouter = Router();
 
@@ -633,6 +635,12 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       ...(freezeConsumed ? { streakFreezes: user.streakFreezes - 1 } : {}),
     }).where(eq(usersTable.id, userId));
 
+    // Act IV coins: every completed quest pays out; streak milestones pay a bonus.
+    await awardCoins(tx, userId, COIN_EARN.questComplete, "quest_complete");
+    if (isStreakMilestone(newStreak, streakDaysBefore)) {
+      await awardCoins(tx, userId, COIN_EARN.streakMilestone, "streak_milestone");
+    }
+
     // Write the full completion snapshot onto the task in the same transaction so
     // /uncomplete always sees a consistent state: completed=true ⟹ snapshot present.
     await tx.update(tasksTable).set({
@@ -755,7 +763,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
   }
 
   let accountGearReward: GearRewardInfo | null = null;
-  if (newStreak > oldStreak && (newStreak === 3 || newStreak === 7 || newStreak === 14 || newStreak === 30 || newStreak % 30 === 0)) {
+  if (isStreakMilestone(newStreak, oldStreak)) {
     await db.insert(activityTable).values({
       userId,
       type: "streak_milestone",

@@ -3,6 +3,8 @@ import { eq, and } from "drizzle-orm";
 import { db, usersTable, gearItemsTable, userGearTable, weeklyBattlesTable, activityTable } from "@workspace/db";
 import { getLevelInfo } from "../lib/gamification";
 import { calcBattlePower } from "./avatar";
+import { awardCoins } from "../lib/award-coins";
+import { COIN_EARN } from "../lib/coins";
 
 const router: IRouter = Router();
 
@@ -106,6 +108,9 @@ router.post("/battle/enter", async (req, res): Promise<void> => {
     await tx.update(usersTable)
       .set({ totalPoints: newPoints, weeklyPoints: newWeekly, currentLevel: newLevel })
       .where(eq(usersTable.id, userId));
+    if (result === "win") {
+      await awardCoins(tx, userId, COIN_EARN.bossWin, "boss_win");
+    }
     await tx.insert(activityTable).values({
       userId,
       type: "task_completed",

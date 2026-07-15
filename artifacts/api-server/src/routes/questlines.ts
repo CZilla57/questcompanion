@@ -9,6 +9,8 @@ import { isAiConfigured, generateJson, AiClientError } from "../lib/ai/client";
 import { suggestQuestlineQuests, sanitizeQuestTitles, QuestlineQuestsParseError } from "../lib/ai/questline-quests";
 import { suggestCooldown } from "../lib/ai/suggest-cooldown";
 import { logger } from "../lib/logger";
+import { awardCoins } from "../lib/award-coins";
+import { COIN_EARN } from "../lib/coins";
 
 const router: IRouter = Router();
 
@@ -233,6 +235,8 @@ router.post("/questlines/:id/claim", async (req, res): Promise<void> => {
       weeklyPoints: user.weeklyPoints + xp,
       currentLevel: afterLevel.level,
     }).where(eq(usersTable.id, userId));
+
+    await awardCoins(tx, userId, COIN_EARN.questlineComplete, "questline_complete");
 
     const [updated] = await tx.update(questlinesTable).set({
       status: "completed",
