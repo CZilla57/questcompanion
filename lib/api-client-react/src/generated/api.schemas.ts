@@ -1375,6 +1375,72 @@ export interface MysteryResult {
   reward?: MysteryReward;
 }
 
+export type StatPerkId = typeof StatPerkId[keyof typeof StatPerkId];
+
+
+export const StatPerkId = {
+  xp_boost: 'xp_boost',
+  focus_boost: 'focus_boost',
+  streak_shield: 'streak_shield',
+} as const;
+
+export type StatPerkKind = typeof StatPerkKind[keyof typeof StatPerkKind];
+
+
+export const StatPerkKind = {
+  xp_boost: 'xp_boost',
+  focus_boost: 'focus_boost',
+  streak_shield: 'streak_shield',
+} as const;
+
+export interface StatPerk {
+  id: StatPerkId;
+  kind: StatPerkKind;
+  label: string;
+  emoji: string;
+  description: string;
+  coinCost: number;
+  affordable: boolean;
+  /** Coins still needed to afford this perk (0 when affordable) */
+  remaining: number;
+  /** Boost perks — whether the timed boost is currently active (null for the shield) */
+  active: boolean | null;
+  /** Boost perks — when the active window ends (null when inactive or for the shield) */
+  expiresAt: string | null;
+  /** Shield perk — streak freezes currently held (null for boosts) */
+  owned: number | null;
+  /** Shield perk — whether the held stock is at the cap (null for boosts) */
+  atMax: boolean | null;
+}
+
+export interface StatPerks {
+  balance: number;
+  perks: StatPerk[];
+}
+
+export type StatPerkPurchaseResultReason = typeof StatPerkPurchaseResultReason[keyof typeof StatPerkPurchaseResultReason];
+
+
+export const StatPerkPurchaseResultReason = {
+  ok: 'ok',
+  insufficient: 'insufficient',
+  at_max: 'at_max',
+} as const;
+
+export interface StatPerkPurchaseResult {
+  purchased: boolean;
+  reason: StatPerkPurchaseResultReason;
+  affordable: boolean;
+  /** Final balance after the spend */
+  balance: number;
+  /** Coins still needed (present on the insufficient no-op) */
+  remaining: number;
+  /** Boost perks — the new active-until after a successful buy */
+  expiresAt?: string | null;
+  /** Shield perk — streak freezes held after a successful buy (or the cap on at_max) */
+  owned?: number | null;
+}
+
 export interface HeatmapDay {
   /** Date in YYYY-MM-DD format */
   date: string;

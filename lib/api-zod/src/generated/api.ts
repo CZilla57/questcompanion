@@ -1862,6 +1862,42 @@ export const OpenMysteryBoxResponse = zod.object({
 
 
 /**
+ * @summary Coin-priced Stat Perks catalog with the current user's live state
+ */
+export const GetStatPerksResponse = zod.object({
+  "balance": zod.number(),
+  "perks": zod.array(zod.object({
+  "id": zod.enum(['xp_boost', 'focus_boost', 'streak_shield']),
+  "kind": zod.enum(['xp_boost', 'focus_boost', 'streak_shield']),
+  "label": zod.string(),
+  "emoji": zod.string(),
+  "description": zod.string(),
+  "coinCost": zod.number(),
+  "affordable": zod.boolean(),
+  "remaining": zod.number().describe('Coins still needed to afford this perk (0 when affordable)'),
+  "active": zod.boolean().nullable().describe('Boost perks — whether the timed boost is currently active (null for the shield)'),
+  "expiresAt": zod.coerce.date().nullable().describe('Boost perks — when the active window ends (null when inactive or for the shield)'),
+  "owned": zod.number().nullable().describe('Shield perk — streak freezes currently held (null for boosts)'),
+  "atMax": zod.boolean().nullable().describe('Shield perk — whether the held stock is at the cap (null for boosts)')
+}))
+})
+
+
+/**
+ * @summary Spend coins to buy a Stat Perk (gentle no-op if unaffordable or maxed)
+ */
+export const BuyStatPerkResponse = zod.object({
+  "purchased": zod.boolean(),
+  "reason": zod.enum(['ok', 'insufficient', 'at_max']),
+  "affordable": zod.boolean(),
+  "balance": zod.number().describe('Final balance after the spend'),
+  "remaining": zod.number().describe('Coins still needed (present on the insufficient no-op)'),
+  "expiresAt": zod.coerce.date().nullish().describe('Boost perks — the new active-until after a successful buy'),
+  "owned": zod.number().nullish().describe('Shield perk — streak freezes held after a successful buy (or the cap on at_max)')
+})
+
+
+/**
  * @summary Get completion heatmap data for the last N days
  */
 export const getCalendarHeatmapQueryDaysDefault = 90;
