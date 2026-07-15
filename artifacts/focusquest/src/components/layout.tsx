@@ -20,6 +20,7 @@ import { DopamineOverlay } from "./dopamine-overlay";
 import { InstallBanner } from "./install-banner";
 import { EmergencyModeProvider } from "./emergency-mode";
 import { BrainModeChip } from "./brain-mode-chip";
+import { CoinChip } from "./coin-chip";
 import { RescueSheet } from "./rescue-sheet";
 import { ProtectionPause } from "./protection-pause";
 
@@ -178,6 +179,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <span className="font-bold text-base tracking-wider uppercase">FocusQuest</span>
         </div>
         <div className="flex items-center gap-1">
+          <CoinChip />
           <BrainModeChip />
           <InstallButton />
           <NotificationBell />
@@ -216,6 +218,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </span>
           </div>
           <div className="flex items-center gap-1 -ml-1">
+            <CoinChip />
             <BrainModeChip />
             <InstallButton />
             <NotificationBell />
