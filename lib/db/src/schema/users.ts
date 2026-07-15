@@ -38,6 +38,10 @@ export const usersTable = pgTable("users", {
   hyperfocusPausedUntil: timestamp("hyperfocus_paused_until"),
   // Act IV reward economy: spendable currency, decoupled from XP. Never negative.
   coinBalance: integer("coin_balance").notNull().default(0),
+  // Act IV Stat Perks: coin-priced timed boosts. A boost is active iff its column
+  // is non-null and in the future — derived at read time, no cron sweep. Null = off.
+  xpBoostExpiresAt: timestamp("xp_boost_expires_at"),
+  focusBoostExpiresAt: timestamp("focus_boost_expires_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
