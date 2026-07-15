@@ -2,6 +2,7 @@ import express, { Router, type IRouter } from "express";
 import { eq, and, or, desc, count, inArray } from "drizzle-orm";
 import { applyMultiplier } from "../lib/xp-multiplier";
 import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable, taskStepsTable, questlinesTable } from "@workspace/db";
+import type { DifficultyLevel, VariantLadder } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, DAILY_BONUS_POINTS } from "../lib/gamification";
 import { assignPoints, CATEGORY_LABELS, VALID_CATEGORIES } from "../lib/auto-points";
 import { advanceHabitStreak, reverseHabitStreak, type HabitStreakPreviousState } from "../lib/habit-streaks";
@@ -11,6 +12,9 @@ import { logger } from "../lib/logger";
 import { breakdownTask, BreakdownParseError } from "../lib/ai/task-breakdown";
 import { generateJson, isAiConfigured, AiClientError } from "../lib/ai/client";
 import { breakdownCooldown } from "../lib/ai/breakdown-cooldown";
+import { generateVariants, VariantsParseError } from "../lib/ai/difficulty-variants";
+import { variantsCooldown } from "../lib/ai/variants-cooldown";
+import { assembleLadder, snapshotMedium, needsVariantGeneration } from "../lib/difficulty";
 import { isValidDueTime, isValidDueDate } from "../lib/task-datetime";
 import { parseQuickAdd } from "@workspace/quick-add";
 import { buildQuickAddPrompt, parseQuickAddResult, QuickAddParseError } from "../lib/ai/quick-add-parse";
@@ -1023,6 +1027,111 @@ router.post("/tasks/:id/breakdown", async (req, res): Promise<void> => {
   });
 
   res.status(201).json(formatTask(task, inserted));
+});
+
+const DIFFICULTY_LEVELS: readonly DifficultyLevel[] = ["easy", "medium", "hard"] as const;
+
+router.post("/tasks/:id/difficulty", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const id = parseInt(raw, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const level = (req.body as { level?: unknown }).level;
+  if (typeof level !== "string" || !DIFFICULTY_LEVELS.includes(level as DifficultyLevel)) {
+    res.status(400).json({ error: "level must be easy, medium, or hard" });
+    return;
+  }
+  const target = level as DifficultyLevel;
+
+  const [task] = await db.select().from(tasksTable)
+    .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)));
+  if (!task) { res.status(404).json({ error: "Task not found" }); return; }
+  if (task.completed) { res.status(409).json({ error: "Can't change difficulty of a completed quest" }); return; }
+
+  // needsVariantGeneration is the authoritative predicate (unit-tested in lib/difficulty):
+  // a never-laddered quest moving to medium is a no-op (it already IS its medium baseline);
+  // a never-laddered quest moving to easy/hard must draft the ladder first.
+  let ladder: VariantLadder;
+  if (task.difficultyVariants) {
+    ladder = task.difficultyVariants; // reuse — no AI call
+  } else if (needsVariantGeneration(!!task.difficultyVariants, target)) {
+    // Generate the ladder on first use (guards mirror /breakdown exactly).
+    if (!isAiConfigured()) { res.status(503).json({ error: "AI difficulty is not configured" }); return; }
+    if (!variantsCooldown.tryAcquire(userId)) {
+      res.status(429).json({ error: "Slow down a moment before resizing another quest." });
+      return;
+    }
+    const currentSteps = await db.select().from(taskStepsTable)
+      .where(and(eq(taskStepsTable.taskId, id), eq(taskStepsTable.userId, userId)));
+    const stepTexts = currentSteps.slice().sort((a, b) => a.position - b.position).map((s) => s.text);
+    try {
+      const drafts = await generateVariants(
+        { title: task.title, description: task.description, category: task.category, estimatedMinutes: task.estimatedMinutes, steps: stepTexts },
+        generateJson,
+      );
+      ladder = assembleLadder(snapshotMedium(task, stepTexts), drafts);
+    } catch (err) {
+      if (err instanceof AiClientError || err instanceof VariantsParseError) {
+        logger.warn({ err, taskId: id }, "difficulty variant generation failed");
+        res.status(502).json({ error: "Couldn't resize that quest, try again." });
+        return;
+      }
+      throw err;
+    }
+  } else {
+    // No variants && target === "medium": nothing to draft — return the quest unchanged.
+    const steps = await db.select().from(taskStepsTable)
+      .where(and(eq(taskStepsTable.taskId, id), eq(taskStepsTable.userId, userId)));
+    res.json(formatTask(task, steps));
+    return;
+  }
+
+  const rung = ladder[target];
+
+  // Swap title/estimate/steps + persist the ladder, reset struggle, snooze — atomically.
+  const { updated, steps } = await db.transaction(async (tx) => {
+    const [row] = await tx.update(tasksTable)
+      .set({
+        title: rung.title,
+        estimatedMinutes: rung.estimatedMinutes,
+        difficulty: target,
+        difficultyVariants: ladder,
+        struggleScore: 0,
+        difficultyOfferSnoozedAt: new Date(),
+      })
+      .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)))
+      .returning();
+    await tx.delete(taskStepsTable)
+      .where(and(eq(taskStepsTable.taskId, id), eq(taskStepsTable.userId, userId)));
+    const inserted = rung.steps.length
+      ? await tx.insert(taskStepsTable)
+          .values(rung.steps.map((text, i) => ({ taskId: id, userId, text, position: i })))
+          .returning()
+      : [];
+    return { updated: row!, steps: inserted };
+  });
+
+  res.json(formatTask(updated, steps));
+});
+
+router.post("/tasks/:id/difficulty/snooze", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const id = parseInt(raw, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [updated] = await db.update(tasksTable)
+    .set({ difficultyOfferSnoozedAt: new Date() })
+    .where(and(eq(tasksTable.id, id), eq(tasksTable.userId, userId)))
+    .returning({ id: tasksTable.id });
+  if (!updated) { res.status(404).json({ error: "Task not found" }); return; }
+
+  res.json({ ok: true });
 });
 
 router.patch("/tasks/:id/steps/:stepId", async (req, res): Promise<void> => {
