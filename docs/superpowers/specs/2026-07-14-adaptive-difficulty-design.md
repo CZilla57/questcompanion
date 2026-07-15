@@ -110,7 +110,9 @@ The offer surfaces when **all** hold:
 
 ### Surfacing
 
-`evaluateDifficultyOffer` yields a derived `difficultyOfferable: boolean`, serialized alongside the current `difficulty` rung on the task read model (`routes/tasks.ts` ~L55 serializer). Both the task list and the momentum board render from this — no dedicated endpoint needed for the flag.
+`evaluateDifficultyOffer` yields a derived `difficultyOfferable: boolean`, serialized alongside the current `difficulty` rung on the task read model (`routes/tasks.ts` ~L55 serializer). The flag is served on **both** the task read model and the momentum suggestions.
+
+> **v1 scope amendment (2026-07-14, post-build):** the flag is *served* on both surfaces, but v1 *renders* the "want a smaller version?" chip on the **task list only**. The focused momentum "next tiny win" card intentionally stays uncluttered; rendering the chip there is a deferred fast-follow (the server already serves `difficultyOfferable` on momentum suggestions, so it's a client-only change when we pick it up). Decided with Chad after the final whole-branch review.
 
 ## 5. API surface & client
 
