@@ -17,6 +17,7 @@ import { initiationToast } from "@/lib/initiation-toast";
 import { browserTimeZone } from "@/lib/timezone";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ProtectionPause } from "@/components/protection-pause";
 import { useToast } from "@/hooks/use-toast";
 import { Timer, Pause, Play, Square } from "lucide-react";
 
@@ -199,6 +200,9 @@ export default function Focus() {
               <Button variant="destructive" onClick={handleStop} disabled={completeMut.isPending}>
                 <Square className="w-4 h-4 mr-1" /> Stop
               </Button>
+            </div>
+            <div className="flex justify-center pt-1">
+              <ProtectionPause />
             </div>
           </CardContent>
         </Card>

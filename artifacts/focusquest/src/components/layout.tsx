@@ -21,6 +21,7 @@ import { InstallBanner } from "./install-banner";
 import { EmergencyModeProvider } from "./emergency-mode";
 import { BrainModeChip } from "./brain-mode-chip";
 import { RescueSheet } from "./rescue-sheet";
+import { ProtectionPause } from "./protection-pause";
 
 function NotificationBell() {
   const { state, isSubscribed, supported, subscribe, unsubscribe } = useNotifications();
@@ -273,8 +274,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 relative overflow-y-auto overflow-x-hidden p-4 md:p-8 pb-24 md:pb-8">
         <div className="max-w-5xl mx-auto">
           {brainState?.mode === BrainMode.hyperfocus && (
-            <div className="mb-4 rounded-lg border border-primary/20 bg-primary/[0.04] px-3 py-2 text-xs text-muted-foreground">
-              Flow protected — check-in prompts muted. Break when you're ready.
+            <div className="mb-4 flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/[0.04] px-3 py-2 text-xs text-muted-foreground">
+              <span>Flow protected — check-in prompts muted. Break when you're ready.</span>
+              <ProtectionPause />
             </div>
           )}
           <InstallBanner />
