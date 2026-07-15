@@ -88,7 +88,7 @@ are illustrative starting points):
 |-------------------------------------|----------------------|-------|------------------------------------|
 | Quest completed                     | `quest_complete`     | +5    | `routes/tasks.ts` (completion tx)  |
 | Focus session completed             | `focus_session`      | +10   | `routes/focus-sessions.ts`         |
-| Streak milestone (every 7 days)     | `streak_milestone`   | +25   | wherever streak day increments     |
+| Streak milestone (3/7/14/30/ea.30)  | `streak_milestone`   | +25   | `routes/tasks.ts` (completion tx)  |
 | Questline completed                 | `questline_complete` | +30   | `routes/questlines.ts` (claim tx)  |
 | Weekly boss win                     | `boss_win`           | +50   | `routes/battle.ts` (win branch)    |
 
@@ -96,8 +96,11 @@ Tuning target for the earn/price ratio: a **Small** reward should be reachable i
 a day or two of normal use; a **Treat** should be a genuine multi-day save-up. The
 ratio is the primary knob and lives entirely in constants.
 
-Streak-milestone earn fires only when the streak day count crosses a multiple of
-7 on that update (guard against re-award on the same day).
+Streak-milestone earn reuses the app's existing streak-milestone definition
+(days 3, 7, 14, 30, then every 30), extracted to a pure `isStreakMilestone`
+so the coin award and the existing activity/gear grant share one source of
+truth. It fires only when the streak advances onto a milestone day (the
+`newStreak > oldStreak` guard prevents re-award on the same day).
 
 ## Spending
 
@@ -142,7 +145,8 @@ All under the authed router; 401 when `!req.isAuthenticated()`; `userId = req.ga
 - `POST /rewards-store` `{ label, tier }` → 201 created item. Enforces 20-item cap.
 - `DELETE /rewards-store/:id` → 200 `{ success: true }`; 404 if not owned.
 - `POST /rewards-store/:id/redeem` → 200 either
-  `{ redeemed: true, balance, item }` or `{ redeemed: false, affordable: false, remaining }`.
+  `{ redeemed: true, balance, affordable: true, remaining: 0 }` or
+  `{ redeemed: false, balance, affordable: false, remaining }`.
 
 Editing an existing reward is out of scope for v1 (delete + re-add covers it — YAGNI).
 
