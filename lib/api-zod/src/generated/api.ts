@@ -784,7 +784,8 @@ export const GetBrainStateResponse = zod.object({
   "mode": zod.enum(['focused', 'distracted', 'frozen', 'hyperfocus', 'neutral']),
   "since": zod.coerce.date().nullable(),
   "expiresAt": zod.coerce.date().nullable(),
-  "checkedInToday": zod.boolean()
+  "checkedInToday": zod.boolean(),
+  "hyperfocusPausedUntil": zod.coerce.date().nullable().describe('When protection is paused until, or null')
 })
 
 
@@ -795,6 +796,30 @@ export const CreateBrainCheckinBody = zod.object({
   "mode": zod.enum(['focused', 'distracted', 'frozen', 'hyperfocus', 'neutral']),
   "source": zod.enum(['tap', 'daily_prompt', 'emergency_exit']).optional(),
   "tz": zod.string()
+})
+
+
+/**
+ * @summary Persist the user's IANA timezone
+ */
+export const PutMyTimezoneBody = zod.object({
+  "tz": zod.string().describe('IANA timezone')
+})
+
+export const PutMyTimezoneResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * @summary Pause (or resume) hyperfocus protection nudges
+ */
+export const PauseHyperfocusBody = zod.object({
+  "minutes": zod.number().describe('Minutes to pause protection; 0 resumes')
+})
+
+export const PauseHyperfocusResponse = zod.object({
+  "pausedUntil": zod.coerce.date().nullable()
 })
 
 

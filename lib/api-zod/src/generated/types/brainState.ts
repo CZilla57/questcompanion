@@ -14,4 +14,9 @@ export interface BrainState {
   /** @nullable */
   expiresAt: Date | null;
   checkedInToday: boolean;
+  /**
+     * When protection is paused until, or null
+     * @nullable
+     */
+  hyperfocusPausedUntil: Date | null;
 }

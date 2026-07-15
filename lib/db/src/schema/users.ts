@@ -29,6 +29,13 @@ export const usersTable = pgTable("users", {
   lastFedAt: timestamp("last_fed_at").notNull().defaultNow(),
   hungerNotifiedStage: text("hunger_notified_stage"),
   lastFlavorPushAt: timestamp("last_flavor_push_at"),
+  // Per-user timezone (IANA), captured from the client. Lets cron compute the
+  // user's local hour for bedtime / quiet-hours.
+  timezone: text("timezone"),
+  // Hyperfocus Protection dedup/rotation/pause state (mirrors hero-care columns).
+  hyperfocusNudgedAt: timestamp("hyperfocus_nudged_at"),
+  hyperfocusLastKind: text("hyperfocus_last_kind"),
+  hyperfocusPausedUntil: timestamp("hyperfocus_paused_until"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
