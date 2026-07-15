@@ -192,6 +192,18 @@ export const TaskCategory = {
   default: 'default',
 } as const;
 
+/**
+ * Current difficulty rung of the quest
+ */
+export type TaskDifficulty = typeof TaskDifficulty[keyof typeof TaskDifficulty];
+
+
+export const TaskDifficulty = {
+  easy: 'easy',
+  medium: 'medium',
+  hard: 'hard',
+} as const;
+
 export interface TaskStep {
   id: number;
   text: string;
@@ -246,6 +258,10 @@ export interface Task {
      * @nullable
      */
   questlineId?: number | null;
+  /** Current difficulty rung of the quest */
+  difficulty: TaskDifficulty;
+  /** True when the app is gently offering a smaller version (never a shame signal; never a count) */
+  difficultyOfferable: boolean;
 }
 
 export interface FocusToggleInput {
@@ -379,6 +395,19 @@ export interface TaskInput {
      * @nullable
      */
   questlineId?: number | null;
+}
+
+export type ApplyDifficultyInputLevel = typeof ApplyDifficultyInputLevel[keyof typeof ApplyDifficultyInputLevel];
+
+
+export const ApplyDifficultyInputLevel = {
+  easy: 'easy',
+  medium: 'medium',
+  hard: 'hard',
+} as const;
+
+export interface ApplyDifficultyInput {
+  level: ApplyDifficultyInputLevel;
 }
 
 export type TaskUpdatePriority = typeof TaskUpdatePriority[keyof typeof TaskUpdatePriority];
@@ -1427,6 +1456,10 @@ completed?: boolean | null;
  * Filter by category
  */
 category?: GetTasksCategory;
+/**
+ * IANA timezone; enables local-day adaptive-difficulty offer flags on returned quests
+ */
+tz?: string;
 };
 
 export type GetTasksCategory = typeof GetTasksCategory[keyof typeof GetTasksCategory];
@@ -1472,6 +1505,10 @@ tz?: string;
 
 export type CreateRescueEvent201 = {
   id: number;
+};
+
+export type SnoozeDifficultyOffer200 = {
+  ok: boolean;
 };
 
 export type PatchTaskStepParams = {

@@ -323,6 +323,12 @@ paths:
             type: string
             enum: [health, deep_work, learning, finance, admin, household, social, creative, self_care, errands, travel, default]
           description: Filter by category
+        - name: tz
+          in: query
+          required: false
+          description: IANA timezone; enables local-day adaptive-difficulty offer flags on returned quests
+          schema:
+            type: string
       responses:
         "200":
           description: Task list
@@ -805,6 +811,90 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "503":
           description: AI breakdown not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /tasks/{id}/difficulty:
+    post:
+      operationId: applyDifficulty
+      tags: [tasks]
+      summary: Move a quest to an easy/medium/hard rung (drafts the ladder on first use)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplyDifficultyInput"
+      responses:
+        "200":
+          description: The quest at its new rung
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          description: Invalid level
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: Quest is completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Cooldown — too many resize requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "502":
+          description: Model or parse failure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "503":
+          description: AI difficulty not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /tasks/{id}/difficulty/snooze:
+    post:
+      operationId: snoozeDifficultyOffer
+      tags: [tasks]
+      summary: Dismiss the "smaller version" offer for this quest for a few days
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Snooze recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+        "404":
+          description: Quest not found
           content:
             application/json:
               schema:
@@ -1880,7 +1970,7 @@ components:
 
     Task:
       type: object
-      required: [id, userId, title, points, completed, dueDate, priority, createdAt, category, categoryLabel, steps]
+      required: [id, userId, title, points, completed, dueDate, priority, createdAt, category, categoryLabel, steps, difficulty, difficultyOfferable]
       properties:
         id:
           type: integer
@@ -1934,6 +2024,13 @@ components:
         questlineId:
           type: ["integer", "null"]
           description: The questline this quest belongs to, or null
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+          description: Current difficulty rung of the quest
+        difficultyOfferable:
+          type: boolean
+          description: True when the app is gently offering a smaller version (never a shame signal; never a count)
 
     FocusToggleInput:
       type: object
@@ -2039,6 +2136,14 @@ components:
         questlineId:
           type: ["integer", "null"]
           description: Assign the new quest to a questline (one-off quests only)
+
+    ApplyDifficultyInput:
+      type: object
+      required: [level]
+      properties:
+        level:
+          type: string
+          enum: [easy, medium, hard]
 
     TaskUpdate:
       type: object

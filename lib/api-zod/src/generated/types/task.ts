@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { TaskCategory } from './taskCategory';
+import type { TaskDifficulty } from './taskDifficulty';
 import type { TaskPriority } from './taskPriority';
 import type { TaskStep } from './taskStep';
 
@@ -56,4 +57,8 @@ export interface Task {
      * @nullable
      */
   questlineId?: number | null;
+  /** Current difficulty rung of the quest */
+  difficulty: TaskDifficulty;
+  /** True when the app is gently offering a smaller version (never a shame signal; never a count) */
+  difficultyOfferable: boolean;
 }
