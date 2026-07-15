@@ -34,6 +34,7 @@ import type {
   BrainState,
   BuyGearResult,
   BuyStreakFreeze400,
+  Coins,
   CreateRescueEvent201,
   DopamineReward,
   DopamineRewardInput,
@@ -88,7 +89,10 @@ import type {
   RecurringTask,
   RecurringTaskInput,
   RecurringTaskUpdate,
+  RedeemResult,
   RescueEventRequest,
+  RewardStoreItem,
+  RewardStoreItemInput,
   SearchUsersParams,
   SentNudge,
   SnoozeDifficultyOffer200,
@@ -5966,6 +5970,371 @@ export const useDeleteDopamineReward = <TError = ErrorType<ErrorEnvelope>,
         TContext
       > => {
       return useMutation(getDeleteDopamineRewardMutationOptions(options));
+    }
+
+export const getGetCoinsUrl = () => {
+
+
+
+
+  return `/api/coins`
+}
+
+/**
+ * @summary Get the current user's coin balance
+ */
+export const getCoins = async ( options?: RequestInit): Promise<Coins> => {
+
+  return customFetch<Coins>(getGetCoinsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCoinsQueryKey = () => {
+    return [
+    `/api/coins`
+    ] as const;
+    }
+
+
+export const getGetCoinsQueryOptions = <TData = Awaited<ReturnType<typeof getCoins>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCoins>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCoinsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCoins>>> = ({ signal }) => getCoins({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCoins>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCoinsQueryResult = NonNullable<Awaited<ReturnType<typeof getCoins>>>
+export type GetCoinsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the current user's coin balance
+ */
+
+export function useGetCoins<TData = Awaited<ReturnType<typeof getCoins>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCoins>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCoinsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetRewardStoreItemsUrl = () => {
+
+
+
+
+  return `/api/rewards-store`
+}
+
+/**
+ * @summary List the current user's real-life reward catalog
+ */
+export const getRewardStoreItems = async ( options?: RequestInit): Promise<RewardStoreItem[]> => {
+
+  return customFetch<RewardStoreItem[]>(getGetRewardStoreItemsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRewardStoreItemsQueryKey = () => {
+    return [
+    `/api/rewards-store`
+    ] as const;
+    }
+
+
+export const getGetRewardStoreItemsQueryOptions = <TData = Awaited<ReturnType<typeof getRewardStoreItems>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRewardStoreItems>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRewardStoreItemsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRewardStoreItems>>> = ({ signal }) => getRewardStoreItems({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRewardStoreItems>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRewardStoreItemsQueryResult = NonNullable<Awaited<ReturnType<typeof getRewardStoreItems>>>
+export type GetRewardStoreItemsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the current user's real-life reward catalog
+ */
+
+export function useGetRewardStoreItems<TData = Awaited<ReturnType<typeof getRewardStoreItems>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRewardStoreItems>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRewardStoreItemsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateRewardStoreItemUrl = () => {
+
+
+
+
+  return `/api/rewards-store`
+}
+
+/**
+ * @summary Add a real-life reward priced by size tier
+ */
+export const createRewardStoreItem = async (rewardStoreItemInput: RewardStoreItemInput, options?: RequestInit): Promise<RewardStoreItem> => {
+
+  return customFetch<RewardStoreItem>(getCreateRewardStoreItemUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      rewardStoreItemInput,)
+  }
+);}
+
+
+
+
+export const getCreateRewardStoreItemMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRewardStoreItem>>, TError,{data: BodyType<RewardStoreItemInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createRewardStoreItem>>, TError,{data: BodyType<RewardStoreItemInput>}, TContext> => {
+
+const mutationKey = ['createRewardStoreItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createRewardStoreItem>>, {data: BodyType<RewardStoreItemInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createRewardStoreItem(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateRewardStoreItemMutationResult = NonNullable<Awaited<ReturnType<typeof createRewardStoreItem>>>
+    export type CreateRewardStoreItemMutationBody = BodyType<RewardStoreItemInput>
+    export type CreateRewardStoreItemMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Add a real-life reward priced by size tier
+ */
+export const useCreateRewardStoreItem = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRewardStoreItem>>, TError,{data: BodyType<RewardStoreItemInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createRewardStoreItem>>,
+        TError,
+        {data: BodyType<RewardStoreItemInput>},
+        TContext
+      > => {
+      return useMutation(getCreateRewardStoreItemMutationOptions(options));
+    }
+
+export const getDeleteRewardStoreItemUrl = (id: number,) => {
+
+
+
+
+  return `/api/rewards-store/${id}`
+}
+
+/**
+ * @summary Remove a reward from the catalog
+ */
+export const deleteRewardStoreItem = async (id: number, options?: RequestInit): Promise<SuccessEnvelope> => {
+
+  return customFetch<SuccessEnvelope>(getDeleteRewardStoreItemUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteRewardStoreItemMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteRewardStoreItem>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteRewardStoreItem>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteRewardStoreItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteRewardStoreItem>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteRewardStoreItem(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteRewardStoreItemMutationResult = NonNullable<Awaited<ReturnType<typeof deleteRewardStoreItem>>>
+
+    export type DeleteRewardStoreItemMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Remove a reward from the catalog
+ */
+export const useDeleteRewardStoreItem = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteRewardStoreItem>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteRewardStoreItem>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteRewardStoreItemMutationOptions(options));
+    }
+
+export const getRedeemRewardStoreItemUrl = (id: number,) => {
+
+
+
+
+  return `/api/rewards-store/${id}/redeem`
+}
+
+/**
+ * @summary Spend coins to redeem a reward (gentle no-op if unaffordable)
+ */
+export const redeemRewardStoreItem = async (id: number, options?: RequestInit): Promise<RedeemResult> => {
+
+  return customFetch<RedeemResult>(getRedeemRewardStoreItemUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRedeemRewardStoreItemMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof redeemRewardStoreItem>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof redeemRewardStoreItem>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['redeemRewardStoreItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof redeemRewardStoreItem>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  redeemRewardStoreItem(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RedeemRewardStoreItemMutationResult = NonNullable<Awaited<ReturnType<typeof redeemRewardStoreItem>>>
+
+    export type RedeemRewardStoreItemMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Spend coins to redeem a reward (gentle no-op if unaffordable)
+ */
+export const useRedeemRewardStoreItem = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof redeemRewardStoreItem>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof redeemRewardStoreItem>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRedeemRewardStoreItemMutationOptions(options));
     }
 
 export const getGetCalendarHeatmapUrl = (params?: GetCalendarHeatmapParams,) => {
