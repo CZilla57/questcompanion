@@ -202,7 +202,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         md:relative md:translate-x-0
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
       `}>
-        <div className="p-6 hidden md:flex items-center justify-between mb-8">
+        {/* Stacked, not a single justify-between row: logo + status controls together
+            exceed the w-64 sidebar's inner width, so on one line the chip/bell overflow
+            into the main content. Giving the controls their own line keeps each within 208px. */}
+        <div className="p-6 hidden md:flex md:flex-col items-start gap-4 mb-8">
           <div className="flex items-center gap-3 text-primary">
             <div className="p-2 bg-primary/10 rounded-lg">
               <Zap className="w-6 h-6 fill-current" />
@@ -211,7 +214,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               FocusQuest
             </span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 -ml-1">
             <BrainModeChip />
             <InstallButton />
             <NotificationBell />
