@@ -1895,6 +1895,32 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
 
+  /mystery-box:
+    get:
+      operationId: getMysteryBox
+      tags: [users]
+      summary: Mystery Box state — cost and whether a pull is possible right now
+      responses:
+        "200":
+          description: Mystery Box status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MysteryStatus"
+
+  /mystery-box/open:
+    post:
+      operationId: openMysteryBox
+      tags: [users]
+      summary: Spend coins for a random reward from the Dopamine Menu (gentle no-op if unavailable)
+      responses:
+        "200":
+          description: Pull outcome (opened with a reward + bonus, or a gentle reason it couldn't open)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MysteryResult"
+
   /calendar/heatmap:
     get:
       operationId: getCalendarHeatmap
@@ -3348,6 +3374,60 @@ components:
           type: boolean
         remaining:
           type: integer
+
+    MysteryStatus:
+      type: object
+      required: [cost, balance, rewardCount, canOpen, reason, remaining]
+      properties:
+        cost:
+          type: integer
+          description: Coins a single pull costs
+        balance:
+          type: integer
+        rewardCount:
+          type: integer
+          description: Number of rewards in the Dopamine Menu the box draws from
+        canOpen:
+          type: boolean
+        reason:
+          type: string
+          enum: [ok, no_rewards, insufficient]
+        remaining:
+          type: integer
+          description: Coins still needed to afford a pull (0 unless insufficient)
+
+    MysteryReward:
+      type: object
+      required: [id, rewardText]
+      properties:
+        id:
+          type: integer
+        rewardText:
+          type: string
+          maxLength: 100
+
+    MysteryResult:
+      type: object
+      required: [opened, reason, cost, balance]
+      properties:
+        opened:
+          type: boolean
+        reason:
+          type: string
+          enum: [ok, no_rewards, insufficient]
+        cost:
+          type: integer
+        balance:
+          type: integer
+          description: Final balance after the spend and any bonus
+        remaining:
+          type: integer
+          description: Coins still needed (present on the insufficient no-op)
+        bonus:
+          type: integer
+          description: Upside-only coins credited back on a lucky pull (0 or positive, capped at cost)
+        reward:
+          $ref: "#/components/schemas/MysteryReward"
 
     HeatmapDay:
       type: object

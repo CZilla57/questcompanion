@@ -72,6 +72,8 @@ import type {
   MobileTokenExchangeRequest,
   MobileTokenExchangeSuccess,
   MomentumResponse,
+  MysteryResult,
+  MysteryStatus,
   Nudge,
   NudgeInput,
   ParseQuickAddInput,
@@ -6335,6 +6337,153 @@ export const useRedeemRewardStoreItem = <TError = ErrorType<ErrorEnvelope>,
         TContext
       > => {
       return useMutation(getRedeemRewardStoreItemMutationOptions(options));
+    }
+
+export const getGetMysteryBoxUrl = () => {
+
+
+
+
+  return `/api/mystery-box`
+}
+
+/**
+ * @summary Mystery Box state — cost and whether a pull is possible right now
+ */
+export const getMysteryBox = async ( options?: RequestInit): Promise<MysteryStatus> => {
+
+  return customFetch<MysteryStatus>(getGetMysteryBoxUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMysteryBoxQueryKey = () => {
+    return [
+    `/api/mystery-box`
+    ] as const;
+    }
+
+
+export const getGetMysteryBoxQueryOptions = <TData = Awaited<ReturnType<typeof getMysteryBox>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMysteryBox>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMysteryBoxQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMysteryBox>>> = ({ signal }) => getMysteryBox({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMysteryBox>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMysteryBoxQueryResult = NonNullable<Awaited<ReturnType<typeof getMysteryBox>>>
+export type GetMysteryBoxQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Mystery Box state — cost and whether a pull is possible right now
+ */
+
+export function useGetMysteryBox<TData = Awaited<ReturnType<typeof getMysteryBox>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMysteryBox>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMysteryBoxQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getOpenMysteryBoxUrl = () => {
+
+
+
+
+  return `/api/mystery-box/open`
+}
+
+/**
+ * @summary Spend coins for a random reward from the Dopamine Menu (gentle no-op if unavailable)
+ */
+export const openMysteryBox = async ( options?: RequestInit): Promise<MysteryResult> => {
+
+  return customFetch<MysteryResult>(getOpenMysteryBoxUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getOpenMysteryBoxMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openMysteryBox>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof openMysteryBox>>, TError,void, TContext> => {
+
+const mutationKey = ['openMysteryBox'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof openMysteryBox>>, void> = () => {
+
+
+          return  openMysteryBox(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type OpenMysteryBoxMutationResult = NonNullable<Awaited<ReturnType<typeof openMysteryBox>>>
+
+    export type OpenMysteryBoxMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Spend coins for a random reward from the Dopamine Menu (gentle no-op if unavailable)
+ */
+export const useOpenMysteryBox = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openMysteryBox>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof openMysteryBox>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getOpenMysteryBoxMutationOptions(options));
     }
 
 export const getGetCalendarHeatmapUrl = (params?: GetCalendarHeatmapParams,) => {

@@ -1828,6 +1828,40 @@ export const RedeemRewardStoreItemResponse = zod.object({
 
 
 /**
+ * @summary Mystery Box state — cost and whether a pull is possible right now
+ */
+export const GetMysteryBoxResponse = zod.object({
+  "cost": zod.number().describe('Coins a single pull costs'),
+  "balance": zod.number(),
+  "rewardCount": zod.number().describe('Number of rewards in the Dopamine Menu the box draws from'),
+  "canOpen": zod.boolean(),
+  "reason": zod.enum(['ok', 'no_rewards', 'insufficient']),
+  "remaining": zod.number().describe('Coins still needed to afford a pull (0 unless insufficient)')
+})
+
+
+/**
+ * @summary Spend coins for a random reward from the Dopamine Menu (gentle no-op if unavailable)
+ */
+export const openMysteryBoxResponseRewardRewardTextMax = 100;
+
+
+
+export const OpenMysteryBoxResponse = zod.object({
+  "opened": zod.boolean(),
+  "reason": zod.enum(['ok', 'no_rewards', 'insufficient']),
+  "cost": zod.number(),
+  "balance": zod.number().describe('Final balance after the spend and any bonus'),
+  "remaining": zod.number().optional().describe('Coins still needed (present on the insufficient no-op)'),
+  "bonus": zod.number().optional().describe('Upside-only coins credited back on a lucky pull (0 or positive, capped at cost)'),
+  "reward": zod.object({
+  "id": zod.number(),
+  "rewardText": zod.string().max(openMysteryBoxResponseRewardRewardTextMax)
+}).optional()
+})
+
+
+/**
  * @summary Get completion heatmap data for the last N days
  */
 export const getCalendarHeatmapQueryDaysDefault = 90;
