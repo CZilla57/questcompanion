@@ -18,7 +18,7 @@ function getBossPower(weekKey: string): number {
   return Math.min(90 + (weekNo - 1) * 70, 750);
 }
 
-async function getUserPower(userId: number): Promise<number> {
+export async function getUserPower(userId: number): Promise<number> {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   if (!user) return 0;
 
