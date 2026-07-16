@@ -24,6 +24,8 @@ import coinsRouter from "./coins";
 import rewardsStoreRouter from "./rewards-store";
 import mysteryBoxRouter from "./mystery-box";
 import statPerksRouter from "./stat-perks";
+import patternsRouter from "./patterns";
+import reflectionsRouter from "./reflections";
 
 const router: IRouter = Router();
 
@@ -53,5 +55,7 @@ router.use(coinsRouter);
 router.use(rewardsStoreRouter);
 router.use(mysteryBoxRouter);
 router.use(statPerksRouter);
+router.use(patternsRouter);
+router.use(reflectionsRouter);
 
 export default router;
