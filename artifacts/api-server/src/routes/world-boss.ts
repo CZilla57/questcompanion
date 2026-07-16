@@ -120,6 +120,9 @@ router.post("/world-boss/attack", async (req, res): Promise<void> => {
     if (!attack) return { kind: "already_today" };
 
     // Accumulate shared damage atomically; RETURNING gives the post-increment total.
+    // This UPDATE takes the boss-week row's exclusive lock until commit, so attacks
+    // serialize per week. That's deliberate and load-bearing: it makes the defeat
+    // claim below a true single-winner (exactly-once payout), not just the totalDamage sum.
     const [bumped] = await tx.update(worldBossWeeksTable)
       .set({ totalDamage: sql`${worldBossWeeksTable.totalDamage} + ${damage}` })
       .where(eq(worldBossWeeksTable.weekKey, weekKey))
@@ -201,7 +204,7 @@ router.post("/world-boss/attack", async (req, res): Promise<void> => {
     totalDamage: outcome.totalDamage,
     defeated: outcome.totalDamage >= outcome.hp,
     justDefeated: outcome.justDefeated,
-    xpAwarded: WORLD_BOSS.ATTACK_XP,
+    xpAwarded: WORLD_BOSS.ATTACK_XP + (outcome.justDefeated ? WORLD_BOSS.DEFEAT_XP : 0),
     coinsAwarded: outcome.coinsAwarded,
   });
 });
