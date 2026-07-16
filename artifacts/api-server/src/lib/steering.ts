@@ -10,7 +10,9 @@ export function isBigSwing(t: {
 }
 
 /** powerHours are the top-3 hours from derivePatterns and may be non-contiguous;
- * "in a window" is per-hour set membership, not a range. */
+ * "in a window" is per-hour set membership, not a range. Not yet consumed by
+ * routes (momentum inlines the check on pre-mapped hours) — kept exported as
+ * the import surface for quest 3's Context-Aware Notifications. */
 export function inPowerWindow(localHour: number, powerHours: { hour: number }[]): boolean {
   return powerHours.some((p) => p.hour === localHour);
 }

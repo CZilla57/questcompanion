@@ -130,7 +130,10 @@ the steering rationale.
 ## Anti-shame invariants
 
 - Boost-only: no quest is ever downranked, flagged, or grayed for the hour.
-- Mode beats clock: frozen/distracted never see big-swing steering anywhere.
+- Mode beats clock: the do-it-now momentum boost is focused/neutral-only, so
+  frozen and distracted brains never get big-swing pressure; frozen brains
+  additionally never see the chip or banner (the plan-ahead chip stays
+  available to distracted brains — deferring is relief, not pressure).
 - Steered reschedules never increment `struggleScore`.
 - Copy is invitation-shaped ("good time for", "save it for then?") — never
   "you should", never "you missed your window." No missed-window state exists.

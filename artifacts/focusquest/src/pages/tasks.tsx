@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { getGetTasksQueryKey, getGetTasksMomentumQueryKey } from "@workspace/api-client-react";
+import { getGetTasksQueryKey, getGetTasksMomentumQueryKey, getGetMyPatternsQueryKey } from "@workspace/api-client-react";
 import { CATEGORIES, CATEGORY_HEX_COLORS } from "@/lib/categories";
 import { parseDueDate, toDueDateString } from "@/lib/reschedule";
 import { momentumBoardState } from "@/lib/momentum-board";
@@ -149,7 +149,7 @@ export default function Tasks() {
     ...(momentumMinutes ? { minutes: momentumMinutes } : {}),
     ...(skippedIds.length ? { exclude: skippedIds.join(",") } : {}),
   });
-  const { data: patterns } = useGetMyPatterns({ tz });
+  const { data: patterns } = useGetMyPatterns({ tz }, { query: { queryKey: getGetMyPatternsQueryKey({ tz }), staleTime: 5 * 60_000 } });
   // "Not this one": walk the returned alternates first (instant), then refetch with exclude.
   const batch = momentum?.suggestions ?? [];
   // Clamp: an invalidation-driven refetch can shrink the batch below a stale altIndex.

@@ -6,7 +6,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { getGetTasksQueryKey, getGetMyStatsQueryKey, getGetQuestlinesQueryKey, getGetQuestlineQueryKey, getGetHeroStatusQueryKey, getGetTasksMomentumQueryKey, getGetCoinsQueryKey } from "@workspace/api-client-react";
+import { getGetTasksQueryKey, getGetMyStatsQueryKey, getGetQuestlinesQueryKey, getGetQuestlineQueryKey, getGetHeroStatusQueryKey, getGetTasksMomentumQueryKey, getGetCoinsQueryKey, getGetMyPatternsQueryKey } from "@workspace/api-client-react";
 import { browserTimeZone } from "@/lib/timezone";
 import { formatTime12h } from "@/lib/format-time";
 import { dispatchQuestCompleted } from "./dopamine-overlay";
@@ -69,7 +69,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
   const [rescueOpen, setRescueOpen] = useState(false);
 
   const { data: stats } = useGetMyStats({ tz: browserTimeZone() });
-  const { data: patterns } = useGetMyPatterns({ tz: browserTimeZone() });
+  const { data: patterns } = useGetMyPatterns({ tz: browserTimeZone() }, { query: { queryKey: getGetMyPatternsQueryKey({ tz: browserTimeZone() }), staleTime: 5 * 60_000 } });
   const { data: brainState } = useGetBrainState({ tz: browserTimeZone() });
   const multiplier = !task.completed && stats ? getMultiplierDisplay(stats.streakDays) : null;
 
