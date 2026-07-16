@@ -1257,6 +1257,55 @@ export interface BattleResult {
   weekKey: string;
 }
 
+export interface WorldBossContributor {
+  userId: number;
+  displayName: string;
+  avatarColor: string;
+  damage: number;
+  isAlly: boolean;
+}
+
+export interface WorldBossStatus {
+  weekKey: string;
+  hp: number;
+  totalDamage: number;
+  defeated: boolean;
+  /** @nullable */
+  defeatedAt?: string | null;
+  attackedToday: boolean;
+  yourContribution: number;
+  yourPower: number;
+  attackXp: number;
+  defeatCoins: number;
+  defeatXp: number;
+  contributors: WorldBossContributor[];
+}
+
+/**
+ * @nullable
+ */
+export type WorldBossAttackResultReason = typeof WorldBossAttackResultReason[keyof typeof WorldBossAttackResultReason] | null;
+
+
+export const WorldBossAttackResultReason = {
+  already_today: 'already_today',
+  defeated: 'defeated',
+} as const;
+
+export interface WorldBossAttackResult {
+  attacked: boolean;
+  /** @nullable */
+  reason?: WorldBossAttackResultReason;
+  /** @nullable */
+  damage?: number | null;
+  hp: number;
+  totalDamage: number;
+  defeated: boolean;
+  justDefeated: boolean;
+  xpAwarded: number;
+  coinsAwarded: number;
+}
+
 export interface DopamineReward {
   id: number;
   userId: number;

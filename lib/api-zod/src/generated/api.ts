@@ -1732,6 +1732,47 @@ export const EnterBattleResponse = zod.object({
 
 
 /**
+ * @summary Get this week's shared World Boss status
+ */
+export const GetWorldBossCurrentResponse = zod.object({
+  "weekKey": zod.string(),
+  "hp": zod.number(),
+  "totalDamage": zod.number(),
+  "defeated": zod.boolean(),
+  "defeatedAt": zod.string().nullish(),
+  "attackedToday": zod.boolean(),
+  "yourContribution": zod.number(),
+  "yourPower": zod.number(),
+  "attackXp": zod.number(),
+  "defeatCoins": zod.number(),
+  "defeatXp": zod.number(),
+  "contributors": zod.array(zod.object({
+  "userId": zod.number(),
+  "displayName": zod.string(),
+  "avatarColor": zod.string(),
+  "damage": zod.number(),
+  "isAlly": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Deal this day's attack to the shared World Boss
+ */
+export const AttackWorldBossResponse = zod.object({
+  "attacked": zod.boolean(),
+  "reason": zod.union([zod.literal('already_today'),zod.literal('defeated'),zod.literal(null)]).nullish(),
+  "damage": zod.number().nullish(),
+  "hp": zod.number(),
+  "totalDamage": zod.number(),
+  "defeated": zod.boolean(),
+  "justDefeated": zod.boolean(),
+  "xpAwarded": zod.number(),
+  "coinsAwarded": zod.number()
+})
+
+
+/**
  * @summary Get all dopamine rewards for the current user
  */
 export const getDopamineRewardsResponseRewardTextMax = 100;
