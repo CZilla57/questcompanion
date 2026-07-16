@@ -11,7 +11,7 @@ export function rhythmsState(s: PatternSummary): RhythmsState {
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-function hourLabel(h: number): string {
+export function hourLabel(h: number): string {
   const norm = ((h % 24) + 24) % 24;
   if (norm === 0) return "12am";
   if (norm < 12) return `${norm}am`;

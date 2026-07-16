@@ -263,6 +263,8 @@ export interface Task {
   difficulty: TaskDifficulty;
   /** True when the app is gently offering a smaller version (never a shame signal; never a count) */
   difficultyOfferable: boolean;
+  /** True when this quest is a "big swing" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows */
+  bigSwing: boolean;
 }
 
 export interface FocusToggleInput {
@@ -474,6 +476,8 @@ export interface TaskUpdate {
      * @nullable
      */
   questlineId?: number | null;
+  /** True when this update came from a power-window steering affordance; skips the forward-reschedule struggle signal (planning, not avoidance). Never persisted. */
+  viaSteering?: boolean;
 }
 
 export type BadgeCategory = typeof BadgeCategory[keyof typeof BadgeCategory];

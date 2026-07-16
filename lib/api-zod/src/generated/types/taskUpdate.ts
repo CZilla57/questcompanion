@@ -44,4 +44,6 @@ export interface TaskUpdate {
      * @nullable
      */
   questlineId?: number | null;
+  /** True when this update came from a power-window steering affordance; skips the forward-reschedule struggle signal (planning, not avoidance). Never persisted. */
+  viaSteering?: boolean;
 }

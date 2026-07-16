@@ -11,6 +11,7 @@ function task(overrides: Partial<MomentumTask> = {}): MomentumTask {
     title: "generic quest",
     priority: "medium",
     category: "admin",
+    difficulty: "medium",
     estimatedMinutes: null,
     createdAt: new Date("2026-07-14T08:00:00Z"), // today — no queue-age boost
     dueDate: null,
@@ -185,5 +186,68 @@ describe("pinned structural precedence (absorption override)", () => {
     const pinB = task({ isDailyFocus: true, focusDate: TODAY });
     const ranked = rankMomentum([pinB, pinA], ctx({ minutes: 15 }));
     expect(ranked[0]!.taskId).toBe(pinA.id); // fit boost outranks noEstimate penalty within pins
+  });
+});
+
+describe("power window steering", () => {
+  const REASON = "You're usually strongest right now — good time for a big swing.";
+
+  it("boosts a big swing over a small quest inside the window", () => {
+    const big = task({ estimatedMinutes: 45 });
+    const small = task({ estimatedMinutes: 5 });
+    const ranked = rankMomentum([small, big], ctx({ powerHours: [14] }));
+    expect(ranked[0]!.taskId).toBe(big.id);
+    expect(ranked[0]!.reason).toBe(REASON);
+  });
+
+  it("all three big-swing qualifiers trigger the boost", () => {
+    for (const overrides of [
+      { difficulty: "hard" },
+      { priority: "high" },
+      { estimatedMinutes: 25 },
+    ]) {
+      const big = task(overrides);
+      const inWindow = rankMomentum([big], ctx({ powerHours: [14] }))[0]!.score;
+      const outside = rankMomentum([big], ctx())[0]!.score;
+      expect(inWindow).toBe(outside + 15);
+    }
+  });
+
+  it("no boost outside the window — and no penalty either (boost-only)", () => {
+    const big = task({ estimatedMinutes: 45 });
+    const inOther = rankMomentum([big], ctx({ powerHours: [9] }))[0]!.score; // now is 14
+    const without = rankMomentum([big], ctx())[0]!.score;
+    expect(inOther).toBe(without);
+  });
+
+  it("never pressures frozen or distracted brains", () => {
+    const big = task({ estimatedMinutes: 45, priority: "high", difficulty: "hard" });
+    for (const mode of ["frozen", "distracted"] as const) {
+      const withWindow = rankMomentum([big], ctx({ mode, powerHours: [14] }))[0]!;
+      const without = rankMomentum([big], ctx({ mode }))[0]!;
+      expect(withWindow.score).toBe(without.score);
+      expect(withWindow.reason).not.toBe(REASON);
+    }
+  });
+
+  it("boost applies in focused mode too", () => {
+    const big = task({ estimatedMinutes: 45 });
+    const inWindow = rankMomentum([big], ctx({ mode: "focused", powerHours: [14] }))[0]!.score;
+    const outside = rankMomentum([big], ctx({ mode: "focused" }))[0]!.score;
+    expect(inWindow).toBe(outside + 15);
+  });
+
+  it("an eligible pin still structurally outranks a boosted big swing", () => {
+    const pinned = task({ isDailyFocus: true, focusDate: TODAY, estimatedMinutes: 5 });
+    const big = task({ estimatedMinutes: 45, priority: "high" });
+    const ranked = rankMomentum([big, pinned], ctx({ powerHours: [14] }));
+    expect(ranked[0]!.taskId).toBe(pinned.id);
+  });
+
+  it("undefined powerHours means no signal (route passes [] below confidence)", () => {
+    const big = task({ estimatedMinutes: 45 });
+    const a = rankMomentum([big], ctx({ powerHours: [] }))[0]!.score;
+    const b = rankMomentum([big], ctx())[0]!.score;
+    expect(a).toBe(b);
   });
 });

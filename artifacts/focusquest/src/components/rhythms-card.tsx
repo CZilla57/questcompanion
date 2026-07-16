@@ -1,4 +1,4 @@
-import { useGetMyPatterns } from "@workspace/api-client-react";
+import { useGetMyPatterns, getGetMyPatternsQueryKey } from "@workspace/api-client-react";
 import { browserTimeZone } from "@/lib/timezone";
 import { rhythmsState, rhythmsLines } from "@/lib/rhythms";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { Waves, Sparkles } from "lucide-react";
 /** Confidence-gated strengths card. Positive framings only — blockers feed
  * the reflection LLM, never this surface (anti-shame). */
 export function RhythmsCard() {
-  const { data, isLoading } = useGetMyPatterns({ tz: browserTimeZone() });
+  const { data, isLoading } = useGetMyPatterns({ tz: browserTimeZone() }, { query: { queryKey: getGetMyPatternsQueryKey({ tz: browserTimeZone() }), staleTime: 5 * 60_000 } });
   if (isLoading || !data) return null;
 
   const state = rhythmsState(data);

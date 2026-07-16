@@ -380,7 +380,8 @@ export const GetTasksResponseItem = zod.object({
 })).describe('AI-generated first-step checklist attached to this quest'),
   "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
   "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
-  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)')
+  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)'),
+  "bigSwing": zod.boolean().describe('True when this quest is a \"big swing\" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows')
 })
 export const GetTasksResponse = zod.array(GetTasksResponseItem)
 
@@ -472,7 +473,8 @@ export const GetTaskResponse = zod.object({
 })).describe('AI-generated first-step checklist attached to this quest'),
   "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
   "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
-  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)')
+  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)'),
+  "bigSwing": zod.boolean().describe('True when this quest is a \"big swing\" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows')
 })
 
 
@@ -500,7 +502,8 @@ export const UpdateTaskBody = zod.object({
   "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'self_care', 'errands', 'travel', 'default']).optional(),
   "dueTime": zod.string().regex(updateTaskBodyDueTimeRegExp).optional().describe('Optional time of day (HH:mm, 24-hour)'),
   "isAnchored": zod.boolean().optional().describe('Toggle anchored (no-deadline) state; anchoring clears the due date'),
-  "questlineId": zod.number().nullish().describe('Reassign the quest to a questline, or null to unlink (one-off quests only)')
+  "questlineId": zod.number().nullish().describe('Reassign the quest to a questline, or null to unlink (one-off quests only)'),
+  "viaSteering": zod.boolean().optional().describe('True when this update came from a power-window steering affordance; skips the forward-reschedule struggle signal (planning, not avoidance). Never persisted.')
 })
 
 export const UpdateTaskResponse = zod.object({
@@ -530,7 +533,8 @@ export const UpdateTaskResponse = zod.object({
 })).describe('AI-generated first-step checklist attached to this quest'),
   "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
   "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
-  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)')
+  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)'),
+  "bigSwing": zod.boolean().describe('True when this quest is a \"big swing\" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows')
 })
 
 
@@ -565,7 +569,8 @@ export const CompleteTaskResponse = zod.object({
 })).describe('AI-generated first-step checklist attached to this quest'),
   "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
   "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
-  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)')
+  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)'),
+  "bigSwing": zod.boolean().describe('True when this quest is a \"big swing\" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows')
 }),
   "pointsAwarded": zod.number().describe('Total XP awarded (base + streak bonus + all-day bonus)'),
   "bonusAwarded": zod.boolean(),
@@ -774,7 +779,8 @@ export const UncompleteTaskResponse = zod.object({
 })).describe('AI-generated first-step checklist attached to this quest'),
   "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
   "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
-  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)')
+  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)'),
+  "bigSwing": zod.boolean().describe('True when this quest is a \"big swing\" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows')
 })
 
 
@@ -812,7 +818,8 @@ export const PatchTaskFocusResponse = zod.object({
 })).describe('AI-generated first-step checklist attached to this quest'),
   "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
   "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
-  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)')
+  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)'),
+  "bigSwing": zod.boolean().describe('True when this quest is a \"big swing\" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows')
 })
 
 
@@ -855,7 +862,8 @@ export const GetTasksMomentumResponse = zod.object({
 })).describe('AI-generated first-step checklist attached to this quest'),
   "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
   "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
-  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)')
+  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)'),
+  "bigSwing": zod.boolean().describe('True when this quest is a \"big swing\" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows')
 }),
   "reason": zod.string(),
   "kind": zod.enum(['primary', 'alternate'])
@@ -957,7 +965,8 @@ export const ApplyDifficultyResponse = zod.object({
 })).describe('AI-generated first-step checklist attached to this quest'),
   "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
   "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
-  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)')
+  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)'),
+  "bigSwing": zod.boolean().describe('True when this quest is a \"big swing\" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows')
 })
 
 
@@ -1084,7 +1093,8 @@ export const GetQuestlineResponse = zod.object({
 })).describe('AI-generated first-step checklist attached to this quest'),
   "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
   "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
-  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)')
+  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)'),
+  "bigSwing": zod.boolean().describe('True when this quest is a \"big swing\" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows')
 }))
 })
 

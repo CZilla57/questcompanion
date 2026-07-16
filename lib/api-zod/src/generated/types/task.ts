@@ -61,4 +61,6 @@ export interface Task {
   difficulty: TaskDifficulty;
   /** True when the app is gently offering a smaller version (never a shame signal; never a count) */
   difficultyOfferable: boolean;
+  /** True when this quest is a "big swing" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows */
+  bigSwing: boolean;
 }

@@ -1,11 +1,13 @@
 import { assignPoints, CATEGORY_LABELS, MORNING_FOCUS_CATEGORIES, EVENING_WINDDOWN_CATEGORIES } from "./auto-points";
 import type { BrainMode } from "./brain-mode";
+import { isBigSwing } from "./steering";
 
 export interface MomentumTask {
   id: number;
   title: string;
   priority: string;
   category: string;
+  difficulty: string;
   estimatedMinutes: number | null;
   createdAt: Date;
   dueDate: string | null;
@@ -26,6 +28,9 @@ export interface MomentumContext {
   /** Local YYYY-MM-DD. */
   todayStr: string;
   completedTodayCategories: ReadonlySet<string>;
+  /** Local hours that are power windows (top-3 from derivePatterns). The
+   * caller confidence-gates: empty/undefined below "ok". */
+  powerHours?: readonly number[];
 }
 
 export interface MomentumScored {
@@ -57,19 +62,20 @@ export const WEIGHTS = {
   queueAgeCapDays: 7,
   pastDue: 10,
   variety: 8,
+  powerWindowBigSwing: 15,
 } as const;
 
 const ROUTINE_CATEGORIES = new Set(["self_care", "errands"]);
 
 type Signal =
   | "pinned" | "minutes_fit" | "focused_priority" | "distracted_short"
-  | "frozen_small" | "frozen_steps" | "hyperfocus_continue"
+  | "frozen_small" | "frozen_steps" | "hyperfocus_continue" | "power_window"
   | "morning" | "evening" | "age" | "past_due" | "variety";
 
 // When two signals contribute equally, the earlier one here names the reason.
 const DOMINANCE: Signal[] = [
   "pinned", "minutes_fit", "frozen_small", "frozen_steps", "hyperfocus_continue",
-  "distracted_short", "focused_priority", "past_due", "age", "morning", "evening", "variety",
+  "distracted_short", "power_window", "focused_priority", "past_due", "age", "morning", "evening", "variety",
 ];
 
 function reasonFor(signal: Signal, t: MomentumTask, ctx: MomentumContext, categoryLabel: string): string {
@@ -79,6 +85,7 @@ function reasonFor(signal: Signal, t: MomentumTask, ctx: MomentumContext, catego
     case "frozen_small":       return "Smallest thing on the list — one step, no pressure.";
     case "frozen_steps":       return "Already broken into steps — just the first one counts.";
     case "hyperfocus_continue": return "You're mid-flow on this one — ride it.";
+    case "power_window":       return "You're usually strongest right now — good time for a big swing.";
     case "distracted_short":   return `Tiny win: about ${t.estimatedMinutes} minutes, easy to grab.`;
     case "focused_priority":   return "Brain's on — this one moves the needle.";
     case "past_due":           return "It's ready when you are — the date slipped by.";
@@ -169,6 +176,16 @@ export function rankMomentum(tasks: MomentumTask[], ctx: MomentumContext): Momen
     if (isEvening) {
       if (EVENING_WINDDOWN_CATEGORIES.has(category)) add("evening", WEIGHTS.eveningCategory);
       if (est !== null && est <= 30) add("evening", WEIGHTS.eveningShort);
+    }
+
+    // Personalized power window: boost-only, and mode beats clock — frozen and
+    // distracted brains never get big-swing pressure.
+    if (
+      (ctx.mode === "focused" || ctx.mode === "neutral") &&
+      ctx.powerHours?.includes(ctx.localHour) &&
+      isBigSwing(t)
+    ) {
+      add("power_window", WEIGHTS.powerWindowBigSwing);
     }
 
     // Gentle queue-age boost.

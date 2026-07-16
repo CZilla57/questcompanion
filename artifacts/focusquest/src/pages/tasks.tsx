@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, Clock, Plus, Filter, Target, Zap, Info, Sparkles, RefreshCw, Pin } from "lucide-react";
-import { Task, useGetTasks, useCreateTask, useUpdateTask, useBreakdownTask, useGetQuestlines, TaskPriority, useGetTasksMomentum, BrainMode } from "@workspace/api-client-react";
+import { Task, useGetTasks, useCreateTask, useUpdateTask, useBreakdownTask, useGetQuestlines, TaskPriority, useGetTasksMomentum, BrainMode, useGetMyPatterns } from "@workspace/api-client-react";
 import { TaskItem } from "@/components/task-item";
 import { QuickAddBar } from "@/components/quick-add-bar";
 import { MomentumCard } from "@/components/momentum-card";
@@ -15,11 +15,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { getGetTasksQueryKey, getGetTasksMomentumQueryKey } from "@workspace/api-client-react";
+import { getGetTasksQueryKey, getGetTasksMomentumQueryKey, getGetMyPatternsQueryKey } from "@workspace/api-client-react";
 import { CATEGORIES, CATEGORY_HEX_COLORS } from "@/lib/categories";
 import { parseDueDate, toDueDateString } from "@/lib/reschedule";
 import { momentumBoardState } from "@/lib/momentum-board";
 import { MODE_META } from "@/lib/brain-mode-meta";
+import { inWindowNow } from "@/lib/steering";
+import { formatPowerHours } from "@/lib/rhythms";
 import { browserTimeZone } from "@/lib/timezone";
 import { apiErrorMessage } from "@/lib/api-error";
 
@@ -147,6 +149,7 @@ export default function Tasks() {
     ...(momentumMinutes ? { minutes: momentumMinutes } : {}),
     ...(skippedIds.length ? { exclude: skippedIds.join(",") } : {}),
   });
+  const { data: patterns } = useGetMyPatterns({ tz }, { query: { queryKey: getGetMyPatternsQueryKey({ tz }), staleTime: 5 * 60_000 } });
   // "Not this one": walk the returned alternates first (instant), then refetch with exclude.
   const batch = momentum?.suggestions ?? [];
   // Clamp: an invalidation-driven refetch can shrink the batch below a stale altIndex.
@@ -382,6 +385,18 @@ export default function Tasks() {
       {(() => {
         const board = momentumBoardState(tasks ?? [], visibleSuggestions, todayStrKey);
         const flavor = MODE_META[momentum?.mode ?? BrainMode.neutral].flavor;
+        // Power-window banner: confidence-gated, hidden for frozen brains, only
+        // while the current hour actually is a window (spec §Client).
+        const showPowerBanner =
+          patterns?.confidence === "ok" &&
+          inWindowNow(new Date(), patterns.powerHours) &&
+          momentum?.mode !== BrainMode.frozen;
+        const powerBanner = showPowerBanner ? (
+          <p className="text-xs text-primary mb-1 flex items-center gap-1">
+            <Zap className="w-3 h-3" aria-hidden />
+            {formatPowerHours(patterns!.powerHours)} — your power window
+          </p>
+        ) : null;
         const heading = (
           <div className="flex items-center gap-2">
             <Target className="w-4 h-4 text-primary" />
@@ -426,6 +441,7 @@ export default function Tasks() {
                 </span>
               )}
             </div>
+            {powerBanner}
             {flavor && <p className="text-xs text-muted-foreground mb-3">{flavor}</p>}
             <div className="space-y-2">
               {board.suggestion && (

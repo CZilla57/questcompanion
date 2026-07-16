@@ -3,7 +3,9 @@ import { and, desc, eq } from "drizzle-orm";
 import { db, brainCheckinsTable, tasksTable, taskStepsTable } from "@workspace/db";
 import { deriveBrainState } from "../lib/brain-mode";
 import { rankMomentum, type MomentumTask } from "../lib/momentum";
-import { resolveTimeZone, localDateKey, localHour } from "../lib/date-buckets";
+import { localDateKey, localHour } from "../lib/date-buckets";
+import { derivePatterns } from "../lib/patterns";
+import { loadPatternInputs, resolveUserTimeZone } from "./patterns";
 import { assignPoints } from "../lib/auto-points";
 import { evaluateDifficultyOffer, toOfferInput } from "../lib/difficulty";
 import { isAiConfigured } from "../lib/ai/client";
@@ -17,7 +19,9 @@ router.get("/tasks/momentum", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId!;
 
-  const tz = resolveTimeZone(String(req.query.tz ?? ""));
+  // Persisted users.timezone beats the query param beats UTC — same resolution
+  // as the patterns route, so windows and ranking agree on the user's clock.
+  const tz = await resolveUserTimeZone(userId, req.query.tz);
   const rawMinutes = parseInt(String(req.query.minutes ?? ""), 10);
   const minutes = Number.isFinite(rawMinutes) && rawMinutes > 0 && rawMinutes <= 480 ? rawMinutes : undefined;
   const excludeIds = String(req.query.exclude ?? "")
@@ -33,6 +37,11 @@ router.get("/tasks/momentum", async (req, res): Promise<void> => {
     .orderBy(desc(brainCheckinsTable.createdAt), desc(brainCheckinsTable.id))
     .limit(1);
   const state = deriveBrainState(latest, now, tz);
+
+  // One substrate load per momentum call (compute-on-read, PR #47). Below "ok"
+  // confidence steering is absent entirely: empty hours = no signal.
+  const patterns = derivePatterns(await loadPatternInputs(userId, tz, now));
+  const powerHours = patterns.confidence === "ok" ? patterns.powerHours.map((p) => p.hour) : [];
 
   const open = await db
     .select()
@@ -70,6 +79,7 @@ router.get("/tasks/momentum", async (req, res): Promise<void> => {
       const ts = stepsByTask.get(t.id) ?? [];
       return {
         id: t.id, title: t.title, priority: t.priority, category: t.category,
+        difficulty: t.difficulty,
         estimatedMinutes: t.estimatedMinutes, createdAt: t.createdAt,
         dueDate: t.dueDate, isAnchored: t.isAnchored,
         isDailyFocus: t.isDailyFocus, focusDate: t.focusDate,
@@ -81,6 +91,7 @@ router.get("/tasks/momentum", async (req, res): Promise<void> => {
   const ranked = rankMomentum(candidates, {
     mode: state.mode, minutes, now,
     localHour: localHour(now, tz), todayStr, completedTodayCategories,
+    powerHours,
   });
 
   const byId = new Map(open.map((t) => [t.id, t]));
