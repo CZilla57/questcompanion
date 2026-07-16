@@ -22,6 +22,8 @@ import brainRouter from "./brain";
 import rescueRouter from "./rescue";
 import coinsRouter from "./coins";
 import rewardsStoreRouter from "./rewards-store";
+import mysteryBoxRouter from "./mystery-box";
+import statPerksRouter from "./stat-perks";
 
 const router: IRouter = Router();
 
@@ -49,5 +51,7 @@ router.use(brainRouter);
 router.use(rescueRouter);
 router.use(coinsRouter);
 router.use(rewardsStoreRouter);
+router.use(mysteryBoxRouter);
+router.use(statPerksRouter);
 
 export default router;

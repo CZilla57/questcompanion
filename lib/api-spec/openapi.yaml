@@ -1921,6 +1921,71 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
 
+  /mystery-box:
+    get:
+      operationId: getMysteryBox
+      tags: [users]
+      summary: Mystery Box state — cost and whether a pull is possible right now
+      responses:
+        "200":
+          description: Mystery Box status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MysteryStatus"
+
+  /mystery-box/open:
+    post:
+      operationId: openMysteryBox
+      tags: [users]
+      summary: Spend coins for a random reward from the Dopamine Menu (gentle no-op if unavailable)
+      responses:
+        "200":
+          description: Pull outcome (opened with a reward + bonus, or a gentle reason it couldn't open)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MysteryResult"
+
+  /stat-perks:
+    get:
+      operationId: getStatPerks
+      tags: [users]
+      summary: Coin-priced Stat Perks catalog with the current user's live state
+      responses:
+        "200":
+          description: Balance and the perk catalog with per-user affordability/state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatPerks"
+
+  /stat-perks/{id}/buy:
+    post:
+      operationId: buyStatPerk
+      tags: [users]
+      summary: Spend coins to buy a Stat Perk (gentle no-op if unaffordable or maxed)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [xp_boost, focus_boost, streak_shield]
+      responses:
+        "200":
+          description: Purchase outcome (purchased, or a gentle reason it couldn't buy)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatPerkPurchaseResult"
+        "404":
+          description: Unknown perk
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
   /calendar/heatmap:
     get:
       operationId: getCalendarHeatmap
@@ -3421,6 +3486,139 @@ components:
           type: boolean
         remaining:
           type: integer
+
+    MysteryStatus:
+      type: object
+      required: [cost, balance, rewardCount, canOpen, reason, remaining]
+      properties:
+        cost:
+          type: integer
+          description: Coins a single pull costs
+        balance:
+          type: integer
+        rewardCount:
+          type: integer
+          description: Number of rewards in the Dopamine Menu the box draws from
+        canOpen:
+          type: boolean
+        reason:
+          type: string
+          enum: [ok, no_rewards, insufficient]
+        remaining:
+          type: integer
+          description: Coins still needed to afford a pull (0 unless insufficient)
+
+    MysteryReward:
+      type: object
+      required: [id, rewardText]
+      properties:
+        id:
+          type: integer
+        rewardText:
+          type: string
+          maxLength: 100
+
+    MysteryResult:
+      type: object
+      required: [opened, reason, cost, balance]
+      properties:
+        opened:
+          type: boolean
+        reason:
+          type: string
+          enum: [ok, no_rewards, insufficient]
+        cost:
+          type: integer
+        balance:
+          type: integer
+          description: Final balance after the spend and any bonus
+        remaining:
+          type: integer
+          description: Coins still needed (present on the insufficient no-op)
+        bonus:
+          type: integer
+          description: Upside-only coins credited back on a lucky pull (0 or positive, capped at cost)
+        reward:
+          $ref: "#/components/schemas/MysteryReward"
+
+    StatPerk:
+      type: object
+      required: [id, kind, label, emoji, description, coinCost, affordable, remaining, active, expiresAt, owned, atMax]
+      properties:
+        id:
+          type: string
+          enum: [xp_boost, focus_boost, streak_shield]
+        kind:
+          type: string
+          enum: [xp_boost, focus_boost, streak_shield]
+        label:
+          type: string
+        emoji:
+          type: string
+        description:
+          type: string
+        coinCost:
+          type: integer
+        affordable:
+          type: boolean
+        remaining:
+          type: integer
+          description: Coins still needed to afford this perk (0 when affordable)
+        active:
+          type: boolean
+          nullable: true
+          description: Boost perks — whether the timed boost is currently active (null for the shield)
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Boost perks — when the active window ends (null when inactive or for the shield)
+        owned:
+          type: integer
+          nullable: true
+          description: Shield perk — streak freezes currently held (null for boosts)
+        atMax:
+          type: boolean
+          nullable: true
+          description: Shield perk — whether the held stock is at the cap (null for boosts)
+
+    StatPerks:
+      type: object
+      required: [balance, perks]
+      properties:
+        balance:
+          type: integer
+        perks:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatPerk"
+
+    StatPerkPurchaseResult:
+      type: object
+      required: [purchased, reason, affordable, balance, remaining]
+      properties:
+        purchased:
+          type: boolean
+        reason:
+          type: string
+          enum: [ok, insufficient, at_max]
+        affordable:
+          type: boolean
+        balance:
+          type: integer
+          description: Final balance after the spend
+        remaining:
+          type: integer
+          description: Coins still needed (present on the insufficient no-op)
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Boost perks — the new active-until after a successful buy
+        owned:
+          type: integer
+          nullable: true
+          description: Shield perk — streak freezes held after a successful buy (or the cap on at_max)
 
     HeatmapDay:
       type: object

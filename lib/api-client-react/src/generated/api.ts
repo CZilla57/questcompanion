@@ -72,6 +72,8 @@ import type {
   MobileTokenExchangeRequest,
   MobileTokenExchangeSuccess,
   MomentumResponse,
+  MysteryResult,
+  MysteryStatus,
   Nudge,
   NudgeInput,
   ParseQuickAddInput,
@@ -98,6 +100,8 @@ import type {
   SnoozeDifficultyOffer200,
   StartFocusSessionInput,
   StartFocusSessionParams,
+  StatPerkPurchaseResult,
+  StatPerks,
   StepToggleInput,
   StepToggleResponse,
   StreakFreezeResult,
@@ -6484,6 +6488,300 @@ export const useRedeemRewardStoreItem = <TError = ErrorType<ErrorEnvelope>,
         TContext
       > => {
       return useMutation(getRedeemRewardStoreItemMutationOptions(options));
+    }
+
+export const getGetMysteryBoxUrl = () => {
+
+
+
+
+  return `/api/mystery-box`
+}
+
+/**
+ * @summary Mystery Box state — cost and whether a pull is possible right now
+ */
+export const getMysteryBox = async ( options?: RequestInit): Promise<MysteryStatus> => {
+
+  return customFetch<MysteryStatus>(getGetMysteryBoxUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMysteryBoxQueryKey = () => {
+    return [
+    `/api/mystery-box`
+    ] as const;
+    }
+
+
+export const getGetMysteryBoxQueryOptions = <TData = Awaited<ReturnType<typeof getMysteryBox>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMysteryBox>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMysteryBoxQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMysteryBox>>> = ({ signal }) => getMysteryBox({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMysteryBox>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMysteryBoxQueryResult = NonNullable<Awaited<ReturnType<typeof getMysteryBox>>>
+export type GetMysteryBoxQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Mystery Box state — cost and whether a pull is possible right now
+ */
+
+export function useGetMysteryBox<TData = Awaited<ReturnType<typeof getMysteryBox>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMysteryBox>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMysteryBoxQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getOpenMysteryBoxUrl = () => {
+
+
+
+
+  return `/api/mystery-box/open`
+}
+
+/**
+ * @summary Spend coins for a random reward from the Dopamine Menu (gentle no-op if unavailable)
+ */
+export const openMysteryBox = async ( options?: RequestInit): Promise<MysteryResult> => {
+
+  return customFetch<MysteryResult>(getOpenMysteryBoxUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getOpenMysteryBoxMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openMysteryBox>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof openMysteryBox>>, TError,void, TContext> => {
+
+const mutationKey = ['openMysteryBox'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof openMysteryBox>>, void> = () => {
+
+
+          return  openMysteryBox(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type OpenMysteryBoxMutationResult = NonNullable<Awaited<ReturnType<typeof openMysteryBox>>>
+
+    export type OpenMysteryBoxMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Spend coins for a random reward from the Dopamine Menu (gentle no-op if unavailable)
+ */
+export const useOpenMysteryBox = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openMysteryBox>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof openMysteryBox>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getOpenMysteryBoxMutationOptions(options));
+    }
+
+export const getGetStatPerksUrl = () => {
+
+
+
+
+  return `/api/stat-perks`
+}
+
+/**
+ * @summary Coin-priced Stat Perks catalog with the current user's live state
+ */
+export const getStatPerks = async ( options?: RequestInit): Promise<StatPerks> => {
+
+  return customFetch<StatPerks>(getGetStatPerksUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStatPerksQueryKey = () => {
+    return [
+    `/api/stat-perks`
+    ] as const;
+    }
+
+
+export const getGetStatPerksQueryOptions = <TData = Awaited<ReturnType<typeof getStatPerks>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStatPerks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStatPerksQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStatPerks>>> = ({ signal }) => getStatPerks({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStatPerks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStatPerksQueryResult = NonNullable<Awaited<ReturnType<typeof getStatPerks>>>
+export type GetStatPerksQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Coin-priced Stat Perks catalog with the current user's live state
+ */
+
+export function useGetStatPerks<TData = Awaited<ReturnType<typeof getStatPerks>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStatPerks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStatPerksQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getBuyStatPerkUrl = (id: 'xp_boost' | 'focus_boost' | 'streak_shield',) => {
+
+
+
+
+  return `/api/stat-perks/${id}/buy`
+}
+
+/**
+ * @summary Spend coins to buy a Stat Perk (gentle no-op if unaffordable or maxed)
+ */
+export const buyStatPerk = async (id: 'xp_boost' | 'focus_boost' | 'streak_shield', options?: RequestInit): Promise<StatPerkPurchaseResult> => {
+
+  return customFetch<StatPerkPurchaseResult>(getBuyStatPerkUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getBuyStatPerkMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyStatPerk>>, TError,{id: 'xp_boost' | 'focus_boost' | 'streak_shield'}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof buyStatPerk>>, TError,{id: 'xp_boost' | 'focus_boost' | 'streak_shield'}, TContext> => {
+
+const mutationKey = ['buyStatPerk'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyStatPerk>>, {id: 'xp_boost' | 'focus_boost' | 'streak_shield'}> = (props) => {
+          const {id} = props ?? {};
+
+          return  buyStatPerk(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyStatPerkMutationResult = NonNullable<Awaited<ReturnType<typeof buyStatPerk>>>
+
+    export type BuyStatPerkMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Spend coins to buy a Stat Perk (gentle no-op if unaffordable or maxed)
+ */
+export const useBuyStatPerk = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyStatPerk>>, TError,{id: 'xp_boost' | 'focus_boost' | 'streak_shield'}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof buyStatPerk>>,
+        TError,
+        {id: 'xp_boost' | 'focus_boost' | 'streak_shield'},
+        TContext
+      > => {
+      return useMutation(getBuyStatPerkMutationOptions(options));
     }
 
 export const getGetCalendarHeatmapUrl = (params?: GetCalendarHeatmapParams,) => {

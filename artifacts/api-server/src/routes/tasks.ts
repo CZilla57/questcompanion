@@ -30,6 +30,7 @@ import { grantInitiationAwards } from "../lib/initiation-grant";
 import type { InitiationXp } from "../lib/initiation";
 import { awardCoins, reverseCoins } from "../lib/award-coins";
 import { COIN_EARN, isStreakMilestone } from "../lib/coins";
+import { isBoostActive, boostBonusPoints, XP_BOOST_BONUS } from "../lib/stat-perks";
 
 const router: IRouter = Router();
 
@@ -555,6 +556,12 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     const oldLevel = getLevelInfo(user.totalPoints);
     const { totalPoints: boostedBase, streakBonus, multiplierInfo } = applyMultiplier(task.points, user.streakDays);
     let pointsToAdd = boostedBase;
+
+    // Act IV Stat Perk: an active XP Boost adds a flat % of the base quest reward
+    // on top of the streak multiplier. Purely additive (upside-only) — it never
+    // touches the streak/level math and can never lower a payout.
+    const xpBoostBonus = boostBonusPoints(task.points, isBoostActive(user.xpBoostExpiresAt, now), XP_BOOST_BONUS);
+    pointsToAdd += xpBoostBonus;
 
     // Daily bonus check: the gating set is tasks due today plus anchored tasks past
     // their one-day grace (created before today). Fetch the superset in-transaction,

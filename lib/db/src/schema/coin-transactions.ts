@@ -10,7 +10,12 @@ export type CoinReason =
   | "boss_win"
   | "redeem"
   | "quest_uncomplete"
-  | "world_boss_defeat";
+  | "world_boss_defeat"
+  | "mystery_open"
+  | "mystery_bonus"
+  | "perk_xp_boost"
+  | "perk_focus_boost"
+  | "perk_streak_shield";
 
 // Append-only audit ledger. Not surfaced in the UI (v1); exists for integrity,
 // debuggability, and reconstructing the denormalized users.coinBalance.
