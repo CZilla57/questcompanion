@@ -14,10 +14,11 @@ import { generateJson, isAiConfigured, AiClientError } from "../lib/ai/client";
 import { breakdownCooldown } from "../lib/ai/breakdown-cooldown";
 import { generateVariants, VariantsParseError } from "../lib/ai/difficulty-variants";
 import { variantsCooldown } from "../lib/ai/variants-cooldown";
-import { assembleLadder, snapshotMedium, needsVariantGeneration, struggleDeltaOnReschedule, evaluateDifficultyOffer, toOfferInput } from "../lib/difficulty";
+import { assembleLadder, snapshotMedium, needsVariantGeneration, evaluateDifficultyOffer, toOfferInput } from "../lib/difficulty";
 import { isValidDueTime, isValidDueDate } from "../lib/task-datetime";
 import { deriveBrainState } from "../lib/brain-mode";
 import { resolveTimeZone, localDateKey } from "../lib/date-buckets";
+import { isBigSwing, rescheduleStruggleDelta } from "../lib/steering";
 import { parseQuickAdd } from "@workspace/quick-add";
 import { buildQuickAddPrompt, parseQuickAddResult, QuickAddParseError } from "../lib/ai/quick-add-parse";
 import { parseCooldown } from "../lib/ai/parse-cooldown";
@@ -76,6 +77,7 @@ export function formatTask(
     questlineId: task.questlineId ?? null,
     difficulty: task.difficulty,
     difficultyOfferable: opts.difficultyOfferable ?? false,
+    bigSwing: isBigSwing(task),
     steps: steps
       .slice()
       .sort((a, b) => a.position - b.position)
@@ -374,7 +376,7 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
   if (!existing) { res.status(404).json({ error: "Task not found" }); return; }
 
   // Points are server-assigned by auto-points logic and are not client-editable.
-  const { title, description, dueDate, dueTime, priority, estimatedMinutes, actualMinutes, category, isAnchored, questlineId } = req.body as {
+  const { title, description, dueDate, dueTime, priority, estimatedMinutes, actualMinutes, category, isAnchored, questlineId, viaSteering } = req.body as {
     title?: string;
     description?: string;
     dueDate?: string;
@@ -385,6 +387,7 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
     category?: string;
     isAnchored?: boolean;
     questlineId?: number | null;
+    viaSteering?: boolean;
   };
 
   const updates: Partial<typeof tasksTable.$inferInsert> = {};
@@ -417,8 +420,9 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
     // Giving a quest a concrete date takes it out of the anchored (no-deadline)
     // state, unless this same request is explicitly re-anchoring it below.
     if (isAnchored !== true) updates.isAnchored = false;
-    // Pushing an incomplete quest to a later day is a silent "I keep avoiding this".
-    const rescheduleDelta = struggleDeltaOnReschedule(existing.dueDate, dueDate);
+    // Pushing an incomplete quest to a later day is a silent "I keep avoiding this" —
+    // unless the user is steering it into a power window, which is planning.
+    const rescheduleDelta = rescheduleStruggleDelta(existing.dueDate, dueDate, viaSteering === true);
     if (rescheduleDelta > 0) updates.struggleScore = existing.struggleScore + rescheduleDelta;
   }
   if (dueTime !== undefined) {
