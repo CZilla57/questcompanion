@@ -40,6 +40,8 @@ describe("rollDamage", () => {
   });
   it("rounds to an integer", () => {
     expect(rollDamage(101, () => 0.5)).toBe(Math.round(101)); // 101 * 1.0
+    expect(rollDamage(101, () => 0)).toBe(76);   // 101 * 0.75 = 75.75 → rounds up to 76
+    expect(rollDamage(101, () => 1)).toBe(126);  // 101 * 1.25 = 126.25 → rounds down to 126
   });
   it("never returns negative for zero power", () => {
     expect(rollDamage(0, () => 0)).toBe(0);
