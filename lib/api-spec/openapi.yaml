@@ -2999,7 +2999,7 @@ components:
           type: string
         type:
           type: string
-          enum: [task_completed, badge_earned, level_up, streak_milestone, all_day_bonus, streak_freeze_bought, streak_freeze_used, gear_earned, focus_session, focus_complete, initiation]
+          enum: [task_completed, badge_earned, level_up, streak_milestone, all_day_bonus, streak_freeze_bought, streak_freeze_used, gear_earned, focus_session, focus_complete, initiation, reflection]
         description:
           type: string
         points:

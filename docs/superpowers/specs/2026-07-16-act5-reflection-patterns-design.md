@@ -235,7 +235,10 @@ open (avoids paying LLM calls for pushes that are never tapped).
   rhythms — a few more days of quests will unlock this"); `'low'` ⇒ render only
   powerHours with a "early read" hint; `'ok'` ⇒ full card. Only positive
   framings — the card never renders blockers as "you're bad at X"; `topBlockers`
-  feeds the LLM grounding, not this card.
+  feeds the LLM grounding, not this card. (v1 implementation note: the question
+  prompt grounds on powerHours and topHelpers only; topBlockers is derived and
+  stored in the summary but not yet fed to the LLM - a deliberate
+  anti-shame-conservative choice, revisit in a later Act V quest.)
 
 ## 8. Anti-shame guardrails (consolidated)
 

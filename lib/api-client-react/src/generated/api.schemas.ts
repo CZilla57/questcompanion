@@ -100,6 +100,7 @@ export const ActivityItemType = {
   focus_session: 'focus_session',
   focus_complete: 'focus_complete',
   initiation: 'initiation',
+  reflection: 'reflection',
 } as const;
 
 export interface ActivityItem {

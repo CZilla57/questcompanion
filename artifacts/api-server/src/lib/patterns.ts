@@ -12,6 +12,10 @@ export interface PatternInputs {
   completions: { completedAt: Date; category: string; estimatedMinutes: number | null; actualMinutes: number | null }[];
   focusSessions: { startedAt: Date; focusedSeconds: number }[];
   checkins: { mode: string; createdAt: Date }[];
+  /** Answered reflections only, PRE-FILTERED by the caller to the same
+   * 28-day window — rows carry no timestamp, so derivePatterns cannot
+   * enforce the window itself (completions/focus/checkins are filtered
+   * internally; this input is trusted). */
   reflections: { chips: string[] }[];
 }
 

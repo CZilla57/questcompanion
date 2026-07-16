@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { useGetTodayReflection, getGetTodayReflectionQueryKey } from "@workspace/api-client-react";
 import { browserTimeZone } from "@/lib/timezone";
-import { eveningCardVisible } from "@/lib/reflection-window";
+import { eveningCardVisible, REFLECTION_CARD_START_HOUR } from "@/lib/reflection-window";
 import { Card, CardContent } from "@/components/ui/card";
 import { Moon, ChevronRight } from "lucide-react";
 
@@ -10,7 +10,7 @@ import { Moon, ChevronRight } from "lucide-react";
  * LLM call; only opening /reflection drafts the question. */
 export function EveningReflectionCard() {
   const now = new Date();
-  const inWindow = now.getHours() >= 17;
+  const inWindow = now.getHours() >= REFLECTION_CARD_START_HOUR;
   const tz = browserTimeZone();
   const { data } = useGetTodayReflection(
     { tz },
