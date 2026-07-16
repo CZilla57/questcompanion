@@ -119,6 +119,8 @@ import type {
   UserStats,
   UserSummary,
   UserUpdate,
+  WorldBossAttackResult,
+  WorldBossStatus,
   XpDataPoint
 } from './api.schemas';
 
@@ -5756,6 +5758,153 @@ export const useEnterBattle = <TError = ErrorType<ErrorEnvelope>,
         TContext
       > => {
       return useMutation(getEnterBattleMutationOptions(options));
+    }
+
+export const getGetWorldBossCurrentUrl = () => {
+
+
+
+
+  return `/api/world-boss/current`
+}
+
+/**
+ * @summary Get this week's shared World Boss status
+ */
+export const getWorldBossCurrent = async ( options?: RequestInit): Promise<WorldBossStatus> => {
+
+  return customFetch<WorldBossStatus>(getGetWorldBossCurrentUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWorldBossCurrentQueryKey = () => {
+    return [
+    `/api/world-boss/current`
+    ] as const;
+    }
+
+
+export const getGetWorldBossCurrentQueryOptions = <TData = Awaited<ReturnType<typeof getWorldBossCurrent>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWorldBossCurrent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWorldBossCurrentQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWorldBossCurrent>>> = ({ signal }) => getWorldBossCurrent({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWorldBossCurrent>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWorldBossCurrentQueryResult = NonNullable<Awaited<ReturnType<typeof getWorldBossCurrent>>>
+export type GetWorldBossCurrentQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get this week's shared World Boss status
+ */
+
+export function useGetWorldBossCurrent<TData = Awaited<ReturnType<typeof getWorldBossCurrent>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWorldBossCurrent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWorldBossCurrentQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAttackWorldBossUrl = () => {
+
+
+
+
+  return `/api/world-boss/attack`
+}
+
+/**
+ * @summary Deal this day's attack to the shared World Boss
+ */
+export const attackWorldBoss = async ( options?: RequestInit): Promise<WorldBossAttackResult> => {
+
+  return customFetch<WorldBossAttackResult>(getAttackWorldBossUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAttackWorldBossMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof attackWorldBoss>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof attackWorldBoss>>, TError,void, TContext> => {
+
+const mutationKey = ['attackWorldBoss'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof attackWorldBoss>>, void> = () => {
+
+
+          return  attackWorldBoss(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AttackWorldBossMutationResult = NonNullable<Awaited<ReturnType<typeof attackWorldBoss>>>
+
+    export type AttackWorldBossMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Deal this day's attack to the shared World Boss
+ */
+export const useAttackWorldBoss = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof attackWorldBoss>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof attackWorldBoss>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getAttackWorldBossMutationOptions(options));
     }
 
 export const getGetDopamineRewardsUrl = () => {

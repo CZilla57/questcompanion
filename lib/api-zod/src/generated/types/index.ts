@@ -180,4 +180,8 @@ export * from './userBadge';
 export * from './userStats';
 export * from './userSummary';
 export * from './userUpdate';
+export * from './worldBossAttackResult';
+export * from './worldBossAttackResultReason';
+export * from './worldBossContributor';
+export * from './worldBossStatus';
 export * from './xpDataPoint';

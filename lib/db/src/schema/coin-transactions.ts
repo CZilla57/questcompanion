@@ -10,6 +10,7 @@ export type CoinReason =
   | "boss_win"
   | "redeem"
   | "quest_uncomplete"
+  | "world_boss_defeat"
   | "mystery_open"
   | "mystery_bonus"
   | "perk_xp_boost"

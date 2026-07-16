@@ -1731,6 +1731,32 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
 
+  /world-boss/current:
+    get:
+      operationId: getWorldBossCurrent
+      tags: [avatar]
+      summary: Get this week's shared World Boss status
+      responses:
+        "200":
+          description: World Boss status for the current viewer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorldBossStatus"
+
+  /world-boss/attack:
+    post:
+      operationId: attackWorldBoss
+      tags: [avatar]
+      summary: Deal this day's attack to the shared World Boss
+      responses:
+        "200":
+          description: Attack outcome (may be a soft no-op if already attacked today or already felled)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorldBossAttackResult"
+
   /dopamine-rewards:
     get:
       operationId: getDopamineRewards
@@ -3332,6 +3358,53 @@ components:
           type: integer
         weekKey:
           type: string
+
+    WorldBossContributor:
+      type: object
+      required: [userId, displayName, avatarColor, damage, isAlly]
+      properties:
+        userId: { type: integer }
+        displayName: { type: string }
+        avatarColor: { type: string }
+        damage: { type: integer }
+        isAlly: { type: boolean }
+
+    WorldBossStatus:
+      type: object
+      required:
+        [weekKey, hp, totalDamage, defeated, attackedToday, yourContribution, yourPower, attackXp, defeatCoins, defeatXp, contributors]
+      properties:
+        weekKey: { type: string }
+        hp: { type: integer }
+        totalDamage: { type: integer }
+        defeated: { type: boolean }
+        defeatedAt: { type: ["string", "null"] }
+        attackedToday: { type: boolean }
+        yourContribution: { type: integer }
+        yourPower: { type: integer }
+        attackXp: { type: integer }
+        defeatCoins: { type: integer }
+        defeatXp: { type: integer }
+        contributors:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorldBossContributor"
+
+    WorldBossAttackResult:
+      type: object
+      required: [attacked, hp, totalDamage, defeated, justDefeated, xpAwarded, coinsAwarded]
+      properties:
+        attacked: { type: boolean }
+        reason:
+          type: ["string", "null"]
+          enum: [already_today, defeated, null]
+        damage: { type: ["integer", "null"] }
+        hp: { type: integer }
+        totalDamage: { type: integer }
+        defeated: { type: boolean }
+        justDefeated: { type: boolean }
+        xpAwarded: { type: integer }
+        coinsAwarded: { type: integer }
 
     DopamineReward:
       type: object

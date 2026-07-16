@@ -19,6 +19,7 @@ import type { GearStoreItem, AvatarUpdateInput } from "@workspace/api-client-rea
 import { PixelHero } from "@/components/pixel-hero";
 import { HeroCredits } from "@/components/hero-credits";
 import { HeroVitality } from "@/components/hero-vitality";
+import { WorldBossPanel } from "@/components/world-boss-panel";
 import { heroSpriteEffect, type HungerStage } from "@/lib/hero-vitality";
 import type { AvatarClass, HeroLook, Build, Skin, HairStyle, HairColor, FaceId, EquippedGearLook } from "@/lib/hero/types";
 import { skins as SKIN_OPTIONS, hairColors as HAIR_COLOR_OPTIONS } from "@workspace/hero-options";
@@ -831,7 +832,12 @@ export default function AvatarPage() {
             </div>
           )}
 
-          {activeTab === "battle" && <BattlePanel />}
+          {activeTab === "battle" && (
+            <div className="space-y-4">
+              <BattlePanel />
+              <WorldBossPanel />
+            </div>
+          )}
         </div>
       </div>
     </div>

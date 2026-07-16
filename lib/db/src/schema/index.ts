@@ -19,3 +19,4 @@ export * from "./brain-checkins";
 export * from "./rescue-events";
 export * from "./reward-store-items";
 export * from "./coin-transactions";
+export * from "./world-boss";

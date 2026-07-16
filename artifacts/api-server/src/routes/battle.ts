@@ -5,19 +5,12 @@ import { getLevelInfo } from "../lib/gamification";
 import { calcBattlePower } from "./avatar";
 import { awardCoins } from "../lib/award-coins";
 import { COIN_EARN } from "../lib/coins";
+import { getWeekKey } from "../lib/week-key";
 
 const router: IRouter = Router();
 
 const BATTLE_WIN_XP = 500;
 const BATTLE_LOSE_XP = 75;
-
-function getWeekKey(date: Date = new Date()): string {
-  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const weekNo = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
-  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
-}
 
 function getBossPower(weekKey: string): number {
   const match = weekKey.match(/W(\d+)$/);
@@ -25,7 +18,7 @@ function getBossPower(weekKey: string): number {
   return Math.min(90 + (weekNo - 1) * 70, 750);
 }
 
-async function getUserPower(userId: number): Promise<number> {
+export async function getUserPower(userId: number): Promise<number> {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   if (!user) return 0;
 
