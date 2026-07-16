@@ -1,13 +1,14 @@
-import { eq, and, gt, desc } from "drizzle-orm";
-import { db, tasksTable, usersTable, activityTable, pushSubscriptionsTable, focusSessionsTable, brainCheckinsTable } from "@workspace/db";
+import { eq, and, gt, desc, gte, isNotNull } from "drizzle-orm";
+import { db, tasksTable, usersTable, activityTable, pushSubscriptionsTable, focusSessionsTable, brainCheckinsTable, reflectionsTable } from "@workspace/db";
 import { sendPushNotification } from "./push-notifications";
 import { logger } from "./logger";
 import { spawnRecurringTasksForToday } from "../routes/recurring-tasks";
 import { hungerStage, hungerWarning, shouldSendFlavorPush } from "./hero-care";
 import { currentVignette } from "./hero-flavor";
 import { deriveBrainState } from "./brain-mode";
-import { resolveTimeZone, localHour } from "./date-buckets";
+import { resolveTimeZone, localHour, localDateKey, localDayStartUtc } from "./date-buckets";
 import { protectedStretch, selectProtectionNudge, type NudgeKind } from "./hyperfocus";
+import { shouldPromptReflection } from "./reflections";
 
 const DEFAULT_USER_ID = 1;
 
@@ -19,12 +20,12 @@ async function removeSubscription(endpoint: string) {
   await db.delete(pushSubscriptionsTable).where(eq(pushSubscriptionsTable.endpoint, endpoint));
 }
 
-async function notify(userId: number, title: string, body: string, tag: string) {
+async function notify(userId: number, title: string, body: string, tag: string, data?: Record<string, unknown>) {
   const subs = await getSubscriptions(userId);
   for (const sub of subs) {
     const ok = await sendPushNotification(
       { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
-      { title, body, tag },
+      { title, body, tag, ...(data ? { data } : {}) },
     );
     if (!ok) {
       await removeSubscription(sub.endpoint);
@@ -247,6 +248,65 @@ async function checkHyperfocusProtection() {
   }
 }
 
+async function checkReflectionPrompts() {
+  const now = new Date();
+  const users = await db.select().from(usersTable);
+  for (const user of users) {
+    try {
+      // Cheap pre-gates to skip per-user queries; shouldPromptReflection stays
+      // the tested authority on the full rule set.
+      if (!user.timezone) continue; // no tz ⇒ can't compute a local evening (spec §6)
+      const tz = resolveTimeZone(user.timezone);
+      const hour = localHour(now, tz);
+      const localToday = localDateKey(now, tz);
+      if (hour < 19 || hour >= 22 || user.reflectionPromptedDate === localToday) continue;
+
+      const dayStart = localDayStartUtc(localToday, tz);
+
+      const [todayReflection] = await db.select({ answeredAt: reflectionsTable.answeredAt })
+        .from(reflectionsTable)
+        .where(and(eq(reflectionsTable.userId, user.id), eq(reflectionsTable.localDate, localToday)));
+
+      const [completion] = await db.select({ id: tasksTable.id }).from(tasksTable)
+        .where(and(
+          eq(tasksTable.userId, user.id), eq(tasksTable.completed, true),
+          isNotNull(tasksTable.completedAt), gte(tasksTable.completedAt, dayStart),
+        )).limit(1);
+      const [focus] = await db.select({ id: focusSessionsTable.id }).from(focusSessionsTable)
+        .where(and(
+          eq(focusSessionsTable.userId, user.id),
+          gte(focusSessionsTable.startedAt, dayStart),
+          gte(focusSessionsTable.completedIntervals, 1),
+        )).limit(1);
+      const [checkin] = await db.select({ id: brainCheckinsTable.id }).from(brainCheckinsTable)
+        .where(and(eq(brainCheckinsTable.userId, user.id), gte(brainCheckinsTable.createdAt, dayStart)))
+        .limit(1);
+
+      const should = shouldPromptReflection({
+        localHour: hour,
+        promptedToday: user.reflectionPromptedDate === localToday,
+        answeredToday: todayReflection?.answeredAt != null,
+        hadSignalToday: Boolean(completion || focus || checkin),
+        hasTimezone: true,
+      });
+      if (!should) continue;
+
+      await notify(
+        user.id,
+        "🌙 How did today feel?",
+        "1-minute reflection — what worked today?",
+        "reflection-prompt",
+        { url: "/reflection" },
+      );
+      await db.update(usersTable)
+        .set({ reflectionPromptedDate: localToday })
+        .where(eq(usersTable.id, user.id));
+    } catch (err) {
+      logger.error({ err, userId: user.id }, "Reflection-prompt pass failed for user");
+    }
+  }
+}
+
 async function spawnRecurringTasks() {
   const created = await spawnRecurringTasksForToday();
   if (created > 0) {
@@ -271,6 +331,9 @@ export async function tick() {
 
   await checkHyperfocusProtection();
   ran.push("hyperfocus-protection");
+
+  await checkReflectionPrompts();
+  ran.push("reflection-prompts");
 
   return ran;
 }
