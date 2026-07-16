@@ -100,6 +100,7 @@ export const ActivityItemType = {
   focus_session: 'focus_session',
   focus_complete: 'focus_complete',
   initiation: 'initiation',
+  reflection: 'reflection',
 } as const;
 
 export interface ActivityItem {
@@ -1213,6 +1214,131 @@ export interface InsightsResponse {
 }
 
 /**
+ * What-helped chip keys (grouping source of truth)
+ */
+export type ReflectionHelpedChip = typeof ReflectionHelpedChip[keyof typeof ReflectionHelpedChip];
+
+
+export const ReflectionHelpedChip = {
+  timer: 'timer',
+  small_steps: 'small_steps',
+  body_double: 'body_double',
+  right_time: 'right_time',
+  low_stakes: 'low_stakes',
+  treat_reward: 'treat_reward',
+} as const;
+
+/**
+ * What-got-in-the-way chip keys (grouping source of truth)
+ */
+export type ReflectionHinderedChip = typeof ReflectionHinderedChip[keyof typeof ReflectionHinderedChip];
+
+
+export const ReflectionHinderedChip = {
+  low_energy: 'low_energy',
+  too_many_switches: 'too_many_switches',
+  too_big: 'too_big',
+  distractions: 'distractions',
+  time_slipped: 'time_slipped',
+  pressure: 'pressure',
+} as const;
+
+export const ReflectionChip = {...ReflectionHelpedChip,...ReflectionHinderedChip,} as const
+export type ReflectionChip = typeof ReflectionChip[keyof typeof ReflectionChip];
+
+export type ReflectionPromptSource = typeof ReflectionPromptSource[keyof typeof ReflectionPromptSource];
+
+
+export const ReflectionPromptSource = {
+  ai: 'ai',
+  fallback: 'fallback',
+} as const;
+
+export interface Reflection {
+  id: number;
+  localDate: string;
+  prompt: string;
+  promptSource: ReflectionPromptSource;
+  chips: ReflectionChip[];
+  freeText: string | null;
+  ack: string | null;
+  answeredAt: string | null;
+  createdAt: string;
+}
+
+export interface ReflectionResponse {
+  reflection: Reflection | null;
+}
+
+export interface ReflectionAnswerRequest {
+  chips: ReflectionChip[];
+  /** @maxLength 500 */
+  freeText?: string;
+  tz?: string;
+}
+
+export interface ReflectionAnswerResponse {
+  reflection: Reflection;
+  xpAwarded: number;
+}
+
+export interface PatternSampleSize {
+  completions: number;
+  focusMinutes: number;
+  checkins: number;
+  reflections: number;
+}
+
+export interface PatternPowerHour {
+  hour: number;
+  score: number;
+}
+
+export interface PatternCategoryMinutes {
+  category: string;
+  medianActual: number;
+  count: number;
+}
+
+export type PatternModeBlockBlock = typeof PatternModeBlockBlock[keyof typeof PatternModeBlockBlock];
+
+
+export const PatternModeBlockBlock = {
+  morning: 'morning',
+  afternoon: 'afternoon',
+  evening: 'evening',
+  night: 'night',
+} as const;
+
+export interface PatternModeBlock {
+  block: PatternModeBlockBlock;
+  dominantMode: string | null;
+}
+
+export type PatternSummaryConfidence = typeof PatternSummaryConfidence[keyof typeof PatternSummaryConfidence];
+
+
+export const PatternSummaryConfidence = {
+  none: 'none',
+  low: 'low',
+  ok: 'ok',
+} as const;
+
+export interface PatternSummary {
+  windowDays: number;
+  sampleSize: PatternSampleSize;
+  confidence: PatternSummaryConfidence;
+  powerHours: PatternPowerHour[];
+  /** 0=Sun … 6=Sat */
+  bestDay: number | null;
+  medianQuestMinutes: number | null;
+  categoryMinutes: PatternCategoryMinutes[];
+  modeByBlock: PatternModeBlock[];
+  topHelpers: ReflectionChip[];
+  topBlockers: ReflectionChip[];
+}
+
+/**
  * @nullable
  */
 export type BattleStatusResult = typeof BattleStatusResult[keyof typeof BattleStatusResult] | null;
@@ -1672,6 +1798,21 @@ days?: number;
  * IANA timezone (e.g. "America/New_York") used to bucket stats by the user's local calendar day and hour. Defaults to UTC when omitted or invalid.
  */
 tz?: string;
+};
+
+export type GetMyPatternsParams = {
+/**
+ * IANA timezone fallback used only when the user has no persisted timezone. Defaults to UTC when omitted or invalid.
+ */
+tz?: string;
+};
+
+export type GetTodayReflectionParams = {
+tz?: string;
+/**
+ * When true, drafts (and persists) today's question if none exists — the reflection page passes true; the dashboard card omits it so LLM drafting stays lazy.
+ */
+draft?: boolean;
 };
 
 export type GetTasksParams = {

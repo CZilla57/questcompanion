@@ -302,6 +302,73 @@ paths:
               schema:
                 $ref: "#/components/schemas/InsightsResponse"
 
+  /users/me/patterns:
+    get:
+      operationId: getMyPatterns
+      tags: [users]
+      summary: Derived 28-day pattern summary (power hours, durations, modes, chips)
+      parameters:
+        - name: tz
+          in: query
+          description: >-
+            IANA timezone fallback used only when the user has no persisted
+            timezone. Defaults to UTC when omitted or invalid.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Pattern summary (always complete; confidence gates rendering)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatternSummary"
+
+  /reflections/today:
+    get:
+      operationId: getTodayReflection
+      tags: [reflections]
+      summary: Get today's reflection; drafts the question only when draft=true
+      parameters:
+        - name: tz
+          in: query
+          schema:
+            type: string
+        - name: draft
+          in: query
+          description: >-
+            When true, drafts (and persists) today's question if none exists —
+            the reflection page passes true; the dashboard card omits it so
+            LLM drafting stays lazy.
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Today's reflection, or null when none exists and draft=false
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReflectionResponse"
+    post:
+      operationId: answerTodayReflection
+      tags: [reflections]
+      summary: Answer (or same-day re-answer) today's reflection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReflectionAnswerRequest"
+      responses:
+        "200":
+          description: Saved answer with warm ack; xpAwarded is 5 on first answer, else 0
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReflectionAnswerResponse"
+        "400":
+          description: Unknown chip, empty answer (no chips and no freeText), or freeText over 500 chars
+
   /tasks:
     get:
       operationId: getTasks
@@ -2932,7 +2999,7 @@ components:
           type: string
         type:
           type: string
-          enum: [task_completed, badge_earned, level_up, streak_milestone, all_day_bonus, streak_freeze_bought, streak_freeze_used, gear_earned, focus_session, focus_complete, initiation]
+          enum: [task_completed, badge_earned, level_up, streak_milestone, all_day_bonus, streak_freeze_bought, streak_freeze_used, gear_earned, focus_session, focus_complete, initiation, reflection]
         description:
           type: string
         points:
@@ -3314,6 +3381,165 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/InsightsPeriodStat"
+
+    ReflectionHelpedChip:
+      type: string
+      description: What-helped chip keys (grouping source of truth)
+      enum: [timer, small_steps, body_double, right_time, low_stakes, treat_reward]
+
+    ReflectionHinderedChip:
+      type: string
+      description: What-got-in-the-way chip keys (grouping source of truth)
+      enum: [low_energy, too_many_switches, too_big, distractions, time_slipped, pressure]
+
+    ReflectionChip:
+      oneOf:
+        - $ref: "#/components/schemas/ReflectionHelpedChip"
+        - $ref: "#/components/schemas/ReflectionHinderedChip"
+
+    Reflection:
+      type: object
+      required: [id, localDate, prompt, promptSource, chips, freeText, ack, answeredAt, createdAt]
+      properties:
+        id:
+          type: integer
+        localDate:
+          type: string
+        prompt:
+          type: string
+        promptSource:
+          type: string
+          enum: [ai, fallback]
+        chips:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReflectionChip"
+        freeText:
+          type: string
+          nullable: true
+        ack:
+          type: string
+          nullable: true
+        answeredAt:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+
+    ReflectionResponse:
+      type: object
+      required: [reflection]
+      properties:
+        reflection:
+          allOf:
+            - $ref: "#/components/schemas/Reflection"
+          nullable: true
+
+    ReflectionAnswerRequest:
+      type: object
+      required: [chips]
+      properties:
+        chips:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReflectionChip"
+        freeText:
+          type: string
+          maxLength: 500
+        tz:
+          type: string
+
+    ReflectionAnswerResponse:
+      type: object
+      required: [reflection, xpAwarded]
+      properties:
+        reflection:
+          $ref: "#/components/schemas/Reflection"
+        xpAwarded:
+          type: integer
+
+    PatternSampleSize:
+      type: object
+      required: [completions, focusMinutes, checkins, reflections]
+      properties:
+        completions:
+          type: integer
+        focusMinutes:
+          type: integer
+        checkins:
+          type: integer
+        reflections:
+          type: integer
+
+    PatternPowerHour:
+      type: object
+      required: [hour, score]
+      properties:
+        hour:
+          type: integer
+        score:
+          type: number
+
+    PatternCategoryMinutes:
+      type: object
+      required: [category, medianActual, count]
+      properties:
+        category:
+          type: string
+        medianActual:
+          type: integer
+        count:
+          type: integer
+
+    PatternModeBlock:
+      type: object
+      required: [block, dominantMode]
+      properties:
+        block:
+          type: string
+          enum: [morning, afternoon, evening, night]
+        dominantMode:
+          type: string
+          nullable: true
+
+    PatternSummary:
+      type: object
+      required: [windowDays, sampleSize, confidence, powerHours, bestDay, medianQuestMinutes, categoryMinutes, modeByBlock, topHelpers, topBlockers]
+      properties:
+        windowDays:
+          type: integer
+        sampleSize:
+          $ref: "#/components/schemas/PatternSampleSize"
+        confidence:
+          type: string
+          enum: [none, low, ok]
+        powerHours:
+          type: array
+          items:
+            $ref: "#/components/schemas/PatternPowerHour"
+        bestDay:
+          type: integer
+          nullable: true
+          description: 0=Sun … 6=Sat
+        medianQuestMinutes:
+          type: integer
+          nullable: true
+        categoryMinutes:
+          type: array
+          items:
+            $ref: "#/components/schemas/PatternCategoryMinutes"
+        modeByBlock:
+          type: array
+          items:
+            $ref: "#/components/schemas/PatternModeBlock"
+        topHelpers:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReflectionChip"
+        topBlockers:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReflectionChip"
 
     BattleStatus:
       type: object

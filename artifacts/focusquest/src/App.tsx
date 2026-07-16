@@ -24,6 +24,7 @@ import PartnerDetail from "@/pages/partner-detail";
 import Questlines from "@/pages/questlines";
 import QuestlineDetail from "@/pages/questline-detail";
 import RewardsStore from "@/pages/rewards-store";
+import Reflection from "@/pages/reflection";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -166,6 +167,7 @@ function Router() {
         <Route path="/questlines/:id" component={QuestlineDetail} />
         <Route path="/questlines" component={Questlines} />
         <Route path="/focus" component={Focus} />
+        <Route path="/reflection" component={Reflection} />
         <Route path="/recurring" component={Recurring} />
         <Route path="/progress" component={Progress} />
         <Route path="/insights" component={Insights} />

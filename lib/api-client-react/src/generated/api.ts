@@ -51,6 +51,7 @@ import type {
   GetCalendarHeatmapParams,
   GetLeaderboardParams,
   GetMyInsightsParams,
+  GetMyPatternsParams,
   GetMyStatsParams,
   GetMyXpHistoryParams,
   GetNudgesParams,
@@ -58,6 +59,7 @@ import type {
   GetQuestlinesParams,
   GetTasksMomentumParams,
   GetTasksParams,
+  GetTodayReflectionParams,
   HandleBrowserLoginCallbackParams,
   HealthStatus,
   HeatmapResponse,
@@ -81,6 +83,7 @@ import type {
   PartnerRequestInput,
   Partnership,
   PatchTaskStepParams,
+  PatternSummary,
   PauseHyperfocus200,
   PutMyTimezone200,
   Questline,
@@ -92,6 +95,9 @@ import type {
   RecurringTaskInput,
   RecurringTaskUpdate,
   RedeemResult,
+  ReflectionAnswerRequest,
+  ReflectionAnswerResponse,
+  ReflectionResponse,
   RescueEventRequest,
   RewardStoreItem,
   RewardStoreItemInput,
@@ -1216,6 +1222,245 @@ export function useGetMyInsights<TData = Awaited<ReturnType<typeof getMyInsights
 
 
 
+
+export const getGetMyPatternsUrl = (params?: GetMyPatternsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/users/me/patterns?${stringifiedParams}` : `/api/users/me/patterns`
+}
+
+/**
+ * @summary Derived 28-day pattern summary (power hours, durations, modes, chips)
+ */
+export const getMyPatterns = async (params?: GetMyPatternsParams, options?: RequestInit): Promise<PatternSummary> => {
+
+  return customFetch<PatternSummary>(getGetMyPatternsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyPatternsQueryKey = (params?: GetMyPatternsParams,) => {
+    return [
+    `/api/users/me/patterns`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMyPatternsQueryOptions = <TData = Awaited<ReturnType<typeof getMyPatterns>>, TError = ErrorType<unknown>>(params?: GetMyPatternsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyPatterns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyPatternsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyPatterns>>> = ({ signal }) => getMyPatterns(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyPatterns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyPatternsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyPatterns>>>
+export type GetMyPatternsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Derived 28-day pattern summary (power hours, durations, modes, chips)
+ */
+
+export function useGetMyPatterns<TData = Awaited<ReturnType<typeof getMyPatterns>>, TError = ErrorType<unknown>>(
+ params?: GetMyPatternsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyPatterns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyPatternsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetTodayReflectionUrl = (params?: GetTodayReflectionParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reflections/today?${stringifiedParams}` : `/api/reflections/today`
+}
+
+/**
+ * @summary Get today's reflection; drafts the question only when draft=true
+ */
+export const getTodayReflection = async (params?: GetTodayReflectionParams, options?: RequestInit): Promise<ReflectionResponse> => {
+
+  return customFetch<ReflectionResponse>(getGetTodayReflectionUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTodayReflectionQueryKey = (params?: GetTodayReflectionParams,) => {
+    return [
+    `/api/reflections/today`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetTodayReflectionQueryOptions = <TData = Awaited<ReturnType<typeof getTodayReflection>>, TError = ErrorType<unknown>>(params?: GetTodayReflectionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTodayReflection>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTodayReflectionQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTodayReflection>>> = ({ signal }) => getTodayReflection(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTodayReflection>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTodayReflectionQueryResult = NonNullable<Awaited<ReturnType<typeof getTodayReflection>>>
+export type GetTodayReflectionQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get today's reflection; drafts the question only when draft=true
+ */
+
+export function useGetTodayReflection<TData = Awaited<ReturnType<typeof getTodayReflection>>, TError = ErrorType<unknown>>(
+ params?: GetTodayReflectionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTodayReflection>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTodayReflectionQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAnswerTodayReflectionUrl = () => {
+
+
+
+
+  return `/api/reflections/today`
+}
+
+/**
+ * @summary Answer (or same-day re-answer) today's reflection
+ */
+export const answerTodayReflection = async (reflectionAnswerRequest: ReflectionAnswerRequest, options?: RequestInit): Promise<ReflectionAnswerResponse> => {
+
+  return customFetch<ReflectionAnswerResponse>(getAnswerTodayReflectionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      reflectionAnswerRequest,)
+  }
+);}
+
+
+
+
+export const getAnswerTodayReflectionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof answerTodayReflection>>, TError,{data: BodyType<ReflectionAnswerRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof answerTodayReflection>>, TError,{data: BodyType<ReflectionAnswerRequest>}, TContext> => {
+
+const mutationKey = ['answerTodayReflection'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof answerTodayReflection>>, {data: BodyType<ReflectionAnswerRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  answerTodayReflection(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AnswerTodayReflectionMutationResult = NonNullable<Awaited<ReturnType<typeof answerTodayReflection>>>
+    export type AnswerTodayReflectionMutationBody = BodyType<ReflectionAnswerRequest>
+    export type AnswerTodayReflectionMutationError = ErrorType<void>
+
+    /**
+ * @summary Answer (or same-day re-answer) today's reflection
+ */
+export const useAnswerTodayReflection = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof answerTodayReflection>>, TError,{data: BodyType<ReflectionAnswerRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof answerTodayReflection>>,
+        TError,
+        {data: BodyType<ReflectionAnswerRequest>},
+        TContext
+      > => {
+      return useMutation(getAnswerTodayReflectionMutationOptions(options));
+    }
 
 export const getGetTasksUrl = (params?: GetTasksParams,) => {
   const normalizedParams = new URLSearchParams();

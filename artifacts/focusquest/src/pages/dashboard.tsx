@@ -4,6 +4,7 @@ import { ActivityItem, Task, TaskPriority, useGetMyStats, useGetTasks, useBuyStr
 import { TaskItem } from "@/components/task-item";
 import { browserTimeZone } from "@/lib/timezone";
 import { BrainCheckinPrompt } from "@/components/brain-checkin-prompt";
+import { EveningReflectionCard } from "@/components/evening-reflection-card";
 import { ActivityHeatmap } from "@/components/activity-heatmap";
 import { HeroSummary } from "@/components/hero-summary";
 import { RecentBadges } from "@/components/recent-badges";
@@ -11,7 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Flame, Trophy, Target, Award, Zap, Check,
-  Shield, ShieldCheck, ShieldOff, X, Clock, Timer, Play, Sunrise, Sparkles,
+  Shield, ShieldCheck, ShieldOff, X, Clock, Timer, Play, Sunrise, Sparkles, Moon,
 } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -182,6 +183,8 @@ export default function Dashboard() {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
       <BrainCheckinPrompt />
+
+      <EveningReflectionCard />
 
       {/* ── Stat cards ───────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -455,6 +458,7 @@ export default function Dashboard() {
                       {activity.type === 'focus_session'        && <Timer       className="w-4 h-4 text-primary" />}
                       {activity.type === 'focus_complete'       && <Timer       className="w-4 h-4 text-primary" />}
                       {activity.type === 'initiation'           && <Play        className="w-4 h-4 text-primary" />}
+                      {activity.type === 'reflection'           && <Moon        className="w-4 h-4 text-primary" />}
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground leading-snug">{activity.description}</p>

@@ -42,6 +42,9 @@ export const usersTable = pgTable("users", {
   // is non-null and in the future — derived at read time, no cron sweep. Null = off.
   xpBoostExpiresAt: timestamp("xp_boost_expires_at"),
   focusBoostExpiresAt: timestamp("focus_boost_expires_at"),
+  // Local-date string (YYYY-MM-DD) of the last evening reflection push — the
+  // once-per-day dedup gate for the cron pass (mirrors hyperfocus columns).
+  reflectionPromptedDate: text("reflection_prompted_date"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

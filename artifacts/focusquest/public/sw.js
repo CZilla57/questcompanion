@@ -33,12 +33,16 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || "/";
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
       if (clients.length > 0) {
         clients[0].focus();
+        if (url !== "/" && clients[0].navigate) {
+          return clients[0].navigate(url);
+        }
       } else {
-        self.clients.openWindow("/");
+        return self.clients.openWindow(url);
       }
     })
   );
