@@ -254,6 +254,96 @@ export const GetMyInsightsResponse = zod.object({
 
 
 /**
+ * @summary Derived 28-day pattern summary (power hours, durations, modes, chips)
+ */
+export const GetMyPatternsQueryParams = zod.object({
+  "tz": zod.coerce.string().optional().describe('IANA timezone fallback used only when the user has no persisted timezone. Defaults to UTC when omitted or invalid.')
+})
+
+export const GetMyPatternsResponse = zod.object({
+  "windowDays": zod.number(),
+  "sampleSize": zod.object({
+  "completions": zod.number(),
+  "focusMinutes": zod.number(),
+  "checkins": zod.number(),
+  "reflections": zod.number()
+}),
+  "confidence": zod.enum(['none', 'low', 'ok']),
+  "powerHours": zod.array(zod.object({
+  "hour": zod.number(),
+  "score": zod.number()
+})),
+  "bestDay": zod.number().nullable().describe('0=Sun … 6=Sat'),
+  "medianQuestMinutes": zod.number().nullable(),
+  "categoryMinutes": zod.array(zod.object({
+  "category": zod.string(),
+  "medianActual": zod.number(),
+  "count": zod.number()
+})),
+  "modeByBlock": zod.array(zod.object({
+  "block": zod.enum(['morning', 'afternoon', 'evening', 'night']),
+  "dominantMode": zod.string().nullable()
+})),
+  "topHelpers": zod.array(zod.union([zod.enum(['timer', 'small_steps', 'body_double', 'right_time', 'low_stakes', 'treat_reward']).describe('What-helped chip keys (grouping source of truth)'),zod.enum(['low_energy', 'too_many_switches', 'too_big', 'distractions', 'time_slipped', 'pressure']).describe('What-got-in-the-way chip keys (grouping source of truth)')])),
+  "topBlockers": zod.array(zod.union([zod.enum(['timer', 'small_steps', 'body_double', 'right_time', 'low_stakes', 'treat_reward']).describe('What-helped chip keys (grouping source of truth)'),zod.enum(['low_energy', 'too_many_switches', 'too_big', 'distractions', 'time_slipped', 'pressure']).describe('What-got-in-the-way chip keys (grouping source of truth)')]))
+})
+
+
+/**
+ * @summary Get today's reflection; drafts the question only when draft=true
+ */
+export const getTodayReflectionQueryDraftDefault = false;
+
+export const GetTodayReflectionQueryParams = zod.object({
+  "tz": zod.coerce.string().optional(),
+  "draft": zod.coerce.boolean().default(getTodayReflectionQueryDraftDefault).describe('When true, drafts (and persists) today\'s question if none exists — the reflection page passes true; the dashboard card omits it so LLM drafting stays lazy.')
+})
+
+export const GetTodayReflectionResponse = zod.object({
+  "reflection": zod.object({
+  "id": zod.number(),
+  "localDate": zod.string(),
+  "prompt": zod.string(),
+  "promptSource": zod.enum(['ai', 'fallback']),
+  "chips": zod.array(zod.union([zod.enum(['timer', 'small_steps', 'body_double', 'right_time', 'low_stakes', 'treat_reward']).describe('What-helped chip keys (grouping source of truth)'),zod.enum(['low_energy', 'too_many_switches', 'too_big', 'distractions', 'time_slipped', 'pressure']).describe('What-got-in-the-way chip keys (grouping source of truth)')])),
+  "freeText": zod.string().nullable(),
+  "ack": zod.string().nullable(),
+  "answeredAt": zod.string().nullable(),
+  "createdAt": zod.string()
+}).nullable()
+})
+
+
+/**
+ * @summary Answer (or same-day re-answer) today's reflection
+ */
+export const answerTodayReflectionBodyFreeTextMax = 500;
+
+
+
+export const AnswerTodayReflectionBody = zod.object({
+  "chips": zod.array(zod.union([zod.enum(['timer', 'small_steps', 'body_double', 'right_time', 'low_stakes', 'treat_reward']).describe('What-helped chip keys (grouping source of truth)'),zod.enum(['low_energy', 'too_many_switches', 'too_big', 'distractions', 'time_slipped', 'pressure']).describe('What-got-in-the-way chip keys (grouping source of truth)')])),
+  "freeText": zod.string().max(answerTodayReflectionBodyFreeTextMax).optional(),
+  "tz": zod.string().optional()
+})
+
+export const AnswerTodayReflectionResponse = zod.object({
+  "reflection": zod.object({
+  "id": zod.number(),
+  "localDate": zod.string(),
+  "prompt": zod.string(),
+  "promptSource": zod.enum(['ai', 'fallback']),
+  "chips": zod.array(zod.union([zod.enum(['timer', 'small_steps', 'body_double', 'right_time', 'low_stakes', 'treat_reward']).describe('What-helped chip keys (grouping source of truth)'),zod.enum(['low_energy', 'too_many_switches', 'too_big', 'distractions', 'time_slipped', 'pressure']).describe('What-got-in-the-way chip keys (grouping source of truth)')])),
+  "freeText": zod.string().nullable(),
+  "ack": zod.string().nullable(),
+  "answeredAt": zod.string().nullable(),
+  "createdAt": zod.string()
+}),
+  "xpAwarded": zod.number()
+})
+
+
+/**
  * @summary List tasks for the current user
  */
 export const GetTasksQueryParams = zod.object({
