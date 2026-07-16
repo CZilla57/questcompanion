@@ -4,6 +4,7 @@ import { ActivityItem, Task, TaskPriority, useGetMyStats, useGetTasks, useBuyStr
 import { TaskItem } from "@/components/task-item";
 import { browserTimeZone } from "@/lib/timezone";
 import { BrainCheckinPrompt } from "@/components/brain-checkin-prompt";
+import { EveningReflectionCard } from "@/components/evening-reflection-card";
 import { ActivityHeatmap } from "@/components/activity-heatmap";
 import { HeroSummary } from "@/components/hero-summary";
 import { RecentBadges } from "@/components/recent-badges";
@@ -182,6 +183,8 @@ export default function Dashboard() {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
       <BrainCheckinPrompt />
+
+      <EveningReflectionCard />
 
       {/* ── Stat cards ───────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
