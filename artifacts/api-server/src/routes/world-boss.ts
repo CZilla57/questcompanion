@@ -127,7 +127,8 @@ router.post("/world-boss/attack", async (req, res): Promise<void> => {
     const newTotal = bumped!.totalDamage;
 
     // Participation XP for the attacker — always earned (anti-shame floor).
-    const [attacker] = await tx.select().from(usersTable).where(eq(usersTable.id, userId));
+    // Lock the user row to prevent concurrent completions from reading stale point totals.
+    const [attacker] = await tx.select().from(usersTable).where(eq(usersTable.id, userId)).for("update");
     const aPoints = attacker!.totalPoints + WORLD_BOSS.ATTACK_XP;
     await tx.update(usersTable).set({
       totalPoints: aPoints,
@@ -157,8 +158,12 @@ router.post("/world-boss/attack", async (req, res): Promise<void> => {
           .from(worldBossAttacksTable)
           .where(eq(worldBossAttacksTable.weekKey, weekKey));
         const contribIds = contribRows.map((r) => r.userId);
+        // Lock all contributor rows (deterministic id order to avoid deadlocks) to prevent
+        // concurrent completions from reading stale point/streak totals.
         const contributors = await tx.select().from(usersTable)
-          .where(inArray(usersTable.id, contribIds));
+          .where(inArray(usersTable.id, contribIds))
+          .orderBy(usersTable.id)
+          .for("update");
         for (const c of contributors) {
           const cPoints = c.totalPoints + WORLD_BOSS.DEFEAT_XP;
           await tx.update(usersTable).set({
