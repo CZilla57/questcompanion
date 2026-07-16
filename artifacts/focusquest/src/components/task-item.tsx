@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Anchor, CalendarClock, Check, Clock, Edit2, Flame, LifeBuoy, Pin, PinOff, Scroll, Shield, Timer, Trash2, Zap } from "lucide-react";
 import { format } from "date-fns";
-import { Task, TaskPriority, useCompleteTask, useDeleteTask, usePatchTaskFocus, useUncompleteTask, useUpdateTask, useGetMyStats } from "@workspace/api-client-react";
+import { Task, TaskPriority, useCompleteTask, useDeleteTask, usePatchTaskFocus, useUncompleteTask, useUpdateTask, useGetMyStats, useGetMyPatterns, useGetBrainState } from "@workspace/api-client-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,7 @@ import { DifficultyControls } from "./difficulty-controls";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { parseDueDate, toDueDateString, todayDueDate, tomorrowDueDate, nextWeekDueDate } from "@/lib/reschedule";
+import { showSteeringChip, nextPowerWindowSlot, type PowerWindowSlot } from "@/lib/steering";
 import { apiErrorMessage } from "@/lib/api-error";
 import { RescueSheet } from "./rescue-sheet";
 
@@ -68,6 +69,8 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
   const [rescueOpen, setRescueOpen] = useState(false);
 
   const { data: stats } = useGetMyStats({ tz: browserTimeZone() });
+  const { data: patterns } = useGetMyPatterns({ tz: browserTimeZone() });
+  const { data: brainState } = useGetBrainState({ tz: browserTimeZone() });
   const multiplier = !task.completed && stats ? getMultiplierDisplay(stats.streakDays) : null;
 
   const completeMutation = useCompleteTask();
@@ -242,6 +245,33 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
     });
   };
 
+  // Power-window steering (spec: docs/superpowers/specs/2026-07-16-energy-patterns-steering-design.md).
+  // Chip: big swings only. Popover quick button: any quest, same confidence gate.
+  const steeringOk = patterns?.confidence === "ok" && patterns.powerHours.length > 0;
+  const powerSlot: PowerWindowSlot | null = steeringOk
+    ? nextPowerWindowSlot(new Date(), patterns!.powerHours)
+    : null;
+  const chipSlot: PowerWindowSlot | null =
+    powerSlot && showSteeringChip(task, patterns, new Date(), brainState?.mode) ? powerSlot : null;
+
+  const handleSteer = (slot: PowerWindowSlot) => {
+    if (updateMutation.isPending) return;
+    updateMutation.mutate(
+      { id: task.id, data: { dueDate: slot.dueDate, dueTime: slot.dueTime, viaSteering: true } },
+      {
+        onSuccess: () => {
+          setRescheduleOpen(false);
+          queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetTasksMomentumQueryKey() });
+          toast({ title: `Saved for your power window — ${slot.label} ⚡`, className: "border-primary" });
+        },
+        onError: (err: any) => {
+          toast({ title: apiErrorMessage(err, "Could not reschedule quest"), variant: "destructive" });
+        },
+      },
+    );
+  };
+
   const handleToggleAnchor = () => {
     if (updateMutation.isPending) return;
     const nextAnchored = !task.isAnchored;
@@ -336,6 +366,19 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
             <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${CATEGORY_COLORS[task.category] ?? CATEGORY_COLORS.default}`}>
               {CATEGORY_LABEL[task.category] ?? "General"}
             </span>
+          )}
+
+          {chipSlot && (
+            <button
+              type="button"
+              onClick={() => handleSteer(chipSlot)}
+              disabled={updateMutation.isPending}
+              title="Reschedule into your power window"
+              className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-colors cursor-pointer"
+            >
+              <Zap className="w-2.5 h-2.5" />
+              Best around {chipSlot.label} — save it for then?
+            </button>
           )}
 
           {task.questlineId != null && (
@@ -486,6 +529,19 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
                     Next week
                   </Button>
                 </div>
+                {powerSlot && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs"
+                    onClick={() => handleSteer(powerSlot)}
+                    disabled={updateMutation.isPending}
+                  >
+                    <Zap className="w-3 h-3 mr-1" />
+                    Power window ({powerSlot.label})
+                  </Button>
+                )}
                 <Calendar
                   mode="single"
                   selected={task.dueDate ? parseDueDate(task.dueDate) : undefined}
