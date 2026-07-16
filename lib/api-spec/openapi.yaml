@@ -2292,7 +2292,7 @@ components:
 
     Task:
       type: object
-      required: [id, userId, title, points, completed, dueDate, priority, createdAt, category, categoryLabel, steps, difficulty, difficultyOfferable]
+      required: [id, userId, title, points, completed, dueDate, priority, createdAt, category, categoryLabel, steps, difficulty, difficultyOfferable, bigSwing]
       properties:
         id:
           type: integer
@@ -2353,6 +2353,9 @@ components:
         difficultyOfferable:
           type: boolean
           description: True when the app is gently offering a smaller version (never a shame signal; never a count)
+        bigSwing:
+          type: boolean
+          description: True when this quest is a "big swing" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows
 
     FocusToggleInput:
       type: object
@@ -2507,6 +2510,9 @@ components:
         questlineId:
           type: ["integer", "null"]
           description: Reassign the quest to a questline, or null to unlink (one-off quests only)
+        viaSteering:
+          type: boolean
+          description: True when this update came from a power-window steering affordance; skips the forward-reschedule struggle signal (planning, not avoidance). Never persisted.
 
     TaskCompletionResult:
       type: object
