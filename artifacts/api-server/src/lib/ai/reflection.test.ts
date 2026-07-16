@@ -55,7 +55,7 @@ describe("containsGuiltLanguage", () => {
   it("flags guilt phrases case-insensitively, including curly apostrophes", () => {
     expect(containsGuiltLanguage("You should have started earlier")).toBe(true);
     expect(containsGuiltLanguage("Why didn't you finish?")).toBe(true);
-    expect(containsGuiltLanguage("Why didn't you finish?")).toBe(true);
+    expect(containsGuiltLanguage("Why didn\u2019t you finish?")).toBe(true);
     expect(containsGuiltLanguage("You missed the deadline")).toBe(true);
     expect(containsGuiltLanguage("You failed today")).toBe(true);
     expect(containsGuiltLanguage("You're falling behind")).toBe(true);

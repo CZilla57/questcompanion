@@ -45,7 +45,7 @@ export function buildDaySummary(input: {
 const GUILT_RE = /\b(should have|didn't|missed|failed|behind|only|just)\b/i;
 
 export function containsGuiltLanguage(text: string): boolean {
-  return GUILT_RE.test(text.replace(/'/g, "'"));
+  return GUILT_RE.test(text.replace(/\u2019/g, "'"));
 }
 
 export const FALLBACK_QUESTIONS: readonly string[] = [
