@@ -22,7 +22,7 @@ import { isBigSwing, rescheduleStruggleDelta } from "../lib/steering";
 import { parseQuickAdd } from "@workspace/quick-add";
 import { buildQuickAddPrompt, parseQuickAddResult, QuickAddParseError } from "../lib/ai/quick-add-parse";
 import { parseCooldown } from "../lib/ai/parse-cooldown";
-import { transcribeAudio, audioExtensionFor } from "../lib/ai/transcribe-audio";
+import { transcribeAudio, audioExtensionFor, isTranscriptionConfigured } from "../lib/ai/transcribe-audio";
 import { transcribeCooldown } from "../lib/ai/transcribe-cooldown";
 import { isBonusGatingTask, countsAsTodayCompletion } from "../lib/anchored-tasks";
 import { isQuestlineAssignable } from "../lib/questlines";
@@ -313,7 +313,7 @@ router.post(
       return;
     }
 
-    if (!isAiConfigured()) {
+    if (!isTranscriptionConfigured()) {
       res.status(503).json({ error: "Voice transcription is not configured" });
       return;
     }
