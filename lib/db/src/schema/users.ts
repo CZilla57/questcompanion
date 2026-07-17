@@ -45,6 +45,14 @@ export const usersTable = pgTable("users", {
   // Local-date string (YYYY-MM-DD) of the last evening reflection push — the
   // once-per-day dedup gate for the cron pass (mirrors hyperfocus columns).
   reflectionPromptedDate: text("reflection_prompted_date"),
+  // Context-aware nudges (Act V q3): per-kind once-per-day dedup gates. Local-date
+  // strings (YYYY-MM-DD); today's sent-count for the 2/day cap is derived by
+  // comparing them to the user's localToday — no separate counter.
+  nudgeDueTodayDate: text("nudge_due_today_date"),
+  nudgePowerWindowDate: text("nudge_power_window_date"),
+  nudgeQuickWinDate: text("nudge_quick_win_date"),
+  // Instant of the last context nudge of any kind — enforces 90-min spacing.
+  contextNudgedAt: timestamp("context_nudged_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
