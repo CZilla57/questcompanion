@@ -19,7 +19,9 @@ plus the configuration split described below. Voice quick-add transcription
 
 > **Amendment (2026-07-16):** the spec originally named gemini-2.5-flash; that model returns 404 ("no longer available to new users") for newly issued API keys. Live-probed and replaced with its GA successor gemini-3.5-flash, verified to honor strict JSON mode with this exact request shape.
 
-> **Amendment 2 (2026-07-16):** live smoke showed gemini-3.5-flash *intermittently* wraps the JSON object in reasoning prose despite `response_format: json_object`. `generateJson` therefore tries strict `JSON.parse(content)` first and, on failure, salvages the first balanced top-level `{…}` block from the content before giving up with `AiClientError`. Temperature stays 0.7 (feature variety depends on it); the salvage path is unit-tested and provider-neutral.
+> **Amendment 2 (2026-07-16):** live smoke showed gemini-3.5-flash *intermittently* wraps the JSON object in reasoning prose despite `response_format: json_object`. `generateJson` therefore tries strict `JSON.parse(content)` first and, on failure, salvages the first balanced top-level `{…}` block that parses as valid JSON (rescanning past prose brace fragments) before giving up with `AiClientError`. Temperature stays 0.7 (feature variety depends on it); the salvage path is unit-tested and provider-neutral.
+
+> **Amendment 3 (2026-07-16):** the Testing section's route-level pins ("Gemini-only env ⇒ transcribe 503s while parse works", and the reverse) could not be implemented as written — the api-server has no route-test harness (all tests are pure-lib). The invariant is pinned at unit level instead: client.test.ts pins that GROQ_API_KEY alone does not enable isAiConfigured(), and transcribe-audio.test.ts pins that GEMINI_API_KEY alone does not enable isTranscriptionConfigured(). The tasks.ts gate wiring is covered by typecheck, the full suite, and live verification.
 
 ## Changes
 

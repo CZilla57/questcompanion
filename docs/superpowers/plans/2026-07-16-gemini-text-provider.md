@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Superseded in part (2026-07-16):** executed with live-verification amendments — the default model is `gemini-3.5-flash` (2.5 retired for new keys) and `generateJson` gained a strict-parse-first + balanced-brace-salvage tail that Task 1 Step 3's embedded code predates. The spec's Amendments 1–3 are authoritative over the code embedded below; do not re-execute this plan verbatim.
+
 **Goal:** Swap the backend text-LLM provider from Groq to Gemini (OpenAI-compatible endpoint); voice transcription stays on Groq Whisper behind its own config gate.
 
 **Architecture:** `generateJson()` in `artifacts/api-server/src/lib/ai/client.ts` is the single seam for all five text-AI features, so the provider swap is a URL/env/model change inside that one function. Transcription (`transcribe-audio.ts`) keeps calling Groq and gains its own `isTranscriptionConfigured()` gate; the transcribe route switches to it so the two keys can't cross-wire.

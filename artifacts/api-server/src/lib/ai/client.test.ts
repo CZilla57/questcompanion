@@ -65,6 +65,18 @@ describe("generateJson", () => {
     await expect(generateJson("p")).resolves.toEqual({ title: "fix {nested} braces", n: 1 });
   });
 
+  it("salvage skips brace fragments in prose before the real JSON", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { content: 'I will use {key} placeholders: {"ok": true}' } }],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    ));
+    await expect(generateJson("p")).resolves.toEqual({ ok: true });
+  });
+
   it("still throws AiClientError when no valid JSON object exists in the content", async () => {
     vi.stubGlobal("fetch", vi.fn(async () =>
       new Response(

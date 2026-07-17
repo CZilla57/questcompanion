@@ -18,28 +18,41 @@ export function isAiConfigured(): boolean {
 /**
  * Gemini's JSON mode occasionally wraps the object in reasoning prose despite
  * response_format json_object (observed live on gemini-3.5-flash). Salvages
- * the first balanced top-level {...} block, string-aware so braces inside
- * JSON strings don't break the depth count. Returns null if none exists.
+ * the first balanced top-level {...} block that parses as valid JSON —
+ * string-aware so braces inside JSON strings don't corrupt depth counting,
+ * and rescanning past prose fragments like "{key}" that balance but don't
+ * parse. Returns null if no valid object exists.
  */
 function extractJsonObject(content: string): string | null {
-  const start = content.indexOf("{");
-  if (start === -1) return null;
-  let depth = 0;
-  let inString = false;
-  let escaped = false;
-  for (let i = start; i < content.length; i++) {
-    const ch = content[i];
-    if (escaped) { escaped = false; continue; }
-    if (ch === "\\") { escaped = inString; continue; }
-    if (ch === '"') { inString = !inString; continue; }
-    if (inString) continue;
-    if (ch === "{") depth++;
-    else if (ch === "}") {
-      depth--;
-      if (depth === 0) return content.slice(start, i + 1);
+  let searchFrom = 0;
+  while (true) {
+    const start = content.indexOf("{", searchFrom);
+    if (start === -1) return null;
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    for (let i = start; i < content.length; i++) {
+      const ch = content[i];
+      if (escaped) { escaped = false; continue; }
+      if (ch === "\\") { escaped = inString; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === "{") depth++;
+      else if (ch === "}") {
+        depth--;
+        if (depth === 0) {
+          const candidate = content.slice(start, i + 1);
+          try {
+            JSON.parse(candidate);
+            return candidate;
+          } catch {
+            break; // balanced but not JSON (e.g. "{key}") — rescan past it
+          }
+        }
+      }
     }
+    searchFrom = start + 1;
   }
-  return null;
 }
 
 /**
@@ -103,11 +116,8 @@ export async function generateJson(prompt: string): Promise<unknown> {
   }
   const salvaged = extractJsonObject(content);
   if (salvaged !== null) {
-    try {
-      return JSON.parse(salvaged);
-    } catch {
-      // Fall through to the error below.
-    }
+    // extractJsonObject only returns strings it already parsed successfully.
+    return JSON.parse(salvaged);
   }
   throw new AiClientError("Gemini returned content that was not valid JSON");
 }
