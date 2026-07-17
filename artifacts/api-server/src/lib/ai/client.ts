@@ -16,6 +16,33 @@ export function isAiConfigured(): boolean {
 }
 
 /**
+ * Gemini's JSON mode occasionally wraps the object in reasoning prose despite
+ * response_format json_object (observed live on gemini-3.5-flash). Salvages
+ * the first balanced top-level {...} block, string-aware so braces inside
+ * JSON strings don't break the depth count. Returns null if none exists.
+ */
+function extractJsonObject(content: string): string | null {
+  const start = content.indexOf("{");
+  if (start === -1) return null;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < content.length; i++) {
+    const ch = content[i];
+    if (escaped) { escaped = false; continue; }
+    if (ch === "\\") { escaped = inString; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) return content.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
+/**
  * The single network seam for text-LLM calls. Sends a prompt to Gemini's
  * OpenAI-compatible chat endpoint in JSON mode and returns the parsed JSON
  * object. The prompt itself specifies the expected JSON shape, so swapping to
@@ -72,6 +99,15 @@ export async function generateJson(prompt: string): Promise<unknown> {
   try {
     return JSON.parse(content);
   } catch {
-    throw new AiClientError("Gemini returned content that was not valid JSON");
+    // Fall through to salvage.
   }
+  const salvaged = extractJsonObject(content);
+  if (salvaged !== null) {
+    try {
+      return JSON.parse(salvaged);
+    } catch {
+      // Fall through to the error below.
+    }
+  }
+  throw new AiClientError("Gemini returned content that was not valid JSON");
 }

@@ -41,6 +41,40 @@ describe("generateJson", () => {
     expect(result).toEqual({ steps: ["a", "b", "c"] });
   });
 
+  it("salvages a JSON object wrapped in reasoning prose", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { content: 'Okay, the user wants JSON.\n{"steps": ["a"]}\nThat satisfies it.' } }],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    ));
+    await expect(generateJson("p")).resolves.toEqual({ steps: ["a"] });
+  });
+
+  it("salvage respects braces inside JSON strings", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { content: 'prose {"title": "fix {nested} braces", "n": 1} trailing' } }],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    ));
+    await expect(generateJson("p")).resolves.toEqual({ title: "fix {nested} braces", n: 1 });
+  });
+
+  it("still throws AiClientError when no valid JSON object exists in the content", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () =>
+      new Response(
+        JSON.stringify({ choices: [{ message: { content: "no json here { unbalanced" } }] }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    ));
+    await expect(generateJson("p")).rejects.toBeInstanceOf(AiClientError);
+  });
+
   it("calls Gemini's OpenAI-compatible endpoint with the default model", async () => {
     const fetchMock = vi.fn(async (_url: string, _init: RequestInit) =>
       chatResponse({ ok: true }),
