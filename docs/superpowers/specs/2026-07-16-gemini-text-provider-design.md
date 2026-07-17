@@ -27,7 +27,7 @@ plus the configuration split described below. Voice quick-add transcription
 - Auth: `authorization: Bearer ${GEMINI_API_KEY}` (unchanged header mechanism).
 - Model: `process.env.GEMINI_MODEL || "gemini-3.5-flash"`.
 - `isAiConfigured()` returns `Boolean(process.env.GEMINI_API_KEY)`.
-- `REQUEST_TIMEOUT_MS`: 15_000 → 30_000. Gemini 2.5 Flash performs internal
+- `REQUEST_TIMEOUT_MS`: 15_000 → 30_000. Gemini 3.5 Flash performs internal
   "thinking" before responding; small prompts typically return in 2–6 s, but the
   old 15 s ceiling is too tight for the occasional slow response.
 - Error strings mention Gemini instead of Groq.
