@@ -171,7 +171,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <EmergencyModeProvider renderRescue={(task, close, onRejected) => (
       <RescueSheet task={task} open onOpenChange={(o) => { if (!o) close(); }} onRejected={onRejected} />
     )}>
-    <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row overflow-hidden font-sans dark">
+    {/* h-dvh (not min-h-screen): the root must have a *definite* height so the
+        flex-1 <main> below actually caps at the viewport and scrolls internally.
+        With min-h only, main sized to its content, the document itself scrolled,
+        and iOS Safari would leave the fixed bottom nav stranded mid-page during
+        momentum scrolls. Definite height ⇒ body never scrolls ⇒ nav can't drift. */}
+    <div className="h-dvh bg-background text-foreground flex flex-col md:flex-row overflow-hidden font-sans dark">
 
       {/* ── Mobile header ─────────────────────────────────── */}
       <header className="md:hidden flex items-center justify-between px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] border-b border-border bg-card/80 backdrop-blur-md z-20 sticky top-0">
@@ -226,7 +231,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex-1 px-4 space-y-1 mt-8 md:mt-0" aria-label="Main navigation">
+        {/* overflow-y-auto: the root is now viewport-height, so on short windows
+            the nav list must scroll inside the rail instead of clipping. */}
+        <nav className="flex-1 px-4 space-y-1 mt-8 md:mt-0 overflow-y-auto" aria-label="Main navigation">
           {allNavItems.map((item) => {
             const isActive = location === item.href;
             return (
@@ -275,7 +282,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* ── Main content ─────────────────────────────────── */}
-      <main className="flex-1 relative overflow-y-auto overflow-x-hidden p-4 md:p-8 pb-24 md:pb-8">
+      <main className="flex-1 relative overflow-y-auto overflow-x-hidden overscroll-contain p-4 md:p-8 pb-24 md:pb-8">
         <div className="max-w-5xl mx-auto">
           {brainState?.mode === BrainMode.hyperfocus && (
             <div className="mb-4 flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/[0.04] px-3 py-2 text-xs text-muted-foreground">
