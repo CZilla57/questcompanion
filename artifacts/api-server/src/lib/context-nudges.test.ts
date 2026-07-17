@@ -219,3 +219,124 @@ describe("selectContextNudge — power_window", () => {
     expect(n?.kind).toBe("power_window");
   });
 });
+
+describe("selectContextNudge — quick_win", () => {
+  const fastErrands = patterns({
+    powerHours: [{ hour: 9, score: 5 }], // keep power_window away from hours 16–17
+    categoryMinutes: [{ category: "errands", medianActual: 6, count: 4 }],
+  });
+
+  it("fires in [16,18) with learned category-median copy", () => {
+    const n = selectContextNudge(inputs({ localHour: 16, patterns: fastErrands }));
+    expect(n?.kind).toBe("quick_win");
+    expect(n?.title).toBe("Quick win nearby ⏱️");
+    expect(n?.body).toBe("'Pay bills' — errands quests usually take you ~6 min. Sneak it in before dinner?");
+  });
+
+  it("requires count ≥ 3: a 2-sample category falls through to the estimate branch", () => {
+    const thin = patterns({
+      powerHours: [{ hour: 9, score: 5 }],
+      categoryMinutes: [{ category: "errands", medianActual: 6, count: 2 }],
+    });
+    const n = selectContextNudge(inputs({
+      localHour: 16, patterns: thin,
+      openQuests: [quest({ estimatedMinutes: 8 })],
+    }));
+    expect(n?.body).toBe("'Pay bills' is only ~8 min by your estimate. Sneak it in before dinner?");
+  });
+
+  it("requires median ≤ 10: a slow category does not qualify", () => {
+    const slow = patterns({
+      powerHours: [{ hour: 9, score: 5 }],
+      categoryMinutes: [{ category: "errands", medianActual: 11, count: 5 }],
+    });
+    expect(selectContextNudge(inputs({ localHour: 16, patterns: slow }))).toBeNull();
+  });
+
+  it("picks the smallest category median across quests, tie-broken by lowest id", () => {
+    const two = patterns({
+      powerHours: [{ hour: 9, score: 5 }],
+      categoryMinutes: [
+        { category: "errands", medianActual: 6, count: 4 },
+        { category: "self_care", medianActual: 4, count: 3 },
+      ],
+    });
+    const n = selectContextNudge(inputs({
+      localHour: 16, patterns: two,
+      openQuests: [quest({ id: 1 }), quest({ id: 2, title: "Stretch break", category: "self_care" })],
+    }));
+    expect(n?.body).toContain("'Stretch break'");
+    expect(n?.body).toContain("~4 min");
+  });
+
+  it("equal medians tie-break by lowest quest id", () => {
+    const tied = patterns({
+      powerHours: [{ hour: 9, score: 5 }],
+      categoryMinutes: [
+        { category: "errands", medianActual: 5, count: 4 },
+        { category: "self_care", medianActual: 5, count: 3 },
+      ],
+    });
+    const n = selectContextNudge(inputs({
+      localHour: 16, patterns: tied,
+      openQuests: [quest({ id: 8, category: "self_care", title: "Stretch break" }), quest({ id: 3 })],
+    }));
+    expect(n?.body).toContain("'Pay bills'");
+  });
+
+  it("estimate branch: fires only for estimates ≤ 10, lowest id first", () => {
+    const none = patterns({ powerHours: [{ hour: 9, score: 5 }], categoryMinutes: [] });
+    expect(selectContextNudge(inputs({
+      localHour: 16, patterns: none,
+      openQuests: [quest({ estimatedMinutes: 15 })],
+    }))).toBeNull();
+    const n = selectContextNudge(inputs({
+      localHour: 16, patterns: none,
+      openQuests: [quest({ id: 4, estimatedMinutes: 9 }), quest({ id: 2, title: "Take out trash", estimatedMinutes: 5 })],
+    }));
+    expect(n?.body).toBe("'Take out trash' is only ~5 min by your estimate. Sneak it in before dinner?");
+  });
+
+  it("null patterns → estimate branch still works", () => {
+    const n = selectContextNudge(inputs({
+      localHour: 17, patterns: null,
+      openQuests: [quest({ estimatedMinutes: 7 })],
+    }));
+    expect(n?.kind).toBe("quick_win");
+  });
+
+  it("silent when neither branch qualifies", () => {
+    expect(selectContextNudge(inputs({ localHour: 16, patterns: null }))).toBeNull();
+  });
+});
+
+describe("selectContextNudge — cross-kind priority and spacing", () => {
+  it("hour 19 collision: due_today beats a learned power hour of 19", () => {
+    const nineteen = patterns({ powerHours: [{ hour: 19, score: 9 }] });
+    const n = selectContextNudge(inputs({ localHour: 19, patterns: nineteen }));
+    expect(n?.kind).toBe("due_today");
+  });
+
+  it("hour 19 with no due-today quests falls through to a learned power hour of 19", () => {
+    const nineteen = patterns({ powerHours: [{ hour: 19, score: 9 }] });
+    const n = selectContextNudge(inputs({
+      localHour: 19, patterns: nineteen,
+      openQuests: [quest({ dueDate: null })],
+    }));
+    expect(n?.kind).toBe("power_window");
+  });
+
+  it("power_window beats quick_win when the learned hour is 16", () => {
+    const sixteen = patterns({
+      powerHours: [{ hour: 16, score: 9 }],
+      categoryMinutes: [{ category: "errands", medianActual: 6, count: 4 }],
+    });
+    const n = selectContextNudge(inputs({ localHour: 16, patterns: sixteen }));
+    expect(n?.kind).toBe("power_window");
+  });
+
+  it("an 18:30 send suppresses due_today for all of hour 19 (chronological spacing)", () => {
+    const n = selectContextNudge(inputs({ localHour: 19, contextNudgedAt: minAgo(30) }));
+    expect(n).toBeNull();
+  });
+});

@@ -114,9 +114,37 @@ function powerWindowNudge(inputs: ContextNudgeInputs): ContextNudge | null {
       };
 }
 
-// Implemented in later tasks.
-function quickWinNudge(_inputs: ContextNudgeInputs): ContextNudge | null {
-  return null;
+function quickWinNudge(inputs: ContextNudgeInputs): ContextNudge | null {
+  // Learned: this category reliably takes ≤10 real minutes (≥3 timed completions).
+  if (inputs.patterns) {
+    const fastCats = new Map(
+      inputs.patterns.categoryMinutes
+        .filter((c) => c.count >= QUICK_WIN_MIN_COUNT && c.medianActual <= QUICK_WIN_MEDIAN_MAX)
+        .map((c) => [c.category, c.medianActual]),
+    );
+    const candidates = inputs.openQuests
+      .filter((q) => fastCats.has(q.category))
+      .sort((a, b) => fastCats.get(a.category)! - fastCats.get(b.category)! || a.id - b.id);
+    const quest = candidates[0];
+    if (quest) {
+      const median = fastCats.get(quest.category)!;
+      return {
+        kind: "quick_win", title: "Quick win nearby ⏱️",
+        body: `'${quest.title}' — ${quest.category} quests usually take you ~${median} min. Sneak it in before dinner?`,
+        tag: "context-nudge", url: "/",
+      };
+    }
+  }
+  // Default: the user's own estimate says it's short.
+  const quest = lowestId(
+    inputs.openQuests.filter((q) => q.estimatedMinutes != null && q.estimatedMinutes <= QUICK_WIN_ESTIMATE_MAX),
+  );
+  if (!quest) return null;
+  return {
+    kind: "quick_win", title: "Quick win nearby ⏱️",
+    body: `'${quest.title}' is only ~${quest.estimatedMinutes} min by your estimate. Sneak it in before dinner?`,
+    tag: "context-nudge", url: "/",
+  };
 }
 
 /** At most ONE nudge per tick, or null. Pure; the full anti-shame envelope lives here. */
