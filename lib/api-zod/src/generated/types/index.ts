@@ -195,6 +195,7 @@ export * from './taskUpdateCategory';
 export * from './taskUpdatePriority';
 export * from './timezoneInput';
 export * from './transcribeResult';
+export * from './unsubscribeRecapEmailsOneClickParams';
 export * from './unsubscribeRecapEmailsParams';
 export * from './user';
 export * from './userBadge';

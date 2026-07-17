@@ -1886,6 +1886,10 @@ export type UnsubscribeRecapEmailsParams = {
 token: string;
 };
 
+export type UnsubscribeRecapEmailsOneClickParams = {
+token: string;
+};
+
 export type GetTasksParams = {
 /**
  * Filter by date (YYYY-MM-DD). Defaults to today.

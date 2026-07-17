@@ -402,6 +402,15 @@ export const UnsubscribeRecapEmailsQueryParams = zod.object({
 
 
 /**
+ * Same effect as the GET endpoint, exposed as a POST for mail clients that submit a form-encoded List-Unsubscribe=One-Click body per RFC 8058. The token is read from the query string only; the request body is never parsed. Not consumed by the app client.
+ * @summary RFC 8058 one-click unsubscribe (unauthenticated, tokenized)
+ */
+export const UnsubscribeRecapEmailsOneClickQueryParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+
+/**
  * @summary List tasks for the current user
  */
 export const GetTasksQueryParams = zod.object({

@@ -428,6 +428,28 @@ paths:
             text/html:
               schema:
                 type: string
+    post:
+      operationId: unsubscribeRecapEmailsOneClick
+      tags: [recaps]
+      summary: RFC 8058 one-click unsubscribe (unauthenticated, tokenized)
+      description: >-
+        Same effect as the GET endpoint, exposed as a POST for mail clients
+        that submit a form-encoded List-Unsubscribe=One-Click body per RFC
+        8058. The token is read from the query string only; the request body
+        is never parsed. Not consumed by the app client.
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Confirmation page
+          content:
+            text/html:
+              schema:
+                type: string
 
   /tasks:
     get:

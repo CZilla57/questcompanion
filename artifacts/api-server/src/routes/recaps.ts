@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response } from "express";
 import { and, desc, eq, isNotNull } from "drizzle-orm";
 import { db, usersTable, weeklyRecapsTable } from "@workspace/db";
 
@@ -58,7 +58,11 @@ const UNSUB_PAGE = `<!doctype html>
   </div>
 </body></html>`;
 
-router.get("/recaps/unsubscribe", async (req, res): Promise<void> => {
+// Shared by GET (link clicks) and POST (RFC 8058 one-click: mail clients
+// POST a form-encoded List-Unsubscribe=One-Click body to this same URL).
+// The token always lives in the query string on both verbs — the POST body
+// is never read.
+async function handleUnsubscribe(req: Request, res: Response): Promise<void> {
   const token = String(req.query.token ?? "");
   if (token) {
     await db.update(usersTable)
@@ -66,6 +70,9 @@ router.get("/recaps/unsubscribe", async (req, res): Promise<void> => {
       .where(eq(usersTable.recapUnsubscribeToken, token));
   }
   res.status(200).type("html").send(UNSUB_PAGE);
-});
+}
+
+router.get("/recaps/unsubscribe", handleUnsubscribe);
+router.post("/recaps/unsubscribe", handleUnsubscribe);
 
 export default router;

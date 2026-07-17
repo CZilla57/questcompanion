@@ -123,6 +123,7 @@ import type {
   TaskUpdate,
   TimezoneInput,
   TranscribeResult,
+  UnsubscribeRecapEmailsOneClickParams,
   UnsubscribeRecapEmailsParams,
   User,
   UserBadge,
@@ -1698,6 +1699,84 @@ export function useUnsubscribeRecapEmails<TData = Awaited<ReturnType<typeof unsu
 
 
 
+
+export const getUnsubscribeRecapEmailsOneClickUrl = (params: UnsubscribeRecapEmailsOneClickParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/recaps/unsubscribe?${stringifiedParams}` : `/api/recaps/unsubscribe`
+}
+
+/**
+ * Same effect as the GET endpoint, exposed as a POST for mail clients that submit a form-encoded List-Unsubscribe=One-Click body per RFC 8058. The token is read from the query string only; the request body is never parsed. Not consumed by the app client.
+ * @summary RFC 8058 one-click unsubscribe (unauthenticated, tokenized)
+ */
+export const unsubscribeRecapEmailsOneClick = async (params: UnsubscribeRecapEmailsOneClickParams, options?: RequestInit): Promise<string> => {
+
+  return customFetch<string>(getUnsubscribeRecapEmailsOneClickUrl(params),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getUnsubscribeRecapEmailsOneClickMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unsubscribeRecapEmailsOneClick>>, TError,{params: UnsubscribeRecapEmailsOneClickParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unsubscribeRecapEmailsOneClick>>, TError,{params: UnsubscribeRecapEmailsOneClickParams}, TContext> => {
+
+const mutationKey = ['unsubscribeRecapEmailsOneClick'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unsubscribeRecapEmailsOneClick>>, {params: UnsubscribeRecapEmailsOneClickParams}> = (props) => {
+          const {params} = props ?? {};
+
+          return  unsubscribeRecapEmailsOneClick(params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnsubscribeRecapEmailsOneClickMutationResult = NonNullable<Awaited<ReturnType<typeof unsubscribeRecapEmailsOneClick>>>
+
+    export type UnsubscribeRecapEmailsOneClickMutationError = ErrorType<unknown>
+
+    /**
+ * @summary RFC 8058 one-click unsubscribe (unauthenticated, tokenized)
+ */
+export const useUnsubscribeRecapEmailsOneClick = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unsubscribeRecapEmailsOneClick>>, TError,{params: UnsubscribeRecapEmailsOneClickParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unsubscribeRecapEmailsOneClick>>,
+        TError,
+        {params: UnsubscribeRecapEmailsOneClickParams},
+        TContext
+      > => {
+      return useMutation(getUnsubscribeRecapEmailsOneClickMutationOptions(options));
+    }
 
 export const getGetTasksUrl = (params?: GetTasksParams,) => {
   const normalizedParams = new URLSearchParams();
