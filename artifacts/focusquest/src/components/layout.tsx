@@ -232,8 +232,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* overflow-y-auto: the root is now viewport-height, so on short windows
-            the nav list must scroll inside the rail instead of clipping. */}
-        <nav className="flex-1 px-4 space-y-1 mt-8 md:mt-0 overflow-y-auto" aria-label="Main navigation">
+            the nav list must scroll inside the rail instead of clipping.
+            Mobile top margin includes the status-bar inset — the drawer spans the
+            full screen under a translucent status bar (viewport-fit=cover). */}
+        <nav className="flex-1 px-4 space-y-1 mt-[calc(env(safe-area-inset-top)+2rem)] md:mt-0 overflow-y-auto" aria-label="Main navigation">
           {allNavItems.map((item) => {
             const isActive = location === item.href;
             return (
@@ -266,7 +268,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="px-4 pb-6 pt-2 border-t border-border mt-2">
+        <div className="px-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] pt-2 border-t border-border mt-2">
           <TooltipProvider>
             <LogoutButton />
           </TooltipProvider>
