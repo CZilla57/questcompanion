@@ -23,6 +23,8 @@ plus the configuration split described below. Voice quick-add transcription
 
 > **Amendment 3 (2026-07-16):** the Testing section's route-level pins ("Gemini-only env ⇒ transcribe 503s while parse works", and the reverse) could not be implemented as written — the api-server has no route-test harness (all tests are pure-lib). The invariant is pinned at unit level instead: client.test.ts pins that GROQ_API_KEY alone does not enable isAiConfigured(), and transcribe-audio.test.ts pins that GEMINI_API_KEY alone does not enable isTranscriptionConfigured(). The tasks.ts gate wiring is covered by typecheck, the full suite, and live verification.
 
+> **Amendment 4 (2026-07-17):** first production day showed gemini-3.5-flash is overload-prone — Google-side 503s on the AI Studio dashboard plus >30s hangs in ~1/3 of live probes, while gemini-3.1-flash-lite probed 100% clean with the identical request shape. Default model changed to `gemini-3.1-flash-lite`; `GEMINI_MODEL` env override remains the upgrade path back to the flagship once it stabilizes.
+
 ## Changes
 
 ### 1. `lib/ai/client.ts` — provider swap

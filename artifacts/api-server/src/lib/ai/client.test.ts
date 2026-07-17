@@ -95,7 +95,7 @@ describe("generateJson", () => {
     await generateJson("prompt");
     const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toBe("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions");
-    expect(JSON.parse(init.body as string).model).toBe("gemini-3.5-flash");
+    expect(JSON.parse(init.body as string).model).toBe("gemini-3.1-flash-lite");
   });
 
   it("honors the GEMINI_MODEL override", async () => {
