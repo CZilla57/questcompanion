@@ -1,4 +1,7 @@
-const DEFAULT_MODEL = "gemini-3.5-flash";
+// 3.1-flash-lite over 3.5-flash: the flagship is overload-prone as of
+// 2026-07-17 (Google-side 503s, >30s hangs in ~1/3 of live probes) while
+// the lite GA sibling probed 100% clean. Upgrade path: set GEMINI_MODEL.
+const DEFAULT_MODEL = "gemini-3.1-flash-lite";
 // Gemini 3.5 Flash "thinks" before answering; small prompts usually return in
 // 2–6 s but the occasional slow response needs more headroom than Groq did.
 const REQUEST_TIMEOUT_MS = 30_000;
