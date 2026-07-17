@@ -1,4 +1,4 @@
-import { eq, and, gt, desc, gte, isNotNull } from "drizzle-orm";
+import { eq, and, gt, desc, gte, isNotNull, or, isNull, lte } from "drizzle-orm";
 import { db, tasksTable, usersTable, activityTable, pushSubscriptionsTable, focusSessionsTable, brainCheckinsTable, reflectionsTable } from "@workspace/db";
 import { sendPushNotification } from "./push-notifications";
 import { logger } from "./logger";
@@ -9,6 +9,9 @@ import { deriveBrainState } from "./brain-mode";
 import { resolveTimeZone, localHour, localDateKey, localDayStartUtc } from "./date-buckets";
 import { protectedStretch, selectProtectionNudge, type NudgeKind } from "./hyperfocus";
 import { shouldPromptReflection } from "./reflections";
+import { eligibleKinds, selectContextNudge } from "./context-nudges";
+import { derivePatterns } from "./patterns";
+import { loadPatternInputs } from "../routes/patterns";
 
 const DEFAULT_USER_ID = 1;
 
@@ -33,54 +36,66 @@ async function notify(userId: number, title: string, body: string, tag: string, 
   }
 }
 
-async function checkDueTasks() {
+async function checkContextNudges() {
   const now = new Date();
-  const today = now.toISOString().split("T")[0];
-  const currentHour = now.getHours();
-  const currentMinute = now.getMinutes();
+  const users = await db.select().from(usersTable);
+  for (const user of users) {
+    // One user's failure must not abort the pass; dedup gates make retries safe.
+    try {
+      const tz = resolveTimeZone(user.timezone ?? "");
+      const localToday = localDateKey(now, tz);
+      const gate = {
+        now,
+        localHour: localHour(now, tz),
+        localToday,
+        sentDates: {
+          dueToday: user.nudgeDueTodayDate,
+          powerWindow: user.nudgePowerWindowDate,
+          quickWin: user.nudgeQuickWinDate,
+        },
+        contextNudgedAt: user.contextNudgedAt,
+      };
+      const kinds = eligibleKinds(gate);
+      if (kinds.length === 0) continue;
 
-  if (currentHour < 7 || currentHour >= 22) return;
+      // Every kind needs an open quest — cheapest real query, gates the rest.
+      const openQuests = await db
+        .select({
+          id: tasksTable.id,
+          title: tasksTable.title,
+          dueDate: tasksTable.dueDate,
+          category: tasksTable.category,
+          estimatedMinutes: tasksTable.estimatedMinutes,
+          difficulty: tasksTable.difficulty,
+          priority: tasksTable.priority,
+        })
+        .from(tasksTable)
+        .where(and(
+          eq(tasksTable.userId, user.id),
+          eq(tasksTable.completed, false),
+          or(isNull(tasksTable.dueDate), lte(tasksTable.dueDate, localToday)),
+        ));
+      if (openQuests.length === 0) continue;
 
-  if (currentHour === 8 && currentMinute === 0) {
-    const pendingTasks = await db.select().from(tasksTable).where(
-      and(eq(tasksTable.dueDate, today), eq(tasksTable.completed, false), eq(tasksTable.userId, DEFAULT_USER_ID)),
-    );
-    if (pendingTasks.length > 0) {
-      await notify(
-        DEFAULT_USER_ID,
-        "Morning Quest Check",
-        `You have ${pendingTasks.length} quest${pendingTasks.length === 1 ? "" : "s"} to complete today. Let's go!`,
-        "morning-reminder",
-      );
-    }
-  }
+      // due_today alone needs no patterns; skip the 4 pattern queries then.
+      const needsPatterns = kinds.includes("power_window") || kinds.includes("quick_win");
+      const patterns = needsPatterns
+        ? derivePatterns(await loadPatternInputs(user.id, tz, now))
+        : null;
 
-  if (currentHour === 12 && currentMinute === 0) {
-    const pendingTasks = await db.select().from(tasksTable).where(
-      and(eq(tasksTable.dueDate, today), eq(tasksTable.completed, false), eq(tasksTable.userId, DEFAULT_USER_ID)),
-    );
-    if (pendingTasks.length > 0) {
-      await notify(
-        DEFAULT_USER_ID,
-        "Midday Check-in",
-        `Still ${pendingTasks.length} quest${pendingTasks.length === 1 ? "" : "s"} waiting. Afternoon push — you've got this.`,
-        "midday-reminder",
-      );
-    }
-  }
+      const nudge = selectContextNudge({ ...gate, patterns, openQuests });
+      if (!nudge) continue;
 
-  if (currentHour === 19 && currentMinute === 0) {
-    const allTasks = await db.select().from(tasksTable).where(
-      and(eq(tasksTable.dueDate, today), eq(tasksTable.userId, DEFAULT_USER_ID)),
-    );
-    const pending = allTasks.filter((t) => !t.completed);
-    if (pending.length > 0 && allTasks.length > 0) {
-      await notify(
-        DEFAULT_USER_ID,
-        "Evening Quest Warning",
-        `${pending.length} quest${pending.length === 1 ? "" : "s"} left today. Complete them all for the daily bonus!`,
-        "evening-reminder",
-      );
+      await notify(user.id, nudge.title, nudge.body, nudge.tag, { url: nudge.url });
+      const dateColumn =
+        nudge.kind === "due_today" ? { nudgeDueTodayDate: localToday }
+        : nudge.kind === "power_window" ? { nudgePowerWindowDate: localToday }
+        : { nudgeQuickWinDate: localToday };
+      await db.update(usersTable)
+        .set({ ...dateColumn, contextNudgedAt: now })
+        .where(eq(usersTable.id, user.id));
+    } catch (err) {
+      logger.error({ err, userId: user.id }, "Context-nudge pass failed for user");
     }
   }
 }
@@ -320,8 +335,8 @@ export async function tick() {
   await spawnRecurringTasks();
   ran.push("recurring-tasks");
 
-  await checkDueTasks();
-  ran.push("check-due-tasks");
+  await checkContextNudges();
+  ran.push("context-nudges");
 
   await sendDailySummary();
   ran.push("daily-summary");
