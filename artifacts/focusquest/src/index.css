@@ -184,6 +184,11 @@
 }
 
 @layer utilities {
+  /* Referenced by the mobile bottom nav; was previously undefined, so the bar
+     sat flush under the iPhone home indicator (viewport-fit=cover). */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
   input[type="search"]::-webkit-search-cancel-button {
     @apply hidden;
   }
