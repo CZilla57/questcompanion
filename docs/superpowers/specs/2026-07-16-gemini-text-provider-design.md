@@ -17,13 +17,15 @@ difficulty variants, evening reflection), so the swap is contained to that file
 plus the configuration split described below. Voice quick-add transcription
 (`transcribe-audio.ts`) keeps calling Groq Whisper unchanged.
 
+> **Amendment (2026-07-16):** the spec originally named gemini-2.5-flash; that model returns 404 ("no longer available to new users") for newly issued API keys. Live-probed and replaced with its GA successor gemini-3.5-flash, verified to honor strict JSON mode with this exact request shape.
+
 ## Changes
 
 ### 1. `lib/ai/client.ts` — provider swap
 
 - URL: `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`
 - Auth: `authorization: Bearer ${GEMINI_API_KEY}` (unchanged header mechanism).
-- Model: `process.env.GEMINI_MODEL || "gemini-2.5-flash"`.
+- Model: `process.env.GEMINI_MODEL || "gemini-3.5-flash"`.
 - `isAiConfigured()` returns `Boolean(process.env.GEMINI_API_KEY)`.
 - `REQUEST_TIMEOUT_MS`: 15_000 → 30_000. Gemini 2.5 Flash performs internal
   "thinking" before responding; small prompts typically return in 2–6 s, but the
@@ -55,7 +57,7 @@ follow the new Gemini check with no code change.
 
 ### 4. Environment
 
-- `.env.example`: add `GEMINI_API_KEY=` and `GEMINI_MODEL=gemini-2.5-flash`;
+- `.env.example`: add `GEMINI_API_KEY=` and `GEMINI_MODEL=gemini-3.5-flash`;
   keep `GROQ_API_KEY=` annotated as voice-transcription-only; remove
   `GROQ_MODEL` (no longer read by anything).
 - Chad adds the real `GEMINI_API_KEY` to local `.env` and to Render's

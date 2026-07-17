@@ -6,16 +6,16 @@
 
 **Architecture:** `generateJson()` in `artifacts/api-server/src/lib/ai/client.ts` is the single seam for all five text-AI features, so the provider swap is a URL/env/model change inside that one function. Transcription (`transcribe-audio.ts`) keeps calling Groq and gains its own `isTranscriptionConfigured()` gate; the transcribe route switches to it so the two keys can't cross-wire.
 
-**Tech Stack:** Node/Express API (`@workspace/api-server`), vitest, Gemini OpenAI-compatible chat completions (`gemini-2.5-flash`), Groq Whisper (`whisper-large-v3-turbo`).
+**Tech Stack:** Node/Express API (`@workspace/api-server`), vitest, Gemini OpenAI-compatible chat completions (`gemini-3.5-flash`), Groq Whisper (`whisper-large-v3-turbo`).
 
 **Spec:** `docs/superpowers/specs/2026-07-16-gemini-text-provider-design.md`
 
 ## Global Constraints
 
-- Text-AI env vars: `GEMINI_API_KEY` (required), `GEMINI_MODEL` (optional, default `gemini-2.5-flash`).
+- Text-AI env vars: `GEMINI_API_KEY` (required), `GEMINI_MODEL` (optional, default `gemini-3.5-flash`).
 - Voice env var: `GROQ_API_KEY` — used ONLY by `transcribe-audio.ts`. `GROQ_MODEL` is retired.
 - Gemini endpoint: `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`, Bearer auth, `response_format: {type:"json_object"}`, `temperature: 0.7` — request shape otherwise unchanged from the Groq version.
-- Text-call timeout: 30_000 ms (raised from 15_000 — Gemini 2.5 Flash thinks before answering).
+- Text-call timeout: 30_000 ms (raised from 15_000 — Gemini 3.5 Flash thinks before answering).
 - Anti-shame degradation is preserved: missing key ⇒ route returns 503 ⇒ existing client toasts; never crash.
 - Never print, log, or commit API key values. The user manages `.env` and Render values.
 - All commits on branch `feat/gemini-text-provider`, message style `feat(api): …` / `test(api): …`, each ending with `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`.
@@ -89,7 +89,7 @@ describe("generateJson", () => {
     await generateJson("prompt");
     const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toBe("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions");
-    expect(JSON.parse(init.body as string).model).toBe("gemini-2.5-flash");
+    expect(JSON.parse(init.body as string).model).toBe("gemini-3.5-flash");
   });
 
   it("honors the GEMINI_MODEL override", async () => {
@@ -154,8 +154,8 @@ Expected: FAIL — `isAiConfigured` tests fail (still reads `GROQ_API_KEY`), URL
 Replace the entire contents of `artifacts/api-server/src/lib/ai/client.ts` with:
 
 ```ts
-const DEFAULT_MODEL = "gemini-2.5-flash";
-// Gemini 2.5 Flash "thinks" before answering; small prompts usually return in
+const DEFAULT_MODEL = "gemini-3.5-flash";
+// Gemini 3.5 Flash "thinks" before answering; small prompts usually return in
 // 2–6 s but the occasional slow response needs more headroom than Groq did.
 const REQUEST_TIMEOUT_MS = 30_000;
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
@@ -355,8 +355,8 @@ with:
 # When unset, text-AI features (smart parse, breakdown, questline drafting,
 # difficulty variants, reflection) return 503 and the app runs normally.
 GEMINI_API_KEY=
-# Optional model override (default: gemini-2.5-flash)
-GEMINI_MODEL=gemini-2.5-flash
+# Optional model override (default: gemini-3.5-flash)
+GEMINI_MODEL=gemini-3.5-flash
 
 # ── AI — voice transcription (Groq Whisper) ──────────────
 # Free API key (no credit card) from https://console.groq.com/keys

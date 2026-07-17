@@ -1,5 +1,5 @@
-const DEFAULT_MODEL = "gemini-2.5-flash";
-// Gemini 2.5 Flash "thinks" before answering; small prompts usually return in
+const DEFAULT_MODEL = "gemini-3.5-flash";
+// Gemini 3.5 Flash "thinks" before answering; small prompts usually return in
 // 2–6 s but the occasional slow response needs more headroom than Groq did.
 const REQUEST_TIMEOUT_MS = 30_000;
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
