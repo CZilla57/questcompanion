@@ -1,5 +1,14 @@
 import { AiClientError } from "./client";
 
+/**
+ * Voice transcription runs on Groq Whisper independently of the Gemini text
+ * provider — this gate must NOT follow isAiConfigured() (client.ts), or a
+ * Gemini-only deployment would advertise voice input it can't deliver.
+ */
+export function isTranscriptionConfigured(): boolean {
+  return Boolean(process.env.GROQ_API_KEY);
+}
+
 const GROQ_TRANSCRIPTION_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
 const TRANSCRIPTION_MODEL = "whisper-large-v3-turbo";
 const REQUEST_TIMEOUT_MS = 15_000;

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { transcribeAudio, audioExtensionFor } from "./transcribe-audio";
+import { transcribeAudio, audioExtensionFor, isTranscriptionConfigured } from "./transcribe-audio";
 import { AiClientError } from "./client";
 
 function groqTranscription(text: string): Response {
@@ -42,6 +42,21 @@ describe("audioExtensionFor", () => {
     expect(audioExtensionFor("text/plain")).toBeNull();
     expect(audioExtensionFor("audio/ogg")).toBeNull();
     expect(audioExtensionFor("")).toBeNull();
+  });
+});
+
+describe("isTranscriptionConfigured", () => {
+  it("reflects presence of GROQ_API_KEY", () => {
+    vi.stubEnv("GROQ_API_KEY", "x");
+    expect(isTranscriptionConfigured()).toBe(true);
+    vi.stubEnv("GROQ_API_KEY", "");
+    expect(isTranscriptionConfigured()).toBe(false);
+  });
+
+  it("ignores GEMINI_API_KEY — voice runs on Groq", () => {
+    vi.stubEnv("GROQ_API_KEY", "");
+    vi.stubEnv("GEMINI_API_KEY", "x");
+    expect(isTranscriptionConfigured()).toBe(false);
   });
 });
 
