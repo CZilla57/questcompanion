@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import * as oidc from "openid-client";
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
@@ -8,6 +9,7 @@ import {
 } from "@workspace/api-zod";
 import { db, usersTable, tasksTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { resolveEmailCapture } from "../lib/weekly-recap";
 import { buildStarterQuestRows } from "../lib/starter-quests";
 import { logger } from "../lib/logger";
 import {
@@ -72,12 +74,16 @@ async function upsertGameUser(claims: Record<string, unknown>): Promise<{ id: nu
   const externalId = String(claims.sub);
 
   const [existing] = await db
-    .select({ id: usersTable.id })
+    .select({ id: usersTable.id, email: usersTable.email, recapUnsubscribeToken: usersTable.recapUnsubscribeToken })
     .from(usersTable)
     .where(eq(usersTable.externalId, externalId));
 
   if (existing) {
-    return existing;
+    const capture = resolveEmailCapture(claims.email, existing, randomUUID);
+    if (capture) {
+      await db.update(usersTable).set(capture).where(eq(usersTable.id, existing.id));
+    }
+    return { id: existing.id };
   }
 
   let username = generateUsername(claims);
@@ -92,9 +98,10 @@ async function upsertGameUser(claims: Record<string, unknown>): Promise<{ id: nu
     attempts++;
   }
 
+  const capture = resolveEmailCapture(claims.email, { email: null, recapUnsubscribeToken: null }, randomUUID);
   const [created] = await db
     .insert(usersTable)
-    .values({ externalId, username })
+    .values({ externalId, username, ...(capture ?? {}) })
     .returning({ id: usersTable.id });
 
   await seedStarterQuests(created.id);
