@@ -129,8 +129,11 @@ may claim a rhythm only at `ok` confidence; default copy makes no pattern claims
 | `due_today` | Still time for a win 🌙 | "N quest(s) due today are still open — even one keeps the momentum. Clear them all for the daily bonus!" (singular variant: "'[Quest]' is due today and still open — one small push keeps the momentum. Daily bonus if you clear it!") |
 | `power_window` (learned) | Power window open ⚡ | "This is usually your strongest hour. '[Quest]' would fit great right now." |
 | `power_window` (default) | Fresh start ☀️ | "'[Quest]' is ready when you are — mornings are for momentum." |
-| `quick_win` (learned) | Quick win nearby ⏱️ | "'[Quest]' — [category] quests usually take you ~N min. Sneak it in before dinner?" |
+| `quick_win` (learned) | Quick win nearby ⏱️ | "'[Quest]' — [category label, lowercased] quests usually take you ~N min. Sneak it in before dinner?" |
 | `quick_win` (default) | Quick win nearby ⏱️ | "'[Quest]' is only ~N min by your estimate. Sneak it in before dinner?" |
+
+The category token renders via CATEGORY_LABELS (auto-points), lowercased, falling back to
+the raw category.
 
 All three use push tag **`context-nudge`** (a newer nudge replaces an older one in the
 notification tray — never a pile) and `data.url: "/"` (Today board).

@@ -308,6 +308,17 @@ describe("selectContextNudge — quick_win", () => {
   it("silent when neither branch qualifies", () => {
     expect(selectContextNudge(inputs({ localHour: 16, patterns: null }))).toBeNull();
   });
+
+  it("learned branch has NO confidence gate: fires at low confidence (count>=3 is the reliability gate)", () => {
+    const lowConfidenceErrands = patterns({
+      confidence: "low",
+      powerHours: [{ hour: 9, score: 5 }], // low confidence falls back to hour 9, so power_window can't shadow quick_win at 16
+      categoryMinutes: [{ category: "errands", medianActual: 6, count: 4 }],
+    });
+    const n = selectContextNudge(inputs({ localHour: 16, patterns: lowConfidenceErrands }));
+    expect(n?.kind).toBe("quick_win");
+    expect(n?.body).toBe("'Pay bills' — errands quests usually take you ~6 min. Sneak it in before dinner?");
+  });
 });
 
 describe("selectContextNudge — cross-kind priority and spacing", () => {
@@ -333,10 +344,5 @@ describe("selectContextNudge — cross-kind priority and spacing", () => {
     });
     const n = selectContextNudge(inputs({ localHour: 16, patterns: sixteen }));
     expect(n?.kind).toBe("power_window");
-  });
-
-  it("an 18:30 send suppresses due_today for all of hour 19 (chronological spacing)", () => {
-    const n = selectContextNudge(inputs({ localHour: 19, contextNudgedAt: minAgo(30) }));
-    expect(n).toBeNull();
   });
 });

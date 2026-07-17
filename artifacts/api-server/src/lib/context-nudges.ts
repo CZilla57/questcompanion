@@ -1,5 +1,6 @@
 import type { PatternSummary } from "./patterns";
 import { isBigSwing, inPowerWindow } from "./steering";
+import { CATEGORY_LABELS } from "./auto-points";
 
 // Anti-shame envelope + per-kind windows (spec §3). All hours are the USER's
 // local hours; the scheduler resolves them per user before calling in.
@@ -128,9 +129,10 @@ function quickWinNudge(inputs: ContextNudgeInputs): ContextNudge | null {
     const quest = candidates[0];
     if (quest) {
       const median = fastCats.get(quest.category)!;
+      const label = (CATEGORY_LABELS[quest.category] ?? quest.category).toLowerCase();
       return {
         kind: "quick_win", title: "Quick win nearby ⏱️",
-        body: `'${quest.title}' — ${quest.category} quests usually take you ~${median} min. Sneak it in before dinner?`,
+        body: `'${quest.title}' — ${label} quests usually take you ~${median} min. Sneak it in before dinner?`,
         tag: "context-nudge", url: "/",
       };
     }
