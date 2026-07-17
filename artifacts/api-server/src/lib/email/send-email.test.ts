@@ -29,7 +29,7 @@ describe("isRecapEmailConfigured", () => {
 });
 
 describe("sendEmail", () => {
-  it("POSTs the Resend shape with bearer auth and List-Unsubscribe", async () => {
+  it("POSTs the Resend shape with bearer auth, List-Unsubscribe, and one-click header", async () => {
     process.env.RESEND_API_KEY = "re_123";
     process.env.EMAIL_FROM = "FocusQuest <recap@getfocusquest.com>";
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({ id: "1" }), { status: 200 }));
@@ -51,8 +51,38 @@ describe("sendEmail", () => {
       subject: "S",
       html: "<p>H</p>",
       text: "T",
-      headers: { "List-Unsubscribe": "<https://getfocusquest.com/api/recaps/unsubscribe?token=t1>" },
+      headers: {
+        "List-Unsubscribe": "<https://getfocusquest.com/api/recaps/unsubscribe?token=t1>",
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      },
     });
+  });
+
+  it("sends an Idempotency-Key header when provided, as belt-and-braces against duplicate sends", async () => {
+    process.env.RESEND_API_KEY = "re_123";
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ id: "1" }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await sendEmail({
+      to: "a@b.com", subject: "S", html: "<p>H</p>", text: "T",
+      idempotencyKey: "recap-42-2026-W29",
+    });
+
+    const [, init] = fetchMock.mock.calls[0]! as unknown as [string, RequestInit];
+    expect((init.headers as Record<string, string>)["Idempotency-Key"]).toBe("recap-42-2026-W29");
+  });
+
+  it("omits List-Unsubscribe headers and Idempotency-Key when not provided", async () => {
+    process.env.RESEND_API_KEY = "re_123";
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ id: "1" }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await sendEmail({ to: "a@b.com", subject: "S", html: "<p>H</p>", text: "T" });
+
+    const [, init] = fetchMock.mock.calls[0]! as unknown as [string, RequestInit];
+    expect((init.headers as Record<string, string>)["Idempotency-Key"]).toBeUndefined();
+    const body = JSON.parse(init.body as string);
+    expect(body.headers).toBeUndefined();
   });
 
   it("throws EmailError on non-2xx and on missing key", async () => {

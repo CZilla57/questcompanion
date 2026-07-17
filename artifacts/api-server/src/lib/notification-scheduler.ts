@@ -344,6 +344,11 @@ async function spawnRecurringTasks() {
 
 const APP_ORIGIN = process.env.APP_ORIGIN || "https://getfocusquest.com";
 
+// Caps expensive generation work (stat queries + LLM draft) per tick. Keeps
+// the every-minute tick well under the cron caller's ~30s window; remaining
+// users are picked up by subsequent in-window ticks (spec §4 resume machine).
+const MAX_GENERATE_PER_TICK = 3;
+
 /** Raw rows for the closed local week. Personal stats use the user's local
  * Mon 00:00 → next Mon 00:00 instants; the World Boss block keys on the UTC
  * ISO week (how boss data is stored) — the 0-12h boundary mismatch is an
@@ -367,6 +372,9 @@ async function loadWeekStatsInputs(userId: number, tz: string, week: LocalWeek, 
     .where(and(
       eq(focusSessionsTable.userId, userId),
       gte(focusSessionsTable.startedAt, startUtc), lt(focusSessionsTable.startedAt, endUtc),
+      // Opened-and-abandoned sessions (0 focused seconds) are not signal —
+      // mirrors the reflections pass's completedIntervals gate.
+      gt(focusSessionsTable.focusedSeconds, 0),
     ));
 
   const activityRows = await db
@@ -441,6 +449,7 @@ async function loadWeekStatsInputs(userId: number, tz: string, week: LocalWeek, 
 async function checkWeeklyRecaps() {
   const now = new Date();
   const users = await db.select().from(usersTable);
+  let generated = 0;
   for (const user of users) {
     try {
       if (!user.timezone) continue; // no tz ⇒ no local Monday (spec §4)
@@ -469,8 +478,15 @@ async function checkWeeklyRecaps() {
       let narrative = row.narrative;
 
       if (recapAction(row) === "generate") {
+        // Per-tick cap on expensive generation (stat fan-out + LLM draft).
+        // Send-only resumes below are NOT capped. The row stays claimed but
+        // ungenerated — leave it for the next tick, the resume machine picks
+        // it back up via recapAction (spec §4).
+        if (generated >= MAX_GENERATE_PER_TICK) continue;
+
         const inputs = await loadWeekStatsInputs(user.id, tz, week, now);
         stats = buildWeekStats(inputs);
+        generated++;
         if (isZeroSignal(stats)) {
           // Anti-shame silent skip: no email, no "quiet week" message, ever.
           await db.update(weeklyRecapsTable).set({ stats, skipped: true })
@@ -491,10 +507,28 @@ async function checkWeeklyRecaps() {
       if (!isRecapEmailConfigured() || !user.email || !user.recapEmailsEnabled || !user.recapUnsubscribeToken) continue;
       if (!stats || !subject || !narrative) continue;
 
+      // Atomic claim before send: two overlapping ticks (e.g. a slow generate
+      // straddling a cron boundary) must not both dispatch the same email.
+      // Mirrors the reflections first-answer claim (routes/reflections.ts).
+      const claimedSend = await db.update(weeklyRecapsTable)
+        .set({ sentAt: now })
+        .where(and(eq(weeklyRecapsTable.id, row.id), isNull(weeklyRecapsTable.sentAt)))
+        .returning({ id: weeklyRecapsTable.id });
+      if (claimedSend.length === 0) continue; // another tick already owns this send
+
       const unsubscribeUrl = `${APP_ORIGIN}/api/recaps/unsubscribe?token=${user.recapUnsubscribeToken}`;
       const { html, text } = renderRecapEmail(stats, narrative, unsubscribeUrl);
-      await sendEmail({ to: user.email, subject, html, text, unsubscribeUrl });
-      await db.update(weeklyRecapsTable).set({ sentAt: now }).where(eq(weeklyRecapsTable.id, row.id));
+      try {
+        await sendEmail({
+          to: user.email, subject, html, text, unsubscribeUrl,
+          idempotencyKey: `recap-${user.id}-${week.weekKey}`,
+        });
+      } catch (err) {
+        // Best-effort un-claim so the next tick retries the send; rethrow so
+        // the per-user catch below still logs the failure.
+        await db.update(weeklyRecapsTable).set({ sentAt: null }).where(eq(weeklyRecapsTable.id, row.id));
+        throw err;
+      }
     } catch (err) {
       logger.error({ err, userId: user.id }, "Weekly-recap pass failed for user");
     }

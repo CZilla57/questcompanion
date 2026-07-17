@@ -21,6 +21,9 @@ export async function sendEmail(input: {
   html: string;
   text: string;
   unsubscribeUrl?: string;
+  /** Resend dedupes on this within a rolling window — belt-and-braces
+   * alongside the DB-side atomic send claim in notification-scheduler.ts. */
+  idempotencyKey?: string;
 }): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) throw new EmailError("RESEND_API_KEY is not set");
@@ -32,6 +35,7 @@ export async function sendEmail(input: {
       headers: {
         "content-type": "application/json",
         authorization: `Bearer ${apiKey}`,
+        ...(input.idempotencyKey ? { "Idempotency-Key": input.idempotencyKey } : {}),
       },
       body: JSON.stringify({
         from: process.env.EMAIL_FROM || DEFAULT_FROM,
@@ -40,7 +44,12 @@ export async function sendEmail(input: {
         html: input.html,
         text: input.text,
         ...(input.unsubscribeUrl
-          ? { headers: { "List-Unsubscribe": `<${input.unsubscribeUrl}>` } }
+          ? {
+              headers: {
+                "List-Unsubscribe": `<${input.unsubscribeUrl}>`,
+                "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+              },
+            }
           : {}),
       }),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
