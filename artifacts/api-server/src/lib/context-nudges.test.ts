@@ -126,3 +126,96 @@ describe("selectContextNudge — due_today", () => {
     expect(selectContextNudge(inputs({ localHour: 19, contextNudgedAt: minAgo(30) }))).toBeNull();
   });
 });
+
+import type { PatternSummary } from "./patterns";
+
+function patterns(over: Partial<PatternSummary> = {}): PatternSummary {
+  return {
+    windowDays: 28,
+    sampleSize: { completions: 20, focusMinutes: 300, checkins: 5, reflections: 4 },
+    confidence: "ok",
+    powerHours: [{ hour: 14, score: 8 }, { hour: 9, score: 5 }, { hour: 20, score: 3 }],
+    bestDay: null,
+    medianQuestMinutes: null,
+    categoryMinutes: [],
+    modeByBlock: [],
+    topHelpers: [],
+    topBlockers: [],
+    ...over,
+  };
+}
+
+describe("selectContextNudge — power_window", () => {
+  it("fires at the top learned power hour with learned copy at ok confidence", () => {
+    const n = selectContextNudge(inputs({ localHour: 14, patterns: patterns() }));
+    expect(n?.kind).toBe("power_window");
+    expect(n?.title).toBe("Power window open ⚡");
+    expect(n?.body).toBe("This is usually your strongest hour. 'Pay bills' would fit great right now.");
+  });
+
+  it("does NOT fire at a lower-scored power hour", () => {
+    expect(selectContextNudge(inputs({ localHour: 20, patterns: patterns() }))).toBeNull();
+  });
+
+  it("falls back to 9:00 default with default copy below ok confidence", () => {
+    const low = patterns({ confidence: "low" });
+    expect(selectContextNudge(inputs({ localHour: 14, patterns: low }))).toBeNull();
+    const n = selectContextNudge(inputs({ localHour: 9, patterns: low }));
+    expect(n?.kind).toBe("power_window");
+    expect(n?.title).toBe("Fresh start ☀️");
+    expect(n?.body).toBe("'Pay bills' is ready when you are — mornings are for momentum.");
+  });
+
+  it("falls back to 9:00 default when patterns are null or powerHours empty", () => {
+    expect(selectContextNudge(inputs({ localHour: 9, patterns: null }))?.kind).toBe("power_window");
+    const empty = patterns({ powerHours: [] });
+    expect(selectContextNudge(inputs({ localHour: 9, patterns: empty }))?.kind).toBe("power_window");
+  });
+
+  it("skips an out-of-envelope top hour and uses the next-best in-envelope power hour, still learned", () => {
+    const night = patterns({ powerHours: [{ hour: 23, score: 9 }, { hour: 10, score: 4 }] });
+    const n = selectContextNudge(inputs({ localHour: 10, patterns: night }));
+    expect(n?.kind).toBe("power_window");
+    expect(n?.title).toBe("Power window open ⚡");
+    expect(selectContextNudge(inputs({ localHour: 23, patterns: night }))).toBeNull(); // envelope
+  });
+
+  it("uses the 9:00 default when ALL power hours are out of envelope", () => {
+    const allNight = patterns({ powerHours: [{ hour: 23, score: 9 }, { hour: 2, score: 4 }] });
+    const n = selectContextNudge(inputs({ localHour: 9, patterns: allNight }));
+    expect(n?.title).toBe("Fresh start ☀️");
+  });
+
+  it("prefers the big-swing quest (hard difficulty), tie-broken by lowest id", () => {
+    const quests = [
+      quest({ id: 3, title: "Fold laundry" }),
+      quest({ id: 5, title: "Write report", difficulty: "hard" }),
+      quest({ id: 9, title: "Tax forms", difficulty: "hard" }),
+    ];
+    const n = selectContextNudge(inputs({ localHour: 14, patterns: patterns(), openQuests: quests }));
+    expect(n?.body).toContain("'Write report'");
+  });
+
+  it("treats high priority and ≥25-min estimates as big swings too", () => {
+    const byPriority = [quest({ id: 2 }), quest({ id: 4, title: "Call landlord", priority: "high" })];
+    expect(selectContextNudge(inputs({ localHour: 14, patterns: patterns(), openQuests: byPriority }))?.body)
+      .toContain("'Call landlord'");
+    const byEstimate = [quest({ id: 2 }), quest({ id: 4, title: "Deep clean", estimatedMinutes: 30 })];
+    expect(selectContextNudge(inputs({ localHour: 14, patterns: patterns(), openQuests: byEstimate }))?.body)
+      .toContain("'Deep clean'");
+  });
+
+  it("falls back to the lowest-id open quest when nothing is a big swing", () => {
+    const quests = [quest({ id: 7, title: "Water plants" }), quest({ id: 3, title: "Dishes" })];
+    const n = selectContextNudge(inputs({ localHour: 14, patterns: patterns(), openQuests: quests }));
+    expect(n?.body).toContain("'Dishes'");
+  });
+
+  it("counts anchored (null dueDate) quests as nudgeable", () => {
+    const n = selectContextNudge(inputs({
+      localHour: 14, patterns: patterns(),
+      openQuests: [quest({ dueDate: null })],
+    }));
+    expect(n?.kind).toBe("power_window");
+  });
+});

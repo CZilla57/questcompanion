@@ -1,4 +1,5 @@
 import type { PatternSummary } from "./patterns";
+import { isBigSwing, inPowerWindow } from "./steering";
 
 // Anti-shame envelope + per-kind windows (spec §3). All hours are the USER's
 // local hours; the scheduler resolves them per user before calling in.
@@ -85,10 +86,35 @@ function dueTodayNudge(inputs: ContextNudgeInputs): ContextNudge | null {
   return { kind: "due_today", title: "Still time for a win 🌙", body, tag: "context-nudge", url: "/" };
 }
 
-// Implemented in later tasks.
-function powerWindowNudge(_inputs: ContextNudgeInputs): ContextNudge | null {
-  return null;
+/** Learned target only at ok confidence; powerHours arrive sorted score desc,
+ * hour asc, so the first in-envelope entry is the best eligible one. */
+function powerWindowTarget(patterns: PatternSummary | null): { hour: number; learned: boolean } {
+  if (!patterns || patterns.confidence !== "ok" || patterns.powerHours.length === 0) {
+    return { hour: DEFAULT_POWER_HOUR, learned: false };
+  }
+  const best = patterns.powerHours.find((p) => p.hour >= ENVELOPE_START && p.hour < ENVELOPE_END);
+  return best ? { hour: best.hour, learned: true } : { hour: DEFAULT_POWER_HOUR, learned: false };
 }
+
+function powerWindowNudge(inputs: ContextNudgeInputs): ContextNudge | null {
+  const target = powerWindowTarget(inputs.patterns);
+  if (!inPowerWindow(inputs.localHour, [{ hour: target.hour }])) return null;
+  const quest = lowestId(inputs.openQuests.filter(isBigSwing)) ?? lowestId(inputs.openQuests);
+  if (!quest) return null;
+  return target.learned
+    ? {
+        kind: "power_window", title: "Power window open ⚡",
+        body: `This is usually your strongest hour. '${quest.title}' would fit great right now.`,
+        tag: "context-nudge", url: "/",
+      }
+    : {
+        kind: "power_window", title: "Fresh start ☀️",
+        body: `'${quest.title}' is ready when you are — mornings are for momentum.`,
+        tag: "context-nudge", url: "/",
+      };
+}
+
+// Implemented in later tasks.
 function quickWinNudge(_inputs: ContextNudgeInputs): ContextNudge | null {
   return null;
 }
