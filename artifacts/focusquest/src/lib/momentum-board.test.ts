@@ -77,6 +77,26 @@ describe("momentumBoardState", () => {
     expect(s).toEqual({ kind: "all-done", suggestion: null });
   });
 
+  it("never offers a quest the task list reports done, even if the suggestion snapshot lags", () => {
+    // Momentum cache is heavier and refetches slower than the task list, so a
+    // suggestion can still say completed:false for a quest already finished.
+    const doneInList = task({ completed: true });
+    const staleSuggestion = sugg(task({ id: doneInList.id, completed: false }));
+    const open = task();
+    const s = momentumBoardState([doneInList, open], [staleSuggestion, sugg(open)], TODAY);
+    expect(s.kind).toBe("suggesting");
+    if (s.kind === "suggesting") {
+      expect(s.suggestion?.task.id).toBe(open.id);
+    }
+  });
+
+  it("falls back to all-done when the only suggestion is stale-open but done in the list", () => {
+    const donePin = task({ isDailyFocus: true, focusDate: TODAY, completed: true });
+    const staleSuggestion = sugg(task({ id: donePin.id, completed: false }));
+    const s = momentumBoardState([donePin], [staleSuggestion], TODAY);
+    expect(s).toEqual({ kind: "all-done", suggestion: null });
+  });
+
   it("suggesting with pins but exhausted suggestions keeps the pinned list", () => {
     const open = task({ isDailyFocus: true, focusDate: TODAY });
     const s = momentumBoardState([open], [], TODAY);
