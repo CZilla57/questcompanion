@@ -1,4 +1,5 @@
 import { containsGuiltLanguage, type GenerateJson } from "./reflection";
+import { chipLabel } from "../chip-labels";
 import type { WeekStats } from "@workspace/db";
 
 export const MAX_NARRATIVE_LENGTH = 600;
@@ -26,7 +27,7 @@ export function buildRecapPrompt(stats: WeekStats): string {
   if (stats.rhythms) {
     if (stats.rhythms.powerHours.length > 0) facts.push(`Historically strong hours (24h local): ${stats.rhythms.powerHours.join(", ")}`);
     if (stats.rhythms.bestDay != null) facts.push(`Historically strongest day: ${DAY_NAMES[stats.rhythms.bestDay]}`);
-    if (stats.rhythms.topHelpers.length > 0) facts.push(`Things that usually help them: ${stats.rhythms.topHelpers.join(", ")}`);
+    if (stats.rhythms.topHelpers.length > 0) facts.push(`Things that usually help them: ${stats.rhythms.topHelpers.map(chipLabel).join(", ")}`);
   }
 
   return `You write a SHORT weekly recap (2-3 sentences) for a person with ADHD, based on last week's wins below.

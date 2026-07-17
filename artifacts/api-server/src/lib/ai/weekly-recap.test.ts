@@ -45,6 +45,16 @@ describe("buildRecapPrompt", () => {
     expect(prompt).toContain("9, 14");
     expect(prompt).toContain("Tuesday");
   });
+
+  it("renders topHelpers as human labels, never raw chip keys — the model must never see enum values", () => {
+    const prompt = buildRecapPrompt(stats({
+      rhythms: { powerHours: [], bestDay: null, topHelpers: ["small_steps", "body_double"] },
+    }));
+    expect(prompt).toContain("Small steps");
+    expect(prompt).toContain("Someone with me");
+    expect(prompt).not.toContain("small_steps");
+    expect(prompt).not.toContain("body_double");
+  });
 });
 
 describe("fallbackNarrative", () => {

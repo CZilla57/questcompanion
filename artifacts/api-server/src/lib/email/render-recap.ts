@@ -1,4 +1,5 @@
 import type { WeekStats } from "@workspace/db";
+import { chipLabel } from "../chip-labels";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -29,7 +30,7 @@ function rhythmLines(stats: WeekStats): string[] {
   const lines: string[] = [];
   if (stats.rhythms.powerHours.length > 0) lines.push(`Power hours: ${stats.rhythms.powerHours.map((h) => `${h}:00`).join(", ")}`);
   if (stats.rhythms.bestDay != null) lines.push(`Strongest day: ${DAY_NAMES[stats.rhythms.bestDay]}`);
-  if (stats.rhythms.topHelpers.length > 0) lines.push(`What helps you: ${stats.rhythms.topHelpers.join(", ")}`);
+  if (stats.rhythms.topHelpers.length > 0) lines.push(`What helps you: ${stats.rhythms.topHelpers.map(chipLabel).join(", ")}`);
   return lines;
 }
 

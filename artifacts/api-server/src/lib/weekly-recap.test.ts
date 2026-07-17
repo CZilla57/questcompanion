@@ -20,7 +20,7 @@ function patterns(confidence: "none" | "low" | "ok"): PatternSummary {
     medianQuestMinutes: 20,
     categoryMinutes: [],
     modeByBlock: [],
-    topHelpers: ["timer", "music"],
+    topHelpers: ["timer", "body_double"],
     topBlockers: ["phone"],
   };
 }
@@ -103,7 +103,7 @@ describe("buildWeekStats", () => {
     expect(stats.focusSessions).toBe(2);
     expect(stats.focusMinutes).toBe(40);
     expect(stats.boss).toEqual({ damage: 25, attacks: 2, defeated: true });
-    expect(stats.rhythms).toEqual({ powerHours: [9, 14], bestDay: 2, topHelpers: ["timer", "music"] });
+    expect(stats.rhythms).toEqual({ powerHours: [9, 14], bestDay: 2, topHelpers: ["timer", "body_double"] });
   });
 
   it("caps sample titles at 5", () => {

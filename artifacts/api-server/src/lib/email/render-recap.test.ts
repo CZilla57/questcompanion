@@ -16,7 +16,7 @@ function stats(overrides: Partial<WeekStats> = {}): WeekStats {
     badges: [],
     questlinesCompleted: [],
     boss: { damage: 40, attacks: 3, defeated: true },
-    rhythms: { powerHours: [9, 14], bestDay: 2, topHelpers: ["timer"] },
+    rhythms: { powerHours: [9, 14], bestDay: 2, topHelpers: ["small_steps"] },
     ...overrides,
   };
 }
@@ -33,6 +33,19 @@ describe("renderRecapEmail", () => {
     expect(html).toContain("Tuesday");        // bestDay 2
     expect(html).toContain("9:00");
     expect(html).toContain("defeated");
+  });
+
+  it("renders topHelpers as human labels, never raw chip keys", () => {
+    const { html, text } = renderRecapEmail(
+      stats({ rhythms: { powerHours: [], bestDay: null, topHelpers: ["small_steps", "body_double"] } }),
+      "N.", "https://x.test/u",
+    );
+    for (const part of [html, text]) {
+      expect(part).toContain("Small steps");
+      expect(part).toContain("Someone with me");
+      expect(part).not.toContain("small_steps");
+      expect(part).not.toContain("body_double");
+    }
   });
 
   it("omits zero rows entirely (no '0 coins' lines)", () => {
