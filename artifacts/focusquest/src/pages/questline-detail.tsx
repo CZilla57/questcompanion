@@ -119,7 +119,7 @@ export default function QuestlineDetail() {
 
       {questline.status !== "completed" && (
         <div className="mb-4">
-          <QuickAddBar selectedDate={new Date()} questlineId={questline.id} autoFocus={false} />
+          <QuickAddBar selectedDate={new Date()} questlineId={questline.id} />
         </div>
       )}
 
