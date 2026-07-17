@@ -53,6 +53,12 @@ export const usersTable = pgTable("users", {
   nudgeQuickWinDate: text("nudge_quick_win_date"),
   // Instant of the last context nudge of any kind — enforces 90-min spacing.
   contextNudgedAt: timestamp("context_nudged_at"),
+  // Weekly AI Recap email (Act V q4). Email captured from OIDC claims at
+  // login/token-exchange; recaps default ON with a one-click tokenized
+  // unsubscribe (anti-shame: instant, no login required).
+  email: text("email"),
+  recapEmailsEnabled: boolean("recap_emails_enabled").notNull().default(true),
+  recapUnsubscribeToken: text("recap_unsubscribe_token").unique(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

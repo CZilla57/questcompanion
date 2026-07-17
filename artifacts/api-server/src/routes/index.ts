@@ -26,6 +26,7 @@ import mysteryBoxRouter from "./mystery-box";
 import statPerksRouter from "./stat-perks";
 import patternsRouter from "./patterns";
 import reflectionsRouter from "./reflections";
+import recapsRouter from "./recaps";
 
 const router: IRouter = Router();
 
@@ -57,5 +58,6 @@ router.use(mysteryBoxRouter);
 router.use(statPerksRouter);
 router.use(patternsRouter);
 router.use(reflectionsRouter);
+router.use(recapsRouter);
 
 export default router;

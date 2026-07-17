@@ -4,6 +4,7 @@ import { browserTimeZone } from "@/lib/timezone";
 import type { InsightsCategoryBreakdown, InsightsDowStat, InsightsPeriodStat, InsightsXpPoint } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RhythmsCard } from "@/components/rhythms-card";
+import { WeeklyRecapsSection } from "@/components/weekly-recaps";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
   ResponsiveContainer, Cell, AreaChart, Area,
@@ -362,6 +363,7 @@ export default function Insights() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <RhythmsCard />
+      <WeeklyRecapsSection />
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>

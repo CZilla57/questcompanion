@@ -1,5 +1,10 @@
-import { eq, and, gt, desc, gte, isNotNull, or, isNull, lte } from "drizzle-orm";
-import { db, tasksTable, usersTable, activityTable, pushSubscriptionsTable, focusSessionsTable, brainCheckinsTable, reflectionsTable } from "@workspace/db";
+import { eq, and, gt, desc, gte, isNotNull, or, isNull, lte, lt } from "drizzle-orm";
+import {
+  db, tasksTable, usersTable, activityTable, pushSubscriptionsTable, focusSessionsTable,
+  brainCheckinsTable, reflectionsTable, weeklyRecapsTable, coinTransactionsTable,
+  initiationAwardsTable, userBadgesTable, badgesTable, questlinesTable,
+  worldBossAttacksTable, worldBossWeeksTable, type WeekStats,
+} from "@workspace/db";
 import { sendPushNotification } from "./push-notifications";
 import { logger } from "./logger";
 import { spawnRecurringTasksForToday } from "../routes/recurring-tasks";
@@ -12,6 +17,14 @@ import { shouldPromptReflection } from "./reflections";
 import { eligibleKinds, selectContextNudge } from "./context-nudges";
 import { derivePatterns } from "./patterns";
 import { loadPatternInputs } from "../routes/patterns";
+import {
+  previousLocalWeek, inRecapWindow, recapAction, buildWeekStats, isZeroSignal,
+  recapSubject, type LocalWeek, type WeekStatsInputs,
+} from "./weekly-recap";
+import { draftNarrative } from "./ai/weekly-recap";
+import { isRecapEmailConfigured, sendEmail } from "./email/send-email";
+import { renderRecapEmail } from "./email/render-recap";
+import { generateJson, isAiConfigured } from "./ai/client";
 
 const DEFAULT_USER_ID = 1;
 
@@ -329,6 +342,199 @@ async function spawnRecurringTasks() {
   }
 }
 
+const APP_ORIGIN = process.env.APP_ORIGIN || "https://getfocusquest.com";
+
+// Caps expensive generation work (stat queries + LLM draft) per tick. Keeps
+// the every-minute tick well under the cron caller's ~30s window; remaining
+// users are picked up by subsequent in-window ticks (spec §4 resume machine).
+const MAX_GENERATE_PER_TICK = 3;
+
+/** Raw rows for the closed local week. Personal stats use the user's local
+ * Mon 00:00 → next Mon 00:00 instants; the World Boss block keys on the UTC
+ * ISO week (how boss data is stored) — the 0-12h boundary mismatch is an
+ * accepted spec tradeoff (spec §5). */
+async function loadWeekStatsInputs(userId: number, tz: string, week: LocalWeek, now: Date): Promise<WeekStatsInputs> {
+  const startUtc = localDayStartUtc(week.startDateKey, tz);
+  const endUtc = localDayStartUtc(week.endDateKeyExclusive, tz);
+
+  const completions = await db
+    .select({ title: tasksTable.title, completedAt: tasksTable.completedAt })
+    .from(tasksTable)
+    .where(and(
+      eq(tasksTable.userId, userId), eq(tasksTable.completed, true),
+      isNotNull(tasksTable.completedAt),
+      gte(tasksTable.completedAt, startUtc), lt(tasksTable.completedAt, endUtc),
+    ));
+
+  const focus = await db
+    .select({ focusedSeconds: focusSessionsTable.focusedSeconds })
+    .from(focusSessionsTable)
+    .where(and(
+      eq(focusSessionsTable.userId, userId),
+      gte(focusSessionsTable.startedAt, startUtc), lt(focusSessionsTable.startedAt, endUtc),
+      // Opened-and-abandoned sessions (0 focused seconds) are not signal —
+      // mirrors the reflections pass's completedIntervals gate.
+      gt(focusSessionsTable.focusedSeconds, 0),
+    ));
+
+  const activityRows = await db
+    .select({ type: activityTable.type, points: activityTable.points })
+    .from(activityTable)
+    .where(and(
+      eq(activityTable.userId, userId),
+      gte(activityTable.createdAt, startUtc), lt(activityTable.createdAt, endUtc),
+    ));
+
+  const coins = await db
+    .select({ amount: coinTransactionsTable.amount })
+    .from(coinTransactionsTable)
+    .where(and(
+      eq(coinTransactionsTable.userId, userId),
+      gte(coinTransactionsTable.createdAt, startUtc), lt(coinTransactionsTable.createdAt, endUtc),
+    ));
+
+  const initiations = await db
+    .select({ id: initiationAwardsTable.id })
+    .from(initiationAwardsTable)
+    .where(and(
+      eq(initiationAwardsTable.userId, userId),
+      gte(initiationAwardsTable.awardedAt, startUtc), lt(initiationAwardsTable.awardedAt, endUtc),
+    ));
+
+  const badgeRows = await db
+    .select({ name: badgesTable.name })
+    .from(userBadgesTable)
+    .innerJoin(badgesTable, eq(userBadgesTable.badgeId, badgesTable.id))
+    .where(and(
+      eq(userBadgesTable.userId, userId),
+      gte(userBadgesTable.earnedAt, startUtc), lt(userBadgesTable.earnedAt, endUtc),
+    ));
+
+  const questlines = await db
+    .select({ title: questlinesTable.title })
+    .from(questlinesTable)
+    .where(and(
+      eq(questlinesTable.userId, userId), isNotNull(questlinesTable.completedAt),
+      gte(questlinesTable.completedAt, startUtc), lt(questlinesTable.completedAt, endUtc),
+    ));
+
+  const attacks = await db
+    .select({ damage: worldBossAttacksTable.damage })
+    .from(worldBossAttacksTable)
+    .where(and(eq(worldBossAttacksTable.userId, userId), eq(worldBossAttacksTable.weekKey, week.weekKey)));
+
+  const [bossWeek] = await db
+    .select({ defeatedAt: worldBossWeeksTable.defeatedAt })
+    .from(worldBossWeeksTable)
+    .where(eq(worldBossWeeksTable.weekKey, week.weekKey));
+
+  const patterns = derivePatterns(await loadPatternInputs(userId, tz, now));
+
+  return {
+    weekKey: week.weekKey,
+    completions: completions.map((c) => ({ title: c.title, completedAt: c.completedAt! })),
+    focusSessions: focus,
+    xpEarned: activityRows.filter((a) => a.points > 0).reduce((s, a) => s + a.points, 0),
+    levelUps: activityRows.filter((a) => a.type === "level_up").length,
+    coinsEarned: coins.filter((c) => c.amount > 0).reduce((s, c) => s + c.amount, 0),
+    initiations: initiations.length,
+    badges: badgeRows.map((b) => b.name),
+    questlinesCompleted: questlines.map((q) => q.title),
+    bossAttacks: attacks,
+    bossDefeated: bossWeek?.defeatedAt != null,
+    patterns,
+  };
+}
+
+async function checkWeeklyRecaps() {
+  const now = new Date();
+  const users = await db.select().from(usersTable);
+  let generated = 0;
+  for (const user of users) {
+    try {
+      if (!user.timezone) continue; // no tz ⇒ no local Monday (spec §4)
+      const tz = resolveTimeZone(user.timezone);
+      if (!inRecapWindow(now, tz)) continue;
+      const week = previousLocalWeek(now, tz);
+
+      // Atomic claim: the unique(userId, weekKey) insert IS the exactly-once
+      // gate. Losing the race means resuming the winner's row (reflections
+      // pattern). Generation runs regardless of email config — the in-app
+      // archive always fills; only the send is gated (spec §4/§10).
+      const [claimed] = await db.insert(weeklyRecapsTable)
+        .values({ userId: user.id, weekKey: week.weekKey })
+        .onConflictDoNothing()
+        .returning();
+      const [row] = claimed
+        ? [claimed]
+        : await db.select().from(weeklyRecapsTable)
+            .where(and(eq(weeklyRecapsTable.userId, user.id), eq(weeklyRecapsTable.weekKey, week.weekKey)));
+      if (!row) continue;
+
+      if (recapAction(row) === "done") continue;
+
+      let stats: WeekStats | null = row.stats;
+      let subject = row.subject;
+      let narrative = row.narrative;
+
+      if (recapAction(row) === "generate") {
+        // Per-tick cap on expensive generation (stat fan-out + LLM draft).
+        // Send-only resumes below are NOT capped. The row stays claimed but
+        // ungenerated — leave it for the next tick, the resume machine picks
+        // it back up via recapAction (spec §4).
+        if (generated >= MAX_GENERATE_PER_TICK) continue;
+
+        const inputs = await loadWeekStatsInputs(user.id, tz, week, now);
+        stats = buildWeekStats(inputs);
+        generated++;
+        if (isZeroSignal(stats)) {
+          // Anti-shame silent skip: no email, no "quiet week" message, ever.
+          await db.update(weeklyRecapsTable).set({ stats, skipped: true })
+            .where(eq(weeklyRecapsTable.id, row.id));
+          continue;
+        }
+        // LLM outside any tx; fallback-first (spec §6).
+        const draft = await draftNarrative(stats, user.id, week.weekKey, isAiConfigured() ? generateJson : null);
+        narrative = draft.narrative;
+        subject = recapSubject(stats);
+        await db.update(weeklyRecapsTable).set({ stats, subject, narrative })
+          .where(eq(weeklyRecapsTable.id, row.id));
+      }
+
+      // Send gate: config + stored email + opt-in. A row left unsent here is
+      // indistinguishable from a send failure — fine, the archive is the
+      // source of truth (spec §10). Token is set whenever email is (auth.ts).
+      if (!isRecapEmailConfigured() || !user.email || !user.recapEmailsEnabled || !user.recapUnsubscribeToken) continue;
+      if (!stats || !subject || !narrative) continue;
+
+      // Atomic claim before send: two overlapping ticks (e.g. a slow generate
+      // straddling a cron boundary) must not both dispatch the same email.
+      // Mirrors the reflections first-answer claim (routes/reflections.ts).
+      const claimedSend = await db.update(weeklyRecapsTable)
+        .set({ sentAt: now })
+        .where(and(eq(weeklyRecapsTable.id, row.id), isNull(weeklyRecapsTable.sentAt)))
+        .returning({ id: weeklyRecapsTable.id });
+      if (claimedSend.length === 0) continue; // another tick already owns this send
+
+      const unsubscribeUrl = `${APP_ORIGIN}/api/recaps/unsubscribe?token=${user.recapUnsubscribeToken}`;
+      const { html, text } = renderRecapEmail(stats, narrative, unsubscribeUrl);
+      try {
+        await sendEmail({
+          to: user.email, subject, html, text, unsubscribeUrl,
+          idempotencyKey: `recap-${user.id}-${week.weekKey}`,
+        });
+      } catch (err) {
+        // Best-effort un-claim so the next tick retries the send; rethrow so
+        // the per-user catch below still logs the failure.
+        await db.update(weeklyRecapsTable).set({ sentAt: null }).where(eq(weeklyRecapsTable.id, row.id));
+        throw err;
+      }
+    } catch (err) {
+      logger.error({ err, userId: user.id }, "Weekly-recap pass failed for user");
+    }
+  }
+}
+
 export async function tick() {
   const ran: string[] = [];
 
@@ -349,6 +555,9 @@ export async function tick() {
 
   await checkReflectionPrompts();
   ran.push("reflection-prompts");
+
+  await checkWeeklyRecaps();
+  ran.push("weekly-recaps");
 
   return ran;
 }
