@@ -267,6 +267,8 @@ describe("selectContextNudge — quick_win", () => {
     }));
     expect(n?.body).toContain("'Stretch break'");
     expect(n?.body).toContain("~4 min");
+    // Pins the CATEGORY_LABELS rendering: self_care → "self-care", never the raw token.
+    expect(n?.body).toContain("self-care quests");
   });
 
   it("equal medians tie-break by lowest quest id", () => {
