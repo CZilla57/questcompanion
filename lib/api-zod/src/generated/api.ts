@@ -344,6 +344,64 @@ export const AnswerTodayReflectionResponse = zod.object({
 
 
 /**
+ * @summary Past weekly recaps (newest first) plus email settings state
+ */
+export const GetMyRecapsResponse = zod.object({
+  "emailEnabled": zod.boolean(),
+  "emailKnown": zod.boolean().describe('False until an email address has been captured at login'),
+  "recaps": zod.array(zod.object({
+  "weekKey": zod.string(),
+  "stats": zod.object({
+  "weekKey": zod.string(),
+  "questsCompleted": zod.number(),
+  "sampleQuestTitles": zod.array(zod.string()),
+  "focusSessions": zod.number(),
+  "focusMinutes": zod.number(),
+  "xpEarned": zod.number(),
+  "coinsEarned": zod.number(),
+  "initiations": zod.number(),
+  "levelUps": zod.number(),
+  "badges": zod.array(zod.string()),
+  "questlinesCompleted": zod.array(zod.string()),
+  "boss": zod.object({
+  "damage": zod.number(),
+  "attacks": zod.number(),
+  "defeated": zod.boolean()
+}).nullable(),
+  "rhythms": zod.object({
+  "powerHours": zod.array(zod.number()),
+  "bestDay": zod.number().nullable(),
+  "topHelpers": zod.array(zod.string())
+}).nullable()
+}),
+  "narrative": zod.string(),
+  "sentAt": zod.coerce.date().nullable().describe('Null when the recap was generated but not emailed')
+}))
+})
+
+
+/**
+ * @summary Enable or disable the weekly recap email
+ */
+export const UpdateRecapEmailSettingsBody = zod.object({
+  "enabled": zod.boolean()
+})
+
+export const UpdateRecapEmailSettingsResponse = zod.object({
+  "emailEnabled": zod.boolean()
+})
+
+
+/**
+ * Looks up the token and disables recap emails for that user. Always returns the same friendly HTML page — valid or not — so the endpoint is not a token oracle. Linked from every recap email footer and the List-Unsubscribe header; not consumed by the app client.
+ * @summary One-click email unsubscribe (unauthenticated, tokenized)
+ */
+export const UnsubscribeRecapEmailsQueryParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+
+/**
  * @summary List tasks for the current user
  */
 export const GetTasksQueryParams = zod.object({

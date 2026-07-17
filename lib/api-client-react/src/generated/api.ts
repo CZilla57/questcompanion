@@ -91,6 +91,9 @@ import type {
   QuestlineDetail,
   QuestlineInput,
   QuestlineUpdate,
+  RecapEmailSettingsRequest,
+  RecapEmailSettingsResponse,
+  RecapsResponse,
   RecurringTask,
   RecurringTaskInput,
   RecurringTaskUpdate,
@@ -120,6 +123,7 @@ import type {
   TaskUpdate,
   TimezoneInput,
   TranscribeResult,
+  UnsubscribeRecapEmailsParams,
   User,
   UserBadge,
   UserStats,
@@ -1461,6 +1465,239 @@ export const useAnswerTodayReflection = <TError = ErrorType<void>,
       > => {
       return useMutation(getAnswerTodayReflectionMutationOptions(options));
     }
+
+export const getGetMyRecapsUrl = () => {
+
+
+
+
+  return `/api/recaps`
+}
+
+/**
+ * @summary Past weekly recaps (newest first) plus email settings state
+ */
+export const getMyRecaps = async ( options?: RequestInit): Promise<RecapsResponse> => {
+
+  return customFetch<RecapsResponse>(getGetMyRecapsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyRecapsQueryKey = () => {
+    return [
+    `/api/recaps`
+    ] as const;
+    }
+
+
+export const getGetMyRecapsQueryOptions = <TData = Awaited<ReturnType<typeof getMyRecaps>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyRecaps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyRecapsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyRecaps>>> = ({ signal }) => getMyRecaps({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyRecaps>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyRecapsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyRecaps>>>
+export type GetMyRecapsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Past weekly recaps (newest first) plus email settings state
+ */
+
+export function useGetMyRecaps<TData = Awaited<ReturnType<typeof getMyRecaps>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyRecaps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyRecapsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateRecapEmailSettingsUrl = () => {
+
+
+
+
+  return `/api/users/me/recap-emails`
+}
+
+/**
+ * @summary Enable or disable the weekly recap email
+ */
+export const updateRecapEmailSettings = async (recapEmailSettingsRequest: RecapEmailSettingsRequest, options?: RequestInit): Promise<RecapEmailSettingsResponse> => {
+
+  return customFetch<RecapEmailSettingsResponse>(getUpdateRecapEmailSettingsUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      recapEmailSettingsRequest,)
+  }
+);}
+
+
+
+
+export const getUpdateRecapEmailSettingsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRecapEmailSettings>>, TError,{data: BodyType<RecapEmailSettingsRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateRecapEmailSettings>>, TError,{data: BodyType<RecapEmailSettingsRequest>}, TContext> => {
+
+const mutationKey = ['updateRecapEmailSettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateRecapEmailSettings>>, {data: BodyType<RecapEmailSettingsRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateRecapEmailSettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateRecapEmailSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateRecapEmailSettings>>>
+    export type UpdateRecapEmailSettingsMutationBody = BodyType<RecapEmailSettingsRequest>
+    export type UpdateRecapEmailSettingsMutationError = ErrorType<void>
+
+    /**
+ * @summary Enable or disable the weekly recap email
+ */
+export const useUpdateRecapEmailSettings = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRecapEmailSettings>>, TError,{data: BodyType<RecapEmailSettingsRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateRecapEmailSettings>>,
+        TError,
+        {data: BodyType<RecapEmailSettingsRequest>},
+        TContext
+      > => {
+      return useMutation(getUpdateRecapEmailSettingsMutationOptions(options));
+    }
+
+export const getUnsubscribeRecapEmailsUrl = (params: UnsubscribeRecapEmailsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/recaps/unsubscribe?${stringifiedParams}` : `/api/recaps/unsubscribe`
+}
+
+/**
+ * Looks up the token and disables recap emails for that user. Always returns the same friendly HTML page — valid or not — so the endpoint is not a token oracle. Linked from every recap email footer and the List-Unsubscribe header; not consumed by the app client.
+ * @summary One-click email unsubscribe (unauthenticated, tokenized)
+ */
+export const unsubscribeRecapEmails = async (params: UnsubscribeRecapEmailsParams, options?: RequestInit): Promise<string> => {
+
+  return customFetch<string>(getUnsubscribeRecapEmailsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getUnsubscribeRecapEmailsQueryKey = (params?: UnsubscribeRecapEmailsParams,) => {
+    return [
+    `/api/recaps/unsubscribe`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getUnsubscribeRecapEmailsQueryOptions = <TData = Awaited<ReturnType<typeof unsubscribeRecapEmails>>, TError = ErrorType<unknown>>(params: UnsubscribeRecapEmailsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof unsubscribeRecapEmails>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getUnsubscribeRecapEmailsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof unsubscribeRecapEmails>>> = ({ signal }) => unsubscribeRecapEmails(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof unsubscribeRecapEmails>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type UnsubscribeRecapEmailsQueryResult = NonNullable<Awaited<ReturnType<typeof unsubscribeRecapEmails>>>
+export type UnsubscribeRecapEmailsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary One-click email unsubscribe (unauthenticated, tokenized)
+ */
+
+export function useUnsubscribeRecapEmails<TData = Awaited<ReturnType<typeof unsubscribeRecapEmails>>, TError = ErrorType<unknown>>(
+ params: UnsubscribeRecapEmailsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof unsubscribeRecapEmails>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getUnsubscribeRecapEmailsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetTasksUrl = (params?: GetTasksParams,) => {
   const normalizedParams = new URLSearchParams();

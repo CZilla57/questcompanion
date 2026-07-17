@@ -1760,6 +1760,69 @@ export interface FocusCompleteInput {
 }
 
 /**
+ * @nullable
+ */
+export type WeeklyRecapStatsBoss = {
+  damage: number;
+  attacks: number;
+  defeated: boolean;
+} | null;
+
+/**
+ * @nullable
+ */
+export type WeeklyRecapStatsRhythms = {
+  powerHours: number[];
+  /** @nullable */
+  bestDay: number | null;
+  topHelpers: string[];
+} | null;
+
+export interface WeeklyRecapStats {
+  weekKey: string;
+  questsCompleted: number;
+  sampleQuestTitles: string[];
+  focusSessions: number;
+  focusMinutes: number;
+  xpEarned: number;
+  coinsEarned: number;
+  initiations: number;
+  levelUps: number;
+  badges: string[];
+  questlinesCompleted: string[];
+  /** @nullable */
+  boss: WeeklyRecapStatsBoss;
+  /** @nullable */
+  rhythms: WeeklyRecapStatsRhythms;
+}
+
+export interface WeeklyRecapItem {
+  weekKey: string;
+  stats: WeeklyRecapStats;
+  narrative: string;
+  /**
+     * Null when the recap was generated but not emailed
+     * @nullable
+     */
+  sentAt: string | null;
+}
+
+export interface RecapsResponse {
+  emailEnabled: boolean;
+  /** False until an email address has been captured at login */
+  emailKnown: boolean;
+  recaps: WeeklyRecapItem[];
+}
+
+export interface RecapEmailSettingsRequest {
+  enabled: boolean;
+}
+
+export interface RecapEmailSettingsResponse {
+  emailEnabled: boolean;
+}
+
+/**
  * Opaque session token — `Bearer <sid>`.
  */
 export type AuthorizationSessionHeaderParameter = string;
@@ -1817,6 +1880,10 @@ tz?: string;
  * When true, drafts (and persists) today's question if none exists — the reflection page passes true; the dashboard card omits it so LLM drafting stays lazy.
  */
 draft?: boolean;
+};
+
+export type UnsubscribeRecapEmailsParams = {
+token: string;
 };
 
 export type GetTasksParams = {

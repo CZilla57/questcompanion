@@ -31,6 +31,8 @@ tags:
     description: Grouping quests into goal-oriented questlines
   - name: brain
     description: Brain check-ins, derived mode state, and rescue events
+  - name: recaps
+    description: Weekly AI recap archive and email settings
 paths:
   /auth/user:
     get:
@@ -368,6 +370,64 @@ paths:
                 $ref: "#/components/schemas/ReflectionAnswerResponse"
         "400":
           description: Unknown chip, empty answer (no chips and no freeText), or freeText over 500 chars
+
+  /recaps:
+    get:
+      operationId: getMyRecaps
+      tags: [recaps]
+      summary: Past weekly recaps (newest first) plus email settings state
+      responses:
+        "200":
+          description: Recap archive; skipped (zero-signal) weeks are excluded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecapsResponse"
+
+  /users/me/recap-emails:
+    patch:
+      operationId: updateRecapEmailSettings
+      tags: [recaps]
+      summary: Enable or disable the weekly recap email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecapEmailSettingsRequest"
+      responses:
+        "200":
+          description: Updated setting
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecapEmailSettingsResponse"
+        "400":
+          description: enabled must be a boolean
+
+  /recaps/unsubscribe:
+    get:
+      operationId: unsubscribeRecapEmails
+      tags: [recaps]
+      summary: One-click email unsubscribe (unauthenticated, tokenized)
+      description: >-
+        Looks up the token and disables recap emails for that user. Always
+        returns the same friendly HTML page — valid or not — so the endpoint
+        is not a token oracle. Linked from every recap email footer and the
+        List-Unsubscribe header; not consumed by the app client.
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Confirmation page
+          content:
+            text/html:
+              schema:
+                type: string
 
   /tasks:
     get:
@@ -4012,3 +4072,81 @@ components:
           type: integer
           minimum: 0
           description: Seconds focused in the in-progress interval when stopping mid-focus
+
+    WeeklyRecapStats:
+      type: object
+      required: [weekKey, questsCompleted, sampleQuestTitles, focusSessions, focusMinutes, xpEarned, coinsEarned, initiations, levelUps, badges, questlinesCompleted, boss, rhythms]
+      properties:
+        weekKey: { type: string }
+        questsCompleted: { type: integer }
+        sampleQuestTitles:
+          type: array
+          items: { type: string }
+        focusSessions: { type: integer }
+        focusMinutes: { type: integer }
+        xpEarned: { type: integer }
+        coinsEarned: { type: integer }
+        initiations: { type: integer }
+        levelUps: { type: integer }
+        badges:
+          type: array
+          items: { type: string }
+        questlinesCompleted:
+          type: array
+          items: { type: string }
+        boss:
+          type: ["object", "null"]
+          required: [damage, attacks, defeated]
+          properties:
+            damage: { type: integer }
+            attacks: { type: integer }
+            defeated: { type: boolean }
+        rhythms:
+          type: ["object", "null"]
+          required: [powerHours, bestDay, topHelpers]
+          properties:
+            powerHours:
+              type: array
+              items: { type: integer }
+            bestDay: { type: ["integer", "null"] }
+            topHelpers:
+              type: array
+              items: { type: string }
+
+    WeeklyRecapItem:
+      type: object
+      required: [weekKey, stats, narrative, sentAt]
+      properties:
+        weekKey: { type: string }
+        stats:
+          $ref: "#/components/schemas/WeeklyRecapStats"
+        narrative: { type: string }
+        sentAt:
+          type: ["string", "null"]
+          format: date-time
+          description: Null when the recap was generated but not emailed
+
+    RecapsResponse:
+      type: object
+      required: [emailEnabled, emailKnown, recaps]
+      properties:
+        emailEnabled: { type: boolean }
+        emailKnown:
+          type: boolean
+          description: False until an email address has been captured at login
+        recaps:
+          type: array
+          items:
+            $ref: "#/components/schemas/WeeklyRecapItem"
+
+    RecapEmailSettingsRequest:
+      type: object
+      required: [enabled]
+      properties:
+        enabled: { type: boolean }
+
+    RecapEmailSettingsResponse:
+      type: object
+      required: [emailEnabled]
+      properties:
+        emailEnabled: { type: boolean }
