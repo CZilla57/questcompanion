@@ -152,6 +152,13 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
             });
           }
 
+          if (res.companionReaction) {
+            toast({
+              title: res.companionReaction,
+              className: "border-primary",
+            });
+          }
+
           if (res.gearReward) {
             const rarityStyles: Record<string, string> = {
               legendary: "border-amber-400 text-amber-300",

@@ -32,9 +32,18 @@ export function HeroVitality({ compact = false }: { compact?: boolean }) {
         </span>
       </div>
       {!compact && <div className="text-xs text-muted-foreground italic">{data.mood}</div>}
+      {data.companion.line && data.companion.beat !== "ambient" ? (
+        <div className="text-xs font-medium text-primary">{data.companion.line}</div>
+      ) : null}
       <div className="text-xs text-muted-foreground">
         Currently: <span className="italic">{data.activity.text}</span>
       </div>
+      {!compact && (
+        <div className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
+          {data.companion.bondTierName}
+          {data.companion.beat === "ambient" && data.companion.line ? ` · ${data.companion.line}` : ""}
+        </div>
+      )}
     </div>
   );
 }
