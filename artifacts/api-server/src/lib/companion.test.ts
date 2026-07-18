@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { bondTier, dayGap, STREAK_MILESTONES } from "./companion";
+import { bondTier, dayGap, STREAK_MILESTONES, deriveCompanionBeat } from "./companion";
 
 describe("bondTier", () => {
   it("maps lifetime completions to the 5 named tiers", () => {
@@ -34,5 +34,40 @@ describe("dayGap", () => {
 describe("STREAK_MILESTONES", () => {
   it("is the agreed ladder", () => {
     expect([...STREAK_MILESTONES]).toEqual([3, 7, 14, 30, 50, 100, 200, 365]);
+  });
+});
+
+describe("deriveCompanionBeat", () => {
+  const base = { streakDays: 0, dayGap: 0 as number | null, hungerStage: "well_fed" as const, bondTier: 0 };
+
+  it("welcome_back wins when the gap is >= 3 days, even over a milestone", () => {
+    const beat = deriveCompanionBeat({ ...base, dayGap: 5, streakDays: 7 });
+    expect(beat.kind).toBe("welcome_back");
+  });
+  it("welcome_back shows even when the hero is fainted (stays warm)", () => {
+    expect(deriveCompanionBeat({ ...base, dayGap: 9, hungerStage: "fainted" }).kind).toBe("welcome_back");
+  });
+  it("streak_milestone fires on a milestone day (gap 0)", () => {
+    for (const n of [3, 7, 14, 30, 50, 100, 200, 365]) {
+      expect(deriveCompanionBeat({ ...base, streakDays: n }).kind).toBe("streak_milestone");
+    }
+  });
+  it("non-milestone streak with no gap is ambient", () => {
+    expect(deriveCompanionBeat({ ...base, streakDays: 8 }).kind).toBe("ambient");
+  });
+  it("rest_day for a 1-2 day gap when not a milestone", () => {
+    expect(deriveCompanionBeat({ ...base, dayGap: 1 }).kind).toBe("rest_day");
+    expect(deriveCompanionBeat({ ...base, dayGap: 2 }).kind).toBe("rest_day");
+  });
+  it("ambient yields to hunger (quiet) when starving or fainted", () => {
+    expect(deriveCompanionBeat({ ...base, hungerStage: "starving" }).kind).toBe("quiet");
+    expect(deriveCompanionBeat({ ...base, hungerStage: "fainted" }).kind).toBe("quiet");
+  });
+  it("null gap (brand-new user) with no milestone is ambient", () => {
+    expect(deriveCompanionBeat({ ...base, dayGap: null }).kind).toBe("ambient");
+  });
+  it("carries streakDays and bondTier through", () => {
+    const beat = deriveCompanionBeat({ ...base, streakDays: 7, bondTier: 3 });
+    expect(beat).toMatchObject({ streakDays: 7, bondTier: 3 });
   });
 });

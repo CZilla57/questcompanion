@@ -36,3 +36,37 @@ export function dayGap(fromDateKey: string | null, toDateKey: string): number | 
   const to = new Date(toDateKey + "T00:00:00Z").getTime();
   return Math.round((to - from) / (24 * 60 * 60 * 1000));
 }
+
+import type { HungerStage } from "./hero-care";
+
+export type CompanionBeatKind = "welcome_back" | "streak_milestone" | "rest_day" | "ambient" | "quiet";
+
+export type CompanionBeat = { kind: CompanionBeatKind; streakDays: number; bondTier: number };
+
+/**
+ * The single most-salient relational beat, derived from current state.
+ * Precedence: welcome_back → streak_milestone → rest_day → ambient. `ambient`
+ * yields to hunger (→ `quiet`, companion says nothing) when the hero is
+ * starving/fainted; welcome_back/milestone/rest are never hunger-gated.
+ */
+export function deriveCompanionBeat(ctx: {
+  streakDays: number;
+  dayGap: number | null;
+  hungerStage: HungerStage;
+  bondTier: number;
+}): CompanionBeat {
+  const carry = { streakDays: ctx.streakDays, bondTier: ctx.bondTier };
+  if (ctx.dayGap !== null && ctx.dayGap >= ABSENCE_MIN_DAYS) {
+    return { kind: "welcome_back", ...carry };
+  }
+  if (STREAK_MILESTONES.includes(ctx.streakDays)) {
+    return { kind: "streak_milestone", ...carry };
+  }
+  if (ctx.dayGap !== null && ctx.dayGap >= 1 && ctx.dayGap < ABSENCE_MIN_DAYS) {
+    return { kind: "rest_day", ...carry };
+  }
+  if (ctx.hungerStage === "starving" || ctx.hungerStage === "fainted") {
+    return { kind: "quiet", ...carry };
+  }
+  return { kind: "ambient", ...carry };
+}
