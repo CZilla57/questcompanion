@@ -6,6 +6,8 @@ import { CATEGORY_LABELS } from "../lib/auto-points";
 import { resolveTimeZone, localDateKey, buildDayDates, buildDaySlots, localHour } from "../lib/date-buckets";
 import { hungerStage, moodFor } from "../lib/hero-care";
 import { currentVignette } from "../lib/hero-flavor";
+import { bondTier, dayGap, deriveCompanionBeat } from "../lib/companion";
+import { companionLine } from "../lib/companion-copy";
 
 const router: IRouter = Router();
 
@@ -150,11 +152,27 @@ router.get("/users/me/hero-status", async (req, res): Promise<void> => {
   const stage = hungerStage(user.lastFedAt, now);
   const vignette = currentVignette(user.id, stage, user.avatarClass, now);
 
+  const tz = resolveTimeZone(user.timezone);
+  const tier = bondTier(user.bondQuestsCompleted);
+  const beat = deriveCompanionBeat({
+    streakDays: user.streakDays,
+    dayGap: dayGap(user.lastActiveDate, localDateKey(now, tz)),
+    hungerStage: stage,
+    bondTier: tier.tier,
+  });
+
   res.json({
     stage,
     mood: moodFor(stage),
     lastFedAt: user.lastFedAt.toISOString(),
     activity: { id: vignette.id, text: vignette.text },
+    companion: {
+      beat: beat.kind,
+      line: companionLine(beat, { userId: user.id, now }),
+      bondTier: tier.tier,
+      bondTierName: tier.name,
+      bondQuestsCompleted: user.bondQuestsCompleted,
+    },
   });
 });
 
