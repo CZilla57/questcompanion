@@ -6,6 +6,8 @@ import { CATEGORY_LABELS } from "../lib/auto-points";
 import { resolveTimeZone, localDateKey, buildDayDates, buildDaySlots, localHour } from "../lib/date-buckets";
 import { hungerStage, moodFor } from "../lib/hero-care";
 import { currentVignette } from "../lib/hero-flavor";
+import { bondTier, dayGap, deriveCompanionBeat } from "../lib/companion";
+import { companionLine } from "../lib/companion-copy";
 
 const router: IRouter = Router();
 
@@ -150,11 +152,33 @@ router.get("/users/me/hero-status", async (req, res): Promise<void> => {
   const stage = hungerStage(user.lastFedAt, now);
   const vignette = currentVignette(user.id, stage, user.avatarClass, now);
 
+  const tier = bondTier(user.bondQuestsCompleted);
+  // lastActiveDate is written on a UTC calendar-day basis (see the completion
+  // path in tasks.ts, which uses now.toISOString().split("T")[0]), and the
+  // whole streak subsystem is UTC-based. Compare against UTC "today" here too
+  // rather than a tz-local date key — otherwise a positive-offset user
+  // (Asia/Australia/NZ) reading this in their local morning would see the
+  // local date already rolled over a day ahead of UTC, producing a dayGap of
+  // 1 and misreading an actively-questing user as resting.
+  const beat = deriveCompanionBeat({
+    streakDays: user.streakDays,
+    dayGap: dayGap(user.lastActiveDate, now.toISOString().split("T")[0]!),
+    hungerStage: stage,
+    bondTier: tier.tier,
+  });
+
   res.json({
     stage,
     mood: moodFor(stage),
     lastFedAt: user.lastFedAt.toISOString(),
     activity: { id: vignette.id, text: vignette.text },
+    companion: {
+      beat: beat.kind,
+      line: companionLine(beat, { userId: user.id, now }),
+      bondTier: tier.tier,
+      bondTierName: tier.name,
+      bondQuestsCompleted: user.bondQuestsCompleted,
+    },
   });
 });
 

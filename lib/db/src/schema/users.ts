@@ -29,6 +29,12 @@ export const usersTable = pgTable("users", {
   lastFedAt: timestamp("last_fed_at").notNull().defaultNow(),
   hungerNotifiedStage: text("hunger_notified_stage"),
   lastFlavorPushAt: timestamp("last_flavor_push_at"),
+  // Act VI Living Companion: monotonic bond metric (lifetime quest completions).
+  // Incremented in the completion transaction; NEVER decremented (anti-shame).
+  bondQuestsCompleted: integer("bond_quests_completed").notNull().default(0),
+  // Streak-milestone celebration push dedup marker (last milestone value pushed,
+  // e.g. "7"); cleared when the streak breaks. Mirrors hungerNotifiedStage.
+  companionMilestoneNotified: text("companion_milestone_notified"),
   // Per-user timezone (IANA), captured from the client. Lets cron compute the
   // user's local hour for bedtime / quiet-hours.
   timezone: text("timezone"),

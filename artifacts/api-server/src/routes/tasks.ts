@@ -27,6 +27,7 @@ import { transcribeCooldown } from "../lib/ai/transcribe-cooldown";
 import { isBonusGatingTask, countsAsTodayCompletion } from "../lib/anchored-tasks";
 import { isQuestlineAssignable } from "../lib/questlines";
 import { hungerStage } from "../lib/hero-care";
+import { completionCompanionReaction } from "../lib/companion";
 import { grantInitiationAwards } from "../lib/initiation-grant";
 import type { InitiationXp } from "../lib/initiation";
 import { awardCoins, reverseCoins } from "../lib/award-coins";
@@ -530,6 +531,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
         oldStreak: number;
         freezeConsumed: boolean;
         heroRevived: boolean;
+        companionReaction: string | null;
       };
 
   const outcome = await db.transaction(async (tx): Promise<TxOutcome> => {
@@ -633,6 +635,16 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     const leveledUp = newLevel.level > oldLevel.level;
     const newLongestStreak = Math.max(user.longestStreak, newStreak);
 
+    // Act VI Living Companion: bond grows by one per completion (monotonic).
+    const bondBefore = user.bondQuestsCompleted;
+    const companionReaction = completionCompanionReaction({
+      bondBefore,
+      leveledUp,
+      newLevel: newLevel.level,
+      userId,
+      now,
+    });
+
     // Persist user state.
     await tx.update(usersTable).set({
       totalPoints: newTotalPoints,
@@ -643,6 +655,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       lastActiveDate: today,
       lastFedAt: now,
       hungerNotifiedStage: null,
+      bondQuestsCompleted: bondBefore + 1,
       ...(freezeConsumed ? { streakFreezes: user.streakFreezes - 1 } : {}),
     }).where(eq(usersTable.id, userId));
 
@@ -684,6 +697,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       oldStreak: user.streakDays,
       freezeConsumed,
       heroRevived,
+      companionReaction,
     };
   });
   // ─────────────────────────────────────────────────────────────────────────────
@@ -712,7 +726,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
   }
 
   const { task, boostedBase, pointsToAdd, bonusAwarded, focusBonusAwarded, streakBonus, multiplierLabel, multiplierValue,
-    newTotalPoints, newLevel, leveledUp, newStreak, oldStreak, freezeConsumed, heroRevived } = outcome;
+    newTotalPoints, newLevel, leveledUp, newStreak, oldStreak, freezeConsumed, heroRevived, companionReaction } = outcome;
 
   // ─── Post-transaction side effects ───────────────────────────────────────────
   // These run outside the transaction.  Any failure here leaves the user with
@@ -887,6 +901,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     focusBonusAwarded,
     focusBonusPoints: focusBonusAwarded ? FOCUS_BONUS_POINTS : 0,
     heroRevived,
+    companionReaction,
   });
 });
 

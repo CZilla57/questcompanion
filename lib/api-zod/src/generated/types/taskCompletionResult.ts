@@ -34,4 +34,6 @@ export interface TaskCompletionResult {
   focusBonusPoints?: number;
   /** True when this completion revived a fainted hero (fed after ≥7 days) */
   heroRevived?: boolean;
+  /** Companion's line for a just-happened bond tier-up or level-up, else null */
+  companionReaction?: string | null;
 }

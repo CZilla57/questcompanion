@@ -9,6 +9,7 @@ import { sendPushNotification } from "./push-notifications";
 import { logger } from "./logger";
 import { spawnRecurringTasksForToday } from "../routes/recurring-tasks";
 import { hungerStage, hungerWarning, shouldSendFlavorPush } from "./hero-care";
+import { companionMilestonePush } from "./companion";
 import { currentVignette } from "./hero-flavor";
 import { deriveBrainState } from "./brain-mode";
 import { resolveTimeZone, localHour, localDateKey, localDayStartUtc } from "./date-buckets";
@@ -219,6 +220,24 @@ async function checkHeroCare() {
           .set({ hungerNotifiedStage: stage })
           .where(eq(usersTable.id, user.id));
         continue; // a warning and a flavor push never share a tick
+      }
+
+      // Companion streak-milestone celebration (positive). Mutually exclusive with
+      // hunger/flavor: the warning above already `continue`d, and a milestone push
+      // `continue`s past flavor. Marker dedups + clears on a broken streak.
+      const milestone = companionMilestonePush(user.streakDays, user.companionMilestoneNotified);
+      if (milestone.push) {
+        await notify(user.id, milestone.push.title, milestone.push.body, milestone.push.tag);
+        await db.update(usersTable)
+          .set({ companionMilestoneNotified: milestone.marker })
+          .where(eq(usersTable.id, user.id));
+        continue; // a milestone push and a flavor push never share a tick
+      }
+      if (milestone.marker !== user.companionMilestoneNotified) {
+        // Streak broke since the last push — clear the marker so it can re-celebrate.
+        await db.update(usersTable)
+          .set({ companionMilestoneNotified: milestone.marker })
+          .where(eq(usersTable.id, user.id));
       }
 
       if (shouldSendFlavorPush({ userId: user.id, stage, lastFlavorPushAt: user.lastFlavorPushAt, now })) {

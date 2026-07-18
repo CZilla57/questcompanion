@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { HeroStatusActivity } from './heroStatusActivity';
+import type { HeroStatusCompanion } from './heroStatusCompanion';
 import type { HeroStatusStage } from './heroStatusStage';
 
 export interface HeroStatus {
@@ -15,4 +16,6 @@ export interface HeroStatus {
   lastFedAt: Date;
   /** Current ambient "hero life" vignette (rotates every ~3h) */
   activity: HeroStatusActivity;
+  /** Living Companion reaction (Act VI) — derived relational beat + bond */
+  companion: HeroStatusCompanion;
 }

@@ -80,6 +80,8 @@ export * from './heatmapResponse';
 export * from './heroLook';
 export * from './heroStatus';
 export * from './heroStatusActivity';
+export * from './heroStatusCompanion';
+export * from './heroStatusCompanionBeat';
 export * from './heroStatusStage';
 export * from './hyperfocusPauseInput';
 export * from './initiationAward';
