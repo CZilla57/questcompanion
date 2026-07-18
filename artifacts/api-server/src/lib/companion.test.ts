@@ -71,3 +71,52 @@ describe("deriveCompanionBeat", () => {
     expect(beat).toMatchObject({ streakDays: 7, bondTier: 3 });
   });
 });
+
+import { companionMilestonePush, completionCompanionReaction } from "./companion";
+
+describe("companionMilestonePush", () => {
+  it("pushes once when a milestone is freshly reached, setting the marker", () => {
+    const r = companionMilestonePush(7, null);
+    expect(r.push).not.toBeNull();
+    expect(r.push!.tag).toBe("companion");
+    expect(r.push!.body).toContain("7");
+    expect(r.marker).toBe("7");
+  });
+  it("does not re-push the same milestone", () => {
+    const r = companionMilestonePush(7, "7");
+    expect(r.push).toBeNull();
+    expect(r.marker).toBe("7"); // unchanged
+  });
+  it("is silent on a non-milestone day and leaves the marker unchanged", () => {
+    const r = companionMilestonePush(8, "7");
+    expect(r.push).toBeNull();
+    expect(r.marker).toBe("7");
+  });
+  it("clears the marker when the streak breaks (below the lowest milestone)", () => {
+    const r = companionMilestonePush(0, "7");
+    expect(r.push).toBeNull();
+    expect(r.marker).toBeNull();
+  });
+  it("re-celebrates a rebuilt streak after a break cleared the marker", () => {
+    expect(companionMilestonePush(3, null).push).not.toBeNull();
+  });
+});
+
+describe("completionCompanionReaction", () => {
+  const base = { userId: 1, now: new Date("2026-07-17T12:00:00Z"), newLevel: 5, leveledUp: false };
+  it("returns a tier-up line when the completion crosses a bond threshold", () => {
+    // 9 -> 10 crosses Newly Met -> Trusted
+    expect(completionCompanionReaction({ ...base, bondBefore: 9 })).toContain("Trusted");
+  });
+  it("returns a level-up line when leveled up without a tier crossing", () => {
+    const line = completionCompanionReaction({ ...base, bondBefore: 20, leveledUp: true, newLevel: 6 });
+    expect(line).toContain("6");
+  });
+  it("prefers tier-up over level-up when both happen", () => {
+    expect(completionCompanionReaction({ ...base, bondBefore: 49, leveledUp: true }))
+      .toContain("Steadfast"); // 49 -> 50
+  });
+  it("returns null when nothing notable happened", () => {
+    expect(completionCompanionReaction({ ...base, bondBefore: 20 })).toBeNull();
+  });
+});

@@ -38,6 +38,7 @@ export function dayGap(fromDateKey: string | null, toDateKey: string): number | 
 }
 
 import type { HungerStage } from "./hero-care";
+import { companionReactionLine } from "./companion-copy";
 
 export type CompanionBeatKind = "welcome_back" | "streak_milestone" | "rest_day" | "ambient" | "quiet";
 
@@ -69,4 +70,51 @@ export function deriveCompanionBeat(ctx: {
     return { kind: "quiet", ...carry };
   }
   return { kind: "ambient", ...carry };
+}
+
+/**
+ * Streak-milestone celebration push (positive) with its dedup marker. `marker` is
+ * the value the caller should persist to users.companionMilestoneNotified: the hit
+ * milestone when pushing, null when the streak has broken (so a rebuilt streak can
+ * celebrate again), otherwise the unchanged prior value.
+ */
+export function companionMilestonePush(
+  streakDays: number,
+  notifiedMilestone: string | null,
+): { push: { title: string; body: string; tag: string } | null; marker: string | null } {
+  const isMilestone = STREAK_MILESTONES.includes(streakDays);
+  if (isMilestone && notifiedMilestone !== String(streakDays)) {
+    return {
+      push: {
+        title: `${streakDays}-day streak! 🔥`,
+        body: `Your companion is cheering — ${streakDays} days adventuring together.`,
+        tag: "companion",
+      },
+      marker: String(streakDays),
+    };
+  }
+  // Streak broke: clear the marker so the next run at this milestone celebrates again.
+  if (streakDays < STREAK_MILESTONES[0]!) return { push: null, marker: null };
+  return { push: null, marker: notifiedMilestone };
+}
+
+/**
+ * The companion's line for a "just happened" completion moment, or null. Precedence:
+ * a bond tier crossing (bondBefore → bondBefore+1) beats a level-up.
+ */
+export function completionCompanionReaction(args: {
+  bondBefore: number;
+  leveledUp: boolean;
+  newLevel: number;
+  userId: number;
+  now: Date;
+}): string | null {
+  const after = bondTier(args.bondBefore + 1);
+  if (after.tier > bondTier(args.bondBefore).tier) {
+    return companionReactionLine("bond_tier_up", { userId: args.userId, now: args.now, bondTierName: after.name });
+  }
+  if (args.leveledUp) {
+    return companionReactionLine("leveled_up", { userId: args.userId, now: args.now, newLevel: args.newLevel });
+  }
+  return null;
 }
