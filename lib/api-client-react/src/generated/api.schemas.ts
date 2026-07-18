@@ -152,6 +152,29 @@ export type HeroStatusActivity = {
   text: string;
 };
 
+export type HeroStatusCompanionBeat = typeof HeroStatusCompanionBeat[keyof typeof HeroStatusCompanionBeat];
+
+
+export const HeroStatusCompanionBeat = {
+  welcome_back: 'welcome_back',
+  streak_milestone: 'streak_milestone',
+  rest_day: 'rest_day',
+  ambient: 'ambient',
+  quiet: 'quiet',
+} as const;
+
+/**
+ * Living Companion reaction (Act VI) — derived relational beat + bond
+ */
+export type HeroStatusCompanion = {
+  beat: HeroStatusCompanionBeat;
+  /** Curated companion line; empty when beat is "quiet" */
+  line: string;
+  bondTier: number;
+  bondTierName: string;
+  bondQuestsCompleted: number;
+};
+
 export interface HeroStatus {
   stage: HeroStatusStage;
   /** Short mood line matching the stage */
@@ -159,6 +182,8 @@ export interface HeroStatus {
   lastFedAt: string;
   /** Current ambient "hero life" vignette (rotates every ~3h) */
   activity: HeroStatusActivity;
+  /** Living Companion reaction (Act VI) — derived relational beat + bond */
+  companion: HeroStatusCompanion;
 }
 
 export interface StreakFreezeResult {
@@ -575,6 +600,8 @@ export interface TaskCompletionResult {
   focusBonusPoints?: number;
   /** True when this completion revived a fainted hero (fed after ≥7 days) */
   heroRevived?: boolean;
+  /** Companion's line for a just-happened bond tier-up or level-up, else null */
+  companionReaction?: string | null;
 }
 
 export type QuestlineStatus = typeof QuestlineStatus[keyof typeof QuestlineStatus];

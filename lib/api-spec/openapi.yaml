@@ -2342,7 +2342,7 @@ components:
 
     HeroStatus:
       type: object
-      required: [stage, mood, lastFedAt, activity]
+      required: [stage, mood, lastFedAt, activity, companion]
       properties:
         stage:
           type: string
@@ -2362,6 +2362,23 @@ components:
               type: string
             text:
               type: string
+        companion:
+          type: object
+          required: [beat, line, bondTier, bondTierName, bondQuestsCompleted]
+          description: Living Companion reaction (Act VI) — derived relational beat + bond
+          properties:
+            beat:
+              type: string
+              enum: [welcome_back, streak_milestone, rest_day, ambient, quiet]
+            line:
+              type: string
+              description: Curated companion line; empty when beat is "quiet"
+            bondTier:
+              type: integer
+            bondTierName:
+              type: string
+            bondQuestsCompleted:
+              type: integer
 
     StreakFreezeResult:
       type: object
@@ -2644,6 +2661,11 @@ components:
         heroRevived:
           type: boolean
           description: True when this completion revived a fainted hero (fed after ≥7 days)
+        companionReaction:
+          oneOf:
+            - type: string
+            - type: "null"
+          description: Companion's line for a just-happened bond tier-up or level-up, else null
 
     Questline:
       type: object

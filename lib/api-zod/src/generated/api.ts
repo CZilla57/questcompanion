@@ -183,7 +183,14 @@ export const GetHeroStatusResponse = zod.object({
   "activity": zod.object({
   "id": zod.string(),
   "text": zod.string()
-}).describe('Current ambient \"hero life\" vignette (rotates every ~3h)')
+}).describe('Current ambient \"hero life\" vignette (rotates every ~3h)'),
+  "companion": zod.object({
+  "beat": zod.enum(['welcome_back', 'streak_milestone', 'rest_day', 'ambient', 'quiet']),
+  "line": zod.string().describe('Curated companion line; empty when beat is \"quiet\"'),
+  "bondTier": zod.number(),
+  "bondTierName": zod.string(),
+  "bondQuestsCompleted": zod.number()
+}).describe('Living Companion reaction (Act VI) — derived relational beat + bond')
 })
 
 
@@ -677,7 +684,8 @@ export const CompleteTaskResponse = zod.object({
 }),zod.null()]).optional().describe('Random bonus reward triggered on ~12% of completions'),
   "focusBonusAwarded": zod.boolean().optional().describe('Whether the all-3-focus-quests bonus was awarded'),
   "focusBonusPoints": zod.number().optional().describe('XP awarded for completing all 3 focus quests'),
-  "heroRevived": zod.boolean().optional().describe('True when this completion revived a fainted hero (fed after ≥7 days)')
+  "heroRevived": zod.boolean().optional().describe('True when this completion revived a fainted hero (fed after ≥7 days)'),
+  "companionReaction": zod.union([zod.string(),zod.null()]).optional().describe('Companion\'s line for a just-happened bond tier-up or level-up, else null')
 })
 
 
