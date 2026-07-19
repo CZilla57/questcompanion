@@ -20,8 +20,11 @@ export type KingdomSceneSpec = {
   variant: string;
 };
 
+// Both dimensions MUST stay whole multiples of TILE so the ground fill tiles
+// exactly to the edge. A non-multiple height leaves the final row hanging past
+// the canvas bottom, which is what the scene-bounds test exists to catch.
 export const SCENE_W = 320;
-export const SCENE_H = 176;
+export const SCENE_H = 192;
 
 /**
  * Buildings are anchored by their BOTTOM-CENTRE, because the composited sprites
@@ -41,14 +44,14 @@ export const KINGDOM_SCENES: Record<string, KingdomSceneSpec> = {
     variant: "brown",
     props: [
       { spriteId: "prop.tree", x: 4, y: 24 },
-      { spriteId: "prop.bush", x: 232, y: 96 },
+      { spriteId: "prop.bush", x: 224, y: 96 },
     ],
     buildingSlots: [
       { shape: "hut",   x: 76,  y: 168 },
       { shape: "house", x: 176, y: 156 },
       { shape: "hut",   x: 262, y: 172 },
       { shape: "hall",  x: 128, y: 176 },
-      { shape: "tower", x: 292, y: 150 },
+      { shape: "tower", x: 284, y: 170 },
     ],
   },
   wellspring: {
@@ -61,8 +64,8 @@ export const KINGDOM_SCENES: Record<string, KingdomSceneSpec> = {
     buildingSlots: [
       { shape: "hut",   x: 64,  y: 166 },
       { shape: "house", x: 160, y: 152 },
-      { shape: "hall",  x: 250, y: 170 },
-      { shape: "tower", x: 108, y: 140 },
+      { shape: "hall",  x: 246, y: 170 },
+      { shape: "tower", x: 108, y: 168 },
       { shape: "keep",  x: 196, y: 176 },
     ],
   },
@@ -75,10 +78,10 @@ export const KINGDOM_SCENES: Record<string, KingdomSceneSpec> = {
     ],
     buildingSlots: [
       { shape: "hut",   x: 68,  y: 170 },
-      { shape: "tower", x: 148, y: 148 },
+      { shape: "tower", x: 148, y: 170 },
       { shape: "hall",  x: 236, y: 168 },
       { shape: "keep",  x: 108, y: 176 },
-      { shape: "tower", x: 292, y: 152 },
+      { shape: "tower", x: 284, y: 168 },
     ],
   },
   athenaeum: {
@@ -87,13 +90,13 @@ export const KINGDOM_SCENES: Record<string, KingdomSceneSpec> = {
     props: [
       { spriteId: "prop.pine", x: 0, y: 20 },
       { spriteId: "prop.tree", x: 216, y: 8 },
-      { spriteId: "prop.bush", x: 116, y: 100 },
+      { spriteId: "prop.bush", x: 116, y: 96 },
     ],
     buildingSlots: [
       { shape: "hut",   x: 80,  y: 168 },
       { shape: "house", x: 168, y: 154 },
       { shape: "hall",  x: 246, y: 172 },
-      { shape: "tower", x: 120, y: 142 },
+      { shape: "tower", x: 120, y: 170 },
       { shape: "keep",  x: 200, y: 176 },
     ],
   },
@@ -102,13 +105,13 @@ export const KINGDOM_SCENES: Record<string, KingdomSceneSpec> = {
     variant: "brick",
     props: [
       { spriteId: "prop.stump", x: 24, y: 132 },
-      { spriteId: "prop.bush", x: 212, y: 100 },
+      { spriteId: "prop.bush", x: 212, y: 96 },
     ],
     buildingSlots: [
       { shape: "hut",   x: 72,  y: 170 },
       { shape: "house", x: 184, y: 152 },
-      { shape: "hall",  x: 264, y: 174 },
-      { shape: "tower", x: 40,  y: 146 },
+      { shape: "hall",  x: 244, y: 174 },
+      { shape: "tower", x: 40,  y: 170 },
       { shape: "keep",  x: 148, y: 176 },
     ],
   },
@@ -116,15 +119,15 @@ export const KINGDOM_SCENES: Record<string, KingdomSceneSpec> = {
     ground: "ground.cobble",
     variant: "stone",
     props: [
-      { spriteId: "prop.bush", x: 8, y: 100 },
-      { spriteId: "prop.tree", x: 240, y: 12 },
+      { spriteId: "prop.bush", x: 8, y: 96 },
+      { spriteId: "prop.tree", x: 224, y: 12 },
     ],
     buildingSlots: [
       { shape: "house", x: 88,  y: 164 },
       { shape: "hall",  x: 176, y: 156 },
-      { shape: "tower", x: 44,  y: 144 },
-      { shape: "keep",  x: 238, y: 176 },
-      { shape: "hut",   x: 292, y: 170 },
+      { shape: "tower", x: 44,  y: 170 },
+      { shape: "keep",  x: 230, y: 176 },
+      { shape: "hut",   x: 276, y: 170 },
     ],
   },
 };
@@ -179,7 +182,10 @@ export function resolveScene(kingdomId: string, tier: number, liveliness: Liveli
     if (layer) placed.push(layer);
   }
   // Painter's order: buildings further back drawn first so nearer ones overlap.
-  placed.sort((a, b) => a.y - b.y);
+  // Depth is the GROUND line (bottom edge), not the top-left corner — sprite
+  // heights differ per shape, so comparing top edges can sort a tall building
+  // further forward behind a short building further back.
+  placed.sort((a, b) => (a.y + spriteSize(a.spriteId)!.h) - (b.y + spriteSize(b.spriteId)!.h));
   for (const p of placed) layers.push({ ...p, alpha });
 
   // Liveliness overlay: lit windows, drawn at full opacity so the light reads

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { resolveScene, KINGDOM_SCENES, SCENE_W, SCENE_H } from "./kingdom-scene";
-import { SPRITES, LANTERN_ID } from "./kingdom-sprites";
+import { SPRITES, LANTERN_ID, spriteSize } from "./kingdom-sprites";
 
 const LIVELINESS = ["dormant", "stirring", "steady", "bustling"] as const;
 const builds = (ls: { spriteId: string }[]) => ls.filter((l) => l.spriteId.startsWith("build."));
@@ -77,5 +77,29 @@ describe("resolveScene", () => {
 
   it("returns nothing for an unknown kingdom", () => {
     expect(resolveScene("atlantis", 3, "steady")).toEqual([]);
+  });
+
+  it("keeps every layer fully inside the scene bounds", () => {
+    // Buildings anchor by bottom-centre and sprite heights differ, so a slot
+    // placed too high clips the roof off the top of the canvas.
+    for (const id of Object.keys(KINGDOM_SCENES)) {
+      for (const liveliness of LIVELINESS) {
+        for (const layer of resolveScene(id, 5, liveliness)) {
+          const size = spriteSize(layer.spriteId)!;
+          expect(layer.x, `${id}/${layer.spriteId} left`).toBeGreaterThanOrEqual(0);
+          expect(layer.y, `${id}/${layer.spriteId} top`).toBeGreaterThanOrEqual(0);
+          expect(layer.x + size.w, `${id}/${layer.spriteId} right`).toBeLessThanOrEqual(SCENE_W);
+          expect(layer.y + size.h, `${id}/${layer.spriteId} bottom`).toBeLessThanOrEqual(SCENE_H);
+        }
+      }
+    }
+  });
+
+  it("paints nearer buildings over further ones", () => {
+    // Depth is the BOTTOM edge, not the top — a tall building further forward
+    // must not sort behind a short one further back.
+    const builds = resolveScene("hearth", 5, "steady").filter((l) => l.spriteId.startsWith("build."));
+    const grounds = builds.map((l) => l.y + spriteSize(l.spriteId)!.h);
+    expect(grounds).toEqual([...grounds].sort((a, b) => a - b));
   });
 });
