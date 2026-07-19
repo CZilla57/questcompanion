@@ -564,50 +564,39 @@ git commit -m "feat(db): kingdom_points table for monotonic structure points"
 
 **Interfaces:**
 - Consumes: `kingdomForCategory` from Task 1, `kingdomPointsTable` from Task 4
-- Produces: `growKingdom(tx, userId: number, category: string, basePoints: number): Promise<void>`
+- Produces: `KingdomGrowth { kingdomId: KingdomId; points: number }`, `kingdomGrowth(category: string, basePoints: number): KingdomGrowth | null`, `growKingdom(tx, userId: number, category: string, basePoints: number): Promise<void>`
+
+**Structure:** the growth *decision* is a pure function tested directly; `growKingdom` is a thin DB wrapper around it, verified by typecheck and the route. This matches how `companion.ts` and `hero-care.ts` are already built, and this package has no DB test harness — do NOT introduce a mock transaction.
 
 - [ ] **Step 1: Write the failing test**
 
-This test covers the growth *decision* purely; the upsert itself is exercised by the route.
-
 ```typescript
 // artifacts/api-server/src/lib/kingdom-growth.test.ts
-import { describe, it, expect, vi } from "vitest";
-import { growKingdom } from "./kingdom-growth";
+import { describe, it, expect } from "vitest";
+import { kingdomGrowth } from "./kingdom-growth";
 
-function fakeTx() {
-  const calls: { kingdomId: string; points: number }[] = [];
-  const tx = {
-    insert: () => ({
-      values: (v: { kingdomId: string; lifetimePoints: number }) => ({
-        onConflictDoUpdate: () => {
-          calls.push({ kingdomId: v.kingdomId, points: v.lifetimePoints });
-          return Promise.resolve();
-        },
-      }),
-    }),
-  };
-  return { tx: tx as never, calls };
-}
-
-describe("growKingdom", () => {
-  it("routes points to the kingdom that owns the category", async () => {
-    const { tx, calls } = fakeTx();
-    await growKingdom(tx, 1, "deep_work", 35);
-    expect(calls).toEqual([{ kingdomId: "forge", points: 35 }]);
+describe("kingdomGrowth", () => {
+  it("routes points to the kingdom that owns the category", () => {
+    expect(kingdomGrowth("deep_work", 35)).toEqual({ kingdomId: "forge", points: 35 });
+    expect(kingdomGrowth("household", 20)).toEqual({ kingdomId: "hearth", points: 20 });
   });
 
-  it("sends uncategorized work to the capital", async () => {
-    const { tx, calls } = fakeTx();
-    await growKingdom(tx, 1, "default", 15);
-    expect(calls).toEqual([{ kingdomId: "capital", points: 15 }]);
+  it("sends uncategorized work to the capital", () => {
+    expect(kingdomGrowth("default", 15)).toEqual({ kingdomId: "capital", points: 15 });
   });
 
-  it("is a no-op for zero or negative points", async () => {
-    const { tx, calls } = fakeTx();
-    await growKingdom(tx, 1, "health", 0);
-    await growKingdom(tx, 1, "health", -20);
-    expect(calls).toEqual([]);
+  it("sends an unknown category to the capital", () => {
+    expect(kingdomGrowth("not_a_real_category", 15)).toEqual({ kingdomId: "capital", points: 15 });
+  });
+
+  it("declines zero or negative points", () => {
+    expect(kingdomGrowth("health", 0)).toBeNull();
+    expect(kingdomGrowth("health", -20)).toBeNull();
+  });
+
+  it("passes base points through unchanged", () => {
+    // Growth must reflect the quest's own worth, never a boosted total.
+    expect(kingdomGrowth("deep_work", 35)!.points).toBe(35);
   });
 });
 ```
@@ -623,40 +612,51 @@ Expected: FAIL — `Failed to resolve import "./kingdom-growth"`
 // artifacts/api-server/src/lib/kingdom-growth.ts
 import { sql } from "drizzle-orm";
 import { kingdomPointsTable } from "@workspace/db";
-import { kingdomForCategory } from "./kingdoms";
+import { kingdomForCategory, type KingdomId } from "./kingdoms";
+
+export type KingdomGrowth = { kingdomId: KingdomId; points: number };
 
 /**
- * Add base task points to the kingdom that owns `category`, creating the row on
- * first contact. Called inside the completion transaction.
- *
- * INVARIANT: only ever adds. There is deliberately no matching shrink function —
- * uncomplete and delete leave kingdom points untouched, which is what makes a
- * quiet kingdom read as asleep rather than ruined.
+ * Pure growth decision: which kingdom a completed quest feeds, and by how much.
+ * Null means "nothing to record".
  *
  * The caller MUST pass base `tasks.points`, never the multiplier-boosted
  * `pointsAwarded`: an instrument meant to reflect real life must not move
  * because the user bought an XP perk.
  */
+export function kingdomGrowth(category: string, basePoints: number): KingdomGrowth | null {
+  if (basePoints <= 0) return null;
+  return { kingdomId: kingdomForCategory(category), points: basePoints };
+}
+
 // Structurally typed against the transaction handle rather than importing
 // drizzle's PgTransaction generics, which are painful to name at a call site
 // and would couple this lib to the driver.
 type InsertCapableTx = { insert: (table: typeof kingdomPointsTable) => any };
 
+/**
+ * Persist the growth decision, creating the row on first contact. Called inside
+ * the completion transaction.
+ *
+ * INVARIANT: only ever adds. There is deliberately no matching shrink function —
+ * uncomplete and delete leave kingdom points untouched, which is what makes a
+ * quiet kingdom read as asleep rather than ruined.
+ */
 export async function growKingdom(
   tx: InsertCapableTx,
   userId: number,
   category: string,
   basePoints: number,
 ): Promise<void> {
-  if (basePoints <= 0) return;
-  const kingdomId = kingdomForCategory(category);
+  const growth = kingdomGrowth(category, basePoints);
+  if (!growth) return;
   await tx
     .insert(kingdomPointsTable)
-    .values({ userId, kingdomId, lifetimePoints: basePoints })
+    .values({ userId, kingdomId: growth.kingdomId, lifetimePoints: growth.points })
     .onConflictDoUpdate({
       target: [kingdomPointsTable.userId, kingdomPointsTable.kingdomId],
       set: {
-        lifetimePoints: sql`${kingdomPointsTable.lifetimePoints} + ${basePoints}`,
+        lifetimePoints: sql`${kingdomPointsTable.lifetimePoints} + ${growth.points}`,
         updatedAt: new Date(),
       },
     });
@@ -666,7 +666,7 @@ export async function growKingdom(
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `pnpm --filter @workspace/api-server test -- kingdom-growth`
-Expected: PASS — 3 tests
+Expected: PASS — 5 tests
 
 - [ ] **Step 5: Wire into the completion transaction**
 
