@@ -54,7 +54,7 @@ export const TERRAIN_SPRITES: Record<string, TerrainSprite> = {
   // ── Props (free-standing) ──
   "prop.boulder":      t(608, 608, 64, 32),
   "prop.boulder-pale": t(800, 608, 64, 32),
-  "prop.tree":         t(704, 704, 96, 128),
+  "prop.tree":         t(705, 720, 94, 144),
   "prop.bush":         t(800, 656, 96, 80),
   "prop.pine":         t(800, 832, 96, 96),
   "prop.stump":        t(736, 872, TILE, TILE),

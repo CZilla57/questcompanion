@@ -32,7 +32,6 @@ export function KingdomMap() {
               kingdomId={k.id}
               tier={k.tier}
               liveliness={(data.worldResting ? "stirring" : k.liveliness) as Liveliness}
-              width={320}
               className="w-full block"
             />
             <div className="p-2 flex items-baseline justify-between">

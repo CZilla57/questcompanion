@@ -57,11 +57,14 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 }
 
 export function KingdomScene({
-  kingdomId, tier, liveliness, width = SCENE_W, className,
+  kingdomId, tier, liveliness, width, className,
 }: {
   kingdomId: string;
   tier: number;
   liveliness: Liveliness;
+  /** Fixed CSS width in px. Omit to size via className (e.g. w-full) — an
+   *  inline width would override any class, so none is set unless asked for.
+   *  Either way the canvas keeps its intrinsic 320:192 ratio. */
   width?: number;
   className?: string;
 }) {
@@ -136,7 +139,10 @@ export function KingdomScene({
       width={SCENE_W}
       height={SCENE_H}
       className={className}
-      style={{ width, height: (width * SCENE_H) / SCENE_W, imageRendering: "pixelated" }}
+      style={{
+        ...(width !== undefined ? { width, height: (width * SCENE_H) / SCENE_W } : undefined),
+        imageRendering: "pixelated",
+      }}
       role="img"
       aria-label={describeKingdom(kingdomId, tier, liveliness)}
     />
