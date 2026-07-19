@@ -96,7 +96,7 @@ export function KingdomMap() {
                 <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
                   {capital.tier > 0 ? capital.tierName : "Unfounded"}
                 </span>
-                <KingdomTierPips tier={capital.tier} total={MAX_CAPITAL_TIER + 1} />
+                <KingdomTierPips tier={capital.tier} total={MAX_CAPITAL_TIER} />
               </div>
             </div>
           </div>

@@ -15,9 +15,10 @@ const LIVELINESS_DOT: Record<string, string> = {
  * below the rule.
  *
  * The capital deliberately uses a DIFFERENT visual grammar — filled pips for
- * accumulated tier, never a liveliness bar. Uncategorized work has no balance
- * meaning, so giving it a sixth bar would make it read as a life area and
- * dilute the five-kingdom signal the whole instrument exists to carry. Copy is
+ * accumulated tier, never a liveliness bar. Liveliness is a share of RECENT
+ * activity; the capital is a CUMULATIVE total, which has no share to report.
+ * A sixth bar would need a value that doesn't exist, and would dilute the
+ * five-kingdom signal the whole instrument exists to carry. Copy is
  * invitational, never corrective.
  */
 export function KingdomStrip() {
@@ -54,7 +55,7 @@ export function KingdomStrip() {
           <span className="text-[10px] text-muted-foreground truncate">
             Capital · {capital.tier > 0 ? capital.tierName : "unfounded"}
           </span>
-          <KingdomTierPips tier={capital.tier} total={MAX_CAPITAL_TIER + 1} className="shrink-0" />
+          <KingdomTierPips tier={capital.tier} total={MAX_CAPITAL_TIER} className="shrink-0" />
         </div>
       )}
 

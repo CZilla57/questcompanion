@@ -134,13 +134,14 @@ describe("resolveScene", () => {
     // Buildings anchor by bottom-centre and sprite heights differ, so a slot
     // placed too high clips the roof off the top of the canvas.
     for (const id of Object.keys(KINGDOM_SCENES)) {
+      const { w, h } = sceneSize(id);
       for (const liveliness of LIVELINESS) {
         for (const layer of resolveScene(id, 5, liveliness)) {
           const size = spriteSize(layer.spriteId)!;
           expect(layer.x, `${id}/${layer.spriteId} left`).toBeGreaterThanOrEqual(0);
           expect(layer.y, `${id}/${layer.spriteId} top`).toBeGreaterThanOrEqual(0);
-          expect(layer.x + size.w, `${id}/${layer.spriteId} right`).toBeLessThanOrEqual(SCENE_W);
-          expect(layer.y + size.h, `${id}/${layer.spriteId} bottom`).toBeLessThanOrEqual(SCENE_H);
+          expect(layer.x + size.w, `${id}/${layer.spriteId} right`).toBeLessThanOrEqual(w);
+          expect(layer.y + size.h, `${id}/${layer.spriteId} bottom`).toBeLessThanOrEqual(h);
         }
       }
     }

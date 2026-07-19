@@ -213,6 +213,11 @@ describe("capitalLifetime", () => {
     // Only the capital row is populated: the total must equal it, not double it.
     expect(capitalLifetime({ capital: 250 })).toBe(250);
   });
+
+  it("is monotonic: growing any single kingdom's lifetime never decreases the total", () => {
+    const base = { hearth: 1200, wellspring: 300, forge: 3400, athenaeum: 60, crossroads: 900, capital: 1100 };
+    expect(capitalLifetime(base)).toBeLessThanOrEqual(capitalLifetime({ ...base, forge: base.forge + 1 }));
+  });
 });
 
 describe("capitalTier", () => {
@@ -235,6 +240,30 @@ describe("capitalTier", () => {
     expect(capitalTier(149).tier).toBe(1);
     expect(capitalTier(999).tier).toBe(3);
     expect(capitalTier(39999).tier).toBe(10);
+  });
+
+  it("lands on every threshold exactly and falls one tier short one point below it", () => {
+    // The 12 CAPITAL_TIERS thresholds are what twelve hand-drawn art stages
+    // were calibrated against, so a threshold drifting into the gap below it
+    // (e.g. Borough 3500 -> 3200) must fail loudly, not just at 3 spot checks.
+    //
+    // These expected values are hardcoded literals, NOT read from
+    // CAPITAL_TIERS' own t.minPoints: deriving the expectation from the same
+    // array capitalTier() walks would make the check self-referential — a
+    // threshold moved anywhere between its two neighbours would still agree
+    // with itself and the test would pass silently. Pinning the literal
+    // number is what makes drift actually fail.
+    const KNOWN_THRESHOLDS: Record<number, number> = {
+      11: 40000, 10: 25000, 9: 16000, 8: 10000, 7: 6000, 6: 3500,
+      5: 2000, 4: 1000, 3: 400, 2: 150, 1: 1,
+    };
+    for (const t of CAPITAL_TIERS) {
+      if (t.tier === 0) continue;
+      const minPoints = KNOWN_THRESHOLDS[t.tier];
+      expect(minPoints, `no known threshold pinned for tier ${t.tier} (${t.name})`).toBeDefined();
+      expect(capitalTier(minPoints!).tier, `${t.name} at its own threshold`).toBe(t.tier);
+      expect(capitalTier(minPoints! - 1).tier, `${t.name} one point below`).toBe(t.tier - 1);
+    }
   });
 
   it("caps at tier 11 and never exceeds it", () => {

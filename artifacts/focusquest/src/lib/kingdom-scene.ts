@@ -188,10 +188,11 @@ export function resolveScene(kingdomId: string, tier: number, liveliness: Liveli
 
   const alpha = ALPHA_BY_LIVELINESS[liveliness];
   const layers: SceneLayer[] = [];
+  const { w, h } = sceneSize(kingdomId);
 
   // Ground fill.
-  for (let y = 0; y < SCENE_H; y += TILE) {
-    for (let x = 0; x < SCENE_W; x += TILE) {
+  for (let y = 0; y < h; y += TILE) {
+    for (let x = 0; x < w; x += TILE) {
       layers.push({ spriteId: spec.ground, x, y, alpha });
     }
   }

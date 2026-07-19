@@ -29,7 +29,13 @@ const LIVELINESS_PHRASE: Record<Liveliness, string> = {
  *  capitalize avoids a second copy of the name table in this seam. */
 function describeKingdom(kingdomId: string, tier: number, liveliness: Liveliness | null): string {
   const name = kingdomId.charAt(0).toUpperCase() + kingdomId.slice(1);
-  const tierPhrase = TIER_PHRASE[tier] ?? TIER_PHRASE[0];
+  // Falls back to the HIGHEST defined phrase, not TIER_PHRASE[0]. This table
+  // only covers tiers 0-5; the capital's ladder runs to 11 and reaches here
+  // whenever a caller omits the optional `label` override. Under-reporting
+  // (falling back to "untouched land") would erase real work a screen-reader
+  // user actually did; over-reporting is merely imprecise. When forced to be
+  // wrong, be wrong in the direction that doesn't insult the user's progress.
+  const tierPhrase = TIER_PHRASE[tier] ?? TIER_PHRASE[5];
   if (liveliness === null) return `${name}, ${tierPhrase}`;
   const livelinessPhrase = LIVELINESS_PHRASE[liveliness] ?? LIVELINESS_PHRASE.dormant;
   return `${name}, ${tierPhrase}, ${livelinessPhrase} right now`;
