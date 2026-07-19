@@ -289,6 +289,13 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
+      {/* ── Kingdom liveliness strip ───────────────────────── */}
+      {/* Sits with the ambient status group, above the quest list: this strip is
+          the balance instrument, and an instrument you have to scroll to find
+          isn't one. Deliberately below the stat cards and focus CTA so it never
+          competes with "what do I do right now". */}
+      <KingdomStrip />
+
       {/* ── Quest Activity Heatmap + Hero + Recent Badges ── */}
       <ActivityHeatmap
         aside={
@@ -484,9 +491,6 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
-
-      {/* ── Kingdom liveliness strip ───────────────────────── */}
-      <KingdomStrip />
 
       {/* ── Edit quest dialog ─────────────────────────────── */}
       <Dialog open={!!editTask && !editTask.completed} onOpenChange={(open) => { if (!open) setEditTask(null); }}>

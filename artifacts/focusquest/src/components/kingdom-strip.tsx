@@ -1,6 +1,5 @@
 import { Link } from "wouter";
 import { useGetKingdoms } from "@workspace/api-client-react";
-import type { Liveliness } from "@/lib/kingdom-scene";
 
 const LIVELINESS_DOT: Record<string, string> = {
   dormant:  "bg-muted-foreground/30",
