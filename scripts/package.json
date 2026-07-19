@@ -10,6 +10,7 @@
     "seed-gear": "tsx ./src/seed-gear.ts",
     "seed-badges": "tsx ./src/seed-badges.ts",
     "backfill-badges": "tsx ./src/backfill-badges.ts",
+    "render-status": "tsx ./src/render-status.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
