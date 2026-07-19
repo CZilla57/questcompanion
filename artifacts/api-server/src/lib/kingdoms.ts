@@ -131,3 +131,18 @@ export function deriveNeglectInvitation(args: {
   if (!top) return null;
   return { kingdomId: top.id, kingdomName: KINGDOMS.find((k) => k.id === top.id)!.name };
 }
+
+export type KingdomGrowth = { kingdomId: KingdomId; points: number };
+
+/**
+ * Pure growth decision: which kingdom a completed quest feeds, and by how much.
+ * Null means "nothing to record".
+ *
+ * The caller MUST pass base `tasks.points`, never the multiplier-boosted
+ * `pointsAwarded`: an instrument meant to reflect real life must not move
+ * because the user bought an XP perk.
+ */
+export function kingdomGrowth(category: string, basePoints: number): KingdomGrowth | null {
+  if (basePoints <= 0) return null;
+  return { kingdomId: kingdomForCategory(category), points: basePoints };
+}
