@@ -9,6 +9,7 @@ import { MILESTONE_TYPES, hasFreshMilestone } from "../lib/ally-milestones";
 import { resolveTimeZone, localDateKey, localDayStartUtc } from "../lib/date-buckets";
 import { sendPushNotification } from "../lib/push-notifications";
 import { isValidKind, isValidReaction, reactionLabel, canSendNudge, type NudgeKind } from "../lib/nudges";
+import { awardSocialBadges } from "../lib/badge-awards";
 
 const router: IRouter = Router();
 
@@ -188,6 +189,9 @@ router.post("/accountability/partners/:id/accept", async (req, res): Promise<voi
   if (!p) { res.status(404).json({ error: "Partnership not found" }); return; }
 
   const partnerId = p.requesterId;
+  // Both sides gained an ally, so both may have crossed a social badge tier.
+  await Promise.all([awardSocialBadges(userId), awardSocialBadges(partnerId)]);
+
   const [partner] = await db.select().from(usersTable).where(eq(usersTable.id, partnerId));
   res.json({
     id: p.id,
@@ -389,6 +393,8 @@ router.post("/accountability/partners/:id/nudge", async (req, res): Promise<void
     reaction,
     contextType: typeof contextType === "string" ? contextType : null,
   }).returning();
+
+  await awardSocialBadges(userId);
 
   // Best-effort push to the recipient; never blocks persistence.
   const [sender] = await db.select().from(usersTable).where(eq(usersTable.id, userId));

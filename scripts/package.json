@@ -8,6 +8,8 @@
     "build-lpc": "tsx ./src/build-lpc-assets.ts",
     "build-kingdom-buildings": "tsx ./src/build-kingdom-buildings.ts",
     "seed-gear": "tsx ./src/seed-gear.ts",
+    "seed-badges": "tsx ./src/seed-badges.ts",
+    "backfill-badges": "tsx ./src/backfill-badges.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
