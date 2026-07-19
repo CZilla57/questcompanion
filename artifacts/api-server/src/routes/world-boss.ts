@@ -8,6 +8,7 @@ import { getLevelInfo } from "../lib/gamification";
 import { getWeekKey } from "../lib/week-key";
 import { getUserPower } from "./battle";
 import { WORLD_BOSS, worldBossHp, dayKey, rollDamage, crossedThreshold } from "../lib/world-boss";
+import { awardSocialBadges } from "../lib/badge-awards";
 import { awardCoins } from "../lib/award-coins";
 
 const router: IRouter = Router();
@@ -196,6 +197,9 @@ router.post("/world-boss/attack", async (req, res): Promise<void> => {
     res.json({ attacked: false, reason: "defeated", damage: null, hp: 0, totalDamage: 0, defeated: true, justDefeated: false, xpAwarded: 0, coinsAwarded: 0 });
     return;
   }
+  // Post-transaction: the attack landed, so boss-attack badge tiers may be due.
+  await awardSocialBadges(userId);
+
   res.json({
     attacked: true,
     reason: null,

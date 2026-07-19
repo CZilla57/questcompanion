@@ -1,5 +1,5 @@
 import express, { Router, type IRouter } from "express";
-import { eq, and, or, desc, count, inArray } from "drizzle-orm";
+import { eq, and, or, desc, count, inArray, sql } from "drizzle-orm";
 import { applyMultiplier } from "../lib/xp-multiplier";
 import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable, taskStepsTable, questlinesTable, brainCheckinsTable } from "@workspace/db";
 import type { DifficultyLevel, VariantLadder } from "@workspace/db";
@@ -8,6 +8,7 @@ import { assignPoints, CATEGORY_LABELS, VALID_CATEGORIES } from "../lib/auto-poi
 import { advanceHabitStreak, reverseHabitStreak, type HabitStreakPreviousState } from "../lib/habit-streaks";
 import { awardStreakGear, getStreakGearRarity, type GearRewardInfo } from "../lib/gear-rewards";
 import { rollSurpriseReward, type SurpriseRewardResult } from "../lib/surprise-rewards";
+import { grantQualifyingBadges } from "../lib/badge-awards";
 import { logger } from "../lib/logger";
 import { breakdownTask, BreakdownParseError } from "../lib/ai/task-breakdown";
 import { generateJson, isAiConfigured, AiClientError } from "../lib/ai/client";
@@ -814,41 +815,20 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     );
   }
 
-  // Badge grants.
-  const allBadges = await db.select().from(badgesTable);
-  const earnedBadgeIds = (await db.select().from(userBadgesTable)
-    .where(eq(userBadgesTable.userId, userId))).map((ub) => ub.badgeId);
-  const totalCompleted = (await db.select().from(tasksTable)
-    .where(and(eq(tasksTable.userId, userId), eq(tasksTable.completed, true)))).length;
+  // Badge grants.  Qualification is metric-driven (see `badge-rules.ts`), so
+  // adding a badge to the catalog needs no change here.
+  const [{ n: totalCompleted }] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(tasksTable)
+    .where(and(eq(tasksTable.userId, userId), eq(tasksTable.completed, true)));
 
-  const newBadges: typeof badgesTable.$inferSelect[] = [];
-  const newBadgeIds: number[] = [];
-  for (const badge of allBadges) {
-    if (earnedBadgeIds.includes(badge.id)) continue;
-    let qualifies = false;
-    if (badge.category === "streak" && newStreak >= badge.requirement) qualifies = true;
-    if (badge.category === "tasks" && totalCompleted >= badge.requirement) qualifies = true;
-    if (badge.category === "points" && newTotalPoints >= badge.requirement) qualifies = true;
-    if (badge.category === "level" && newLevel.level >= badge.requirement) qualifies = true;
-    if (qualifies) {
-      // onConflictDoNothing prevents duplicate badge rows from concurrent completions.
-      // Only record activity and snapshot the badge ID if the insert actually succeeded.
-      const [inserted] = await db.insert(userBadgesTable)
-        .values({ userId, badgeId: badge.id })
-        .onConflictDoNothing()
-        .returning();
-      if (inserted) {
-        await db.insert(activityTable).values({
-          userId,
-          type: "badge_earned",
-          description: `Earned badge: ${badge.name}`,
-          points: 0,
-        });
-        newBadges.push(badge);
-        newBadgeIds.push(badge.id);
-      }
-    }
-  }
+  const newBadges = await grantQualifyingBadges(userId, {
+    streak_days: newStreak,
+    tasks_completed: totalCompleted,
+    total_points: newTotalPoints,
+    level: newLevel.level,
+  });
+  const newBadgeIds = newBadges.map((b) => b.id);
 
   const surpriseReward: SurpriseRewardResult = await rollSurpriseReward(userId, newLevel.level);
 
