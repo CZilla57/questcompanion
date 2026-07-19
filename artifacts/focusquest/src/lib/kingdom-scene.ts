@@ -28,9 +28,26 @@ export const SCENE_H = 192;
 export const SCENE_KINGDOM_IDS = ["hearth", "wellspring", "forge", "athenaeum", "crossroads", "capital"] as const;
 export const MAX_KINGDOM_TIER = 5;
 
+/** The capital is a full-width band, not a tile: it is the only scene whose
+ *  art fills the content column, so it has its own dimensions and its own
+ *  deeper ladder. Both values stay whole multiples of TILE. */
+export const CAPITAL_SCENE_W = 1024;
+export const CAPITAL_SCENE_H = 192;
+export const MAX_CAPITAL_TIER = 11;
+
+export function sceneSize(kingdomId: string): { w: number; h: number } {
+  return kingdomId === "capital"
+    ? { w: CAPITAL_SCENE_W, h: CAPITAL_SCENE_H }
+    : { w: SCENE_W, h: SCENE_H };
+}
+
+export function maxTierFor(kingdomId: string): number {
+  return kingdomId === "capital" ? MAX_CAPITAL_TIER : MAX_KINGDOM_TIER;
+}
+
 export function resolveSceneImageUrl(kingdomId: string, tier: number): string | null {
   if (!SCENE_KINGDOM_IDS.includes(kingdomId as (typeof SCENE_KINGDOM_IDS)[number])) return null;
-  const safeTier = Math.max(0, Math.min(MAX_KINGDOM_TIER, Math.trunc(tier)));
+  const safeTier = Math.max(0, Math.min(maxTierFor(kingdomId), Math.trunc(tier)));
   return `/kingdoms/scenes/${kingdomId}/tier-${safeTier}.png`;
 }
 
@@ -171,10 +188,11 @@ export function resolveScene(kingdomId: string, tier: number, liveliness: Liveli
 
   const alpha = ALPHA_BY_LIVELINESS[liveliness];
   const layers: SceneLayer[] = [];
+  const { w, h } = sceneSize(kingdomId);
 
   // Ground fill.
-  for (let y = 0; y < SCENE_H; y += TILE) {
-    for (let x = 0; x < SCENE_W; x += TILE) {
+  for (let y = 0; y < h; y += TILE) {
+    for (let x = 0; x < w; x += TILE) {
       layers.push({ spriteId: spec.ground, x, y, alpha });
     }
   }

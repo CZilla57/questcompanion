@@ -15,5 +15,6 @@ export interface KingdomState {
   lifetimePoints: number;
   tier: number;
   tierName: string;
+  /** Share of recent activity. Null for the capital, which is a cumulative lifetime total and has no share to report. */
   liveliness: KingdomStateLiveliness;
 }

@@ -64,6 +64,40 @@ export function kingdomTier(points: number): KingdomTierInfo {
   return KINGDOM_TIERS[KINGDOM_TIERS.length - 1]!;
 }
 
+export const MAX_CAPITAL_TIER = 11;
+
+/**
+ * The capital's own ladder, twelve stages deep. Separate from KINGDOM_TIERS
+ * because the capital accumulates roughly 5-6x faster than any single kingdom:
+ * it is the sum of all of them. Tier 7 lands near "all five at Village" and
+ * tier 11 near "all five at Stronghold", so the top of the ladder means
+ * something specific rather than being an arbitrary ceiling.
+ *
+ * Absolute thresholds, never relative to the user's own history - same
+ * discipline as KINGDOM_TIERS and for the same reason.
+ */
+export const CAPITAL_TIERS: KingdomTierInfo[] = [
+  { tier: 11, name: "Eternal Capital", minPoints: 40000 },
+  { tier: 10, name: "Crown City",      minPoints: 25000 },
+  { tier: 9,  name: "Metropolis",      minPoints: 16000 },
+  { tier: 8,  name: "Grand City",      minPoints: 10000 },
+  { tier: 7,  name: "City",            minPoints: 6000 },
+  { tier: 6,  name: "Borough",         minPoints: 3500 },
+  { tier: 5,  name: "Town",            minPoints: 2000 },
+  { tier: 4,  name: "Village",         minPoints: 1000 },
+  { tier: 3,  name: "Hamlet",          minPoints: 400 },
+  { tier: 2,  name: "Camp",            minPoints: 150 },
+  { tier: 1,  name: "Waystation",      minPoints: 1 },
+  { tier: 0,  name: "Wilds",           minPoints: 0 },
+];
+
+export function capitalTier(points: number): KingdomTierInfo {
+  for (const t of CAPITAL_TIERS) {
+    if (points >= t.minPoints) return t;
+  }
+  return CAPITAL_TIERS[CAPITAL_TIERS.length - 1]!;
+}
+
 export type Liveliness = "dormant" | "stirring" | "steady" | "bustling";
 
 /** Rolling window for the liveliness reading. */
@@ -81,6 +115,23 @@ export const WORLD_RESTING_THRESHOLD = 100;
 /** Sum of recent points across the five balance kingdoms. Excludes the capital. */
 export function balanceRecentTotal(recentByKingdom: Partial<Record<KingdomId, number>>): number {
   return BALANCE_KINGDOMS.reduce((sum, id) => sum + (recentByKingdom[id] ?? 0), 0);
+}
+
+/**
+ * The capital is the realm's grand total: every base point ever earned,
+ * including the uncategorized work held in its own row.
+ *
+ * Derived, never stored. A sum of monotonic values is monotonic, so the
+ * capital can never regress, and no backfill is needed for existing users.
+ *
+ * Deliberately sums ALL SIX ids, not BALANCE_KINGDOMS — this is the one place
+ * the capital is included on purpose. It must never be reused as a balance
+ * denominator; see balanceRecentTotal for that.
+ */
+export function capitalLifetime(
+  lifetimeByKingdom: Partial<Record<KingdomId, number>>,
+): number {
+  return KINGDOMS.reduce((sum, k) => sum + (lifetimeByKingdom[k.id] ?? 0), 0);
 }
 
 export function isWorldResting(recentByKingdom: Partial<Record<KingdomId, number>>): boolean {
@@ -145,4 +196,47 @@ export type KingdomGrowth = { kingdomId: KingdomId; points: number };
 export function kingdomGrowth(category: string, basePoints: number): KingdomGrowth | null {
   if (basePoints <= 0) return null;
   return { kingdomId: kingdomForCategory(category), points: basePoints };
+}
+
+export type KingdomStateView = {
+  id: KingdomId;
+  name: string;
+  isCapital: boolean;
+  lifetimePoints: number;
+  tier: number;
+  tierName: string;
+  liveliness: Liveliness | null;
+};
+
+/**
+ * Shapes the full six-kingdom payload. Pure and DB-free so it can be tested
+ * directly - the route is then only DB reads plus one call to this.
+ *
+ * The capital is the realm's grand total on its own 12-stage ladder and
+ * reports NO liveliness: liveliness is a share of recent activity, and a
+ * cumulative total has no share. Null, never a fabricated value.
+ *
+ * `balanceRecentTotal` excludes the capital, so capital points can never
+ * reach the denominator that decides the five kingdoms' liveliness.
+ */
+export function kingdomStates(
+  lifetimeByKingdom: Partial<Record<KingdomId, number>>,
+  recentByKingdom: Partial<Record<KingdomId, number>>,
+): KingdomStateView[] {
+  const total = balanceRecentTotal(recentByKingdom);
+  return KINGDOMS.map((k) => {
+    const lifetime = k.isCapital
+      ? capitalLifetime(lifetimeByKingdom)
+      : (lifetimeByKingdom[k.id] ?? 0);
+    const t = k.isCapital ? capitalTier(lifetime) : kingdomTier(lifetime);
+    return {
+      id: k.id,
+      name: k.name,
+      isCapital: k.isCapital,
+      lifetimePoints: lifetime,
+      tier: t.tier,
+      tierName: t.name,
+      liveliness: k.isCapital ? null : deriveLiveliness(recentByKingdom[k.id] ?? 0, total),
+    };
+  });
 }

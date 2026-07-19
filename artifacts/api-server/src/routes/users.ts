@@ -9,8 +9,8 @@ import { currentVignette } from "../lib/hero-flavor";
 import { bondTier, dayGap, deriveCompanionBeat } from "../lib/companion";
 import { companionLine } from "../lib/companion-copy";
 import {
-  KINGDOMS, kingdomForCategory, kingdomTier, deriveLiveliness, deriveNeglectInvitation,
-  isWorldResting, balanceRecentTotal, LIVELINESS_WINDOW_DAYS, type KingdomId,
+  kingdomForCategory, deriveNeglectInvitation, isWorldResting, kingdomStates,
+  LIVELINESS_WINDOW_DAYS, type KingdomId,
 } from "../lib/kingdoms";
 
 const router: IRouter = Router();
@@ -212,31 +212,9 @@ router.get("/users/me/kingdoms", async (req, res): Promise<void> => {
     recentByKingdom[id] = (recentByKingdom[id] ?? 0) + t.points;
   }
 
-  const total = balanceRecentTotal(recentByKingdom);
-
   res.json({
     worldResting: isWorldResting(recentByKingdom),
-    kingdoms: KINGDOMS.map((k) => {
-      const lifetime = lifetimeByKingdom[k.id] ?? 0;
-      const t = kingdomTier(lifetime);
-      const recentPoints = recentByKingdom[k.id] ?? 0;
-      // The capital is excluded from `total` (the five-kingdom balance reading),
-      // so reusing that same total for the capital's own liveliness let its
-      // share exceed 1 (always "bustling") or forced "dormant" whenever the
-      // balance total was 0 despite heavy uncategorized work. Fold its own
-      // recent points into its denominator so the value is at least internally
-      // consistent. Not currently rendered by any surface.
-      const denominator = k.isCapital ? total + recentPoints : total;
-      return {
-        id: k.id,
-        name: k.name,
-        isCapital: k.isCapital,
-        lifetimePoints: lifetime,
-        tier: t.tier,
-        tierName: t.name,
-        liveliness: deriveLiveliness(recentPoints, denominator),
-      };
-    }),
+    kingdoms: kingdomStates(lifetimeByKingdom, recentByKingdom),
     invitation: deriveNeglectInvitation({ lifetimeByKingdom, recentByKingdom }),
   });
 });

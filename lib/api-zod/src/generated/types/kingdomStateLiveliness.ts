@@ -6,7 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type KingdomStateLiveliness = typeof KingdomStateLiveliness[keyof typeof KingdomStateLiveliness];
+/**
+ * Share of recent activity. Null for the capital, which is a cumulative lifetime total and has no share to report.
+ */
+export type KingdomStateLiveliness = typeof KingdomStateLiveliness[keyof typeof KingdomStateLiveliness] | null;
 
 
 export const KingdomStateLiveliness = {
