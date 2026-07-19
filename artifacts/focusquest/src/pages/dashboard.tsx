@@ -8,6 +8,7 @@ import { EveningReflectionCard } from "@/components/evening-reflection-card";
 import { ActivityHeatmap } from "@/components/activity-heatmap";
 import { HeroSummary } from "@/components/hero-summary";
 import { RecentBadges } from "@/components/recent-badges";
+import { KingdomStrip } from "@/components/kingdom-strip";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -287,6 +288,13 @@ export default function Dashboard() {
           <Progress value={progressPercent} className="h-3 bg-muted" />
         </CardContent>
       </Card>
+
+      {/* ── Kingdom liveliness strip ───────────────────────── */}
+      {/* Sits with the ambient status group, above the quest list: this strip is
+          the balance instrument, and an instrument you have to scroll to find
+          isn't one. Deliberately below the stat cards and focus CTA so it never
+          competes with "what do I do right now". */}
+      <KingdomStrip />
 
       {/* ── Quest Activity Heatmap + Hero + Recent Badges ── */}
       <ActivityHeatmap

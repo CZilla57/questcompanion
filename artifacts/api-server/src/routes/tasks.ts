@@ -28,6 +28,7 @@ import { isBonusGatingTask, countsAsTodayCompletion } from "../lib/anchored-task
 import { isQuestlineAssignable } from "../lib/questlines";
 import { hungerStage } from "../lib/hero-care";
 import { completionCompanionReaction } from "../lib/companion";
+import { growKingdom } from "../lib/kingdom-growth";
 import { grantInitiationAwards } from "../lib/initiation-grant";
 import type { InitiationXp } from "../lib/initiation";
 import { awardCoins, reverseCoins } from "../lib/award-coins";
@@ -658,6 +659,11 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       bondQuestsCompleted: bondBefore + 1,
       ...(freezeConsumed ? { streakFreezes: user.streakFreezes - 1 } : {}),
     }).where(eq(usersTable.id, userId));
+
+    // Act VI Life Kingdoms: base points (NOT boostedBase) grow the kingdom that
+    // owns this quest's category. Monotonic — /uncomplete deliberately does not
+    // reverse this.
+    await growKingdom(tx, userId, task.category, task.points);
 
     // Act IV coins: every completed quest pays out; streak milestones pay a bonus.
     const coinMilestone = isStreakMilestone(newStreak, streakDaysBefore);

@@ -5,6 +5,7 @@ import type { InsightsCategoryBreakdown, InsightsDowStat, InsightsPeriodStat, In
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RhythmsCard } from "@/components/rhythms-card";
 import { WeeklyRecapsSection } from "@/components/weekly-recaps";
+import { KingdomMap } from "@/components/kingdom-map";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
   ResponsiveContainer, Cell, AreaChart, Area,
@@ -389,6 +390,14 @@ export default function Insights() {
           ))}
         </div>
       </div>
+
+      {/* Kingdom map — rendered OUTSIDE the isEmpty branch on purpose. isEmpty
+          keys off this page's date-range breakdown, so a user returning after
+          time away would fall into the empty state — and that is precisely the
+          person the map's warm "your world is resting" state exists for. The
+          kingdoms endpoint has its own window and lifetime data, so it always
+          has something true to show. */}
+      <KingdomMap />
 
       {isEmpty ? (
         <div className="text-center py-24 border-2 border-dashed border-muted rounded-xl">
