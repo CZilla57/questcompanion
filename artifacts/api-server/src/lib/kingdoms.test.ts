@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   CATEGORY_TO_KINGDOM, kingdomForCategory, kingdomTier, KINGDOMS,
   deriveLiveliness, isWorldResting, WORLD_RESTING_THRESHOLD, LIVELINESS_WINDOW_DAYS,
-  deriveNeglectInvitation, kingdomGrowth,
+  deriveNeglectInvitation, kingdomGrowth, capitalLifetime,
 } from "./kingdoms";
 import { CATEGORY_LABELS } from "./auto-points";
 
@@ -191,5 +191,24 @@ describe("kingdomGrowth", () => {
   it("passes base points through unchanged", () => {
     // Growth must reflect the quest's own worth, never a boosted total.
     expect(kingdomGrowth("deep_work", 35)!.points).toBe(35);
+  });
+});
+
+describe("capitalLifetime", () => {
+  it("sums all six rows including the capital's own catch-all", () => {
+    expect(capitalLifetime({
+      hearth: 1200, wellspring: 300, forge: 3400,
+      athenaeum: 60, crossroads: 900, capital: 1100,
+    })).toBe(6960);
+  });
+
+  it("treats missing rows as zero", () => {
+    expect(capitalLifetime({ hearth: 500 })).toBe(500);
+    expect(capitalLifetime({})).toBe(0);
+  });
+
+  it("counts uncategorized work exactly once", () => {
+    // Only the capital row is populated: the total must equal it, not double it.
+    expect(capitalLifetime({ capital: 250 })).toBe(250);
   });
 });

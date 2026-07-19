@@ -83,6 +83,23 @@ export function balanceRecentTotal(recentByKingdom: Partial<Record<KingdomId, nu
   return BALANCE_KINGDOMS.reduce((sum, id) => sum + (recentByKingdom[id] ?? 0), 0);
 }
 
+/**
+ * The capital is the realm's grand total: every base point ever earned,
+ * including the uncategorized work held in its own row.
+ *
+ * Derived, never stored. A sum of monotonic values is monotonic, so the
+ * capital can never regress, and no backfill is needed for existing users.
+ *
+ * Deliberately sums ALL SIX ids, not BALANCE_KINGDOMS — this is the one place
+ * the capital is included on purpose. It must never be reused as a balance
+ * denominator; see balanceRecentTotal for that.
+ */
+export function capitalLifetime(
+  lifetimeByKingdom: Partial<Record<KingdomId, number>>,
+): number {
+  return KINGDOMS.reduce((sum, k) => sum + (lifetimeByKingdom[k.id] ?? 0), 0);
+}
+
 export function isWorldResting(recentByKingdom: Partial<Record<KingdomId, number>>): boolean {
   return balanceRecentTotal(recentByKingdom) < WORLD_RESTING_THRESHOLD;
 }
