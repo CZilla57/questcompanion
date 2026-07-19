@@ -63,3 +63,38 @@ export function kingdomTier(points: number): KingdomTierInfo {
   }
   return KINGDOM_TIERS[KINGDOM_TIERS.length - 1]!;
 }
+
+export type Liveliness = "dormant" | "stirring" | "steady" | "bustling";
+
+/** Rolling window for the liveliness reading. */
+export const LIVELINESS_WINDOW_DAYS = 14;
+
+/**
+ * Below this many recent balance-kingdom points, the world reads as *resting*
+ * rather than producing per-kingdom verdicts. A plain zero-check is not enough:
+ * with one quest in the window, share math would report that kingdom at 100%
+ * and the other four as pointed neglect. The floor stops the instrument drawing
+ * confident conclusions from a sample too small to support them.
+ */
+export const WORLD_RESTING_THRESHOLD = 100;
+
+/** Sum of recent points across the five balance kingdoms. Excludes the capital. */
+export function balanceRecentTotal(recentByKingdom: Partial<Record<KingdomId, number>>): number {
+  return BALANCE_KINGDOMS.reduce((sum, id) => sum + (recentByKingdom[id] ?? 0), 0);
+}
+
+export function isWorldResting(recentByKingdom: Partial<Record<KingdomId, number>>): boolean {
+  return balanceRecentTotal(recentByKingdom) < WORLD_RESTING_THRESHOLD;
+}
+
+/**
+ * Share-based, never absolute. The denominator excludes the capital so that
+ * uncategorized work cannot dilute every real kingdom's share.
+ */
+export function deriveLiveliness(kingdomRecentPoints: number, balanceTotal: number): Liveliness {
+  if (kingdomRecentPoints <= 0 || balanceTotal <= 0) return "dormant";
+  const share = kingdomRecentPoints / balanceTotal;
+  if (share < 0.10) return "stirring";
+  if (share <= 0.30) return "steady";
+  return "bustling";
+}
