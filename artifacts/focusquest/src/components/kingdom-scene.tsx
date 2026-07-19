@@ -87,7 +87,7 @@ function paintLivelinessOverlay(ctx: CanvasRenderingContext2D, liveliness: Livel
 }
 
 export function KingdomScene({
-  kingdomId, tier, liveliness, width, className,
+  kingdomId, tier, liveliness, width, className, label,
 }: {
   kingdomId: string;
   tier: number;
@@ -97,6 +97,11 @@ export function KingdomScene({
    *  Either way the canvas keeps its intrinsic 320:192 ratio. */
   width?: number;
   className?: string;
+  /** Overrides the generated aria-label. Required by the capital, which passes a
+   *  neutral `liveliness` purely to get undimmed art — it has no liveliness
+   *  reading to report, so the default label would announce "busy right now" to
+   *  screen-reader users while sighted users are shown no verdict at all. */
+  label?: string;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
 
@@ -140,7 +145,7 @@ export function KingdomScene({
         imageRendering: "pixelated",
       }}
       role="img"
-      aria-label={describeKingdom(kingdomId, tier, liveliness)}
+      aria-label={label ?? describeKingdom(kingdomId, tier, liveliness)}
     />
   );
 }

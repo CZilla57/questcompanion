@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { useGetKingdoms } from "@workspace/api-client-react";
+import { KingdomTierPips } from "@/components/kingdom-tier-pips";
 
 const LIVELINESS_DOT: Record<string, string> = {
   dormant:  "bg-muted-foreground/30",
@@ -9,14 +10,21 @@ const LIVELINESS_DOT: Record<string, string> = {
 };
 
 /**
- * Compact five-kingdom liveliness readout. Excludes the capital, which grows but
- * carries no balance meaning. Copy is invitational, never corrective.
+ * Compact five-kingdom liveliness readout, plus the capital as a separate seat
+ * below the rule.
+ *
+ * The capital deliberately uses a DIFFERENT visual grammar — filled pips for
+ * accumulated tier, never a liveliness bar. Uncategorized work has no balance
+ * meaning, so giving it a sixth bar would make it read as a life area and
+ * dilute the five-kingdom signal the whole instrument exists to carry. Copy is
+ * invitational, never corrective.
  */
 export function KingdomStrip() {
   const { data } = useGetKingdoms();
   if (!data) return null;
 
   const kingdoms = data.kingdoms.filter((k) => !k.isCapital);
+  const capital = data.kingdoms.find((k) => k.isCapital);
 
   return (
     <Link href="/insights" className="block rounded-lg border border-border p-3 hover:bg-muted/20 transition-colors">
@@ -39,6 +47,15 @@ export function KingdomStrip() {
           );
         })}
       </div>
+
+      {capital && (
+        <div className="mt-2.5 pt-2 border-t border-border/60 flex items-center justify-between gap-2">
+          <span className="text-[10px] text-muted-foreground truncate">
+            Capital · {capital.tier > 0 ? capital.tierName : "unfounded"}
+          </span>
+          <KingdomTierPips tier={capital.tier} className="shrink-0" />
+        </div>
+      )}
 
       {data.worldResting ? (
         <p className="mt-2 text-xs text-muted-foreground italic">Your world is resting. It's all still here.</p>
