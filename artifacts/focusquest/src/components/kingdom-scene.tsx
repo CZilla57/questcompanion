@@ -14,7 +14,12 @@ function loadImage(url: string): Promise<HTMLImageElement> {
     p = new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => resolve(img);
-      img.onerror = reject;
+      img.onerror = (e) => {
+        // Don't let one transient failure poison the cache for the page's lifetime —
+        // drop the entry so a later render can retry.
+        imageCache.delete(url);
+        reject(e);
+      };
       img.src = url;
     });
     imageCache.set(url, p);
