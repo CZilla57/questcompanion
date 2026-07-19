@@ -6,6 +6,7 @@
   "scripts": {
     "hello": "tsx ./src/hello.ts",
     "build-lpc": "tsx ./src/build-lpc-assets.ts",
+    "build-kingdom-buildings": "tsx ./src/build-kingdom-buildings.ts",
     "seed-gear": "tsx ./src/seed-gear.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
