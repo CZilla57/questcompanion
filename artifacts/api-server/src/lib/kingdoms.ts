@@ -64,6 +64,40 @@ export function kingdomTier(points: number): KingdomTierInfo {
   return KINGDOM_TIERS[KINGDOM_TIERS.length - 1]!;
 }
 
+export const MAX_CAPITAL_TIER = 11;
+
+/**
+ * The capital's own ladder, twelve stages deep. Separate from KINGDOM_TIERS
+ * because the capital accumulates roughly 5-6x faster than any single kingdom:
+ * it is the sum of all of them. Tier 7 lands near "all five at Village" and
+ * tier 11 near "all five at Stronghold", so the top of the ladder means
+ * something specific rather than being an arbitrary ceiling.
+ *
+ * Absolute thresholds, never relative to the user's own history - same
+ * discipline as KINGDOM_TIERS and for the same reason.
+ */
+export const CAPITAL_TIERS: KingdomTierInfo[] = [
+  { tier: 11, name: "Eternal Capital", minPoints: 40000 },
+  { tier: 10, name: "Crown City",      minPoints: 25000 },
+  { tier: 9,  name: "Metropolis",      minPoints: 16000 },
+  { tier: 8,  name: "Grand City",      minPoints: 10000 },
+  { tier: 7,  name: "City",            minPoints: 6000 },
+  { tier: 6,  name: "Borough",         minPoints: 3500 },
+  { tier: 5,  name: "Town",            minPoints: 2000 },
+  { tier: 4,  name: "Village",         minPoints: 1000 },
+  { tier: 3,  name: "Hamlet",          minPoints: 400 },
+  { tier: 2,  name: "Camp",            minPoints: 150 },
+  { tier: 1,  name: "Waystation",      minPoints: 1 },
+  { tier: 0,  name: "Wilds",           minPoints: 0 },
+];
+
+export function capitalTier(points: number): KingdomTierInfo {
+  for (const t of CAPITAL_TIERS) {
+    if (points >= t.minPoints) return t;
+  }
+  return CAPITAL_TIERS[CAPITAL_TIERS.length - 1]!;
+}
+
 export type Liveliness = "dormant" | "stirring" | "steady" | "bustling";
 
 /** Rolling window for the liveliness reading. */

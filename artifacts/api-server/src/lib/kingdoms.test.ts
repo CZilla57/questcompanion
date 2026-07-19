@@ -3,6 +3,8 @@ import {
   CATEGORY_TO_KINGDOM, kingdomForCategory, kingdomTier, KINGDOMS,
   deriveLiveliness, isWorldResting, WORLD_RESTING_THRESHOLD, LIVELINESS_WINDOW_DAYS,
   deriveNeglectInvitation, kingdomGrowth, capitalLifetime,
+  capitalTier, MAX_CAPITAL_TIER, CAPITAL_TIERS,
+  balanceRecentTotal,
 } from "./kingdoms";
 import { CATEGORY_LABELS } from "./auto-points";
 
@@ -210,5 +212,77 @@ describe("capitalLifetime", () => {
   it("counts uncategorized work exactly once", () => {
     // Only the capital row is populated: the total must equal it, not double it.
     expect(capitalLifetime({ capital: 250 })).toBe(250);
+  });
+});
+
+describe("capitalTier", () => {
+  it("names every stage at its exact threshold", () => {
+    expect(capitalTier(0).name).toBe("Wilds");
+    expect(capitalTier(1).name).toBe("Waystation");
+    expect(capitalTier(150).name).toBe("Camp");
+    expect(capitalTier(400).name).toBe("Hamlet");
+    expect(capitalTier(1000).name).toBe("Village");
+    expect(capitalTier(2000).name).toBe("Town");
+    expect(capitalTier(3500).name).toBe("Borough");
+    expect(capitalTier(6000).name).toBe("City");
+    expect(capitalTier(10000).name).toBe("Grand City");
+    expect(capitalTier(16000).name).toBe("Metropolis");
+    expect(capitalTier(25000).name).toBe("Crown City");
+    expect(capitalTier(40000).name).toBe("Eternal Capital");
+  });
+
+  it("stays on the lower stage one point below each threshold", () => {
+    expect(capitalTier(149).tier).toBe(1);
+    expect(capitalTier(999).tier).toBe(3);
+    expect(capitalTier(39999).tier).toBe(10);
+  });
+
+  it("caps at tier 11 and never exceeds it", () => {
+    expect(capitalTier(40000).tier).toBe(MAX_CAPITAL_TIER);
+    expect(capitalTier(10_000_000).tier).toBe(11);
+  });
+
+  it("has more stages than the kingdom ladder", () => {
+    expect(MAX_CAPITAL_TIER).toBeGreaterThan(5);
+    expect(CAPITAL_TIERS).toHaveLength(12);
+  });
+
+  it("is monotonic: more points never yields a lower tier", () => {
+    let prev = -1;
+    for (const p of [0, 1, 150, 400, 1000, 2000, 3500, 6000, 10000, 16000, 25000, 40000, 99999]) {
+      const t = capitalTier(p).tier;
+      expect(t).toBeGreaterThanOrEqual(prev);
+      prev = t;
+    }
+  });
+});
+
+describe("balance invariant", () => {
+  // The capital now accumulates from every quest. If that total ever reaches a
+  // balance denominator, uncategorized work silently dilutes every real
+  // kingdom's share — the exact failure the original design forbids.
+  const recent = { hearth: 100, wellspring: 100, forge: 100, athenaeum: 100, crossroads: 100 };
+
+  it("balanceRecentTotal ignores the capital entirely", () => {
+    expect(balanceRecentTotal(recent)).toBe(500);
+    expect(balanceRecentTotal({ ...recent, capital: 999999 })).toBe(500);
+  });
+
+  it("isWorldResting is unaffected by capital points", () => {
+    expect(isWorldResting({ capital: 999999 })).toBe(true);
+    expect(isWorldResting({ ...recent, capital: 999999 })).toBe(false);
+  });
+
+  it("deriveNeglectInvitation never names the capital", () => {
+    const invitation = deriveNeglectInvitation({
+      lifetimeByKingdom: { capital: 999999, hearth: 5000 },
+      recentByKingdom: { ...recent, hearth: 0, capital: 999999 },
+    });
+    expect(invitation?.kingdomId).not.toBe("capital");
+  });
+
+  it("a huge capital total does not change any kingdom's liveliness", () => {
+    const total = balanceRecentTotal({ ...recent, capital: 999999 });
+    expect(deriveLiveliness(100, total)).toBe("steady");
   });
 });
