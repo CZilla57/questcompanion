@@ -29,7 +29,9 @@
 - `lib/db/src/schema/kingdom-points.ts` — `kingdom_points` table
 - `artifacts/focusquest/src/lib/kingdom-scene.ts` — pure: scene description resolution
 - `artifacts/focusquest/src/lib/kingdom-scene.test.ts`
-- `artifacts/focusquest/src/lib/kingdom-sprites.ts` — sprite catalog (sheet + source rect)
+- `artifacts/focusquest/src/lib/kingdom-sprites.ts` — sprite catalog (terrain rects, building images, painted glow)
+- `artifacts/focusquest/src/lib/kingdom-buildings-catalog.ts` — GENERATED building sizes/urls
+- `scripts/src/build-kingdom-buildings.ts` — build-time building compositor
 - `artifacts/focusquest/src/components/kingdom-scene.tsx` — canvas renderer (the seam)
 - `artifacts/focusquest/src/components/kingdom-strip.tsx` — dashboard strip
 - `artifacts/focusquest/src/components/kingdom-map.tsx` — full map for insights
@@ -970,37 +972,54 @@ git commit -m "feat(art): vendor LPC Revised kingdom tilesets with credits"
 - Test: `artifacts/focusquest/src/lib/kingdom-scene.test.ts`
 
 **Interfaces:**
-- Consumes: `SPRITES` from Task 7
-- Produces: `Liveliness` (re-declared locally to keep the frontend free of server imports), `SceneLayer { spriteId: string; x: number; y: number; alpha?: number }`, `KINGDOM_SCENES: Record<string, KingdomSceneSpec>`, `resolveScene(kingdomId: string, tier: number, liveliness: Liveliness): SceneLayer[]`
+- Consumes (all already exist, built in Task 7): `SPRITES`, `LANTERN_ID`, `TILE`, `spriteSize` from `./kingdom-sprites`
+- Produces: `Liveliness` (declared locally — the frontend must not import server modules), `SceneLayer { spriteId: string; x: number; y: number; alpha?: number }`, `KingdomSceneSpec`, `KINGDOM_SCENES`, `SCENE_W`, `SCENE_H`, `resolveScene(kingdomId, tier, liveliness): SceneLayer[]`
+
+**Sprite ids that actually exist — verified against the built catalog. Do not invent others:**
+- Ground: `ground.grass`, `ground.dirt`, `ground.cobble`, `ground.sand`, `ground.water`
+- Props: `prop.tree`, `prop.bush`, `prop.pine`, `prop.boulder`, `prop.boulder-pale`, `prop.stump`
+- Buildings: `build.{shape}-{variant}`, shape ∈ `hut|house|hall|tower|keep`, variant ∈ `stone|gold|slate|brown|dark|brick` (e.g. `build.house-brown`). **Sizes differ per shape — always read them via `spriteSize(id)`, never hardcode.**
+- Overlay: `LANTERN_ID` (the string `"overlay.lantern"`)
 
 - [ ] **Step 1: Write the failing test**
 
 ```typescript
 // artifacts/focusquest/src/lib/kingdom-scene.test.ts
 import { describe, it, expect } from "vitest";
-import { resolveScene, KINGDOM_SCENES } from "./kingdom-scene";
-import { SPRITES } from "./kingdom-sprites";
+import { resolveScene, KINGDOM_SCENES, SCENE_W, SCENE_H } from "./kingdom-scene";
+import { SPRITES, LANTERN_ID } from "./kingdom-sprites";
+
+const LIVELINESS = ["dormant", "stirring", "steady", "bustling"] as const;
+const builds = (ls: { spriteId: string }[]) => ls.filter((l) => l.spriteId.startsWith("build."));
+const lanterns = (ls: { spriteId: string }[]) => ls.filter((l) => l.spriteId === LANTERN_ID);
 
 describe("resolveScene", () => {
-  it("renders terrain only at tier 0", () => {
+  it("defines a scene for all six kingdoms", () => {
+    expect(Object.keys(KINGDOM_SCENES).sort()).toEqual(
+      ["athenaeum", "capital", "crossroads", "forge", "hearth", "wellspring"],
+    );
+  });
+
+  it("renders ground and props but no buildings at tier 0", () => {
     const layers = resolveScene("forge", 0, "steady");
     expect(layers.length).toBeGreaterThan(0);
-    expect(layers.every((l) => !l.spriteId.startsWith("build."))).toBe(true);
+    expect(builds(layers)).toHaveLength(0);
   });
 
   it("adds buildings as the tier climbs, never removing them", () => {
     let previous = 0;
     for (let tier = 0; tier <= 5; tier++) {
-      const count = resolveScene("hearth", tier, "steady").filter((l) => l.spriteId.startsWith("build.")).length;
+      const count = builds(resolveScene("hearth", tier, "steady")).length;
       expect(count).toBeGreaterThanOrEqual(previous);
       previous = count;
     }
+    expect(previous).toBeGreaterThan(0);
   });
 
-  it("keeps every earned building when dormant — quiet, never ruined", () => {
-    const busy = resolveScene("hearth", 4, "bustling").filter((l) => l.spriteId.startsWith("build."));
-    const quiet = resolveScene("hearth", 4, "dormant").filter((l) => l.spriteId.startsWith("build."));
-    expect(quiet.map((l) => l.spriteId)).toEqual(busy.map((l) => l.spriteId));
+  it("keeps every earned building when dormant - quiet, never ruined", () => {
+    const busy = builds(resolveScene("hearth", 4, "bustling")).map((l) => l.spriteId).sort();
+    const quiet = builds(resolveScene("hearth", 4, "dormant")).map((l) => l.spriteId).sort();
+    expect(quiet).toEqual(busy);
   });
 
   it("dims rather than damages when dormant", () => {
@@ -1012,27 +1031,25 @@ describe("resolveScene", () => {
   it("keeps one light burning even when dormant", () => {
     // A fully dark village reads as abandoned; one lit lamp reads as a place
     // waiting for you. This is the asleep-vs-dead line.
-    const lanterns = resolveScene("hearth", 4, "dormant").filter((l) => l.spriteId === "overlay.lantern");
-    expect(lanterns).toHaveLength(1);
-    expect(lanterns[0]!.alpha).toBe(1);
+    const lit = lanterns(resolveScene("hearth", 4, "dormant"));
+    expect(lit).toHaveLength(1);
+    expect(lit[0]!.alpha).toBe(1);
   });
 
   it("lights more windows as liveliness rises", () => {
-    const count = (l: "dormant" | "stirring" | "steady" | "bustling") =>
-      resolveScene("hearth", 5, l).filter((x) => x.spriteId === "overlay.lantern").length;
+    const count = (l: (typeof LIVELINESS)[number]) => lanterns(resolveScene("hearth", 5, l)).length;
     expect(count("dormant")).toBeLessThan(count("steady"));
     expect(count("steady")).toBeLessThan(count("bustling"));
-    expect(count("bustling")).toBe(5);
   });
 
-  it("shows no lanterns at tier 0 — nothing built to light", () => {
-    expect(resolveScene("hearth", 0, "bustling").filter((l) => l.spriteId === "overlay.lantern")).toHaveLength(0);
+  it("shows no lanterns at tier 0 - nothing built to light", () => {
+    expect(lanterns(resolveScene("hearth", 0, "bustling"))).toHaveLength(0);
   });
 
   it("resolves every sprite it references", () => {
     for (const id of Object.keys(KINGDOM_SCENES)) {
       for (let tier = 0; tier <= 5; tier++) {
-        for (const liveliness of ["dormant", "stirring", "steady", "bustling"] as const) {
+        for (const liveliness of LIVELINESS) {
           for (const layer of resolveScene(id, tier, liveliness)) {
             expect(SPRITES[layer.spriteId], `missing sprite ${layer.spriteId}`).toBeDefined();
           }
@@ -1041,10 +1058,12 @@ describe("resolveScene", () => {
     }
   });
 
-  it("defines a scene for all six kingdoms", () => {
-    expect(Object.keys(KINGDOM_SCENES).sort()).toEqual(
-      ["athenaeum", "capital", "crossroads", "forge", "hearth", "wellspring"],
-    );
+  it("is deterministic", () => {
+    expect(resolveScene("crossroads", 3, "steady")).toEqual(resolveScene("crossroads", 3, "steady"));
+  });
+
+  it("returns nothing for an unknown kingdom", () => {
+    expect(resolveScene("atlantis", 3, "steady")).toEqual([]);
   });
 });
 ```
@@ -1058,97 +1077,133 @@ Expected: FAIL — `Failed to resolve import "./kingdom-scene"`
 
 ```typescript
 // artifacts/focusquest/src/lib/kingdom-scene.ts
-// Pure, renderer-agnostic scene resolution: (kingdom, tier, liveliness) → a
+// Pure, renderer-agnostic scene resolution: (kingdom, tier, liveliness) -> a
 // declarative display list. Knows nothing about canvas, React, or the DOM, so a
-// future PixiJS renderer consumes the same output unchanged.
+// future PixiJS renderer can consume the same output unchanged.
+import { TILE, LANTERN_ID, spriteSize } from "./kingdom-sprites";
 
+// Declared here rather than imported from the server: the frontend must not
+// depend on api-server modules.
 export type Liveliness = "dormant" | "stirring" | "steady" | "bustling";
 
 export type SceneLayer = { spriteId: string; x: number; y: number; alpha?: number };
 
 export type KingdomSceneSpec = {
-  /** Repeating ground tile. */
+  /** Repeating ground tile id. */
   ground: string;
-  /** Scenery placed at every tier. */
+  /** Scenery drawn at every tier, in draw order. */
   props: { spriteId: string; x: number; y: number }[];
-  /** Buildings unlocked in order — tier N shows the first N. */
-  buildingSlots: { spriteId: string; x: number; y: number }[];
+  /** Buildings revealed in tier order — tier N shows the first N. */
+  buildingSlots: { shape: string; x: number; y: number }[];
+  /** Which composited colour variant this kingdom's buildings use. */
+  variant: string;
 };
 
 export const SCENE_W = 320;
-export const SCENE_H = 160;
+export const SCENE_H = 176;
+
+/**
+ * Buildings are anchored by their BOTTOM-CENTRE, because the composited sprites
+ * have different heights per shape — anchoring by top-left would leave taller
+ * buildings floating above the ground line.
+ */
+function anchor(shape: string, variant: string, x: number, y: number): SceneLayer | null {
+  const id = `build.${shape}-${variant}`;
+  const size = spriteSize(id);
+  if (!size) return null;
+  return { spriteId: id, x: Math.round(x - size.w / 2), y: Math.round(y - size.h) };
+}
 
 export const KINGDOM_SCENES: Record<string, KingdomSceneSpec> = {
   hearth: {
     ground: "ground.grass",
-    props: [{ spriteId: "prop.tree", x: 16, y: 40 }],
+    variant: "brown",
+    props: [
+      { spriteId: "prop.tree", x: 4, y: 24 },
+      { spriteId: "prop.bush", x: 232, y: 96 },
+    ],
     buildingSlots: [
-      { spriteId: "build.hut",   x: 64,  y: 72 },
-      { spriteId: "build.house", x: 144, y: 56 },
-      { spriteId: "build.hut",   x: 240, y: 80 },
-      { spriteId: "build.hall",  x: 176, y: 88 },
-      { spriteId: "build.tower", x: 32,  y: 48 },
+      { shape: "hut",   x: 76,  y: 168 },
+      { shape: "house", x: 176, y: 156 },
+      { shape: "hut",   x: 262, y: 172 },
+      { shape: "hall",  x: 128, y: 176 },
+      { shape: "tower", x: 292, y: 150 },
     ],
   },
   wellspring: {
     ground: "ground.water",
-    props: [{ spriteId: "prop.tree", x: 240, y: 32 }],
+    variant: "stone",
+    props: [
+      { spriteId: "prop.bush", x: 0, y: 92 },
+      { spriteId: "prop.tree", x: 220, y: 16 },
+    ],
     buildingSlots: [
-      { spriteId: "build.hut",   x: 48,  y: 80 },
-      { spriteId: "build.house", x: 128, y: 64 },
-      { spriteId: "build.hall",  x: 208, y: 72 },
-      { spriteId: "build.tower", x: 96,  y: 40 },
-      { spriteId: "build.keep",  x: 160, y: 88 },
+      { shape: "hut",   x: 64,  y: 166 },
+      { shape: "house", x: 160, y: 152 },
+      { shape: "hall",  x: 250, y: 170 },
+      { shape: "tower", x: 108, y: 140 },
+      { shape: "keep",  x: 196, y: 176 },
     ],
   },
   forge: {
-    ground: "ground.rock",
-    props: [{ spriteId: "prop.sign", x: 24, y: 104 }],
+    ground: "ground.cobble",
+    variant: "slate",
+    props: [
+      { spriteId: "prop.boulder", x: 8, y: 128 },
+      { spriteId: "prop.boulder-pale", x: 248, y: 40 },
+    ],
     buildingSlots: [
-      { spriteId: "build.hut",   x: 56,  y: 80 },
-      { spriteId: "build.tower", x: 128, y: 40 },
-      { spriteId: "build.hall",  x: 192, y: 72 },
-      { spriteId: "build.keep",  x: 96,  y: 88 },
-      { spriteId: "build.tower", x: 256, y: 48 },
+      { shape: "hut",   x: 68,  y: 170 },
+      { shape: "tower", x: 148, y: 148 },
+      { shape: "hall",  x: 236, y: 168 },
+      { shape: "keep",  x: 108, y: 176 },
+      { shape: "tower", x: 292, y: 152 },
     ],
   },
   athenaeum: {
     ground: "ground.grass",
+    variant: "gold",
     props: [
-      { spriteId: "prop.tree", x: 8,   y: 32 },
-      { spriteId: "prop.tree", x: 272, y: 40 },
+      { spriteId: "prop.pine", x: 0, y: 20 },
+      { spriteId: "prop.tree", x: 216, y: 8 },
+      { spriteId: "prop.bush", x: 116, y: 100 },
     ],
     buildingSlots: [
-      { spriteId: "build.hut",   x: 72,  y: 80 },
-      { spriteId: "build.house", x: 144, y: 64 },
-      { spriteId: "build.hall",  x: 200, y: 72 },
-      { spriteId: "build.tower", x: 112, y: 40 },
-      { spriteId: "build.keep",  x: 168, y: 88 },
+      { shape: "hut",   x: 80,  y: 168 },
+      { shape: "house", x: 168, y: 154 },
+      { shape: "hall",  x: 246, y: 172 },
+      { shape: "tower", x: 120, y: 142 },
+      { shape: "keep",  x: 200, y: 176 },
     ],
   },
   crossroads: {
     ground: "ground.dirt",
+    variant: "brick",
     props: [
-      { spriteId: "prop.sign",   x: 32,  y: 96 },
-      { spriteId: "prop.bridge", x: 128, y: 112 },
+      { spriteId: "prop.stump", x: 24, y: 132 },
+      { spriteId: "prop.bush", x: 212, y: 100 },
     ],
     buildingSlots: [
-      { spriteId: "build.hut",   x: 64,  y: 72 },
-      { spriteId: "build.house", x: 176, y: 56 },
-      { spriteId: "build.hall",  x: 232, y: 80 },
-      { spriteId: "build.tower", x: 40,  y: 40 },
-      { spriteId: "build.keep",  x: 136, y: 88 },
+      { shape: "hut",   x: 72,  y: 170 },
+      { shape: "house", x: 184, y: 152 },
+      { shape: "hall",  x: 264, y: 174 },
+      { shape: "tower", x: 40,  y: 146 },
+      { shape: "keep",  x: 148, y: 176 },
     ],
   },
   capital: {
-    ground: "ground.dirt",
-    props: [{ spriteId: "prop.sign", x: 16, y: 96 }],
+    ground: "ground.cobble",
+    variant: "stone",
+    props: [
+      { spriteId: "prop.bush", x: 8, y: 100 },
+      { spriteId: "prop.tree", x: 240, y: 12 },
+    ],
     buildingSlots: [
-      { spriteId: "build.house", x: 80,  y: 72 },
-      { spriteId: "build.hall",  x: 160, y: 64 },
-      { spriteId: "build.tower", x: 48,  y: 40 },
-      { spriteId: "build.keep",  x: 208, y: 80 },
-      { spriteId: "build.house", x: 264, y: 56 },
+      { shape: "house", x: 88,  y: 164 },
+      { shape: "hall",  x: 176, y: 156 },
+      { shape: "tower", x: 44,  y: 144 },
+      { shape: "keep",  x: 238, y: 176 },
+      { shape: "hut",   x: 292, y: 170 },
     ],
   },
 };
@@ -1186,8 +1241,8 @@ export function resolveScene(kingdomId: string, tier: number, liveliness: Liveli
   const layers: SceneLayer[] = [];
 
   // Ground fill.
-  for (let x = 0; x < SCENE_W; x += 32) {
-    for (let y = 0; y < SCENE_H; y += 32) {
+  for (let y = 0; y < SCENE_H; y += TILE) {
+    for (let x = 0; x < SCENE_W; x += TILE) {
       layers.push({ spriteId: spec.ground, x, y, alpha });
     }
   }
@@ -1196,14 +1251,28 @@ export function resolveScene(kingdomId: string, tier: number, liveliness: Liveli
 
   // Tier N reveals the first N slots; earned buildings are never withdrawn.
   const revealed = Math.max(0, Math.min(tier, spec.buildingSlots.length));
-  for (let i = 0; i < revealed; i++) layers.push({ ...spec.buildingSlots[i]!, alpha });
+  const placed: SceneLayer[] = [];
+  for (let i = 0; i < revealed; i++) {
+    const slot = spec.buildingSlots[i]!;
+    const layer = anchor(slot.shape, spec.variant, slot.x, slot.y);
+    if (layer) placed.push(layer);
+  }
+  // Painter's order: buildings further back drawn first so nearer ones overlap.
+  placed.sort((a, b) => a.y - b.y);
+  for (const p of placed) layers.push({ ...p, alpha });
 
   // Liveliness overlay: lit windows, drawn at full opacity so the light reads
   // against a dimmed scene.
-  const lanterns = lanternCount(liveliness, revealed);
-  for (let i = 0; i < lanterns; i++) {
-    const slot = spec.buildingSlots[i]!;
-    layers.push({ spriteId: "overlay.lantern", x: slot.x + 8, y: slot.y + 8, alpha: 1 });
+  const count = lanternCount(liveliness, placed.length);
+  for (let i = 0; i < count; i++) {
+    const b = placed[i]!;
+    const size = spriteSize(b.spriteId)!;
+    layers.push({
+      spriteId: LANTERN_ID,
+      x: b.x + Math.round(size.w / 2) - 12,
+      y: b.y + size.h - 30,
+      alpha: 1,
+    });
   }
 
   return layers;
@@ -1213,7 +1282,7 @@ export function resolveScene(kingdomId: string, tier: number, liveliness: Liveli
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `pnpm --filter @workspace/focusquest test -- kingdom-scene`
-Expected: PASS — 9 tests
+Expected: PASS — 11 tests
 
 - [ ] **Step 5: Commit**
 
@@ -1230,8 +1299,13 @@ git commit -m "feat(ui): pure kingdom scene resolution"
 - Create: `artifacts/focusquest/src/components/kingdom-scene.tsx`
 
 **Interfaces:**
-- Consumes: `resolveScene`, `SCENE_W`, `SCENE_H`, `Liveliness` from Task 8; `SPRITES`, `SHEET_URLS` from Task 7
+- Consumes: `resolveScene`, `SCENE_W`, `SCENE_H`, `Liveliness` from `@/lib/kingdom-scene` (Task 8); `SPRITES`, `TERRAIN_URL` from `@/lib/kingdom-sprites` (Task 7)
 - Produces: `<KingdomScene kingdomId tier liveliness width? className? />`
+
+**The sprite catalog has three kinds, and the renderer must handle each:**
+- `{ kind: "terrain", sx, sy, w, h }` — a source rect into the single terrain sheet at `TERRAIN_URL`
+- `{ kind: "image", url, w, h }` — a standalone composited building PNG
+- `{ kind: "glow", w, h, rgb }` — a painted primitive with no art behind it (the lit window). Fill a rounded warm rect; do not try to load an image for it.
 
 - [ ] **Step 1: Write the component**
 
@@ -1239,24 +1313,24 @@ git commit -m "feat(ui): pure kingdom scene resolution"
 // artifacts/focusquest/src/components/kingdom-scene.tsx
 import { useEffect, useRef } from "react";
 import { resolveScene, SCENE_W, SCENE_H, type Liveliness } from "@/lib/kingdom-scene";
-import { SPRITES, SHEET_URLS, type SheetId } from "@/lib/kingdom-sprites";
+import { SPRITES, TERRAIN_URL } from "@/lib/kingdom-sprites";
 
 // THE RENDERER SEAM. Everything above this component speaks only in SceneLayer[]
 // (see lib/kingdom-scene.ts), so swapping canvas for PixiJS later means
 // reimplementing this file alone. Do not let scene logic leak in here.
 
-const sheetCache = new Map<SheetId, Promise<HTMLImageElement>>();
+const imageCache = new Map<string, Promise<HTMLImageElement>>();
 
-function loadSheet(id: SheetId): Promise<HTMLImageElement> {
-  let p = sheetCache.get(id);
+function loadImage(url: string): Promise<HTMLImageElement> {
+  let p = imageCache.get(url);
   if (!p) {
     p = new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => resolve(img);
       img.onerror = reject;
-      img.src = SHEET_URLS[id];
+      img.src = url;
     });
-    sheetCache.set(id, p);
+    imageCache.set(url, p);
   }
   return p;
 }
@@ -1282,16 +1356,26 @@ export function KingdomScene({
 
     (async () => {
       const layers = resolveScene(kingdomId, tier, liveliness);
-      const needed = [...new Set(layers.map((l) => SPRITES[l.spriteId]?.sheet).filter(Boolean))] as SheetId[];
-      // allSettled so one missing sheet cannot blank the whole scene — same
+
+      // Collect every distinct image URL this scene needs.
+      const urls = new Set<string>();
+      for (const layer of layers) {
+        const sprite = SPRITES[layer.spriteId];
+        if (!sprite) continue;
+        if (sprite.kind === "terrain") urls.add(TERRAIN_URL);
+        else if (sprite.kind === "image") urls.add(sprite.url);
+      }
+
+      // allSettled so one missing asset cannot blank the whole scene — the same
       // resilience rule PixelHero uses for hero layers.
-      const results = await Promise.allSettled(needed.map(loadSheet));
+      const list = [...urls];
+      const results = await Promise.allSettled(list.map(loadImage));
       if (cancelled) return;
 
-      const sheets = new Map<SheetId, HTMLImageElement>();
-      needed.forEach((id, i) => {
+      const images = new Map<string, HTMLImageElement>();
+      list.forEach((url, i) => {
         const r = results[i];
-        if (r?.status === "fulfilled") sheets.set(id, r.value);
+        if (r?.status === "fulfilled") images.set(url, r.value);
       });
 
       ctx.imageSmoothingEnabled = false;
@@ -1300,10 +1384,24 @@ export function KingdomScene({
       for (const layer of layers) {
         const sprite = SPRITES[layer.spriteId];
         if (!sprite) continue;
-        const sheet = sheets.get(sprite.sheet);
-        if (!sheet) continue;
         ctx.globalAlpha = layer.alpha ?? 1;
-        ctx.drawImage(sheet, sprite.sx, sprite.sy, sprite.w, sprite.h, layer.x, layer.y, sprite.w, sprite.h);
+
+        if (sprite.kind === "glow") {
+          const [r, g, b] = sprite.rgb;
+          ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+          ctx.fillRect(layer.x, layer.y, sprite.w, sprite.h);
+          continue;
+        }
+
+        const url = sprite.kind === "terrain" ? TERRAIN_URL : sprite.url;
+        const img = images.get(url);
+        if (!img) continue;
+
+        if (sprite.kind === "terrain") {
+          ctx.drawImage(img, sprite.sx, sprite.sy, sprite.w, sprite.h, layer.x, layer.y, sprite.w, sprite.h);
+        } else {
+          ctx.drawImage(img, layer.x, layer.y, sprite.w, sprite.h);
+        }
       }
       ctx.globalAlpha = 1;
     })();

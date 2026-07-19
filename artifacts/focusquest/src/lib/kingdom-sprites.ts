@@ -20,7 +20,17 @@ export const TERRAIN_URL = "/kingdoms/terrain.png";
 export type TerrainSprite = { kind: "terrain"; sx: number; sy: number; w: number; h: number };
 /** A standalone composited image. */
 export type ImageSprite = { kind: "image"; url: string; w: number; h: number };
-export type Sprite = TerrainSprite | ImageSprite;
+/**
+ * A painted primitive — no art behind it. Used for the lit-window overlay that
+ * carries liveliness: the vendored sheets have no lantern sprite, and a warm
+ * rect at this scale reads as a lit window better than any tile would.
+ */
+export type GlowSprite = { kind: "glow"; w: number; h: number; rgb: readonly [number, number, number] };
+export type Sprite = TerrainSprite | ImageSprite | GlowSprite;
+
+/** The single lit-window overlay. Kept as an id so the pure scene resolver can
+ *  emit it without knowing it is painted rather than blitted. */
+export const LANTERN_ID = "overlay.lantern";
 
 const t = (sx: number, sy: number, w: number, h: number): TerrainSprite =>
   ({ kind: "terrain", sx, sy, w, h });
@@ -56,6 +66,7 @@ export const SPRITES: Record<string, Sprite> = {
       { kind: "image", url: b.url, w: b.w, h: b.h } satisfies ImageSprite,
     ]),
   ),
+  [LANTERN_ID]: { kind: "glow", w: 5, h: 6, rgb: [255, 214, 138] } satisfies GlowSprite,
 };
 
 export function spriteSize(id: string): { w: number; h: number } | null {
