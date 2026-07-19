@@ -5,6 +5,7 @@ import type { InsightsCategoryBreakdown, InsightsDowStat, InsightsPeriodStat, In
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RhythmsCard } from "@/components/rhythms-card";
 import { WeeklyRecapsSection } from "@/components/weekly-recaps";
+import { KingdomMap } from "@/components/kingdom-map";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
   ResponsiveContainer, Cell, AreaChart, Area,
@@ -417,6 +418,9 @@ export default function Insights() {
               <XpTimelineChart data={data.xpHistory} days={days} />
             </CardContent>
           </Card>
+
+          {/* Kingdom map */}
+          <KingdomMap />
 
           {/* Category + Day-of-week */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
