@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   CATEGORY_TO_KINGDOM, kingdomForCategory, kingdomTier, KINGDOMS,
   deriveLiveliness, isWorldResting, WORLD_RESTING_THRESHOLD, LIVELINESS_WINDOW_DAYS,
+  deriveNeglectInvitation,
 } from "./kingdoms";
 import { CATEGORY_LABELS } from "./auto-points";
 
@@ -111,5 +112,59 @@ describe("isWorldResting", () => {
 describe("window constant", () => {
   it("uses a 14-day liveliness window", () => {
     expect(LIVELINESS_WINDOW_DAYS).toBe(14);
+  });
+});
+
+describe("deriveNeglectInvitation", () => {
+  const active = { forge: 600, hearth: 300 }; // 900 recent, well above the floor
+
+  it("invites back to a kingdom that is built but dormant", () => {
+    const result = deriveNeglectInvitation({
+      lifetimeByKingdom: { forge: 5000, hearth: 2000, wellspring: 1200 },
+      recentByKingdom: active,
+    });
+    expect(result).toMatchObject({ kingdomId: "wellspring", kingdomName: "Wellspring" });
+  });
+
+  it("never invites to a kingdom the user has never built in", () => {
+    // Reflect the user's own pattern back; never prescribe a life.
+    const result = deriveNeglectInvitation({
+      lifetimeByKingdom: { forge: 5000, hearth: 2000 },
+      recentByKingdom: active,
+    });
+    expect(result).toBeNull();
+  });
+
+  it("is suppressed entirely when the world is resting", () => {
+    // Absence belongs to hunger and the companion; kingdoms must not pile on.
+    const result = deriveNeglectInvitation({
+      lifetimeByKingdom: { forge: 5000, wellspring: 1200 },
+      recentByKingdom: { forge: 20 },
+    });
+    expect(result).toBeNull();
+  });
+
+  it("never invites to the capital", () => {
+    const result = deriveNeglectInvitation({
+      lifetimeByKingdom: { capital: 9000, forge: 5000 },
+      recentByKingdom: active,
+    });
+    expect(result).toBeNull();
+  });
+
+  it("picks the most-built dormant kingdom when several qualify", () => {
+    const result = deriveNeglectInvitation({
+      lifetimeByKingdom: { forge: 5000, wellspring: 1200, athenaeum: 3400 },
+      recentByKingdom: active,
+    });
+    expect(result?.kingdomId).toBe("athenaeum");
+  });
+
+  it("returns null when every built kingdom is active", () => {
+    const result = deriveNeglectInvitation({
+      lifetimeByKingdom: { forge: 5000, hearth: 2000 },
+      recentByKingdom: { forge: 600, hearth: 300 },
+    });
+    expect(result).toBeNull();
   });
 });

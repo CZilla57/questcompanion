@@ -98,3 +98,36 @@ export function deriveLiveliness(kingdomRecentPoints: number, balanceTotal: numb
   if (share <= 0.30) return "steady";
   return "bustling";
 }
+
+export type NeglectInvitation = { kingdomId: KingdomId; kingdomName: string };
+
+/**
+ * "You've built here before, and haven't visited lately." Self-calibrating: it
+ * only ever names a kingdom the user has actually invested in, so it reflects
+ * their pattern rather than prescribing a life.
+ *
+ * Suppressed entirely while the world is resting — telling someone who has been
+ * away from everything that they have neglected one area is exactly wrong, and
+ * absence is already hunger's and the companion's territory.
+ */
+export function deriveNeglectInvitation(args: {
+  lifetimeByKingdom: Partial<Record<KingdomId, number>>;
+  recentByKingdom: Partial<Record<KingdomId, number>>;
+}): NeglectInvitation | null {
+  if (isWorldResting(args.recentByKingdom)) return null;
+
+  const total = balanceRecentTotal(args.recentByKingdom);
+
+  const candidates = BALANCE_KINGDOMS
+    .map((id) => ({
+      id,
+      lifetime: args.lifetimeByKingdom[id] ?? 0,
+      liveliness: deriveLiveliness(args.recentByKingdom[id] ?? 0, total),
+    }))
+    .filter((k) => k.lifetime > 0 && k.liveliness === "dormant")
+    .sort((a, b) => b.lifetime - a.lifetime);
+
+  const top = candidates[0];
+  if (!top) return null;
+  return { kingdomId: top.id, kingdomName: KINGDOMS.find((k) => k.id === top.id)!.name };
+}
