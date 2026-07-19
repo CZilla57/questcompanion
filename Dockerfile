@@ -34,10 +34,14 @@ COPY --from=deps /app/artifacts/api-server/node_modules ./artifacts/api-server/n
 
 COPY --from=build-api /app/artifacts/api-server/dist ./dist
 COPY --from=build-frontend /app/artifacts/focusquest/dist/public ./dist/public
+# Migration SQL must ship with the image — dist/migrate.mjs reads it at runtime.
+COPY --from=build-api /app/lib/db/drizzle ./dist/drizzle
 
 ENV NODE_ENV=production
 ENV PORT=8080
 
 EXPOSE 8080
 
-CMD ["node", "--enable-source-maps", "dist/index.mjs"]
+# Migrate before serving: a failed migration exits non-zero and aborts the boot
+# rather than leaving a server running against a half-migrated database.
+CMD ["sh", "-c", "node dist/migrate.mjs && exec node --enable-source-maps dist/index.mjs"]
