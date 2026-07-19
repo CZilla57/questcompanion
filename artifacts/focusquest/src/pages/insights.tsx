@@ -391,6 +391,14 @@ export default function Insights() {
         </div>
       </div>
 
+      {/* Kingdom map — rendered OUTSIDE the isEmpty branch on purpose. isEmpty
+          keys off this page's date-range breakdown, so a user returning after
+          time away would fall into the empty state — and that is precisely the
+          person the map's warm "your world is resting" state exists for. The
+          kingdoms endpoint has its own window and lifetime data, so it always
+          has something true to show. */}
+      <KingdomMap />
+
       {isEmpty ? (
         <div className="text-center py-24 border-2 border-dashed border-muted rounded-xl">
           <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
@@ -418,9 +426,6 @@ export default function Insights() {
               <XpTimelineChart data={data.xpHistory} days={days} />
             </CardContent>
           </Card>
-
-          {/* Kingdom map */}
-          <KingdomMap />
 
           {/* Category + Day-of-week */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
