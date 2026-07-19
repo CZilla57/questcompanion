@@ -105,13 +105,12 @@ export function KingdomScene({
   liveliness: Liveliness | null;
   /** Fixed CSS width in px. Omit to size via className (e.g. w-full); an
    *  inline width would override any class, so none is set unless asked for.
-   *  Either way the canvas keeps its intrinsic 320:192 ratio. */
+   *  Either way the canvas maintains its kingdom's intrinsic aspect ratio. */
   width?: number;
   className?: string;
-  /** Overrides the generated aria-label. Required by the capital, which passes a
-   *  neutral `liveliness` purely to get undimmed art — it has no liveliness
-   *  reading to report, so the default label would announce "busy right now" to
-   *  screen-reader users while sighted users are shown no verdict at all. */
+  /** Overrides the generated aria-label. Used by the capital to ensure
+   *  screen-reader users never hear a liveliness verdict that sighted users
+   *  are not shown. */
   label?: string;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
