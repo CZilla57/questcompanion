@@ -197,3 +197,46 @@ export function kingdomGrowth(category: string, basePoints: number): KingdomGrow
   if (basePoints <= 0) return null;
   return { kingdomId: kingdomForCategory(category), points: basePoints };
 }
+
+export type KingdomStateView = {
+  id: KingdomId;
+  name: string;
+  isCapital: boolean;
+  lifetimePoints: number;
+  tier: number;
+  tierName: string;
+  liveliness: Liveliness | null;
+};
+
+/**
+ * Shapes the full six-kingdom payload. Pure and DB-free so it can be tested
+ * directly - the route is then only DB reads plus one call to this.
+ *
+ * The capital is the realm's grand total on its own 12-stage ladder and
+ * reports NO liveliness: liveliness is a share of recent activity, and a
+ * cumulative total has no share. Null, never a fabricated value.
+ *
+ * `balanceRecentTotal` excludes the capital, so capital points can never
+ * reach the denominator that decides the five kingdoms' liveliness.
+ */
+export function kingdomStates(
+  lifetimeByKingdom: Partial<Record<KingdomId, number>>,
+  recentByKingdom: Partial<Record<KingdomId, number>>,
+): KingdomStateView[] {
+  const total = balanceRecentTotal(recentByKingdom);
+  return KINGDOMS.map((k) => {
+    const lifetime = k.isCapital
+      ? capitalLifetime(lifetimeByKingdom)
+      : (lifetimeByKingdom[k.id] ?? 0);
+    const t = k.isCapital ? capitalTier(lifetime) : kingdomTier(lifetime);
+    return {
+      id: k.id,
+      name: k.name,
+      isCapital: k.isCapital,
+      lifetimePoints: lifetime,
+      tier: t.tier,
+      tierName: t.name,
+      liveliness: k.isCapital ? null : deriveLiveliness(recentByKingdom[k.id] ?? 0, total),
+    };
+  });
+}

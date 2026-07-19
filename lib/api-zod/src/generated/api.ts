@@ -206,7 +206,7 @@ export const GetKingdomsResponse = zod.object({
   "lifetimePoints": zod.number(),
   "tier": zod.number(),
   "tierName": zod.string(),
-  "liveliness": zod.enum(['dormant', 'stirring', 'steady', 'bustling'])
+  "liveliness": zod.enum(['dormant', 'stirring', 'steady', 'bustling']).nullable().describe('Share of recent activity. Null for the capital, which is a cumulative lifetime total and has no share to report.')
 })),
   "invitation": zod.union([zod.object({
   "kingdomId": zod.string(),

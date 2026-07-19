@@ -2431,6 +2431,10 @@ components:
         liveliness:
           type: string
           enum: [dormant, stirring, steady, bustling]
+          nullable: true
+          description: >-
+            Share of recent activity. Null for the capital, which is a
+            cumulative lifetime total and has no share to report.
 
     KingdomInvitation:
       type: object
