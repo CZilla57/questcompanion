@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { useGetKingdoms } from "@workspace/api-client-react";
 import { KingdomTierPips } from "@/components/kingdom-tier-pips";
+import { MAX_CAPITAL_TIER } from "@/lib/kingdom-scene";
 
 const LIVELINESS_DOT: Record<string, string> = {
   dormant:  "bg-muted-foreground/30",
@@ -38,7 +39,7 @@ export function KingdomStrip() {
           // Under global absence the world reads as one resting whole, never as five
           // separate verdicts — mirrors the override in kingdom-map.tsx so both
           // surfaces agree instead of this strip painting raw per-kingdom dormancy.
-          const liveliness = data.worldResting ? "stirring" : k.liveliness;
+          const liveliness = data.worldResting ? "stirring" : (k.liveliness ?? "dormant");
           return (
             <div key={k.id} className="flex flex-col items-center gap-1">
               <span className={`h-1.5 w-full rounded-full ${LIVELINESS_DOT[liveliness] ?? LIVELINESS_DOT.dormant}`} />
@@ -53,7 +54,7 @@ export function KingdomStrip() {
           <span className="text-[10px] text-muted-foreground truncate">
             Capital · {capital.tier > 0 ? capital.tierName : "unfounded"}
           </span>
-          <KingdomTierPips tier={capital.tier} className="shrink-0" />
+          <KingdomTierPips tier={capital.tier} total={MAX_CAPITAL_TIER + 1} className="shrink-0" />
         </div>
       )}
 
