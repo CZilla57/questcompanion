@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { resolveSceneImageUrl, SCENE_W, SCENE_H, type Liveliness } from "@/lib/kingdom-scene";
+import { resolveSceneImageUrl, sceneSize, type Liveliness } from "@/lib/kingdom-scene";
 
 // THE RENDERER SEAM. Everything above this component speaks only in kingdom id,
 // tier, and liveliness. Swapping this static-image canvas for PixiJS later means
@@ -27,9 +27,10 @@ const LIVELINESS_PHRASE: Record<Liveliness, string> = {
 /** Kingdom ids are already their capitalized display name lowercased
  *  (hearth/wellspring/forge/athenaeum/crossroads/capital), so a plain
  *  capitalize avoids a second copy of the name table in this seam. */
-function describeKingdom(kingdomId: string, tier: number, liveliness: Liveliness): string {
+function describeKingdom(kingdomId: string, tier: number, liveliness: Liveliness | null): string {
   const name = kingdomId.charAt(0).toUpperCase() + kingdomId.slice(1);
   const tierPhrase = TIER_PHRASE[tier] ?? TIER_PHRASE[0];
+  if (liveliness === null) return `${name}, ${tierPhrase}`;
   const livelinessPhrase = LIVELINESS_PHRASE[liveliness] ?? LIVELINESS_PHRASE.dormant;
   return `${name}, ${tierPhrase}, ${livelinessPhrase} right now`;
 }
@@ -54,11 +55,18 @@ function loadImage(url: string): Promise<HTMLImageElement> {
   return p;
 }
 
-function paintLivelinessOverlay(ctx: CanvasRenderingContext2D, liveliness: Liveliness, tier: number) {
+function paintLivelinessOverlay(
+  ctx: CanvasRenderingContext2D,
+  liveliness: Liveliness | null,
+  tier: number,
+  w: number,
+  h: number,
+) {
+  if (liveliness === null) return;
   switch (liveliness) {
     case "dormant":
       ctx.fillStyle = "rgba(12, 20, 42, 0.36)";
-      ctx.fillRect(0, 0, SCENE_W, SCENE_H);
+      ctx.fillRect(0, 0, w, h);
       if (tier > 0) {
         const glow = ctx.createRadialGradient(238, 124, 1, 238, 124, 28);
         glow.addColorStop(0, "rgba(255, 218, 142, 0.8)");
@@ -69,13 +77,13 @@ function paintLivelinessOverlay(ctx: CanvasRenderingContext2D, liveliness: Livel
       break;
     case "stirring":
       ctx.fillStyle = "rgba(255, 197, 118, 0.1)";
-      ctx.fillRect(0, 0, SCENE_W, SCENE_H);
+      ctx.fillRect(0, 0, w, h);
       break;
     case "steady":
       break;
     case "bustling":
       ctx.fillStyle = "rgba(255, 218, 128, 0.12)";
-      ctx.fillRect(0, 0, SCENE_W, SCENE_H);
+      ctx.fillRect(0, 0, w, h);
       if (tier > 0) {
         ctx.fillStyle = "rgba(255, 235, 170, 0.55)";
         for (const [x, y] of [[54, 136], [148, 122], [250, 138]]) {
@@ -91,7 +99,10 @@ export function KingdomScene({
 }: {
   kingdomId: string;
   tier: number;
-  liveliness: Liveliness;
+  /** Null means "no reading" — full art, no overlay. The capital uses this:
+   *  liveliness is a share of recent activity, and a cumulative total has no
+   *  share. Previously the capital passed a fake "steady" to avoid dimming. */
+  liveliness: Liveliness | null;
   /** Fixed CSS width in px. Omit to size via className (e.g. w-full); an
    *  inline width would override any class, so none is set unless asked for.
    *  Either way the canvas keeps its intrinsic 320:192 ratio. */
@@ -104,6 +115,7 @@ export function KingdomScene({
   label?: string;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const { w: sceneW, h: sceneH } = sceneSize(kingdomId);
 
   useEffect(() => {
     const canvas = ref.current;
@@ -121,27 +133,27 @@ export function KingdomScene({
       if (cancelled) return;
 
       ctx.imageSmoothingEnabled = false;
-      ctx.clearRect(0, 0, SCENE_W, SCENE_H);
+      ctx.clearRect(0, 0, sceneW, sceneH);
 
       const loaded = result[0];
       if (loaded?.status === "fulfilled") {
-        ctx.drawImage(loaded.value, 0, 0, SCENE_W, SCENE_H);
-        paintLivelinessOverlay(ctx, liveliness, tier);
+        ctx.drawImage(loaded.value, 0, 0, sceneW, sceneH);
+        paintLivelinessOverlay(ctx, liveliness, tier, sceneW, sceneH);
       }
       ctx.globalAlpha = 1;
     })();
 
     return () => { cancelled = true; };
-  }, [kingdomId, tier, liveliness]);
+  }, [kingdomId, tier, liveliness, sceneW, sceneH]);
 
   return (
     <canvas
       ref={ref}
-      width={SCENE_W}
-      height={SCENE_H}
+      width={sceneW}
+      height={sceneH}
       className={className}
       style={{
-        ...(width !== undefined ? { width, height: (width * SCENE_H) / SCENE_W } : undefined),
+        ...(width !== undefined ? { width, height: (width * sceneH) / sceneW } : undefined),
         imageRendering: "pixelated",
       }}
       role="img"
