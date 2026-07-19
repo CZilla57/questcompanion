@@ -8,6 +8,7 @@ import { EveningReflectionCard } from "@/components/evening-reflection-card";
 import { ActivityHeatmap } from "@/components/activity-heatmap";
 import { HeroSummary } from "@/components/hero-summary";
 import { RecentBadges } from "@/components/recent-badges";
+import { KingdomStrip } from "@/components/kingdom-strip";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -483,6 +484,9 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
+
+      {/* ── Kingdom liveliness strip ───────────────────────── */}
+      <KingdomStrip />
 
       {/* ── Edit quest dialog ─────────────────────────────── */}
       <Dialog open={!!editTask && !editTask.completed} onOpenChange={(open) => { if (!open) setEditTask(null); }}>
