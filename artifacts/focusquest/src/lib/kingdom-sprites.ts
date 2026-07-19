@@ -40,13 +40,17 @@ const t = (sx: number, sy: number, w: number, h: number): TerrainSprite =>
  * Ground tiles are 32x32 and tile seamlessly; props are free-standing and are
  * drawn at their natural size.
  */
+// Ground fills must be FLAT tiles. Coordinates were picked by scoring every
+// 32x32 tile on the sheet for colour variance: the first pass grabbed a reed
+// shoreline for water (sd 59) and a tufted tile for dirt (sd 40), and both
+// tiled into visible stripes. These all score under sd 10.
 export const TERRAIN_SPRITES: Record<string, TerrainSprite> = {
   // ── Ground fills (32x32, tileable) ──
   "ground.grass":  t(128, 64, TILE, TILE),
-  "ground.dirt":   t(192, 0, TILE, TILE),
+  "ground.dirt":   t(288, 128, TILE, TILE),
   "ground.cobble": t(128, 128, TILE, TILE),
   "ground.sand":   t(288, 160, TILE, TILE),
-  "ground.water":  t(416, 640, TILE, TILE),
+  "ground.water":  t(512, 576, TILE, TILE),
 
   // ── Props (free-standing) ──
   "prop.boulder":      t(608, 608, 64, 32),

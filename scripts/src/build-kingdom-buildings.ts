@@ -52,15 +52,26 @@ const SRC = {
  *  cut-outs, which would show the terrain through the building. */
 const DOOR = { w: 16, h: 22, rgb: [38, 30, 34] as const };
 
-/** Building roster: wall body size; the roof is centred on top and may overhang. */
-type BuildingSpec = { id: string; bodyW: number; bodyH: number };
+/**
+ * Building roster: wall body size plus how much of the gable to keep.
+ *
+ * Sizes are deliberately modest. An earlier pass used bodies up to 160px wide,
+ * and five of those in a 320px scene overlapped into one undifferentiated wall
+ * of roof — it stopped reading as a village. At these sizes the five tiers total
+ * ~376px of width across a 320px scene, so they overlap just enough to read as
+ * depth rather than as a barricade.
+ *
+ * `roofH` crops the 64px gable from the BOTTOM, keeping the peak (which carries
+ * the silhouette) and trimming slope the wall would hide anyway.
+ */
+type BuildingSpec = { id: string; bodyW: number; bodyH: number; roofH: number };
 
 const BUILDINGS: BuildingSpec[] = [
-  { id: "hut",   bodyW: 64,  bodyH: 48 },
-  { id: "house", bodyW: 96,  bodyH: 64 },
-  { id: "hall",  bodyW: 128, bodyH: 72 },
-  { id: "tower", bodyW: 48,  bodyH: 112 },
-  { id: "keep",  bodyW: 160, bodyH: 88 },
+  { id: "hut",   bodyW: 40, bodyH: 28, roofH: 40 },
+  { id: "house", bodyW: 56, bodyH: 36, roofH: 48 },
+  { id: "hall",  bodyW: 76, bodyH: 40, roofH: 52 },
+  { id: "tower", bodyW: 28, bodyH: 72, roofH: 44 },
+  { id: "keep",  bodyW: 96, bodyH: 48, roofH: 56 },
 ];
 
 function loadSheet(): PNG {
@@ -90,21 +101,22 @@ function blit(
 }
 
 /** How far the roof's lower edge sits over the wall body. */
-const ROOF_OVERLAP = 10;
+const ROOF_OVERLAP = 8;
 
 function compose(sheet: PNG, spec: BuildingSpec, variant: Variant): PNG {
   const roofW = SRC.roof.w;
+  const roofH = Math.min(spec.roofH, SRC.roof.h);
   // Eaves overhang the wall by 8px a side. Narrow buildings get a centre-cropped
   // roof rather than a full-width one, which otherwise reads as a lollipop.
   const roofSpan = spec.bodyW + 16;
   const canvasW = Math.max(spec.bodyW, roofSpan);
-  const canvasH = SRC.roof.h + spec.bodyH - ROOF_OVERLAP;
+  const canvasH = roofH + spec.bodyH - ROOF_OVERLAP;
   const out = new PNG({ width: canvasW, height: canvasH, fill: true });
   // fill:true gives opaque black; clear to fully transparent instead.
   out.data.fill(0);
 
   const bodyX = Math.floor((canvasW - spec.bodyW) / 2);
-  const bodyY = SRC.roof.h - ROOF_OVERLAP;
+  const bodyY = roofH - ROOF_OVERLAP;
 
   // Wall body: tile the wall patch across the body rect.
   for (let y = 0; y < spec.bodyH; y += SRC.wall.h) {
@@ -137,12 +149,12 @@ function compose(sheet: PNG, spec: BuildingSpec, variant: Variant): PNG {
   if (roofSpan <= roofW) {
     // Centre-crop keeps the gable's peak, which is what carries the silhouette.
     const inset = Math.floor((roofW - roofSpan) / 2);
-    blit(sheet, SRC.roof.x + variant.dx + inset, SRC.roof.y + variant.dy, roofSpan, SRC.roof.h, out, roofX, 0);
+    blit(sheet, SRC.roof.x + variant.dx + inset, SRC.roof.y + variant.dy, roofSpan, roofH, out, roofX, 0);
   } else {
     // Wider bodies repeat the gable, which reads as a terraced row.
     for (let x = 0; x < roofSpan; x += roofW) {
       const w = Math.min(roofW, roofSpan - x);
-      blit(sheet, SRC.roof.x + variant.dx, SRC.roof.y + variant.dy, w, SRC.roof.h, out, roofX + x, 0);
+      blit(sheet, SRC.roof.x + variant.dx, SRC.roof.y + variant.dy, w, roofH, out, roofX + x, 0);
     }
   }
 
