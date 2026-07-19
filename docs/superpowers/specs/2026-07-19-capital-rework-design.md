@@ -115,7 +115,7 @@ Twelve new images replace the current six:
 artifacts/focusquest/public/kingdoms/scenes/capital/tier-0.png … tier-11.png
 ```
 
-- **1024 × 192 px** each (64 × 12 tiles of 16px).
+- **1024 × 192 px** each (32 × 6 tiles, `TILE = 32`).
 - Both dimensions are multiples of `TILE` — the existing scene-bounds test asserts this.
 - **Safe zone: the centre 512px** (x = 256→768). The band is fixed-height with
   `object-cover`, so the outer quarters crop away on narrow viewports. The defining
@@ -139,9 +139,12 @@ same shape. The capital is now a different shape, so scene dimensions become per
 - `sceneSize(kingdomId): { w, h }` — capital `1024×192`, all others `320×192`.
 - `MAX_CAPITAL_TIER = 11` alongside `MAX_KINGDOM_TIER = 5`; `resolveSceneImageUrl` clamps
   per kingdom rather than against one global max.
-- The capital gets its own 12-entry tier-phrase set for the aria-label. The existing
-  `label` override prop stays — the capital passes an explicit label so screen-reader
-  users are never told a liveliness verdict that sighted users aren't shown.
+- The capital keeps the existing `label` override prop, built from the server's `tierName`.
+  That covers all 12 stages with no per-tier phrase table, and keeps screen-reader users
+  from being told a liveliness verdict that sighted users aren't shown.
+- `liveliness` becomes `Liveliness | null` through the seam. `null` means "no reading":
+  full-opacity art, no overlay. This removes the hack where the capital passed a fake
+  `"steady"` purely to avoid dimming.
 - The scene-bounds test iterates per-kingdom dimensions instead of the two constants.
 
 Everything above this seam still speaks only in kingdom id, tier, and liveliness. The
