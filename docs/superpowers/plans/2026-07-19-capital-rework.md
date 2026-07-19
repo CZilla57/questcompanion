@@ -6,7 +6,7 @@
 
 **Architecture:** The capital's value is *derived* at read time as the sum of all six `kingdom_points` rows — the write path is untouched, so there is no migration and no risk of drift. A second tier ladder (`capitalTier`, 12 entries) sits beside the existing `kingdomTier` (6 entries). The renderer seam gains per-kingdom scene dimensions because the capital's art is a 1024×192 band while the five kingdoms stay 320×192.
 
-**Tech Stack:** TypeScript, Express + Drizzle (api-server), React + wouter + Tailwind (focusquest), Vitest, orval codegen from `lib/api-spec/openapi.yaml`, `sharp` for image assertions, `pngjs` for placeholder generation.
+**Tech Stack:** TypeScript, Express + Drizzle (api-server), React + wouter + Tailwind (focusquest), Vitest, orval codegen from `lib/api-spec/openapi.yaml`, `sharp` for image assertions, `pngjs` for image tooling.
 
 ## Global Constraints
 
@@ -28,7 +28,7 @@
 | `artifacts/api-server/src/lib/kingdoms.test.ts` | **Modify.** Cover the new pure functions + balance-invariant regression. |
 | `artifacts/api-server/src/routes/users.ts` | **Modify.** Derive the capital total, use `capitalTier`, return `liveliness: null` for the capital. |
 | `lib/api-spec/openapi.yaml` | **Modify.** `liveliness` becomes nullable. |
-| `artifacts/focusquest/public/kingdoms/scenes/capital/tier-*.png` | **Replace.** 6 files at 320×192 → 12 files at 1024×192. |
+| `artifacts/focusquest/public/kingdoms/scenes/capital/tier-*.png` | **Already done** (commit `ff23d0e`). 12 bands at 1024×192, verified. |
 | `artifacts/focusquest/src/lib/kingdom-scene.ts` | **Modify.** `CAPITAL_SCENE_W/H`, `MAX_CAPITAL_TIER`, `sceneSize()`, per-kingdom tier clamp. |
 | `artifacts/focusquest/src/lib/kingdom-scene.test.ts` | **Modify.** Per-kingdom image dimension + clamp assertions. |
 | `artifacts/focusquest/src/components/kingdom-scene.tsx` | **Modify.** Per-kingdom canvas size; `liveliness: Liveliness \| null`. |
@@ -36,7 +36,7 @@
 | `artifacts/focusquest/src/components/kingdom-map.tsx` | **Modify.** 2-centred / band / 3 layout. |
 | `artifacts/focusquest/src/components/kingdom-strip.tsx` | **Modify.** Pass 12 as the capital pip total. |
 
-**Sequencing note:** Task 3 generates placeholder art so the pipeline is testable before Chad's real images land. Chad overwrites the same 12 filenames later; no code changes when he does.
+**Art is already in place.** All 12 capital bands are committed at 1024×192 in `scenes/capital/` (commit `ff23d0e`), so no placeholder step is needed and the image-dimension assertions in Task 4 run against the real art from the start.
 
 ---
 
@@ -270,98 +270,7 @@ git commit -m "feat(kingdoms): add the 12-stage capital ladder and pin the balan
 
 ---
 
-### Task 3: Placeholder capital art (12 × 1024×192)
-
-Unblocks every frontend task. Chad overwrites these same 12 filenames with real art later — no code changes when he does.
-
-**Files:**
-- Create: `artifacts/focusquest/scripts/generate-capital-placeholders.mjs`
-- Replace: `artifacts/focusquest/public/kingdoms/scenes/capital/tier-0.png` … `tier-11.png`
-
-**Interfaces:**
-- Consumes: nothing.
-- Produces: 12 PNG files, each exactly 1024×192.
-
-- [ ] **Step 1: Write the generator**
-
-Create `artifacts/focusquest/scripts/generate-capital-placeholders.mjs`:
-
-```js
-// Placeholder capital bands so the scene pipeline is testable before the real
-// art lands. Overwritten by hand-drawn 1024x192 images; delete this script once
-// all twelve are final.
-import fs from "node:fs";
-import path from "node:path";
-import { PNG } from "pngjs";
-
-const W = 1024, H = 192, DIR = path.resolve(import.meta.dirname, "../public/kingdoms/scenes/capital");
-const SAFE_X0 = 256, SAFE_X1 = 768;
-
-fs.mkdirSync(DIR, { recursive: true });
-
-for (let tier = 0; tier <= 11; tier++) {
-  const png = new PNG({ width: W, height: H });
-  const growth = tier / 11;
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      const i = ((W * y) + x) << 2;
-      const inSafe = x >= SAFE_X0 && x < SAFE_X1;
-      const ground = y > H * (0.62 - growth * 0.12);
-      png.data[i]     = ground ? 40 + growth * 60 : 26;
-      png.data[i + 1] = ground ? 60 + growth * 70 : 32;
-      png.data[i + 2] = ground ? 70 + growth * 50 : 54;
-      png.data[i + 3] = 255;
-      // Safe-zone markers so cropping is obvious during development.
-      if (inSafe && (y < 2 || y >= H - 2)) { png.data[i] = 255; png.data[i+1] = 190; png.data[i+2] = 80; }
-      if (x === SAFE_X0 || x === SAFE_X1 - 1) { png.data[i] = 255; png.data[i+1] = 190; png.data[i+2] = 80; }
-    }
-  }
-  // Crude "buildings": one block per tier, inside the safe zone.
-  for (let b = 0; b < tier; b++) {
-    const bw = 28, bh = 24 + b * 4;
-    const bx = SAFE_X0 + 24 + b * 40, by = H - 34 - bh;
-    for (let y = by; y < by + bh; y++) {
-      for (let x = bx; x < bx + bw; x++) {
-        const i = ((W * y) + x) << 2;
-        png.data[i] = 120; png.data[i + 1] = 130; png.data[i + 2] = 190; png.data[i + 3] = 255;
-      }
-    }
-  }
-  fs.writeFileSync(path.join(DIR, `tier-${tier}.png`), PNG.sync.write(png));
-}
-console.log("wrote 12 capital placeholders at 1024x192");
-```
-
-- [ ] **Step 2: Remove the six stale 320×192 capital images and generate**
-
-```bash
-cd artifacts/focusquest
-rm -f public/kingdoms/scenes/capital/tier-*.png
-node scripts/generate-capital-placeholders.mjs
-```
-
-Expected: `wrote 12 capital placeholders at 1024x192`
-
-- [ ] **Step 3: Verify dimensions**
-
-```bash
-cd artifacts/focusquest
-node -e "const s=require('sharp');(async()=>{for(let t=0;t<=11;t++){const m=await s('public/kingdoms/scenes/capital/tier-'+t+'.png').metadata();console.log(t,m.width+'x'+m.height);}})()"
-```
-
-Expected: twelve lines, each `1024x192`.
-
-- [ ] **Step 4: Commit**
-
-```bash
-git branch --show-current
-git add artifacts/focusquest/scripts/generate-capital-placeholders.mjs artifacts/focusquest/public/kingdoms/scenes/capital/
-git commit -m "chore(kingdoms): placeholder 1024x192 capital bands for all 12 tiers"
-```
-
----
-
-### Task 4: Route — derived total, capital ladder, nullable liveliness
+### Task 3: Route — derived total, capital ladder, nullable liveliness
 
 **Files:**
 - Modify: `lib/api-spec/openapi.yaml:2416-2433`
@@ -508,7 +417,7 @@ Expected: PASS, 504+ tests (501 baseline + the new ones).
 - [ ] **Step 7: Typecheck**
 
 Run: `cd C:/Users/Chadr/OneDrive/Documents/Quest-Companion && pnpm typecheck`
-Expected: exit 0. If the frontend fails here on a null `liveliness`, that is expected — Task 5 fixes it. Note the failures and continue.
+Expected: exit 0. If the frontend fails here on a null `liveliness`, that is expected — Task 4 fixes it. Note the failures and continue.
 
 - [ ] **Step 8: Commit**
 
@@ -520,7 +429,7 @@ git commit -m "feat(kingdoms): serve the capital as a grand total with null live
 
 ---
 
-### Task 5: Scene seam — per-kingdom dimensions and tier ceilings
+### Task 4: Scene seam — per-kingdom dimensions and tier ceilings
 
 **Files:**
 - Modify: `artifacts/focusquest/src/lib/kingdom-scene.ts`
@@ -616,7 +525,7 @@ export function resolveSceneImageUrl(kingdomId: string, tier: number): string | 
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `cd artifacts/focusquest && npx vitest run src/lib/kingdom-scene.test.ts`
-Expected: PASS. The image-dimension test now reads the 12 placeholder bands from Task 3.
+Expected: PASS. The image-dimension test reads the 12 committed capital bands.
 
 - [ ] **Step 5: Commit**
 
@@ -628,7 +537,7 @@ git commit -m "feat(kingdoms): per-kingdom scene dimensions and tier ceilings"
 
 ---
 
-### Task 6: Renderer — per-kingdom canvas, null liveliness
+### Task 5: Renderer — per-kingdom canvas, null liveliness
 
 **Files:**
 - Modify: `artifacts/focusquest/src/components/kingdom-scene.tsx`
@@ -760,7 +669,7 @@ And the returned element:
 - [ ] **Step 2: Typecheck**
 
 Run: `cd artifacts/focusquest && npx tsc --noEmit -p tsconfig.json`
-Expected: errors ONLY in `kingdom-map.tsx` / `kingdom-strip.tsx` where `liveliness` is still passed as non-null. Tasks 7–9 fix those.
+Expected: errors ONLY in `kingdom-map.tsx` / `kingdom-strip.tsx` where `liveliness` is still passed as non-null. Tasks 6–8 fix those.
 
 - [ ] **Step 3: Commit**
 
@@ -772,7 +681,7 @@ git commit -m "feat(kingdoms): size the scene canvas per kingdom and allow null 
 
 ---
 
-### Task 7: Tier pips take a total
+### Task 6: Tier pips take a total
 
 **Files:**
 - Modify: `artifacts/focusquest/src/components/kingdom-tier-pips.tsx`
@@ -823,7 +732,7 @@ Note the `MAX_KINGDOM_TIER` import is now unused — delete it.
 - [ ] **Step 2: Typecheck**
 
 Run: `cd artifacts/focusquest && npx tsc --noEmit -p tsconfig.json`
-Expected: errors in `kingdom-map.tsx` and `kingdom-strip.tsx` for the missing `total` prop. Fixed in Tasks 8–9.
+Expected: errors in `kingdom-map.tsx` and `kingdom-strip.tsx` for the missing `total` prop. Fixed in Tasks 7–8.
 
 - [ ] **Step 3: Commit**
 
@@ -835,13 +744,13 @@ git commit -m "refactor(kingdoms): let tier pips render a variable ladder length
 
 ---
 
-### Task 8: Insights layout — 2 centred / band / 3
+### Task 7: Insights layout — 2 centred / band / 3
 
 **Files:**
 - Modify: `artifacts/focusquest/src/components/kingdom-map.tsx`
 
 **Interfaces:**
-- Consumes: `KingdomScene` (Task 6), `KingdomTierPips` (Task 7), `MAX_CAPITAL_TIER` (Task 5).
+- Consumes: `KingdomScene` (Task 5), `KingdomTierPips` (Task 6), `MAX_CAPITAL_TIER` (Task 4).
 - Produces: nothing consumed by later tasks.
 
 - [ ] **Step 1: Rewrite the layout**
@@ -959,7 +868,7 @@ Also update the component's doc comment to describe the new arrangement:
 - [ ] **Step 2: Typecheck**
 
 Run: `cd artifacts/focusquest && npx tsc --noEmit -p tsconfig.json`
-Expected: errors only in `kingdom-strip.tsx` now (Task 9).
+Expected: errors only in `kingdom-strip.tsx` now (Task 8).
 
 - [ ] **Step 3: Commit**
 
@@ -971,13 +880,13 @@ git commit -m "feat(kingdoms): 2-over-band-over-3 insights layout with the capit
 
 ---
 
-### Task 9: Dashboard strip — 12-stage capital, then full verification
+### Task 8: Dashboard strip — 12-stage capital, then full verification
 
 **Files:**
 - Modify: `artifacts/focusquest/src/components/kingdom-strip.tsx`
 
 **Interfaces:**
-- Consumes: `KingdomTierPips` (Task 7), `MAX_CAPITAL_TIER` (Task 5).
+- Consumes: `KingdomTierPips` (Task 6), `MAX_CAPITAL_TIER` (Task 4).
 - Produces: nothing.
 
 - [ ] **Step 1: Pass the capital's ladder length and guard null liveliness**
@@ -1040,29 +949,3 @@ git commit -m "feat(kingdoms): show the capital's 12-stage ladder on the dashboa
 ```
 
 ---
-
-### Task 10: Swap in the real art (blocked on Chad)
-
-**Files:**
-- Replace: `artifacts/focusquest/public/kingdoms/scenes/capital/tier-0.png` … `tier-11.png`
-- Delete: `artifacts/focusquest/scripts/generate-capital-placeholders.mjs`
-
-- [ ] **Step 1: Drop the 12 hand-drawn 1024×192 bands into place, same filenames**
-
-- [ ] **Step 2: Verify dimensions**
-
-Run: `cd artifacts/focusquest && npx vitest run src/lib/kingdom-scene.test.ts`
-Expected: PASS. The dimension assertion fails loudly if any image is not exactly 1024×192.
-
-- [ ] **Step 3: Check the safe zone on a real phone viewport**
-
-Load `/insights` at 375px wide and confirm the capital still reads as a place — the centre 512px of each band must carry the composition.
-
-- [ ] **Step 4: Delete the placeholder generator and commit**
-
-```bash
-git branch --show-current
-git rm artifacts/focusquest/scripts/generate-capital-placeholders.mjs
-git add artifacts/focusquest/public/kingdoms/scenes/capital/
-git commit -m "feat(kingdoms): final capital band art for all 12 stages"
-```
