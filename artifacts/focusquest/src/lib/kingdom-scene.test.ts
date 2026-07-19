@@ -9,8 +9,12 @@ import {
   SCENE_W,
   SCENE_H,
   MAX_KINGDOM_TIER,
+  sceneSize,
+  maxTierFor,
+  CAPITAL_SCENE_W,
+  CAPITAL_SCENE_H,
 } from "./kingdom-scene";
-import { SPRITES, LANTERN_ID, spriteSize } from "./kingdom-sprites";
+import { SPRITES, LANTERN_ID, spriteSize, TILE } from "./kingdom-sprites";
 
 const LIVELINESS = ["dormant", "stirring", "steady", "bustling"] as const;
 const builds = (ls: { spriteId: string }[]) => ls.filter((l) => l.spriteId.startsWith("build."));
@@ -23,22 +27,40 @@ describe("resolveScene", () => {
     );
   });
 
-  it("resolves static tier scene images for all six kingdoms", async () => {
+  it("resolves static tier scene images at each kingdom's own size", async () => {
     for (const id of SCENE_KINGDOM_IDS) {
-      for (let tier = 0; tier <= MAX_KINGDOM_TIER; tier++) {
+      const { w, h } = sceneSize(id);
+      for (let tier = 0; tier <= maxTierFor(id); tier++) {
         const url = resolveSceneImageUrl(id, tier);
         expect(url).toBe(`/kingdoms/scenes/${id}/tier-${tier}.png`);
 
         const file = path.resolve(__dirname, "../../public", url!.slice(1));
         const meta = await sharp(file).metadata();
-        expect(`${meta.width}x${meta.height}`, `${id} tier ${tier}`).toBe(`${SCENE_W}x${SCENE_H}`);
+        expect(`${meta.width}x${meta.height}`, `${id} tier ${tier}`).toBe(`${w}x${h}`);
       }
     }
   });
 
-  it("clamps static scene image tiers", () => {
+  it("gives the capital a wider band and a deeper ladder than the kingdoms", () => {
+    expect(sceneSize("capital")).toEqual({ w: CAPITAL_SCENE_W, h: CAPITAL_SCENE_H });
+    expect(sceneSize("hearth")).toEqual({ w: SCENE_W, h: SCENE_H });
+    expect(maxTierFor("capital")).toBe(11);
+    expect(maxTierFor("hearth")).toBe(5);
+  });
+
+  it("keeps every scene dimension a whole multiple of TILE", () => {
+    for (const id of SCENE_KINGDOM_IDS) {
+      const { w, h } = sceneSize(id);
+      expect(w % TILE, `${id} width`).toBe(0);
+      expect(h % TILE, `${id} height`).toBe(0);
+    }
+  });
+
+  it("clamps static scene image tiers per kingdom", () => {
     expect(resolveSceneImageUrl("hearth", -10)).toBe("/kingdoms/scenes/hearth/tier-0.png");
     expect(resolveSceneImageUrl("hearth", 99)).toBe("/kingdoms/scenes/hearth/tier-5.png");
+    expect(resolveSceneImageUrl("capital", 99)).toBe("/kingdoms/scenes/capital/tier-11.png");
+    expect(resolveSceneImageUrl("capital", -1)).toBe("/kingdoms/scenes/capital/tier-0.png");
     expect(resolveSceneImageUrl("atlantis", 3)).toBeNull();
   });
 
