@@ -1,5 +1,15 @@
 import { describe, it, expect } from "vitest";
-import { resolveScene, KINGDOM_SCENES, SCENE_W, SCENE_H } from "./kingdom-scene";
+import path from "node:path";
+import sharp from "sharp";
+import {
+  resolveScene,
+  resolveSceneImageUrl,
+  KINGDOM_SCENES,
+  SCENE_KINGDOM_IDS,
+  SCENE_W,
+  SCENE_H,
+  MAX_KINGDOM_TIER,
+} from "./kingdom-scene";
 import { SPRITES, LANTERN_ID, spriteSize } from "./kingdom-sprites";
 
 const LIVELINESS = ["dormant", "stirring", "steady", "bustling"] as const;
@@ -11,6 +21,25 @@ describe("resolveScene", () => {
     expect(Object.keys(KINGDOM_SCENES).sort()).toEqual(
       ["athenaeum", "capital", "crossroads", "forge", "hearth", "wellspring"],
     );
+  });
+
+  it("resolves static tier scene images for all six kingdoms", async () => {
+    for (const id of SCENE_KINGDOM_IDS) {
+      for (let tier = 0; tier <= MAX_KINGDOM_TIER; tier++) {
+        const url = resolveSceneImageUrl(id, tier);
+        expect(url).toBe(`/kingdoms/scenes/${id}/tier-${tier}.png`);
+
+        const file = path.resolve(__dirname, "../../public", url!.slice(1));
+        const meta = await sharp(file).metadata();
+        expect(`${meta.width}x${meta.height}`, `${id} tier ${tier}`).toBe(`${SCENE_W}x${SCENE_H}`);
+      }
+    }
+  });
+
+  it("clamps static scene image tiers", () => {
+    expect(resolveSceneImageUrl("hearth", -10)).toBe("/kingdoms/scenes/hearth/tier-0.png");
+    expect(resolveSceneImageUrl("hearth", 99)).toBe("/kingdoms/scenes/hearth/tier-5.png");
+    expect(resolveSceneImageUrl("atlantis", 3)).toBeNull();
   });
 
   it("renders ground and props but no buildings at tier 0", () => {

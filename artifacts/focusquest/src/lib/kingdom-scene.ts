@@ -25,6 +25,14 @@ export type KingdomSceneSpec = {
 // the canvas bottom, which is what the scene-bounds test exists to catch.
 export const SCENE_W = 320;
 export const SCENE_H = 192;
+export const SCENE_KINGDOM_IDS = ["hearth", "wellspring", "forge", "athenaeum", "crossroads", "capital"] as const;
+export const MAX_KINGDOM_TIER = 5;
+
+export function resolveSceneImageUrl(kingdomId: string, tier: number): string | null {
+  if (!SCENE_KINGDOM_IDS.includes(kingdomId as (typeof SCENE_KINGDOM_IDS)[number])) return null;
+  const safeTier = Math.max(0, Math.min(MAX_KINGDOM_TIER, Math.trunc(tier)));
+  return `/kingdoms/scenes/${kingdomId}/tier-${safeTier}.png`;
+}
 
 /**
  * Buildings are anchored by their BOTTOM-CENTRE, because the composited sprites
