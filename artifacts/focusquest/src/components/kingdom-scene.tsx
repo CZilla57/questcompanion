@@ -6,6 +6,35 @@ import { SPRITES, TERRAIN_URL } from "@/lib/kingdom-sprites";
 // (see lib/kingdom-scene.ts), so swapping canvas for PixiJS later means
 // reimplementing this file alone. Do not let scene logic leak in here.
 
+// Screen-reader phrasing only, kept local to this renderer seam. The visible UI
+// never speaks in verdict words ("dormant") or raw ids/tiers, so the aria-label
+// shouldn't either — this is a label lookup, not scene composition logic.
+const TIER_PHRASE: Record<number, string> = {
+  0: "untouched land",
+  1: "a small outpost",
+  2: "a settlement",
+  3: "a village",
+  4: "a town",
+  5: "a stronghold",
+};
+
+const LIVELINESS_PHRASE: Record<Liveliness, string> = {
+  dormant: "quiet",
+  stirring: "waking up",
+  steady: "busy",
+  bustling: "thriving",
+};
+
+/** Kingdom ids are already their capitalized display name lowercased
+ *  (hearth/wellspring/forge/athenaeum/crossroads/capital), so a plain
+ *  capitalize avoids a second copy of the name table in this seam. */
+function describeKingdom(kingdomId: string, tier: number, liveliness: Liveliness): string {
+  const name = kingdomId.charAt(0).toUpperCase() + kingdomId.slice(1);
+  const tierPhrase = TIER_PHRASE[tier] ?? TIER_PHRASE[0];
+  const livelinessPhrase = LIVELINESS_PHRASE[liveliness] ?? LIVELINESS_PHRASE.dormant;
+  return `${name}, ${tierPhrase}, ${livelinessPhrase} right now`;
+}
+
 const imageCache = new Map<string, Promise<HTMLImageElement>>();
 
 function loadImage(url: string): Promise<HTMLImageElement> {
@@ -109,7 +138,7 @@ export function KingdomScene({
       className={className}
       style={{ width, height: (width * SCENE_H) / SCENE_W, imageRendering: "pixelated" }}
       role="img"
-      aria-label={`${kingdomId} kingdom, tier ${tier}, ${liveliness}`}
+      aria-label={describeKingdom(kingdomId, tier, liveliness)}
     />
   );
 }

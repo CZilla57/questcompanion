@@ -49,7 +49,6 @@ export const TERRAIN_SPRITES: Record<string, TerrainSprite> = {
   "ground.grass":  t(128, 64, TILE, TILE),
   "ground.dirt":   t(288, 128, TILE, TILE),
   "ground.cobble": t(128, 128, TILE, TILE),
-  "ground.sand":   t(288, 160, TILE, TILE),
   "ground.water":  t(512, 576, TILE, TILE),
 
   // ── Props (free-standing) ──

@@ -26,12 +26,18 @@ export function KingdomStrip() {
       </div>
 
       <div className="grid grid-cols-5 gap-1.5">
-        {kingdoms.map((k) => (
-          <div key={k.id} className="flex flex-col items-center gap-1">
-            <span className={`h-1.5 w-full rounded-full ${LIVELINESS_DOT[k.liveliness] ?? LIVELINESS_DOT.dormant}`} />
-            <span className="text-[10px] text-muted-foreground truncate w-full text-center">{k.name}</span>
-          </div>
-        ))}
+        {kingdoms.map((k) => {
+          // Under global absence the world reads as one resting whole, never as five
+          // separate verdicts — mirrors the override in kingdom-map.tsx so both
+          // surfaces agree instead of this strip painting raw per-kingdom dormancy.
+          const liveliness = data.worldResting ? "stirring" : k.liveliness;
+          return (
+            <div key={k.id} className="flex flex-col items-center gap-1">
+              <span className={`h-1.5 w-full rounded-full ${LIVELINESS_DOT[liveliness] ?? LIVELINESS_DOT.dormant}`} />
+              <span className="text-[10px] text-muted-foreground truncate w-full text-center">{k.name}</span>
+            </div>
+          );
+        })}
       </div>
 
       {data.worldResting ? (

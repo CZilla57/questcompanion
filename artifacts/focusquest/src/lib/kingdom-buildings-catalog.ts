@@ -35,6 +35,3 @@ export const BUILDING_SPRITES: Record<string, BuildingSprite> = {
   "build.tower-brick": { url: "/kingdoms/buildings/tower-brick.png", w: 44, h: 108 },
   "build.keep-brick": { url: "/kingdoms/buildings/keep-brick.png", w: 112, h: 96 },
 };
-
-export const BUILDING_SHAPES = ["hut", "house", "hall", "tower", "keep"] as const;
-export const BUILDING_VARIANTS = ["stone", "gold", "slate", "brown", "dark", "brick"] as const;

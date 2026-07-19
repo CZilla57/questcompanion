@@ -20,7 +20,7 @@ import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, "..", "..");
-const SHEET = join(REPO, "artifacts", "focusquest", "public", "kingdoms", "buildings.png");
+const SHEET = join(REPO, "artifacts", "focusquest", "art-src", "buildings.png");
 const OUT_DIR = join(REPO, "artifacts", "focusquest", "public", "kingdoms", "buildings");
 
 /** Colour variants are laid out on a regular grid within the sheet. */
@@ -199,9 +199,6 @@ export type BuildingSprite = { url: string; w: number; h: number };
 export const BUILDING_SPRITES: Record<string, BuildingSprite> = {
 ${entries.join("\n")}
 };
-
-export const BUILDING_SHAPES = [${BUILDINGS.map((b) => `"${b.id}"`).join(", ")}] as const;
-export const BUILDING_VARIANTS = [${VARIANTS.map((v) => `"${v.id}"`).join(", ")}] as const;
 `;
   writeFileSync(CATALOG_OUT, ts);
 
