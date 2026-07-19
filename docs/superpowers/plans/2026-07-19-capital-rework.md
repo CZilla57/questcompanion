@@ -24,9 +24,9 @@
 
 | File | Responsibility |
 |---|---|
-| `artifacts/api-server/src/lib/kingdoms.ts` | **Modify.** Add `capitalLifetime`, `CAPITAL_TIERS`, `capitalTier`, `MAX_CAPITAL_TIER`. |
+| `artifacts/api-server/src/lib/kingdoms.ts` | **Modify.** Add `capitalLifetime`, `CAPITAL_TIERS`, `capitalTier`, `MAX_CAPITAL_TIER`, `kingdomStates`. |
 | `artifacts/api-server/src/lib/kingdoms.test.ts` | **Modify.** Cover the new pure functions + balance-invariant regression. |
-| `artifacts/api-server/src/routes/users.ts` | **Modify.** Derive the capital total, use `capitalTier`, return `liveliness: null` for the capital. |
+| `artifacts/api-server/src/routes/users.ts` | **Modify.** Delegate payload shaping to `kingdomStates`. |
 | `lib/api-spec/openapi.yaml` | **Modify.** `liveliness` becomes nullable. |
 | `artifacts/focusquest/public/kingdoms/scenes/capital/tier-*.png` | **Already done** (commit `ff23d0e`). 12 bands at 1024×192, verified. |
 | `artifacts/focusquest/src/lib/kingdom-scene.ts` | **Modify.** `CAPITAL_SCENE_W/H`, `MAX_CAPITAL_TIER`, `sceneSize()`, per-kingdom tier clamp. |
@@ -277,8 +277,8 @@ git commit -m "feat(kingdoms): add the 12-stage capital ladder and pin the balan
 - Modify: `artifacts/api-server/src/routes/users.ts:189-242`
 
 **Interfaces:**
-- Consumes: `capitalLifetime` (Task 1), `capitalTier`, `MAX_CAPITAL_TIER` (Task 2).
-- Produces: `GET /api/users/me/kingdoms` where the capital's `lifetimePoints` is the grand total, `tier` is 0–11, `tierName` is a capital stage name, and `liveliness` is `null`. The five kingdoms are unchanged and always populate `liveliness`.
+- Consumes: `capitalLifetime` (Task 1), `capitalTier` (Task 2).
+- Produces: `kingdomStates(lifetimeByKingdom, recentByKingdom): KingdomStateView[]` — pure, DB-free, the single source of the payload shape. And `GET /api/users/me/kingdoms` where the capital's `lifetimePoints` is the grand total, `tier` is 0–11, `tierName` is a capital stage name, and `liveliness` is `null`. The five kingdoms always populate `liveliness`.
 
 - [ ] **Step 1: Make `liveliness` nullable in the OpenAPI spec**
 
@@ -319,48 +319,30 @@ grep -n "liveliness" lib/api-client-react/src/generated/api.schemas.ts
 ```
 Expected: the field's type includes `| null`.
 
-- [ ] **Step 3: Write the failing route assertion**
+- [ ] **Step 3: Write the failing test for a pure `kingdomStates`**
 
-The kingdoms route has no existing route-level test file. Add `artifacts/api-server/src/lib/kingdoms-route.test.ts` covering the payload-shaping logic as a pure unit, mirroring what the route does:
+The route's payload shaping moves OUT of the route into a pure, DB-free function so a
+test can exercise the real code path. A test that re-implements the route's logic locally
+proves nothing: it passes green while the route is wrong, because nothing connects them.
+
+Create `artifacts/api-server/src/lib/kingdoms-state.test.ts`:
 
 ```ts
 import { describe, it, expect } from "vitest";
-import {
-  KINGDOMS, kingdomTier, capitalTier, capitalLifetime, deriveLiveliness,
-  balanceRecentTotal, type KingdomId,
-} from "./kingdoms";
+import { kingdomStates } from "./kingdoms";
 
-/** Mirrors the shaping in routes/users.ts GET /users/me/kingdoms. */
-function shape(
-  lifetimeByKingdom: Partial<Record<KingdomId, number>>,
-  recentByKingdom: Partial<Record<KingdomId, number>>,
-) {
-  const total = balanceRecentTotal(recentByKingdom);
-  return KINGDOMS.map((k) => {
-    const lifetime = k.isCapital ? capitalLifetime(lifetimeByKingdom) : (lifetimeByKingdom[k.id] ?? 0);
-    const t = k.isCapital ? capitalTier(lifetime) : kingdomTier(lifetime);
-    return {
-      id: k.id,
-      lifetimePoints: lifetime,
-      tier: t.tier,
-      tierName: t.name,
-      liveliness: k.isCapital ? null : deriveLiveliness(recentByKingdom[k.id] ?? 0, total),
-    };
-  });
-}
-
-describe("kingdoms payload", () => {
+describe("kingdomStates", () => {
   const lifetime = { hearth: 1200, wellspring: 300, forge: 3400, athenaeum: 60, crossroads: 900, capital: 1100 };
 
   it("reports the capital as the grand total on its own ladder", () => {
-    const capital = shape(lifetime, {}).find((k) => k.id === "capital")!;
+    const capital = kingdomStates(lifetime, {}).find((k) => k.id === "capital")!;
     expect(capital.lifetimePoints).toBe(6960);
     expect(capital.tier).toBe(7);
     expect(capital.tierName).toBe("City");
   });
 
-  it("returns null liveliness for the capital only", () => {
-    const rows = shape(lifetime, { hearth: 100, forge: 100 });
+  it("returns null liveliness for the capital and a reading for every kingdom", () => {
+    const rows = kingdomStates(lifetime, { hearth: 100, forge: 100 });
     expect(rows.find((k) => k.id === "capital")!.liveliness).toBeNull();
     for (const k of rows.filter((r) => r.id !== "capital")) {
       expect(k.liveliness).not.toBeNull();
@@ -368,62 +350,111 @@ describe("kingdoms payload", () => {
   });
 
   it("leaves the five kingdoms on their own 6-tier ladder", () => {
-    const forge = shape(lifetime, {}).find((k) => k.id === "forge")!;
+    const forge = kingdomStates(lifetime, {}).find((k) => k.id === "forge")!;
     expect(forge.lifetimePoints).toBe(3400);
     expect(forge.tierName).toBe("Town");
+  });
+
+  it("returns all six kingdoms in KINGDOMS order", () => {
+    expect(kingdomStates({}, {}).map((k) => k.id)).toEqual(
+      ["hearth", "wellspring", "forge", "athenaeum", "crossroads", "capital"],
+    );
+  });
+
+  it("never lets capital points reach the balance denominator", () => {
+    // A huge capital total must not change any kingdom's liveliness.
+    const withoutCapital = kingdomStates(lifetime, { hearth: 100, wellspring: 100, forge: 100, athenaeum: 100, crossroads: 100 });
+    const withCapital = kingdomStates(lifetime, { hearth: 100, wellspring: 100, forge: 100, athenaeum: 100, crossroads: 100, capital: 999999 });
+    expect(withCapital.map((k) => k.liveliness)).toEqual(withoutCapital.map((k) => k.liveliness));
   });
 });
 ```
 
 - [ ] **Step 4: Run test to verify it fails**
 
-Run: `cd artifacts/api-server && npx vitest run src/lib/kingdoms-route.test.ts`
-Expected: FAIL — the route file doesn't exist yet is fine; this tests the pure shaping, so it should fail only if Tasks 1–2 are incomplete. If Tasks 1–2 are done it will PASS immediately; that is acceptable, it is a characterization test for Step 5.
+Run: `pnpm --filter @workspace/api-server test -- kingdoms-state`
+Expected: FAIL — `kingdomStates is not a function`.
 
-- [ ] **Step 5: Update the route**
+- [ ] **Step 5: Implement `kingdomStates`, then make the route call it**
 
-In `artifacts/api-server/src/routes/users.ts`, extend the import from `../lib/kingdoms` to include `capitalLifetime` and `capitalTier`. Then replace the `kingdoms: KINGDOMS.map(...)` block (currently lines ~219-239) with:
+Add to `artifacts/api-server/src/lib/kingdoms.ts`:
 
 ```ts
-    kingdoms: KINGDOMS.map((k) => {
-      // The capital is the realm's grand total on its own 12-stage ladder; the
-      // five balance kingdoms each report only their own lifetime on the
-      // 6-stage ladder.
-      const lifetime = k.isCapital
-        ? capitalLifetime(lifetimeByKingdom)
-        : (lifetimeByKingdom[k.id] ?? 0);
-      const t = k.isCapital ? capitalTier(lifetime) : kingdomTier(lifetime);
-      return {
-        id: k.id,
-        name: k.name,
-        isCapital: k.isCapital,
-        lifetimePoints: lifetime,
-        tier: t.tier,
-        tierName: t.name,
-        // Null, not a fabricated value: liveliness is a share of recent
-        // activity, and a cumulative total has no share to report. The old
-        // special-case denominator here produced a number no surface could
-        // interpret.
-        liveliness: k.isCapital ? null : deriveLiveliness(recentByKingdom[k.id] ?? 0, total),
-      };
-    }),
+export type KingdomStateView = {
+  id: KingdomId;
+  name: string;
+  isCapital: boolean;
+  lifetimePoints: number;
+  tier: number;
+  tierName: string;
+  liveliness: Liveliness | null;
+};
+
+/**
+ * Shapes the full six-kingdom payload. Pure and DB-free so it can be tested
+ * directly - the route is then only DB reads plus one call to this.
+ *
+ * The capital is the realm's grand total on its own 12-stage ladder and
+ * reports NO liveliness: liveliness is a share of recent activity, and a
+ * cumulative total has no share. Null, never a fabricated value.
+ *
+ * `balanceRecentTotal` excludes the capital, so capital points can never
+ * reach the denominator that decides the five kingdoms' liveliness.
+ */
+export function kingdomStates(
+  lifetimeByKingdom: Partial<Record<KingdomId, number>>,
+  recentByKingdom: Partial<Record<KingdomId, number>>,
+): KingdomStateView[] {
+  const total = balanceRecentTotal(recentByKingdom);
+  return KINGDOMS.map((k) => {
+    const lifetime = k.isCapital
+      ? capitalLifetime(lifetimeByKingdom)
+      : (lifetimeByKingdom[k.id] ?? 0);
+    const t = k.isCapital ? capitalTier(lifetime) : kingdomTier(lifetime);
+    return {
+      id: k.id,
+      name: k.name,
+      isCapital: k.isCapital,
+      lifetimePoints: lifetime,
+      tier: t.tier,
+      tierName: t.name,
+      liveliness: k.isCapital ? null : deriveLiveliness(recentByKingdom[k.id] ?? 0, total),
+    };
+  });
+}
 ```
 
-- [ ] **Step 6: Run the full api-server suite**
+- [ ] **Step 6: Update the route to delegate**
 
-Run: `cd artifacts/api-server && npx vitest run`
-Expected: PASS, 504+ tests (501 baseline + the new ones).
+In `artifacts/api-server/src/routes/users.ts`, extend the import from `../lib/kingdoms` to
+include `kingdomStates`, and replace the whole `kingdoms: KINGDOMS.map(...)` block (currently
+lines ~219-239) with a single call:
 
-- [ ] **Step 7: Typecheck**
+```ts
+    kingdoms: kingdomStates(lifetimeByKingdom, recentByKingdom),
+```
+
+The route keeps its own `worldResting` and `invitation` lines unchanged. If `KINGDOMS`,
+`kingdomTier`, or `deriveLiveliness` are now unused in this file, drop them from the import.
+
+- [ ] **Step 7: Run the full api-server suite**
+
+Run: `pnpm --filter @workspace/api-server test`
+Expected: PASS, 506+ tests (501 baseline + the new ones from Tasks 1–3).
+
+- [ ] **Step 8: Typecheck**
 
 Run: `cd C:/Users/Chadr/OneDrive/Documents/Quest-Companion && pnpm typecheck`
-Expected: exit 0. If the frontend fails here on a null `liveliness`, that is expected — Task 4 fixes it. Note the failures and continue.
+Expected: the api-server and libs pass. The **frontend is expected to fail here** on the now-nullable `liveliness` — Tasks 4–8 fix it. Record the failures and continue; do not "fix" them by widening types in the frontend yet.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git branch --show-current
-git add lib/api-spec/openapi.yaml lib/api-client-react/src/generated artifacts/api-server/src/routes/users.ts artifacts/api-server/src/lib/kingdoms-route.test.ts
+git branch --show-current   # must print feat/capital-rework
+git add lib/api-spec/openapi.yaml lib/api-client-react/src/generated \
+        artifacts/api-server/src/routes/users.ts \
+        artifacts/api-server/src/lib/kingdoms.ts \
+        artifacts/api-server/src/lib/kingdoms-state.test.ts
 git commit -m "feat(kingdoms): serve the capital as a grand total with null liveliness"
 ```
 
