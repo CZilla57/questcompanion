@@ -22,3 +22,4 @@ export * from "./coin-transactions";
 export * from "./world-boss";
 export * from "./reflections";
 export * from "./weekly-recaps";
+export * from "./kingdom-points";
