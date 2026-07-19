@@ -66,6 +66,7 @@ import type {
   HeroStatus,
   HyperfocusPauseInput,
   InsightsResponse,
+  KingdomsResponse,
   LeaderboardEntry,
   ListFocusSessionsParams,
   LogoutSuccess,
@@ -978,6 +979,83 @@ export function useGetHeroStatus<TData = Awaited<ReturnType<typeof getHeroStatus
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetHeroStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetKingdomsUrl = () => {
+
+
+
+
+  return `/api/users/me/kingdoms`
+}
+
+/**
+ * @summary Life Kingdoms state — structure tiers, derived liveliness, and the neglect invitation
+ */
+export const getKingdoms = async ( options?: RequestInit): Promise<KingdomsResponse> => {
+
+  return customFetch<KingdomsResponse>(getGetKingdomsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetKingdomsQueryKey = () => {
+    return [
+    `/api/users/me/kingdoms`
+    ] as const;
+    }
+
+
+export const getGetKingdomsQueryOptions = <TData = Awaited<ReturnType<typeof getKingdoms>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getKingdoms>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetKingdomsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getKingdoms>>> = ({ signal }) => getKingdoms({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getKingdoms>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetKingdomsQueryResult = NonNullable<Awaited<ReturnType<typeof getKingdoms>>>
+export type GetKingdomsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Life Kingdoms state — structure tiers, derived liveliness, and the neglect invitation
+ */
+
+export function useGetKingdoms<TData = Awaited<ReturnType<typeof getKingdoms>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getKingdoms>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetKingdomsQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

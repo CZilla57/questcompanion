@@ -195,6 +195,27 @@ export const GetHeroStatusResponse = zod.object({
 
 
 /**
+ * @summary Life Kingdoms state — structure tiers, derived liveliness, and the neglect invitation
+ */
+export const GetKingdomsResponse = zod.object({
+  "worldResting": zod.boolean().describe('True when recent activity is below the resting floor; the map renders one warm sleeping world rather than five neglect verdicts.'),
+  "kingdoms": zod.array(zod.object({
+  "id": zod.enum(['hearth', 'wellspring', 'forge', 'athenaeum', 'crossroads', 'capital']),
+  "name": zod.string(),
+  "isCapital": zod.boolean(),
+  "lifetimePoints": zod.number(),
+  "tier": zod.number(),
+  "tierName": zod.string(),
+  "liveliness": zod.enum(['dormant', 'stirring', 'steady', 'bustling'])
+})),
+  "invitation": zod.union([zod.object({
+  "kingdomId": zod.string(),
+  "kingdomName": zod.string()
+}),zod.null()])
+})
+
+
+/**
  * @summary Spend 50 XP to buy a streak freeze (max 1 held at a time)
  */
 export const BuyStreakFreezeResponse = zod.object({

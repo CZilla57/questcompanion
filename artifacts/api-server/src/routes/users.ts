@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, and, gte, gt, desc } from "drizzle-orm";
-import { db, usersTable, tasksTable, activityTable } from "@workspace/db";
+import { db, usersTable, tasksTable, activityTable, kingdomPointsTable } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, getPointsIntoLevel } from "../lib/gamification";
 import { CATEGORY_LABELS } from "../lib/auto-points";
 import { resolveTimeZone, localDateKey, buildDayDates, buildDaySlots, localHour } from "../lib/date-buckets";
@@ -8,6 +8,10 @@ import { hungerStage, moodFor } from "../lib/hero-care";
 import { currentVignette } from "../lib/hero-flavor";
 import { bondTier, dayGap, deriveCompanionBeat } from "../lib/companion";
 import { companionLine } from "../lib/companion-copy";
+import {
+  KINGDOMS, kingdomForCategory, kingdomTier, deriveLiveliness, deriveNeglectInvitation,
+  isWorldResting, balanceRecentTotal, LIVELINESS_WINDOW_DAYS, type KingdomId,
+} from "../lib/kingdoms";
 
 const router: IRouter = Router();
 
@@ -179,6 +183,53 @@ router.get("/users/me/hero-status", async (req, res): Promise<void> => {
       bondTierName: tier.name,
       bondQuestsCompleted: user.bondQuestsCompleted,
     },
+  });
+});
+
+router.get("/users/me/kingdoms", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  // Lifetime (persisted, monotonic).
+  const rows = await db.select().from(kingdomPointsTable).where(eq(kingdomPointsTable.userId, userId));
+  const lifetimeByKingdom: Partial<Record<KingdomId, number>> = {};
+  for (const r of rows) lifetimeByKingdom[r.kingdomId as KingdomId] = r.lifetimePoints;
+
+  // Recent (derived): base points of quests completed inside the window.
+  const windowStart = new Date(Date.now() - LIVELINESS_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+  const recentTasks = await db
+    .select({ category: tasksTable.category, points: tasksTable.points })
+    .from(tasksTable)
+    .where(and(
+      eq(tasksTable.userId, userId),
+      eq(tasksTable.completed, true),
+      gte(tasksTable.completedAt, windowStart),
+    ));
+
+  const recentByKingdom: Partial<Record<KingdomId, number>> = {};
+  for (const t of recentTasks) {
+    const id = kingdomForCategory(t.category);
+    recentByKingdom[id] = (recentByKingdom[id] ?? 0) + t.points;
+  }
+
+  const total = balanceRecentTotal(recentByKingdom);
+
+  res.json({
+    worldResting: isWorldResting(recentByKingdom),
+    kingdoms: KINGDOMS.map((k) => {
+      const lifetime = lifetimeByKingdom[k.id] ?? 0;
+      const t = kingdomTier(lifetime);
+      return {
+        id: k.id,
+        name: k.name,
+        isCapital: k.isCapital,
+        lifetimePoints: lifetime,
+        tier: t.tier,
+        tierName: t.name,
+        liveliness: deriveLiveliness(recentByKingdom[k.id] ?? 0, total),
+      };
+    }),
+    invitation: deriveNeglectInvitation({ lifetimeByKingdom, recentByKingdom }),
   });
 });
 

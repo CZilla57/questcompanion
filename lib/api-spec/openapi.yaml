@@ -228,6 +228,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/HeroStatus"
 
+  /users/me/kingdoms:
+    get:
+      operationId: getKingdoms
+      summary: Life Kingdoms state — structure tiers, derived liveliness, and the neglect invitation
+      tags: [users]
+      responses:
+        "200":
+          description: Kingdom state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KingdomsResponse"
+        "401":
+          description: Unauthorized
+
   /users/me/streak-freeze/buy:
     post:
       operationId: buyStreakFreeze
@@ -2379,6 +2394,52 @@ components:
               type: string
             bondQuestsCompleted:
               type: integer
+
+    KingdomsResponse:
+      type: object
+      required: [worldResting, kingdoms, invitation]
+      properties:
+        worldResting:
+          type: boolean
+          description: True when recent activity is below the resting floor; the map renders one warm sleeping world rather than five neglect verdicts.
+        kingdoms:
+          type: array
+          items:
+            $ref: "#/components/schemas/KingdomState"
+        invitation:
+          oneOf:
+            - $ref: "#/components/schemas/KingdomInvitation"
+            - type: "null"
+
+    KingdomState:
+      type: object
+      required: [id, name, isCapital, lifetimePoints, tier, tierName, liveliness]
+      properties:
+        id:
+          type: string
+          enum: [hearth, wellspring, forge, athenaeum, crossroads, capital]
+        name:
+          type: string
+        isCapital:
+          type: boolean
+        lifetimePoints:
+          type: integer
+        tier:
+          type: integer
+        tierName:
+          type: string
+        liveliness:
+          type: string
+          enum: [dormant, stirring, steady, bustling]
+
+    KingdomInvitation:
+      type: object
+      required: [kingdomId, kingdomName]
+      properties:
+        kingdomId:
+          type: string
+        kingdomName:
+          type: string
 
     StreakFreezeResult:
       type: object

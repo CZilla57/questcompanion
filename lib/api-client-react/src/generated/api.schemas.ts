@@ -186,6 +186,50 @@ export interface HeroStatus {
   companion: HeroStatusCompanion;
 }
 
+export type KingdomStateId = typeof KingdomStateId[keyof typeof KingdomStateId];
+
+
+export const KingdomStateId = {
+  hearth: 'hearth',
+  wellspring: 'wellspring',
+  forge: 'forge',
+  athenaeum: 'athenaeum',
+  crossroads: 'crossroads',
+  capital: 'capital',
+} as const;
+
+export type KingdomStateLiveliness = typeof KingdomStateLiveliness[keyof typeof KingdomStateLiveliness];
+
+
+export const KingdomStateLiveliness = {
+  dormant: 'dormant',
+  stirring: 'stirring',
+  steady: 'steady',
+  bustling: 'bustling',
+} as const;
+
+export interface KingdomState {
+  id: KingdomStateId;
+  name: string;
+  isCapital: boolean;
+  lifetimePoints: number;
+  tier: number;
+  tierName: string;
+  liveliness: KingdomStateLiveliness;
+}
+
+export interface KingdomInvitation {
+  kingdomId: string;
+  kingdomName: string;
+}
+
+export interface KingdomsResponse {
+  /** True when recent activity is below the resting floor; the map renders one warm sleeping world rather than five neglect verdicts. */
+  worldResting: boolean;
+  kingdoms: KingdomState[];
+  invitation: KingdomInvitation | null;
+}
+
 export interface StreakFreezeResult {
   streakFreezes: number;
   totalPoints: number;
