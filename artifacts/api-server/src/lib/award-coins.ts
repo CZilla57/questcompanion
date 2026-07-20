@@ -57,6 +57,8 @@ export type SpendResult =
  * balance covers the cost (can never go negative; a concurrent double-spend
  * can't overspend) plus exactly one negative ledger row. Insufficiency is a
  * value, not an error: {ok:false, remaining} feeds the gentle "N more to go".
+ * No-ops (returning the current balance, no ledger row) on non-positive cost —
+ * a spend can never mint.
  */
 export async function spendCoins(
   tx: Tx,

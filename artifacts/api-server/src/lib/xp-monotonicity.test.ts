@@ -7,7 +7,8 @@ import { join, relative } from "node:path";
 // `weeklyPoints` may only decrease in the quest-uncomplete award reversal
 // (routes/tasks.ts, snapshot-bounded, clamped at 0), and no activity row may
 // ever be written with negative points. Adding a file to an allowlist below
-// requires an award-reversal justification — a purchase never qualifies.
+// requires either an award-reversal justification (like tasks.ts) or provably
+// pure non-write math (like gamification.ts) — a purchase never qualifies.
 
 const SRC = join(__dirname, "..");
 
@@ -69,6 +70,7 @@ describe("XP monotonicity (standing guard)", () => {
 
   it("gear never touches XP columns", () => {
     const gear = files.find((f) => f.rel === "routes/gear.ts");
-    expect(/(totalPoints|weeklyPoints|currentLevel):\s/.test(gear?.src ?? "")).toBe(false);
+    expect(gear).toBeDefined();
+    expect(/(totalPoints|weeklyPoints|currentLevel):\s/.test(gear!.src)).toBe(false);
   });
 });

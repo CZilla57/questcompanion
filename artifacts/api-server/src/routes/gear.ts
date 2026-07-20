@@ -100,7 +100,8 @@ router.post("/gear/:id/buy", async (req, res): Promise<void> => {
 
       return { status: "ok", balance: spent.balance, cost };
     });
-  } catch {
+  } catch (err) {
+    console.error("gear buy failed", err);
     res.status(500).json({ error: "Purchase failed" });
     return;
   }

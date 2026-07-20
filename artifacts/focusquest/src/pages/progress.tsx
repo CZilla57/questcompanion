@@ -348,9 +348,13 @@ export default function Progress() {
               disabled={!shieldPerk || shield.action.kind !== "buy" || isBuyingPerk}
               variant={shield.action.kind === "buy" ? "outline" : "ghost"}
               aria-label={
-                shield.action.kind === "buy"
-                  ? `Buy Streak Shield for ${shieldPerk?.coinCost ?? 0} coins`
-                  : shield.action.label
+                !shieldPerk
+                  ? "Streak Shield"
+                  : shield.action.kind === "buy"
+                    ? `Buy Streak Shield for ${shieldPerk?.coinCost ?? 0} coins`
+                    : shield.action.kind === "full"
+                      ? "Fully shielded"
+                      : shield.action.label
               }
               className={`cursor-pointer ${
                 shield.action.kind === "buy"
@@ -358,9 +362,10 @@ export default function Progress() {
                   : "text-muted-foreground cursor-default"
               }`}
             >
-              {shield.action.kind === "full" && <><ShieldCheck className="w-4 h-4 mr-2" aria-hidden /> {shield.action.label}</>}
-              {shield.action.kind === "saving" && <><Coins className="w-4 h-4 mr-2" aria-hidden /> {shield.action.label}</>}
-              {shield.action.kind === "buy" && <><Coins className="w-4 h-4 mr-2" aria-hidden /> {shield.action.label}</>}
+              {!shieldPerk && <><Shield className="w-4 h-4 mr-2" aria-hidden /> Streak Shield</>}
+              {shieldPerk && shield.action.kind === "full" && <><ShieldCheck className="w-4 h-4 mr-2" aria-hidden /> {shield.action.label}</>}
+              {shieldPerk && shield.action.kind === "saving" && <><Coins className="w-4 h-4 mr-2" aria-hidden /> {shield.action.label}</>}
+              {shieldPerk && shield.action.kind === "buy" && <><Coins className="w-4 h-4 mr-2" aria-hidden /> {shield.action.label}</>}
             </Button>
           </div>
         </CardContent>
