@@ -35,9 +35,15 @@ export const EMPTY_TRANSCRIPT_MESSAGE = "Couldn't hear anything in this note";
 const PARK_MESSAGE = "Couldn't sync this one — retry or discard.";
 
 export function newCaptureId(): string {
-  const c = globalThis.crypto;
-  if (c && "randomUUID" in c) return c.randomUUID();
-  // Old-WebKit fallback: RFC4122-v4-shaped from getRandomValues.
+  const c = globalThis.crypto as Crypto | undefined;
+  if (c?.randomUUID) return c.randomUUID();
+  if (!c) {
+    // No Web Crypto at all — unreachable in our targets (Node >=19, evergreen
+    // + old WebKit all expose crypto). Last-ditch non-crypto id: a capture
+    // must never be lost to an exotic runtime.
+    return `fallback-${Date.now().toString(16)}-${Math.random().toString(16).slice(2, 10)}`;
+  }
+  // Old-WebKit fallback (crypto present, randomUUID missing): RFC4122-v4-shaped.
   const b = c.getRandomValues(new Uint8Array(16));
   b[6] = (b[6] & 0x0f) | 0x40;
   b[8] = (b[8] & 0x3f) | 0x80;
