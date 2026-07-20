@@ -27,7 +27,7 @@ import { isRecapEmailConfigured, sendEmail } from "./email/send-email";
 import { renderRecapEmail } from "./email/render-recap";
 import { generateJson, isAiConfigured } from "./ai/client";
 import {
-  selectPush, KIND_META,
+  selectPush,
   type PushCandidate, type EnvelopeState,
 } from "./notification-envelope";
 import type { User } from "@workspace/db";
