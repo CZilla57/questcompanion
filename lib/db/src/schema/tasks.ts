@@ -1,4 +1,5 @@
-import { pgTable, serial, text, integer, boolean, timestamp, date, unique, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, boolean, timestamp, date, unique, uniqueIndex, jsonb } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
@@ -65,11 +66,20 @@ export const tasksTable = pgTable("tasks", {
   struggleScore: integer("struggle_score").notNull().default(0),
   difficultyOfferSnoozedAt: timestamp("difficulty_offer_snoozed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  // Offline-capture idempotency (Never Lose a Thought): client-minted UUID.
+  // Replays of the same capture match the partial unique index below and the
+  // route returns the existing row instead of inserting a duplicate.
+  clientKey: text("client_key"),
 }, (table) => [
   // Prevents duplicate recurring-task rows for the same user/template/day across concurrent
   // scheduler instances.  PostgreSQL treats NULLs as distinct so regular (non-recurring)
   // tasks on the same date are unaffected by this constraint.
   unique("tasks_recurring_unique_idx").on(table.userId, table.recurringTaskId, table.dueDate),
+  // Partial: only capture-keyed rows participate — every legacy/serverside insert
+  // (clientKey null) is untouched by the uniqueness rule.
+  uniqueIndex("tasks_user_client_key_unique")
+    .on(table.userId, table.clientKey)
+    .where(sql`${table.clientKey} IS NOT NULL`),
 ]);
 
 export const insertTaskSchema = createInsertSchema(tasksTable).omit({ id: true, createdAt: true, completedAt: true, completed: true });

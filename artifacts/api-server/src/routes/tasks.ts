@@ -35,6 +35,7 @@ import type { InitiationXp } from "../lib/initiation";
 import { awardCoins, reverseCoins } from "../lib/award-coins";
 import { COIN_EARN, isStreakMilestone } from "../lib/coins";
 import { isBoostActive, boostBonusPoints, XP_BOOST_BONUS } from "../lib/stat-perks";
+import { isValidClientKey } from "../lib/client-key";
 
 const router: IRouter = Router();
 
@@ -188,7 +189,7 @@ router.post("/tasks", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;
 
-  const { title, description, dueDate, dueTime, priority = "medium", estimatedMinutes, category, isAnchored, questlineId } = req.body as {
+  const { title, description, dueDate, dueTime, priority = "medium", estimatedMinutes, category, isAnchored, questlineId, clientKey } = req.body as {
     title?: string;
     description?: string;
     dueDate?: string;
@@ -198,6 +199,7 @@ router.post("/tasks", async (req, res): Promise<void> => {
     category?: string;
     isAnchored?: boolean;
     questlineId?: number | null;
+    clientKey?: string;
   };
 
   const anchored = isAnchored === true;
@@ -214,6 +216,10 @@ router.post("/tasks", async (req, res): Promise<void> => {
     res.status(400).json({ error: "dueTime must be HH:mm (24-hour)" });
     return;
   }
+  if (clientKey !== undefined && !isValidClientKey(clientKey)) {
+    res.status(400).json({ error: "clientKey must be a string of 8-64 characters" });
+    return;
+  }
 
   const autoPoint = assignPoints(title, priority);
   const resolvedCategory = category && VALID_CATEGORIES.has(category) ? category : autoPoint.category;
@@ -222,6 +228,9 @@ router.post("/tasks", async (req, res): Promise<void> => {
   if (!qlResult.ok) { res.status(422).json({ error: qlResult.error }); return; }
 
   // Anchored quests have no deadline: force a null date/time regardless of input.
+  // onConflictDoNothing can only ever match the (user_id, client_key) partial
+  // index here: this route never sets recurringTaskId, so the recurring unique
+  // constraint (which treats its NULL as distinct) cannot fire.
   const [task] = await db.insert(tasksTable).values({
     userId,
     title,
@@ -234,7 +243,22 @@ router.post("/tasks", async (req, res): Promise<void> => {
     estimatedMinutes: estimatedMinutes ?? null,
     isAnchored: anchored,
     questlineId: qlResult.value,
-  }).returning();
+    clientKey: clientKey ?? null,
+  }).onConflictDoNothing().returning();
+
+  if (!task) {
+    // A replay of a capture we already have: hand back the existing quest.
+    // 200 (not 201) so the client can tell "created" from "already had it".
+    if (!clientKey) { res.status(500).json({ error: "Task insert failed" }); return; }
+    const [existing] = await db.select().from(tasksTable)
+      .where(and(eq(tasksTable.userId, userId), eq(tasksTable.clientKey, clientKey)));
+    if (!existing) { res.status(500).json({ error: "Task insert failed" }); return; }
+    const existingSteps = await db.select().from(taskStepsTable)
+      .where(eq(taskStepsTable.taskId, existing.id))
+      .orderBy(taskStepsTable.position);
+    res.status(200).json(formatTask(existing, existingSteps));
+    return;
+  }
 
   res.status(201).json(formatTask(task));
 });

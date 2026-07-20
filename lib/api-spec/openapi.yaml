@@ -2630,6 +2630,16 @@ components:
         questlineId:
           type: ["integer", "null"]
           description: Assign the new quest to a questline (one-off quests only)
+        clientKey:
+          type: string
+          minLength: 8
+          maxLength: 64
+          description: >-
+            Client-generated idempotency key (a UUID). Two creates with the
+            same key for the same user return the same task - the second
+            responds 200 with the existing quest instead of creating a
+            duplicate. Sent on every quick-add capture; offline replays reuse
+            the capture's key.
 
     ApplyDifficultyInput:
       type: object

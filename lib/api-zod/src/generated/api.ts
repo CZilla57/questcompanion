@@ -543,6 +543,10 @@ export const createTaskBodyEstimatedMinutesMax = 1440;
 
 export const createTaskBodyDueTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
 export const createTaskBodyIsAnchoredDefault = false;
+export const createTaskBodyClientKeyMin = 8;
+export const createTaskBodyClientKeyMax = 64;
+
+
 
 export const CreateTaskBody = zod.object({
   "title": zod.string().min(1),
@@ -554,7 +558,8 @@ export const CreateTaskBody = zod.object({
   "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'self_care', 'errands', 'travel', 'default']).optional().describe('Optional category override. Auto-detected from title if omitted.'),
   "dueTime": zod.string().regex(createTaskBodyDueTimeRegExp).optional().describe('Optional time of day (HH:mm, 24-hour)'),
   "isAnchored": zod.boolean().default(createTaskBodyIsAnchoredDefault).describe('Create a no-deadline anchored quest (dueDate is ignored)'),
-  "questlineId": zod.number().nullish().describe('Assign the new quest to a questline (one-off quests only)')
+  "questlineId": zod.number().nullish().describe('Assign the new quest to a questline (one-off quests only)'),
+  "clientKey": zod.string().min(createTaskBodyClientKeyMin).max(createTaskBodyClientKeyMax).optional().describe('Client-generated idempotency key (a UUID). Two creates with the same key for the same user return the same task - the second responds 200 with the existing quest instead of creating a duplicate. Sent on every quick-add capture; offline replays reuse the capture\'s key.')
 })
 
 
