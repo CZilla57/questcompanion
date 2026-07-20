@@ -10,7 +10,7 @@ import { useGetMyStats, useUpdateMe, usePutMyTimezone, getGetMyStatsQueryKey } f
 import { browserTimeZone } from "@/lib/timezone";
 import { Swords, Trophy } from "lucide-react";
 
-import Dashboard from "@/pages/dashboard";
+import NowScreen from "@/pages/now";
 import Tasks from "@/pages/tasks";
 import Progress from "@/pages/progress";
 import Insights from "@/pages/insights";
@@ -162,7 +162,7 @@ function Router() {
   return (
     <Layout>
       <Switch>
-        <Route path="/" component={Dashboard} />
+        <Route path="/" component={NowScreen} />
         <Route path="/tasks" component={Tasks} />
         <Route path="/questlines/:id" component={QuestlineDetail} />
         <Route path="/questlines" component={Questlines} />

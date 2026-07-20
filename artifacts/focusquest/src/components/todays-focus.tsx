@@ -67,7 +67,7 @@ export function TodaysFocus({ tasks, showPinned, onEditTask }: {
     <div className="mb-6">
       <div className="flex items-center justify-between mb-1">
         {heading}
-        {board.totalPinned > 0 && (
+        {showPinned && board.totalPinned > 0 && (
           <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-full bg-muted border border-border">
             {board.completedCount} / {board.totalPinned} done
           </span>
