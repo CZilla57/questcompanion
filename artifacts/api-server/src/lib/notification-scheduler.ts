@@ -27,7 +27,7 @@ import { isRecapEmailConfigured, sendEmail } from "./email/send-email";
 import { renderRecapEmail } from "./email/render-recap";
 import { generateJson, isAiConfigured } from "./ai/client";
 import {
-  selectPush,
+  selectPush, consumesBudget,
   type PushCandidate, type EnvelopeState,
 } from "./notification-envelope";
 import type { User } from "@workspace/db";
@@ -297,7 +297,9 @@ async function runEnvelopePass(users: User[], now: Date) {
       await produced.commit();
       const sentToday = user.pushesSentDate === localToday ? user.pushesSentCount : 0;
       await db.update(usersTable)
-        .set({ pushesSentDate: localToday, pushesSentCount: sentToday + 1, lastPushAt: now })
+        .set(consumesBudget(produced.kind)
+          ? { pushesSentDate: localToday, pushesSentCount: sentToday + 1, lastPushAt: now }
+          : { lastPushAt: now })
         .where(eq(usersTable.id, user.id));
     } catch (err) {
       logger.error({ err, userId: user.id }, "Envelope pass failed for user");

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   DAILY_PUSH_BUDGET, PUSH_SPACING_MIN, KIND_META, inQuietHours, selectPush,
-  validatePrefsBody, type PushCandidate, type EnvelopeState,
+  consumesBudget, validatePrefsBody, type PushCandidate, type EnvelopeState,
 } from "./notification-envelope";
 
 const allOn = {
@@ -39,6 +39,15 @@ describe("KIND_META", () => {
   });
 });
 
+describe("consumesBudget", () => {
+  it("critical sends do not drain the budget; every other class does", () => {
+    expect(consumesBudget("hyperfocus")).toBe(false);
+    for (const kind of ["hunger_warning", "context_nudge", "reflection_prompt", "companion_milestone", "hero_flavor"] as const) {
+      expect(consumesBudget(kind)).toBe(true);
+    }
+  });
+});
+
 describe("inQuietHours", () => {
   it("handles a midnight-wrapping window", () => {
     expect(inQuietHours(23, 22, 8)).toBe(true);
@@ -73,11 +82,24 @@ describe("selectPush — global gates", () => {
     const exact = new Date(now.getTime() - PUSH_SPACING_MIN * 60_000);
     expect(selectPush([cand("hyperfocus")], state({ now, lastPushAt: exact }))).not.toBeNull();
   });
-  it("daily budget caps at 3 for every class, and resets on a new local day", () => {
+  it("daily budget caps non-critical sends at 3, and resets on a new local day", () => {
     const spent = state({ pushesSentDate: "2026-07-19", pushesSentCount: DAILY_PUSH_BUDGET });
-    expect(selectPush([cand("hyperfocus")], spent)).toBeNull();
+    expect(selectPush([cand("context_nudge")], spent)).toBeNull();
     const newDay = state({ pushesSentDate: "2026-07-18", pushesSentCount: DAILY_PUSH_BUDGET });
-    expect(selectPush([cand("hyperfocus")], newDay)).not.toBeNull();
+    expect(selectPush([cand("context_nudge")], newDay)).not.toBeNull();
+  });
+  it("critical is exempt from the daily budget, alone or alongside blocked candidates", () => {
+    const spent = state({ pushesSentDate: "2026-07-19", pushesSentCount: DAILY_PUSH_BUDGET });
+    expect(selectPush([cand("hyperfocus")], spent)?.kind).toBe("hyperfocus");
+    expect(selectPush([cand("context_nudge"), cand("hyperfocus")], spent)?.kind).toBe("hyperfocus");
+  });
+  it("budget exemption does not bypass the floor, spacing, or the pref toggle", () => {
+    const spentOver: StateOver = { pushesSentDate: "2026-07-19", pushesSentCount: DAILY_PUSH_BUDGET };
+    expect(selectPush([cand("hyperfocus")], state({ ...spentOver, localHour: 4 }))).toBeNull();
+    const now = new Date("2026-07-19T17:00:00Z");
+    const recent = new Date(now.getTime() - (PUSH_SPACING_MIN - 1) * 60_000);
+    expect(selectPush([cand("hyperfocus")], state({ ...spentOver, now, lastPushAt: recent }))).toBeNull();
+    expect(selectPush([cand("hyperfocus")], state({ ...spentOver, prefs: { protection: false } }))).toBeNull();
   });
 });
 

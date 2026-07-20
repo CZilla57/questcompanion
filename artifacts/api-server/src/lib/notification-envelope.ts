@@ -2,6 +2,10 @@
 // Producers offer candidates; this module picks at most one per user per tick.
 // Pure — all state comes in via EnvelopeState so the rules are exhaustively testable.
 
+// The budget governs non-critical sends only. Critical is exempt both ways —
+// never blocked by a spent budget, never charged against it (consumesBudget) —
+// so a marathon hyperfocus day can't silence protection. Spacing and the
+// deep-night floor still bound critical.
 export const DAILY_PUSH_BUDGET = 3;
 export const PUSH_SPACING_MIN = 90;
 // Absolute floor, matching lib/hyperfocus.ts DEEP_NIGHT_START/MORNING — no push
@@ -38,6 +42,12 @@ export const KIND_META: Record<CandidateKind, KindMeta> = {
 const CLASS_RANK: Record<CandidateClass, number> = {
   critical: 0, reminder: 1, reflection: 2, milestone: 3, ambient: 4,
 };
+
+// Which sends draw down the daily budget. Critical rides above the budget
+// entirely — the scheduler must not charge pushes_sent_count for it.
+export function consumesBudget(kind: CandidateKind): boolean {
+  return KIND_META[kind].klass !== "critical";
+}
 
 // Local-hour windows per class. Critical has no window here — the deep-night
 // floor above is its only constraint. Reminder starts at 7 to preserve the
@@ -95,12 +105,13 @@ export function selectPush(candidates: PushCandidate[], state: EnvelopeState): P
   }
 
   const sentToday = state.pushesSentDate === state.localToday ? state.pushesSentCount : 0;
-  if (sentToday >= DAILY_PUSH_BUDGET) return null;
+  const budgetSpent = sentToday >= DAILY_PUSH_BUDGET;
 
   const allowed = candidates.filter((c) => {
     const meta = KIND_META[c.kind];
     if (!prefs[meta.category]) return false;
     if (meta.klass !== "critical") {
+      if (budgetSpent) return false;
       const [start, end] = CLASS_WINDOW[meta.klass];
       if (localHour < start || localHour >= end) return false;
       if (inQuietHours(localHour, prefs.quietHoursStart, prefs.quietHoursEnd)) return false;
