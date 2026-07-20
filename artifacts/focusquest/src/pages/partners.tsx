@@ -11,6 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getGetPartnersQueryKey } from "@workspace/api-client-react";
 import { NudgePicker } from "@/components/nudge-picker";
 import { apiErrorMessage } from "@/lib/api-error";
+import { PageTabs } from "@/components/page-tabs";
 
 export default function Partners() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -101,6 +102,7 @@ export default function Partners() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
+      <PageTabs group="allies" />
       <div>
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
           <Shield className="w-8 h-8 text-primary" />

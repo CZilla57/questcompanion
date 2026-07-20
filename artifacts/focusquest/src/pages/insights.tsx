@@ -15,6 +15,7 @@ import {
   Flame, BarChart3, Sun, Sunset, Moon, Sunrise,
 } from "lucide-react";
 import { CATEGORY_HEX_COLORS } from "@/lib/categories";
+import { PageTabs } from "@/components/page-tabs";
 
 const TIME_RANGES = [
   { label: "30d", days: 30 },
@@ -363,6 +364,7 @@ export default function Insights() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      <PageTabs group="progress" />
       <RhythmsCard />
       <WeeklyRecapsSection />
       {/* Header */}

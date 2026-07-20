@@ -1,8 +1,12 @@
 import {
-  useGetMe, useGetMyStats, useGetMyBadges, useGetMyXpHistory,
+  ActivityItem, useGetMe, useGetMyStats, useGetMyBadges, useGetMyXpHistory,
+  useBuyStreakFreeze, getGetMyStatsQueryKey,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Award, Flame, Trophy, Zap, Star, Rocket } from "lucide-react";
+import {
+  Award, Flame, Trophy, Zap, Star, Rocket,
+  Shield, ShieldCheck, ShieldOff, Check, Timer, Play, Moon,
+} from "lucide-react";
 import { BadgeIcon, BADGE_CATEGORY_STYLE, DEFAULT_BADGE_CATEGORY_STYLE } from "@/lib/badges";
 import { browserTimeZone } from "@/lib/timezone";
 import { format } from "date-fns";
@@ -10,6 +14,17 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
+import { PageTabs } from "@/components/page-tabs";
+import { ActivityHeatmap } from "@/components/activity-heatmap";
+import { HeroSummary } from "@/components/hero-summary";
+import { RecentBadges } from "@/components/recent-badges";
+import { Progress as ProgressBar } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { apiErrorMessage } from "@/lib/api-error";
+
+const FREEZE_COST = 50;
 
 interface TooltipProps {
   active?: boolean;
@@ -34,6 +49,10 @@ export default function Progress() {
   const { data: userBadges, isLoading: badgesLoading } = useGetMyBadges();
   const { data: xpHistory, isLoading: xpLoading } = useGetMyXpHistory({ days: 14, tz });
 
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const buyFreezeMutation = useBuyStreakFreeze();
+
   if (userLoading || statsLoading || badgesLoading) {
     return (
       <div className="p-8 flex justify-center items-center h-64">
@@ -41,6 +60,38 @@ export default function Progress() {
       </div>
     );
   }
+
+  if (!stats) return null;
+
+  const handleBuyFreeze = () => {
+    buyFreezeMutation.mutate(undefined, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetMyStatsQueryKey() });
+        toast({
+          title: "Streak Shield Activated!",
+          description: `Spent ${FREEZE_COST} XP. Your next missed day won't break your streak.`,
+          className: "border-cyan-500/50",
+        });
+      },
+      onError: (err: any) => {
+        toast({
+          title: "Can't buy freeze",
+          description: apiErrorMessage(err, "Something went wrong."),
+          variant: "destructive",
+        });
+      },
+    });
+  };
+
+  // Levels have variable widths (see gamification.ts), so progress is measured
+  // within the current band: points earned into it vs. the band's full span.
+  const levelSpan = stats.pointsIntoLevel + stats.pointsToNextLevel;
+  const progressPercent = levelSpan > 0
+    ? (stats.pointsIntoLevel / levelSpan) * 100
+    : 100;
+
+  const hasFreeze = stats.streakFreezes > 0;
+  const canAfford = stats.totalPoints >= FREEZE_COST;
 
   const todayXp = stats?.todayPoints ?? 0;
   const maxXp = xpHistory ? Math.max(...xpHistory.map((d) => d.xp), 1) : 1;
@@ -57,6 +108,7 @@ export default function Progress() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      <PageTabs group="progress" />
       <div>
         <h1 className="text-3xl font-bold text-foreground">Commander Profile</h1>
         <p className="text-muted-foreground mt-1">Review your career stats and achievements.</p>
@@ -249,6 +301,130 @@ export default function Progress() {
             })}
           </div>
         </div>
+      </div>
+
+      {/* ── XP Progress bar ───────────────────────────────── */}
+      <Card className="border-primary/20">
+        <CardContent className="pt-5 pb-5">
+          <div className="flex justify-between items-end mb-3">
+            <div>
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-0.5">Progress to Next Level</div>
+              <div className="font-bold text-primary">{stats.pointsToNextLevel.toLocaleString()} XP remaining</div>
+            </div>
+            <div className="text-2xl font-bold text-foreground tabular-nums">{Math.round(progressPercent)}%</div>
+          </div>
+          <ProgressBar value={progressPercent} className="h-3 bg-muted" />
+        </CardContent>
+      </Card>
+
+      {/* ── Quest Activity Heatmap + Hero + Recent Badges ── */}
+      <ActivityHeatmap
+        aside={
+          <div className="flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-6 w-full">
+            <div className="sm:shrink-0">
+              <HeroSummary />
+            </div>
+            <div className="w-full border-t border-border pt-4 sm:w-auto sm:border-t-0 sm:border-l sm:border-border sm:pt-0 sm:pl-6">
+              <RecentBadges />
+            </div>
+          </div>
+        }
+      />
+
+      {/* ── Streak Shield ─────────────────────────────────── */}
+      <Card className={`border transition-all duration-300 ${hasFreeze ? "border-cyan-500/40 bg-cyan-500/5 shadow-[0_0_20px_rgba(0,255,255,0.08)]" : "border-border"}`}>
+        <CardContent className="pt-5 pb-5">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-4">
+              <div className={`p-2.5 rounded-xl border ${hasFreeze ? "bg-cyan-500/15 border-cyan-500/40 shadow-[0_0_12px_rgba(0,255,255,0.25)]" : "bg-muted/40 border-border"}`}>
+                {hasFreeze
+                  ? <ShieldCheck className="w-6 h-6 text-cyan-400" aria-hidden />
+                  : <ShieldOff className="w-6 h-6 text-muted-foreground" aria-hidden />
+                }
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Streak Shield</span>
+                  {hasFreeze && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 uppercase tracking-wider">
+                      Ready
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm mt-0.5">
+                  {hasFreeze
+                    ? <span className="text-cyan-400 font-semibold">1 freeze held — auto-activates if you miss a day</span>
+                    : <span className="text-muted-foreground">Protects your streak from a missed day.</span>
+                  }
+                </p>
+              </div>
+            </div>
+
+            <Button
+              onClick={handleBuyFreeze}
+              disabled={hasFreeze || !canAfford || buyFreezeMutation.isPending}
+              variant={hasFreeze ? "ghost" : "outline"}
+              aria-label={hasFreeze ? "Streak Shield already active" : `Buy Streak Shield for ${FREEZE_COST} XP`}
+              className={`cursor-pointer ${
+                hasFreeze
+                  ? "text-muted-foreground cursor-default"
+                  : canAfford
+                    ? "border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500"
+                    : "border-muted text-muted-foreground"
+              }`}
+            >
+              {hasFreeze
+                ? <><ShieldCheck className="w-4 h-4 mr-2" aria-hidden /> Shield Active</>
+                : !canAfford
+                  ? <><Shield className="w-4 h-4 mr-2" aria-hidden /> Need {FREEZE_COST} XP</>
+                  : <><Shield className="w-4 h-4 mr-2" aria-hidden /> Buy for {FREEZE_COST} XP</>
+              }
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="space-y-5 max-w-2xl">
+        <h2 className="text-xl font-bold tracking-tight">Activity Log</h2>
+        <Card>
+          <CardContent className="p-0">
+            <div className="divide-y divide-border">
+              {stats.recentActivity.slice(0, 8).map((activity: ActivityItem) => (
+                <div key={activity.id} className="p-4 flex gap-3 hover:bg-muted/30 transition-colors">
+                  <div className="mt-0.5 flex-shrink-0" aria-hidden>
+                    {activity.type === 'task_completed'       && <Check       className="w-4 h-4 text-green-500" />}
+                    {activity.type === 'badge_earned'         && <Award       className="w-4 h-4 text-secondary" />}
+                    {activity.type === 'level_up'             && <Trophy      className="w-4 h-4 text-primary" />}
+                    {activity.type === 'streak_milestone'     && <Flame       className="w-4 h-4 text-orange-400" />}
+                    {activity.type === 'all_day_bonus'        && <Zap         className="w-4 h-4 text-yellow-500" />}
+                    {activity.type === 'streak_freeze_bought' && <Shield      className="w-4 h-4 text-cyan-400" />}
+                    {activity.type === 'streak_freeze_used'   && <ShieldCheck className="w-4 h-4 text-cyan-400" />}
+                    {activity.type === 'focus_session'        && <Timer       className="w-4 h-4 text-primary" />}
+                    {activity.type === 'focus_complete'       && <Timer       className="w-4 h-4 text-primary" />}
+                    {activity.type === 'initiation'           && <Play        className="w-4 h-4 text-primary" />}
+                    {activity.type === 'reflection'           && <Moon        className="w-4 h-4 text-primary" />}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground leading-snug">{activity.description}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {format(new Date(activity.createdAt), 'MMM d, h:mm a')}
+                      {activity.points !== 0 && (
+                        <span className={`font-bold ml-2 tabular-nums ${activity.points < 0 ? "text-red-400" : "text-primary"}`}>
+                          {activity.points > 0 ? "+" : ""}{activity.points} XP
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {stats.recentActivity.length === 0 && (
+                <div className="p-8 text-center text-muted-foreground text-sm">
+                  No activity yet. Complete a quest to get started!
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

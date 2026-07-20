@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiErrorMessage } from "@/lib/api-error";
 import { StatPerksSection } from "@/components/stat-perks-section";
+import { PageTabs } from "@/components/page-tabs";
 import { Coins, Plus, Trash2, Gift } from "lucide-react";
 
 const TIERS = [
@@ -80,6 +81,7 @@ export default function RewardsStore() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-xl">
+      <PageTabs group="rewards" />
       {/* Header + balance */}
       <div>
         <div className="flex items-center justify-between gap-3 mb-2">

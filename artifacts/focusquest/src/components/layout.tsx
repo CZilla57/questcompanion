@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation } from "wouter";
 import { Link } from "wouter";
-import { Home, CheckSquare, BarChart2, BarChart3, Users, Trophy, X, Zap, Bell, BellOff, Repeat, Menu, User, LogOut, Coffee, Timer, Download, Scroll, ShoppingBag } from "lucide-react";
+import { Home, CheckSquare, BarChart2, Users, X, Zap, Bell, BellOff, Menu, User, LogOut, Timer, Download, ShoppingBag } from "lucide-react";
 import { useGetNudges, useGetBrainState, BrainMode } from "@workspace/api-client-react";
 import { Button } from "./ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
@@ -159,25 +159,19 @@ function LogoutButton({ iconOnly = false }: { iconOnly?: boolean }) {
   );
 }
 
-// All nav items — sidebar always shows all; mobile bottom bar shows mobileShow:true only
-const allNavItems = [
-  { href: "/",               label: "Home",       icon: Home,        mobileShow: true },
-  { href: "/tasks",          label: "Quests",     icon: CheckSquare, mobileShow: true },
-  { href: "/questlines",     label: "Questlines", icon: Scroll,      mobileShow: false },
-  { href: "/focus",          label: "Focus",      icon: Timer,       mobileShow: true },
-  { href: "/recurring",      label: "Recurring",  icon: Repeat,      mobileShow: false },
-  { href: "/progress",       label: "Progress",   icon: BarChart2,   mobileShow: true },
-  { href: "/insights",       label: "Insights",   icon: BarChart3,   mobileShow: false },
-  { href: "/avatar",         label: "Hero",       icon: User,        mobileShow: true },
-  { href: "/partners",       label: "Allies",     icon: Users,       mobileShow: true },
-  { href: "/leaderboard",    label: "Board",      icon: Trophy,      mobileShow: false },
-  { href: "/dopamine-menu",  label: "Rewards",    icon: Coffee,      mobileShow: false },
-  { href: "/rewards",       label: "Store",      icon: ShoppingBag, mobileShow: false },
-];
-const mobileNavItems = allNavItems.filter(i => i.mobileShow);
+import { NAV_GROUPS, activeGroupKey } from "@/lib/nav-groups";
+
+// Icons stay presentational, keyed by group; config truth lives in nav-groups.ts.
+const NAV_ICONS: Record<string, typeof Home> = {
+  home: Home, quests: CheckSquare, focus: Timer, progress: BarChart2,
+  hero: User, allies: Users, rewards: ShoppingBag,
+};
+const allNavItems = NAV_GROUPS.map((g) => ({ ...g, icon: NAV_ICONS[g.key] }));
+const mobileNavItems = allNavItems.filter((i) => i.mobileShow);
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
+  const activeKey = activeGroupKey(location);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { data: navNudges } = useGetNudges();
   const allyUnread = (navNudges ?? []).filter((n) => !n.readAt).length;
@@ -212,10 +206,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
             variant="ghost"
             size="icon"
             aria-label="Open menu"
-            className="text-muted-foreground md:hidden"
+            className="relative text-muted-foreground md:hidden"
             onClick={() => setSidebarOpen(!sidebarOpen)}
           >
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {allyUnread > 0 && !sidebarOpen && (
+              <span aria-hidden className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-destructive rounded-full" />
+            )}
           </Button>
         </div>
       </header>
@@ -253,10 +250,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
             full screen under a translucent status bar (viewport-fit=cover). */}
         <nav className="flex-1 px-4 space-y-1 mt-[calc(env(safe-area-inset-top)+2rem)] md:mt-0 overflow-y-auto" aria-label="Main navigation">
           {allNavItems.map((item) => {
-            const isActive = location === item.href;
+            const isActive = activeKey === item.key;
             return (
               <Link
-                key={item.href}
+                key={item.key}
                 href={item.href}
                 className="block relative"
                 onClick={() => setSidebarOpen(false)}
@@ -276,7 +273,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     </span>
                   )}
                   <span className="font-medium">
-                    {item.label === "Board" ? "Leaderboard" : item.label}
+                    {item.label}
                   </span>
                 </div>
               </Link>
@@ -319,10 +316,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-card/95 backdrop-blur-md border-t border-border flex items-stretch safe-bottom"
       >
         {mobileNavItems.map((item) => {
-          const isActive = location === item.href;
+          const isActive = activeKey === item.key;
           return (
             <Link
-              key={item.href}
+              key={item.key}
               href={item.href}
               className="flex-1 relative"
               aria-label={item.label}
