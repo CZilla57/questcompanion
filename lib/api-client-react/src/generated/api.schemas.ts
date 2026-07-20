@@ -1897,6 +1897,27 @@ export interface RecapEmailSettingsResponse {
   emailEnabled: boolean;
 }
 
+export interface NotificationPrefs {
+  /** Hyperfocus self-care nudges (may fire late by design) */
+  protection: boolean;
+  /** Context nudges — due today, power window, quick win */
+  reminders: boolean;
+  /** Evening reflection prompt */
+  reflection: boolean;
+  /** Hero care — hunger warnings, milestones, flavor */
+  hero: boolean;
+  /**
+     * @minimum 0
+     * @maximum 23
+     */
+  quietHoursStart: number;
+  /**
+     * @minimum 0
+     * @maximum 23
+     */
+  quietHoursEnd: number;
+}
+
 /**
  * Opaque session token — `Bearer <sid>`.
  */

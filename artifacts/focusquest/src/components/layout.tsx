@@ -16,6 +16,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
 import { DopamineOverlay } from "./dopamine-overlay";
 import { InstallBanner } from "./install-banner";
 import { EmergencyModeProvider } from "./emergency-mode";
@@ -23,6 +25,7 @@ import { BrainModeChip } from "./brain-mode-chip";
 import { CoinChip } from "./coin-chip";
 import { RescueSheet } from "./rescue-sheet";
 import { ProtectionPause } from "./protection-pause";
+import { NotificationPrefsPanel } from "./notification-prefs";
 
 function NotificationBell() {
   const { state, isSubscribed, supported, subscribe, unsubscribe } = useNotifications();
@@ -47,36 +50,49 @@ function NotificationBell() {
   };
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleToggle}
-            disabled={loading || state === "denied"}
+    <Popover>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Notification settings"
+                className={`relative ${isSubscribed ? "text-primary" : "text-muted-foreground"}`}
+              >
+                {isSubscribed ? (
+                  <Bell className="w-5 h-5 drop-shadow-[0_0_4px_rgba(0,255,255,0.8)]" />
+                ) : (
+                  <BellOff className="w-5 h-5" />
+                )}
+                {isSubscribed && (
+                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-primary rounded-full" />
+                )}
+              </Button>
+            </PopoverTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Notifications</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      <PopoverContent align="end" className="w-auto p-3 space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-sm font-medium text-foreground">Push notifications</div>
+            <div className="text-[11px] text-muted-foreground">
+              {state === "denied" ? "Blocked in browser settings" : isSubscribed ? "On for this device" : "Off"}
+            </div>
+          </div>
+          <Switch
             aria-label={isSubscribed ? "Disable notifications" : "Enable notifications"}
-            className={`relative ${isSubscribed ? "text-primary" : "text-muted-foreground"}`}
-          >
-            {isSubscribed ? (
-              <Bell className={`w-5 h-5 ${isSubscribed ? "drop-shadow-[0_0_4px_rgba(0,255,255,0.8)]" : ""}`} />
-            ) : (
-              <BellOff className="w-5 h-5" />
-            )}
-            {isSubscribed && (
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-primary rounded-full" />
-            )}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">
-          {state === "denied"
-            ? "Notifications blocked in browser settings"
-            : isSubscribed
-            ? "Notifications on — click to disable"
-            : "Enable task reminders and streak alerts"}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+            checked={isSubscribed}
+            disabled={loading || state === "denied"}
+            onCheckedChange={handleToggle}
+          />
+        </div>
+        <NotificationPrefsPanel subscribed={isSubscribed} />
+      </PopoverContent>
+    </Popover>
   );
 }
 

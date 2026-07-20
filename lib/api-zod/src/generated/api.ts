@@ -421,6 +421,65 @@ export const UpdateRecapEmailSettingsResponse = zod.object({
 
 
 /**
+ * @summary Per-category push preferences and quiet hours
+ */
+export const getNotificationPrefsResponseQuietHoursStartMin = 0;
+export const getNotificationPrefsResponseQuietHoursStartMax = 23;
+
+export const getNotificationPrefsResponseQuietHoursEndMin = 0;
+export const getNotificationPrefsResponseQuietHoursEndMax = 23;
+
+
+
+export const GetNotificationPrefsResponse = zod.object({
+  "protection": zod.boolean().describe('Hyperfocus self-care nudges (may fire late by design)'),
+  "reminders": zod.boolean().describe('Context nudges — due today, power window, quick win'),
+  "reflection": zod.boolean().describe('Evening reflection prompt'),
+  "hero": zod.boolean().describe('Hero care — hunger warnings, milestones, flavor'),
+  "quietHoursStart": zod.number().min(getNotificationPrefsResponseQuietHoursStartMin).max(getNotificationPrefsResponseQuietHoursStartMax),
+  "quietHoursEnd": zod.number().min(getNotificationPrefsResponseQuietHoursEndMin).max(getNotificationPrefsResponseQuietHoursEndMax)
+})
+
+
+/**
+ * @summary Replace push preferences and quiet hours
+ */
+export const updateNotificationPrefsBodyQuietHoursStartMin = 0;
+export const updateNotificationPrefsBodyQuietHoursStartMax = 23;
+
+export const updateNotificationPrefsBodyQuietHoursEndMin = 0;
+export const updateNotificationPrefsBodyQuietHoursEndMax = 23;
+
+
+
+export const UpdateNotificationPrefsBody = zod.object({
+  "protection": zod.boolean().describe('Hyperfocus self-care nudges (may fire late by design)'),
+  "reminders": zod.boolean().describe('Context nudges — due today, power window, quick win'),
+  "reflection": zod.boolean().describe('Evening reflection prompt'),
+  "hero": zod.boolean().describe('Hero care — hunger warnings, milestones, flavor'),
+  "quietHoursStart": zod.number().min(updateNotificationPrefsBodyQuietHoursStartMin).max(updateNotificationPrefsBodyQuietHoursStartMax),
+  "quietHoursEnd": zod.number().min(updateNotificationPrefsBodyQuietHoursEndMin).max(updateNotificationPrefsBodyQuietHoursEndMax)
+})
+
+export const updateNotificationPrefsResponseQuietHoursStartMin = 0;
+export const updateNotificationPrefsResponseQuietHoursStartMax = 23;
+
+export const updateNotificationPrefsResponseQuietHoursEndMin = 0;
+export const updateNotificationPrefsResponseQuietHoursEndMax = 23;
+
+
+
+export const UpdateNotificationPrefsResponse = zod.object({
+  "protection": zod.boolean().describe('Hyperfocus self-care nudges (may fire late by design)'),
+  "reminders": zod.boolean().describe('Context nudges — due today, power window, quick win'),
+  "reflection": zod.boolean().describe('Evening reflection prompt'),
+  "hero": zod.boolean().describe('Hero care — hunger warnings, milestones, flavor'),
+  "quietHoursStart": zod.number().min(updateNotificationPrefsResponseQuietHoursStartMin).max(updateNotificationPrefsResponseQuietHoursStartMax),
+  "quietHoursEnd": zod.number().min(updateNotificationPrefsResponseQuietHoursEndMin).max(updateNotificationPrefsResponseQuietHoursEndMax)
+})
+
+
+/**
  * Looks up the token and disables recap emails for that user. Always returns the same friendly HTML page — valid or not — so the endpoint is not a token oracle. Linked from every recap email footer and the List-Unsubscribe header; not consumed by the app client.
  * @summary One-click email unsubscribe (unauthenticated, tokenized)
  */

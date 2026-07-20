@@ -420,6 +420,42 @@ paths:
         "400":
           description: enabled must be a boolean
 
+  /users/me/notification-prefs:
+    get:
+      operationId: getNotificationPrefs
+      tags: [notifications]
+      summary: Per-category push preferences and quiet hours
+      responses:
+        "200":
+          description: Current preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPrefs"
+        "401":
+          description: Unauthorized
+    put:
+      operationId: updateNotificationPrefs
+      tags: [notifications]
+      summary: Replace push preferences and quiet hours
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationPrefs"
+      responses:
+        "200":
+          description: Updated preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPrefs"
+        "400":
+          description: Invalid body
+        "401":
+          description: Unauthorized
+
   /recaps/unsubscribe:
     get:
       operationId: unsubscribeRecapEmails
@@ -4259,3 +4295,29 @@ components:
       required: [emailEnabled]
       properties:
         emailEnabled: { type: boolean }
+
+    NotificationPrefs:
+      type: object
+      required: [protection, reminders, reflection, hero, quietHoursStart, quietHoursEnd]
+      additionalProperties: false
+      properties:
+        protection:
+          type: boolean
+          description: Hyperfocus self-care nudges (may fire late by design)
+        reminders:
+          type: boolean
+          description: Context nudges — due today, power window, quick win
+        reflection:
+          type: boolean
+          description: Evening reflection prompt
+        hero:
+          type: boolean
+          description: Hero care — hunger warnings, milestones, flavor
+        quietHoursStart:
+          type: integer
+          minimum: 0
+          maximum: 23
+        quietHoursEnd:
+          type: integer
+          minimum: 0
+          maximum: 23
