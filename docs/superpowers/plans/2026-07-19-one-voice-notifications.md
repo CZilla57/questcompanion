@@ -932,95 +932,87 @@ git commit -m "feat(api): GET/PUT /users/me/notification-prefs"
 
 ---
 
-### Task 5: Bell popover prefs panel (web, TDD)
+### Task 5: Bell popover prefs panel (web)
 
 **Files:**
+- Create: `artifacts/focusquest/src/lib/notification-prefs.ts` (pure helpers)
+- Test: `artifacts/focusquest/src/lib/notification-prefs.test.ts`
 - Create: `artifacts/focusquest/src/components/notification-prefs.tsx`
-- Test: `artifacts/focusquest/src/components/notification-prefs.test.tsx`
 - Modify: `artifacts/focusquest/src/components/layout.tsx` (NotificationBell)
 
 **Interfaces:**
 - Consumes (Task 4): `useGetNotificationPrefs`, `useUpdateNotificationPrefs`, `getGetNotificationPrefsQueryKey`, type `NotificationPrefs` from `@workspace/api-client-react`.
-- Produces: `<NotificationPrefsPanel />` — self-contained panel rendered inside the bell popover.
+- Produces: `<NotificationPrefsPanel />` — self-contained panel rendered inside the bell popover; pure `PREF_CATEGORIES`, `hourLabel(h)` in the lib file.
+
+**House convention (ledger, 3 prior runs):** the frontend has NO component-render test harness (vitest `environment: "node"`, no jsdom) — pure logic goes in `src/lib` with unit tests; component wiring is verified via typecheck + full suite + browser preview. Do NOT add jsdom/RTL infra.
 
 **Design:** The bell keeps its subscribe/unsubscribe toggle as the panel's master switch; below it, four category switches and two quiet-hour selects, disabled while unsubscribed. Copy is calm and label-like; no nag states. Every control mutates immediately (PUT full body) and invalidates the GET key. Orval mutation hooks require the full replacement body — build it from current data with one field flipped.
 
-- [ ] **Step 1: Write the failing component test**
+- [ ] **Step 1: Write the failing pure-lib test**
 
-Create `artifacts/focusquest/src/components/notification-prefs.test.tsx` (follow the house pattern used by existing component tests — MSW-free, mock the client hooks):
+Create `artifacts/focusquest/src/lib/notification-prefs.test.ts`:
 
-```tsx
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+```ts
+import { describe, it, expect } from "vitest";
+import { PREF_CATEGORIES, hourLabel } from "./notification-prefs";
 
-const mutateAsync = vi.fn().mockResolvedValue({});
-const prefs = {
-  protection: true, reminders: true, reflection: false, hero: true,
-  quietHoursStart: 22, quietHoursEnd: 8,
-};
-
-vi.mock("@workspace/api-client-react", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@workspace/api-client-react")>();
-  return {
-    ...actual,
-    useGetNotificationPrefs: () => ({ data: prefs, isLoading: false }),
-    useUpdateNotificationPrefs: () => ({ mutateAsync, isPending: false }),
-    getGetNotificationPrefsQueryKey: () => ["/users/me/notification-prefs"],
-  };
+describe("PREF_CATEGORIES", () => {
+  it("covers exactly the four server pref keys, in display order", () => {
+    expect(PREF_CATEGORIES.map((c) => c.key)).toEqual([
+      "protection", "reminders", "reflection", "hero",
+    ]);
+  });
+  it("every category has a non-empty label and hint", () => {
+    for (const c of PREF_CATEGORIES) {
+      expect(c.label.length).toBeGreaterThan(0);
+      expect(c.hint.length).toBeGreaterThan(0);
+    }
+  });
 });
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { NotificationPrefsPanel } from "./notification-prefs";
-
-function renderPanel(subscribed = true) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
-    <QueryClientProvider client={qc}>
-      <NotificationPrefsPanel subscribed={subscribed} />
-    </QueryClientProvider>
-  );
-}
-
-beforeEach(() => mutateAsync.mockClear());
-
-describe("NotificationPrefsPanel", () => {
-  it("renders one switch per category reflecting server state", () => {
-    renderPanel();
-    expect(screen.getByRole("switch", { name: /self-care/i })).toBeChecked();
-    expect(screen.getByRole("switch", { name: /reminders/i })).toBeChecked();
-    expect(screen.getByRole("switch", { name: /reflection/i })).not.toBeChecked();
-    expect(screen.getByRole("switch", { name: /hero/i })).toBeChecked();
-  });
-
-  it("PUTs the full body with the toggled field flipped", () => {
-    renderPanel();
-    fireEvent.click(screen.getByRole("switch", { name: /reminders/i }));
-    expect(mutateAsync).toHaveBeenCalledWith({
-      data: { ...prefs, reminders: false },
-    });
-  });
-
-  it("PUTs updated quiet hours from the selects", () => {
-    renderPanel();
-    fireEvent.change(screen.getByLabelText(/quiet from/i), { target: { value: "21" } });
-    expect(mutateAsync).toHaveBeenCalledWith({
-      data: { ...prefs, quietHoursStart: 21 },
-    });
-  });
-
-  it("disables category controls while unsubscribed", () => {
-    renderPanel(false);
-    expect(screen.getByRole("switch", { name: /reminders/i })).toBeDisabled();
+describe("hourLabel", () => {
+  it("formats all 24 hours as 12-hour AM/PM", () => {
+    expect(hourLabel(0)).toBe("12 AM");
+    expect(hourLabel(1)).toBe("1 AM");
+    expect(hourLabel(11)).toBe("11 AM");
+    expect(hourLabel(12)).toBe("12 PM");
+    expect(hourLabel(13)).toBe("1 PM");
+    expect(hourLabel(23)).toBe("11 PM");
   });
 });
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `cd artifacts/focusquest && npx vitest run --pool=threads src/components/notification-prefs.test.tsx`
+Run: `pnpm --filter @workspace/focusquest test -- notification-prefs`
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Implement the panel**
+- [ ] **Step 3: Implement the pure lib + the panel**
+
+Create `artifacts/focusquest/src/lib/notification-prefs.ts`:
+
+```ts
+import type { NotificationPrefs } from "@workspace/api-client-react";
+
+export type PrefCategoryKey = keyof Pick<NotificationPrefs, "protection" | "reminders" | "reflection" | "hero">;
+
+export const PREF_CATEGORIES: { key: PrefCategoryKey; label: string; hint: string }[] = [
+  { key: "protection", label: "Self-care nudges", hint: "Water, food, wind-down during long focus" },
+  { key: "reminders",  label: "Quest reminders",  hint: "Due today, power window, quick wins" },
+  { key: "reflection", label: "Evening reflection", hint: "One gentle prompt, evenings only" },
+  { key: "hero",       label: "Hero & world",     hint: "Hunger, milestones, flavor" },
+];
+
+export function hourLabel(h: number): string {
+  const period = h < 12 ? "AM" : "PM";
+  const display = h % 12 === 0 ? 12 : h % 12;
+  return `${display} ${period}`;
+}
+```
+
+Then run the test again — it must pass — before writing the component.
+
+- [ ] **Step 4: Create the component**
 
 Create `artifacts/focusquest/src/components/notification-prefs.tsx`:
 
@@ -1031,19 +1023,7 @@ import {
   getGetNotificationPrefsQueryKey, type NotificationPrefs,
 } from "@workspace/api-client-react";
 import { Switch } from "@/components/ui/switch";
-
-const CATEGORIES: { key: keyof Pick<NotificationPrefs, "protection" | "reminders" | "reflection" | "hero">; label: string; hint: string }[] = [
-  { key: "protection", label: "Self-care nudges", hint: "Water, food, wind-down during long focus" },
-  { key: "reminders",  label: "Quest reminders",  hint: "Due today, power window, quick wins" },
-  { key: "reflection", label: "Evening reflection", hint: "One gentle prompt, evenings only" },
-  { key: "hero",       label: "Hero & world",     hint: "Hunger, milestones, flavor" },
-];
-
-function hourLabel(h: number): string {
-  const period = h < 12 ? "AM" : "PM";
-  const display = h % 12 === 0 ? 12 : h % 12;
-  return `${display} ${period}`;
-}
+import { PREF_CATEGORIES, hourLabel } from "@/lib/notification-prefs";
 
 export function NotificationPrefsPanel({ subscribed }: { subscribed: boolean }) {
   const qc = useQueryClient();
@@ -1062,7 +1042,7 @@ export function NotificationPrefsPanel({ subscribed }: { subscribed: boolean }) 
   return (
     <div className="w-64 space-y-3">
       <div className="space-y-2.5">
-        {CATEGORIES.map(({ key, label, hint }) => (
+        {PREF_CATEGORIES.map(({ key, label, hint }) => (
           <div key={key} className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="text-sm font-medium text-foreground">{label}</div>
@@ -1121,7 +1101,7 @@ export function NotificationPrefsPanel({ subscribed }: { subscribed: boolean }) 
 
 (If `@/components/ui/switch` does not exist in this app, check `src/components/ui/` — the shadcn switch is present in the ui kit; if it is genuinely absent, add it following the neighboring ui components' pattern.)
 
-- [ ] **Step 4: Wire the bell into a popover**
+- [ ] **Step 5: Wire the bell into a popover**
 
 In `artifacts/focusquest/src/components/layout.tsx`, change `NotificationBell` so the bell opens a Popover instead of toggling directly. Imports to add: `Popover, PopoverContent, PopoverTrigger` from `@/components/ui/popover`, `Switch` from `@/components/ui/switch`, and `NotificationPrefsPanel` from `./notification-prefs`. Replace the returned JSX of `NotificationBell` (keep `handleToggle` exactly as is):
 
@@ -1173,16 +1153,16 @@ In `artifacts/focusquest/src/components/layout.tsx`, change `NotificationBell` s
   );
 ```
 
-- [ ] **Step 5: Run the web suite**
+- [ ] **Step 6: Run the web suite + typecheck**
 
-Run: `cd artifacts/focusquest && npx vitest run --pool=threads`
-Expected: new tests PASS; existing 162 stay green (if a layout test asserted the old bell aria-label "Enable notifications" on the button, update it to "Notification settings").
+Run: `pnpm --filter @workspace/focusquest test` and `pnpm -w run typecheck`
+Expected: new tests PASS; existing 162 stay green; typecheck clean.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git branch --show-current   # must print feat/one-voice-notifications
-git add artifacts/focusquest/src/components/notification-prefs.tsx artifacts/focusquest/src/components/notification-prefs.test.tsx artifacts/focusquest/src/components/layout.tsx
+git add artifacts/focusquest/src/lib/notification-prefs.ts artifacts/focusquest/src/lib/notification-prefs.test.ts artifacts/focusquest/src/components/notification-prefs.tsx artifacts/focusquest/src/components/layout.tsx
 git commit -m "feat(web): notification prefs panel in the bell popover"
 ```
 
