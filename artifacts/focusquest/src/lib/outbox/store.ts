@@ -1,0 +1,116 @@
+import type { OutboxEntry } from "./core";
+
+export interface OutboxStore {
+  /** false = in-memory fallback (private mode / IDB broken): survives the
+   * session only, and the capture UI says so honestly. */
+  readonly persistent: boolean;
+  add(entry: OutboxEntry): Promise<void>;
+  list(): Promise<OutboxEntry[]>;
+  update(id: string, patch: Partial<OutboxEntry>): Promise<void>;
+  remove(id: string): Promise<void>;
+}
+
+/** Same-tab change signal for useOutboxEntries. Cross-tab consistency is not
+ * chased — the server clientKey dedupes, and drains take a Web Lock. */
+export const outboxChanged = new EventTarget();
+const emit = () => outboxChanged.dispatchEvent(new Event("change"));
+
+const byCreatedAt = (a: OutboxEntry, b: OutboxEntry) =>
+  a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : a.id < b.id ? -1 : 1;
+
+export function createMemoryStore(): OutboxStore {
+  const entries = new Map<string, OutboxEntry>();
+  return {
+    persistent: false,
+    async add(entry) {
+      entries.set(entry.id, entry);
+      emit();
+    },
+    async list() {
+      return [...entries.values()].sort(byCreatedAt);
+    },
+    async update(id, patch) {
+      const current = entries.get(id);
+      if (!current) return;
+      entries.set(id, { ...current, ...patch });
+      emit();
+    },
+    async remove(id) {
+      entries.delete(id);
+      emit();
+    },
+  };
+}
+
+// ── Raw IndexedDB adapter ────────────────────────────────────────────────
+// Deliberately dependency-free and thin: all replay/ordering logic lives in
+// core.ts/replay.ts against the interface above, which the memory store
+// contract-tests. DB "fq-outbox", store "entries", keyPath "id"; Blobs
+// persist via structured clone.
+
+const DB_NAME = "fq-outbox";
+const STORE = "entries";
+
+function openDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      if (!req.result.objectStoreNames.contains(STORE)) {
+        req.result.createObjectStore(STORE, { keyPath: "id" });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error ?? new Error("indexedDB open failed"));
+  });
+}
+
+function tx<T>(db: IDBDatabase, mode: IDBTransactionMode, run: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const t = db.transaction(STORE, mode);
+    const req = run(t.objectStore(STORE));
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error ?? new Error("indexedDB request failed"));
+  });
+}
+
+function createIdbStore(db: IDBDatabase): OutboxStore {
+  return {
+    persistent: true,
+    async add(entry) {
+      await tx(db, "readwrite", (s) => s.put(entry));
+      emit();
+    },
+    async list() {
+      const all = (await tx(db, "readonly", (s) => s.getAll())) as OutboxEntry[];
+      return all.sort(byCreatedAt);
+    },
+    async update(id, patch) {
+      const current = (await tx(db, "readonly", (s) => s.get(id))) as OutboxEntry | undefined;
+      if (!current) return;
+      await tx(db, "readwrite", (s) => s.put({ ...current, ...patch }));
+      emit();
+    },
+    async remove(id) {
+      await tx(db, "readwrite", (s) => s.delete(id));
+      emit();
+    },
+  };
+}
+
+let storePromise: Promise<OutboxStore> | null = null;
+
+/** Singleton accessor. IDB when available; otherwise an in-memory queue for
+ * the session (callers surface the honest "keep the app open" copy). */
+export function getOutboxStore(): Promise<OutboxStore> {
+  if (!storePromise) {
+    storePromise = (async () => {
+      try {
+        if (typeof indexedDB === "undefined") throw new Error("no indexedDB");
+        return createIdbStore(await openDb());
+      } catch {
+        return createMemoryStore();
+      }
+    })();
+  }
+  return storePromise;
+}
