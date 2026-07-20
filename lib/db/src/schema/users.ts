@@ -65,6 +65,22 @@ export const usersTable = pgTable("users", {
   email: text("email"),
   recapEmailsEnabled: boolean("recap_emails_enabled").notNull().default(true),
   recapUnsubscribeToken: text("recap_unsubscribe_token").unique(),
+  // Act VII One Voice: per-category push preferences + user quiet hours.
+  // Categories map to candidate producers (see api-server lib/notification-envelope.ts).
+  notifyProtection: boolean("notify_protection").notNull().default(true),
+  notifyReminders: boolean("notify_reminders").notNull().default(true),
+  notifyReflection: boolean("notify_reflection").notNull().default(true),
+  notifyHero: boolean("notify_hero").notNull().default(true),
+  // Local-hour ints [0,23]. Quiet window is [start→end) wrapping midnight; start === end
+  // means "no quiet hours". Applies to non-critical classes only — the [2,7) deep-night
+  // floor in the envelope is absolute and not user-configurable.
+  quietHoursStart: integer("quiet_hours_start").notNull().default(22),
+  quietHoursEnd: integer("quiet_hours_end").notNull().default(8),
+  // Envelope budget state: local-date key the counter belongs to, count sent that day,
+  // and the instant of the last envelope push (90-min aggregate spacing).
+  pushesSentDate: text("pushes_sent_date"),
+  pushesSentCount: integer("pushes_sent_count").notNull().default(0),
+  lastPushAt: timestamp("last_push_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
