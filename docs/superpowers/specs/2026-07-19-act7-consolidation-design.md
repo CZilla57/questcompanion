@@ -72,7 +72,10 @@ subscribed user can receive 6+ pushes/day across systems, and the bell is all-or
   (rescue/protection > due-today > reflection prompt > milestone > ambient flavor),
   a per-user daily push budget (a constant, 3, in v1 — not a preference), and min
   spacing (90 min, reusing the context-nudge envelope's grammar); one dispatch point
-  calls `notify`.
+  calls `notify`. *Amended 2026-07-20 (option b, Chad's call):* the budget governs
+  non-critical sends only — critical is never blocked by a spent budget and never
+  charges it, so a marathon hyperfocus day cannot silence protection. Spacing and
+  the deep-night floor still bound critical.
 - Per-category preferences + quiet hours: columns or JSONB on `users`, a small sheet off
   the existing notification bell (`layout.tsx` `NotificationBell`). Categories map to
   producer kinds; rescue/protection defaults on, ambient flavor defaults on but first in
@@ -83,8 +86,9 @@ subscribed user can receive 6+ pushes/day across systems, and the bell is all-or
 **Out of scope.** New notification kinds; email (recap system already has its own gate).
 
 **Acceptance.** No push outside the user's local allowed window in tests spanning
-timezones; a fixture user maximally eligible for every kind receives ≤ budget pushes/day
-with the highest-priority kinds winning; `sendDailySummary` gone; per-category opt-outs
+timezones; a fixture user maximally eligible for every kind receives ≤ budget non-critical
+pushes/day (critical rides above the budget, bounded by spacing + floor — 2026-07-20
+amendment) with the highest-priority kinds winning; `sendDailySummary` gone; per-category opt-outs
 respected; envelope logic is pure and unit-tested like `context-nudges.ts`.
 
 ## Quest 2 — The Now Screen (home inversion + nav merge)
