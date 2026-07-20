@@ -5,20 +5,31 @@ import {
 } from "@workspace/api-client-react";
 import { Switch } from "@/components/ui/switch";
 import { PREF_CATEGORIES, hourLabel } from "@/lib/notification-prefs";
+import { useToast } from "@/hooks/use-toast";
 
 export function NotificationPrefsPanel({ subscribed }: { subscribed: boolean }) {
   const qc = useQueryClient();
+  const { toast } = useToast();
   const { data: prefs, isLoading } = useGetNotificationPrefs();
   const update = useUpdateNotificationPrefs();
 
-  if (isLoading || !prefs) {
+  const put = async (next: NotificationPrefs) => {
+    const updated = await update.mutateAsync({ data: next });
+    qc.setQueryData(getGetNotificationPrefsQueryKey(), updated);
+  };
+
+  const save = (next: NotificationPrefs) => {
+    put(next).catch(() => {
+      toast({ title: "Couldn't save preferences", description: "Nothing changed — try again in a moment.", variant: "destructive" });
+    });
+  };
+
+  if (isLoading) {
     return <div className="p-3 text-xs text-muted-foreground">Loading preferences…</div>;
   }
-
-  const put = async (next: NotificationPrefs) => {
-    await update.mutateAsync({ data: next });
-    qc.invalidateQueries({ queryKey: getGetNotificationPrefsQueryKey() });
-  };
+  if (!prefs) {
+    return <div className="p-3 text-xs text-muted-foreground">Couldn't load preferences — try reopening this menu.</div>;
+  }
 
   return (
     <div className="w-64 space-y-3">
@@ -33,7 +44,7 @@ export function NotificationPrefsPanel({ subscribed }: { subscribed: boolean }) 
               aria-label={label}
               checked={prefs[key]}
               disabled={!subscribed || update.isPending}
-              onCheckedChange={(checked) => put({ ...prefs, [key]: checked })}
+              onCheckedChange={(checked) => save({ ...prefs, [key]: checked })}
             />
           </div>
         ))}
@@ -49,7 +60,7 @@ export function NotificationPrefsPanel({ subscribed }: { subscribed: boolean }) 
               className="rounded-md border border-input bg-background px-1.5 py-1 text-xs"
               value={prefs.quietHoursStart}
               disabled={!subscribed || update.isPending}
-              onChange={(e) => put({ ...prefs, quietHoursStart: Number(e.target.value) })}
+              onChange={(e) => save({ ...prefs, quietHoursStart: Number(e.target.value) })}
             >
               {Array.from({ length: 24 }, (_, h) => (
                 <option key={h} value={h}>{hourLabel(h)}</option>
@@ -63,7 +74,7 @@ export function NotificationPrefsPanel({ subscribed }: { subscribed: boolean }) 
               className="rounded-md border border-input bg-background px-1.5 py-1 text-xs"
               value={prefs.quietHoursEnd}
               disabled={!subscribed || update.isPending}
-              onChange={(e) => put({ ...prefs, quietHoursEnd: Number(e.target.value) })}
+              onChange={(e) => save({ ...prefs, quietHoursEnd: Number(e.target.value) })}
             >
               {Array.from({ length: 24 }, (_, h) => (
                 <option key={h} value={h}>{hourLabel(h)}</option>
