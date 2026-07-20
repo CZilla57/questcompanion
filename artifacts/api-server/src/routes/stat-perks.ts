@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, coinTransactionsTable, type User } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { db, usersTable, type User } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import { redeemDecision } from "../lib/coins";
+import { spendCoins } from "../lib/award-coins";
 import {
   PERKS,
   getPerk,
@@ -72,8 +73,7 @@ router.post("/stat-perks/:id/buy", async (req, res): Promise<void> => {
   const now = new Date();
 
   const outcome = await db.transaction(async (tx): Promise<Outcome> => {
-    // Lock the user row: the read-decide-write below (compute the stacked expiry /
-    // check the shield cap, then decrement + apply + ledger) must be atomic so a
+    // Lock the user row: cap check + spend + effect must be atomic so a
     // concurrent double-buy can neither overspend nor exceed the cap.
     const [user] = await tx.select().from(usersTable).where(eq(usersTable.id, userId)).for("update");
     if (!user) return { status: "not_found" };
@@ -83,23 +83,20 @@ router.post("/stat-perks/:id/buy", async (req, res): Promise<void> => {
     if (perk.kind === "streak_shield" && !canBuyStreakShield(user.streakFreezes)) {
       return { status: "at_max", balance: user.coinBalance };
     }
-    if (user.coinBalance < perk.coinCost) {
-      return {
-        status: "insufficient",
-        balance: user.coinBalance,
-        remaining: Math.max(0, perk.coinCost - user.coinBalance),
-      };
+
+    const spent = await spendCoins(tx, userId, perk.coinCost, perk.reason);
+    if (!spent.ok) {
+      return { status: "insufficient", balance: spent.balance, remaining: spent.remaining };
     }
 
-    // Guaranteed affordable under the lock. Decrement coins, apply the effect.
-    const decrement = { coinBalance: sql`${usersTable.coinBalance} - ${perk.coinCost}` };
+    // Paid — apply the effect.
     let expiresAt: string | null = null;
     let owned: number | null = null;
 
     if (perk.kind === "streak_shield") {
       const nextOwned = user.streakFreezes + 1;
       owned = nextOwned;
-      await tx.update(usersTable).set({ ...decrement, streakFreezes: nextOwned }).where(eq(usersTable.id, userId));
+      await tx.update(usersTable).set({ streakFreezes: nextOwned }).where(eq(usersTable.id, userId));
     } else {
       const current = perk.kind === "xp_boost" ? user.xpBoostExpiresAt : user.focusBoostExpiresAt;
       const next = nextBoostExpiry(current, now, perk.durationHours!);
@@ -107,11 +104,10 @@ router.post("/stat-perks/:id/buy", async (req, res): Promise<void> => {
       const col = perk.kind === "xp_boost"
         ? { xpBoostExpiresAt: next }
         : { focusBoostExpiresAt: next };
-      await tx.update(usersTable).set({ ...decrement, ...col }).where(eq(usersTable.id, userId));
+      await tx.update(usersTable).set(col).where(eq(usersTable.id, userId));
     }
 
-    await tx.insert(coinTransactionsTable).values({ userId, amount: -perk.coinCost, reason: perk.reason });
-    return { status: "ok", balance: user.coinBalance - perk.coinCost, expiresAt, owned };
+    return { status: "ok", balance: spent.balance, expiresAt, owned };
   });
 
   if (outcome.status === "not_found") { res.status(404).json({ error: "User not found" }); return; }
