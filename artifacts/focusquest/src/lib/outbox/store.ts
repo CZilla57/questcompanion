@@ -85,10 +85,27 @@ function createIdbStore(db: IDBDatabase): OutboxStore {
       return all.sort(byCreatedAt);
     },
     async update(id, patch) {
-      const current = (await tx(db, "readonly", (s) => s.get(id))) as OutboxEntry | undefined;
-      if (!current) return;
-      await tx(db, "readwrite", (s) => s.put({ ...current, ...patch }));
-      emit();
+      // Single readwrite transaction for the read-modify-write: a concurrent
+      // remove() can no longer land between a get and a stale put and be
+      // resurrected. No-op (and no change event) when the id is unknown,
+      // matching the memory adapter's contract.
+      const found = await new Promise<boolean>((resolve, reject) => {
+        const t = db.transaction(STORE, "readwrite");
+        const store = t.objectStore(STORE);
+        const getReq = store.get(id);
+        let exists = false;
+        getReq.onsuccess = () => {
+          const current = getReq.result as OutboxEntry | undefined;
+          if (current) {
+            exists = true;
+            store.put({ ...current, ...patch });
+          }
+        };
+        t.oncomplete = () => resolve(exists);
+        t.onabort = () => reject(t.error ?? new Error("indexedDB tx aborted"));
+        t.onerror = () => reject(t.error ?? new Error("indexedDB tx failed"));
+      });
+      if (found) emit();
     },
     async remove(id) {
       await tx(db, "readwrite", (s) => s.delete(id));
