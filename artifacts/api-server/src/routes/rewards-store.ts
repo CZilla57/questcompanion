@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, rewardStoreItemsTable, coinTransactionsTable } from "@workspace/db";
-import { eq, and, count, sql, gte } from "drizzle-orm";
+import { db, usersTable, rewardStoreItemsTable } from "@workspace/db";
+import { eq, and, count } from "drizzle-orm";
 import { tierCost, isValidTier, redeemDecision } from "../lib/coins";
+import { spendCoins } from "../lib/award-coins";
 
 const router: IRouter = Router();
 const MAX_ITEMS = 20;
@@ -99,25 +100,11 @@ router.post("/rewards-store/:id/redeem", async (req, res): Promise<void> => {
       .where(and(eq(rewardStoreItemsTable.id, id), eq(rewardStoreItemsTable.userId, userId)));
     if (!item) return { status: "not_found" };
 
-    // Atomic guarded deduction: only decrements when the balance covers the
-    // cost. If the guard doesn't match, nothing changed — balance stays put and
-    // can never go negative.
-    const [updated] = await tx
-      .update(usersTable)
-      .set({ coinBalance: sql`${usersTable.coinBalance} - ${item.coinCost}` })
-      .where(and(eq(usersTable.id, userId), gte(usersTable.coinBalance, item.coinCost)))
-      .returning({ balance: usersTable.coinBalance });
-
-    if (!updated) {
-      const [u] = await tx.select({ balance: usersTable.coinBalance }).from(usersTable).where(eq(usersTable.id, userId));
-      const bal = u?.balance ?? 0;
-      return { status: "insufficient", balance: bal, remaining: Math.max(0, item.coinCost - bal) };
+    const spent = await spendCoins(tx, userId, item.coinCost, "redeem", { rewardItemId: item.id });
+    if (!spent.ok) {
+      return { status: "insufficient", balance: spent.balance, remaining: spent.remaining };
     }
-
-    await tx.insert(coinTransactionsTable).values({
-      userId, amount: -item.coinCost, reason: "redeem", rewardItemId: item.id,
-    });
-    return { status: "ok", balance: updated.balance };
+    return { status: "ok", balance: spent.balance };
   });
 
   if (outcome.status === "not_found") { res.status(404).json({ error: "Reward not found" }); return; }

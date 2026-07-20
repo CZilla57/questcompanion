@@ -96,6 +96,7 @@ export const ActivityItemType = {
   all_day_bonus: 'all_day_bonus',
   streak_freeze_bought: 'streak_freeze_bought',
   streak_freeze_used: 'streak_freeze_used',
+  gear_bought: 'gear_bought',
   gear_earned: 'gear_earned',
   focus_session: 'focus_session',
   focus_complete: 'focus_complete',
@@ -232,11 +233,6 @@ export interface KingdomsResponse {
   worldResting: boolean;
   kingdoms: KingdomState[];
   invitation: KingdomInvitation | null;
-}
-
-export interface StreakFreezeResult {
-  streakFreezes: number;
-  totalPoints: number;
 }
 
 export type TaskPriority = typeof TaskPriority[keyof typeof TaskPriority];
@@ -1138,7 +1134,7 @@ export interface GearStoreItem {
   slot: GearStoreItemSlot;
   rarity: GearStoreItemRarity;
   statPower: number;
-  costXp: number;
+  costCoins: number;
   levelRequired: number;
   icon: string;
   spriteId?: string | null;
@@ -1150,14 +1146,24 @@ export interface GearStoreItem {
 
 export interface GearStoreResponse {
   items: GearStoreItem[];
-  userXp: number;
+  coinBalance: number;
   userLevel: number;
 }
 
+export type BuyGearResultReason = typeof BuyGearResultReason[keyof typeof BuyGearResultReason];
+
+
+export const BuyGearResultReason = {
+  ok: 'ok',
+  insufficient: 'insufficient',
+} as const;
+
 export interface BuyGearResult {
-  success: boolean;
-  xpSpent: number;
-  remainingXp: number;
+  purchased: boolean;
+  reason: BuyGearResultReason;
+  balance: number;
+  remaining: number;
+  coinsSpent?: number;
 }
 
 export type BrainMode = typeof BrainMode[keyof typeof BrainMode];
@@ -1941,10 +1947,6 @@ export type GetMyStatsParams = {
  * IANA timezone (e.g. "America/New_York") used to determine the user's local "today". Defaults to UTC when omitted or invalid.
  */
 tz?: string;
-};
-
-export type BuyStreakFreeze400 = {
-  error?: string;
 };
 
 export type GetMyXpHistoryParams = {

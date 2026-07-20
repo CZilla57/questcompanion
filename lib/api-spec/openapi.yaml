@@ -243,28 +243,6 @@ paths:
         "401":
           description: Unauthorized
 
-  /users/me/streak-freeze/buy:
-    post:
-      operationId: buyStreakFreeze
-      tags: [users]
-      summary: Spend 50 XP to buy a streak freeze (max 1 held at a time)
-      responses:
-        "200":
-          description: Freeze purchased
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/StreakFreezeResult"
-        "400":
-          description: Not enough XP or already holding a freeze
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-
   /users/me/xp-history:
     get:
       operationId: getMyXpHistory
@@ -1834,7 +1812,7 @@ paths:
     post:
       operationId: buyGear
       tags: [avatar]
-      summary: Purchase a gear item (deducts XP)
+      summary: Purchase a gear item with coins (insufficiency is a gentle 200)
       parameters:
         - name: id
           in: path
@@ -1843,13 +1821,13 @@ paths:
             type: integer
       responses:
         "200":
-          description: Purchase successful
+          description: Purchase result (purchased=false when short on coins)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/BuyGearResult"
         "403":
-          description: Not enough XP or level too low
+          description: Level too low
           content:
             application/json:
               schema:
@@ -2480,15 +2458,6 @@ components:
           type: string
         kingdomName:
           type: string
-
-    StreakFreezeResult:
-      type: object
-      required: [streakFreezes, totalPoints]
-      properties:
-        streakFreezes:
-          type: integer
-        totalPoints:
-          type: integer
 
     Task:
       type: object
@@ -3210,7 +3179,7 @@ components:
           type: string
         type:
           type: string
-          enum: [task_completed, badge_earned, level_up, streak_milestone, all_day_bonus, streak_freeze_bought, streak_freeze_used, gear_earned, focus_session, focus_complete, initiation, reflection]
+          enum: [task_completed, badge_earned, level_up, streak_milestone, all_day_bonus, streak_freeze_bought, streak_freeze_used, gear_bought, gear_earned, focus_session, focus_complete, initiation, reflection]
         description:
           type: string
         points:
@@ -3370,7 +3339,7 @@ components:
 
     GearStoreItem:
       type: object
-      required: [id, name, description, slot, rarity, statPower, costXp, levelRequired, icon, owned, equipped, canAfford, meetsLevel]
+      required: [id, name, description, slot, rarity, statPower, costCoins, levelRequired, icon, owned, equipped, canAfford, meetsLevel]
       properties:
         id:
           type: integer
@@ -3386,7 +3355,7 @@ components:
           enum: [common, rare, epic, legendary]
         statPower:
           type: integer
-        costXp:
+        costCoins:
           type: integer
         levelRequired:
           type: integer
@@ -3406,26 +3375,31 @@ components:
 
     GearStoreResponse:
       type: object
-      required: [items, userXp, userLevel]
+      required: [items, coinBalance, userLevel]
       properties:
         items:
           type: array
           items:
             $ref: "#/components/schemas/GearStoreItem"
-        userXp:
+        coinBalance:
           type: integer
         userLevel:
           type: integer
 
     BuyGearResult:
       type: object
-      required: [success, xpSpent, remainingXp]
+      required: [purchased, reason, balance, remaining]
       properties:
-        success:
+        purchased:
           type: boolean
-        xpSpent:
+        reason:
+          type: string
+          enum: [ok, insufficient]
+        balance:
           type: integer
-        remainingXp:
+        remaining:
+          type: integer
+        coinsSpent:
           type: integer
 
     BrainMode:

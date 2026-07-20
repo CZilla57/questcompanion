@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Redirect, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,12 +18,13 @@ import Partners from "@/pages/partners";
 import Leaderboard from "@/pages/leaderboard";
 import Recurring from "@/pages/recurring";
 import AvatarPage from "@/pages/avatar";
-import DopamineMenu from "@/pages/dopamine-menu";
+import RewardsTreats from "@/pages/rewards-treats";
 import Focus from "@/pages/focus";
 import PartnerDetail from "@/pages/partner-detail";
 import Questlines from "@/pages/questlines";
 import QuestlineDetail from "@/pages/questline-detail";
 import RewardsStore from "@/pages/rewards-store";
+import RewardsPerks from "@/pages/rewards-perks";
 import Reflection from "@/pages/reflection";
 
 const queryClient = new QueryClient({
@@ -175,8 +176,12 @@ function Router() {
         <Route path="/partners" component={Partners} />
         <Route path="/leaderboard" component={Leaderboard} />
         <Route path="/avatar" component={AvatarPage} />
-        <Route path="/dopamine-menu" component={DopamineMenu} />
-        <Route path="/rewards" component={RewardsStore} />
+        <Route path="/rewards/treats" component={RewardsTreats} />
+        <Route path="/rewards/store" component={RewardsStore} />
+        <Route path="/rewards/perks" component={RewardsPerks} />
+        {/* Honest Coin: the two retired reward URLs land on the hub's default tab. */}
+        <Route path="/dopamine-menu"><Redirect to="/rewards/treats" /></Route>
+        <Route path="/rewards"><Redirect to="/rewards/treats" /></Route>
         <Route component={NotFound} />
       </Switch>
     </Layout>

@@ -40,12 +40,13 @@ export const NAV_GROUPS = [
     ],
   },
   {
-    // Interim group until Quest 3 (Honest Coin) builds the real hub and
-    // retires /dopamine-menu — one nav entry, two existing pages as tabs.
-    key: "rewards", label: "Rewards", href: "/rewards", mobileShow: false,
+    // The Rewards hub (Act VII q3, Honest Coin): three first-class tab routes.
+    // /rewards and /dopamine-menu redirect to Treats in App.tsx.
+    key: "rewards", label: "Rewards", href: "/rewards/treats", mobileShow: false,
     tabs: [
-      { label: "Treats", href: "/dopamine-menu" },
-      { label: "Store", href: "/rewards" },
+      { label: "Treats", href: "/rewards/treats" },
+      { label: "Store", href: "/rewards/store" },
+      { label: "Perks", href: "/rewards/perks" },
     ],
   },
 ] as const satisfies readonly NavGroup[];

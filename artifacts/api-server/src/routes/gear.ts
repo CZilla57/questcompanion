@@ -2,6 +2,8 @@ import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
 import { db, usersTable, gearItemsTable, userGearTable, activityTable } from "@workspace/db";
 import { getLevelInfo } from "../lib/gamification";
+import { gearCoinCost } from "../lib/coins";
+import { spendCoins } from "../lib/award-coins";
 
 const router: IRouter = Router();
 
@@ -12,30 +14,34 @@ router.get("/gear/store", async (req, res): Promise<void> => {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
 
-  const allItems = await db.select().from(gearItemsTable).orderBy(gearItemsTable.costXp);
+  const allItems = await db.select().from(gearItemsTable)
+    .orderBy(gearItemsTable.levelRequired, gearItemsTable.statPower);
   const owned = await db.select().from(userGearTable).where(eq(userGearTable.userId, userId));
 
   const ownedMap = new Map(owned.map(g => [g.gearItemId, g]));
   const levelInfo = getLevelInfo(user.totalPoints);
 
-  const items = allItems.map(item => ({
-    id: item.id,
-    name: item.name,
-    description: item.description,
-    slot: item.slot,
-    rarity: item.rarity,
-    statPower: item.statPower,
-    costXp: item.costXp,
-    levelRequired: item.levelRequired,
-    icon: item.icon,
-    spriteId: item.spriteId ?? null,
-    owned: ownedMap.has(item.id),
-    equipped: ownedMap.get(item.id)?.equipped ?? false,
-    canAfford: user.totalPoints >= item.costXp,
-    meetsLevel: levelInfo.level >= item.levelRequired,
-  }));
+  const items = allItems.map(item => {
+    const costCoins = gearCoinCost(item.rarity);
+    return {
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      slot: item.slot,
+      rarity: item.rarity,
+      statPower: item.statPower,
+      costCoins,
+      levelRequired: item.levelRequired,
+      icon: item.icon,
+      spriteId: item.spriteId ?? null,
+      owned: ownedMap.has(item.id),
+      equipped: ownedMap.get(item.id)?.equipped ?? false,
+      canAfford: user.coinBalance >= costCoins,
+      meetsLevel: levelInfo.level >= item.levelRequired,
+    };
+  });
 
-  res.json({ items, userXp: user.totalPoints, userLevel: levelInfo.level });
+  res.json({ items, coinBalance: user.coinBalance, userLevel: levelInfo.level });
 });
 
 router.post("/gear/:id/buy", async (req, res): Promise<void> => {
@@ -48,12 +54,12 @@ router.post("/gear/:id/buy", async (req, res): Promise<void> => {
 
   // All economy checks and the write happen inside a single transaction with a row-level
   // lock on the user row.  This prevents concurrent purchase requests from reading a stale
-  // XP balance and both passing the affordability check against the same pool of points.
+  // coin balance and both passing the affordability check against the same pool of coins.
   type BuyOutcome =
     | { status: "insufficient_level" }
-    | { status: "insufficient_xp" }
     | { status: "already_owned" }
-    | { status: "ok"; newPoints: number };
+    | { status: "insufficient"; balance: number; remaining: number }
+    | { status: "ok"; balance: number; cost: number };
 
   let outcome: BuyOutcome;
   try {
@@ -62,11 +68,10 @@ router.post("/gear/:id/buy", async (req, res): Promise<void> => {
       const [user] = await tx.select().from(usersTable)
         .where(eq(usersTable.id, userId))
         .for("update");
-      if (!user) return { status: "insufficient_xp" };
+      if (!user) return { status: "insufficient", balance: 0, remaining: gearCoinCost(item.rarity) };
 
       const levelInfo = getLevelInfo(user.totalPoints);
       if (levelInfo.level < item.levelRequired) return { status: "insufficient_level" };
-      if (user.totalPoints < item.costXp) return { status: "insufficient_xp" };
 
       // Re-check ownership inside the transaction to prevent duplicate rows from a
       // concurrent purchase of the same item (the unique constraint is the hard guard;
@@ -76,31 +81,27 @@ router.post("/gear/:id/buy", async (req, res): Promise<void> => {
         .where(and(eq(userGearTable.userId, userId), eq(userGearTable.gearItemId, gearId)));
       if (existing.length > 0) return { status: "already_owned" };
 
-      // Deduct XP relative to the current locked balance (not a stale pre-read value).
-      const newPoints = user.totalPoints - item.costXp;
-      const newLevel = getLevelInfo(newPoints).level;
+      const cost = gearCoinCost(item.rarity);
+      const spent = await spendCoins(tx, userId, cost, "gear");
+      if (!spent.ok) return { status: "insufficient", balance: spent.balance, remaining: spent.remaining };
 
-      await tx.update(usersTable)
-        .set({ totalPoints: newPoints, currentLevel: newLevel })
-        .where(eq(usersTable.id, userId));
-
-      // The unique constraint on (user_id, gear_item_id) is the last-resort guard; the
-      // onConflictDoNothing ensures we never surface a DB error if two requests somehow
-      // both reach the insert despite the ownership check above.
       await tx.insert(userGearTable)
         .values({ userId, gearItemId: gearId })
         .onConflictDoNothing();
 
+      // Zero XP delta and an honest type — purchases are no longer disguised as
+      // task_completed rows (Honest Coin).
       await tx.insert(activityTable).values({
         userId,
-        type: "task_completed",
+        type: "gear_bought",
         description: `Purchased ${item.name} from the Gear Store`,
-        points: -item.costXp,
+        points: 0,
       });
 
-      return { status: "ok", newPoints };
+      return { status: "ok", balance: spent.balance, cost };
     });
-  } catch {
+  } catch (err) {
+    console.error("gear buy failed", err);
     res.status(500).json({ error: "Purchase failed" });
     return;
   }
@@ -108,14 +109,21 @@ router.post("/gear/:id/buy", async (req, res): Promise<void> => {
   if (outcome.status === "insufficient_level") {
     res.status(403).json({ error: `Requires level ${item.levelRequired}` }); return;
   }
-  if (outcome.status === "insufficient_xp") {
-    res.status(403).json({ error: "Not enough XP" }); return;
-  }
   if (outcome.status === "already_owned") {
     res.status(409).json({ error: "Already owned" }); return;
   }
-
-  res.json({ success: true, xpSpent: item.costXp, remainingXp: outcome.newPoints, item });
+  if (outcome.status === "insufficient") {
+    // Gentle, not an error: "N more to go". HTTP 200 so it never reads as failure.
+    res.status(200).json({
+      purchased: false, reason: "insufficient",
+      balance: outcome.balance, remaining: outcome.remaining,
+    });
+    return;
+  }
+  res.status(200).json({
+    purchased: true, reason: "ok",
+    balance: outcome.balance, remaining: 0, coinsSpent: outcome.cost,
+  });
 });
 
 router.post("/gear/:id/equip", async (req, res): Promise<void> => {

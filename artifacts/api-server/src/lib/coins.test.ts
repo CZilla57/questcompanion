@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { tierCost, isValidTier, redeemDecision, isStreakMilestone, COIN_EARN, coinsToReverse } from "./coins";
+import { tierCost, isValidTier, redeemDecision, isStreakMilestone, COIN_EARN, coinsToReverse, GEAR_COIN_COST, gearCoinCost } from "./coins";
 
 describe("tierCost", () => {
   it("maps each tier to its fixed cost", () => {
@@ -66,5 +66,17 @@ describe("coinsToReverse", () => {
   });
   it("handles a zero request", () => {
     expect(coinsToReverse(0, 100)).toBe(0);
+  });
+});
+
+describe("gearCoinCost (Honest Coin: gear prices ride the reward-tier ladder)", () => {
+  it("prices each rarity at its tier", () => {
+    expect(gearCoinCost("common")).toBe(20);
+    expect(gearCoinCost("rare")).toBe(60);
+    expect(gearCoinCost("epic")).toBe(150);
+    expect(gearCoinCost("legendary")).toBe(400);
+  });
+  it("covers exactly the GearRarity values", () => {
+    expect(Object.keys(GEAR_COIN_COST).sort()).toEqual(["common", "epic", "legendary", "rare"]);
   });
 });

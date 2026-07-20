@@ -1,23 +1,7 @@
-import { useQueryClient } from "@tanstack/react-query";
-import {
-  useGetStatPerks,
-  useBuyStatPerk,
-  getGetStatPerksQueryKey,
-  getGetCoinsQueryKey,
-  getGetMyStatsQueryKey,
-  type StatPerk,
-} from "@workspace/api-client-react";
+import { useGetStatPerks } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { apiErrorMessage } from "@/lib/api-error";
+import { useBuyPerk } from "@/hooks/use-buy-perk";
 import { Coins, Zap } from "lucide-react";
-
-// Celebratory copy per perk on a successful buy (anti-shame: buying is delight).
-const BOUGHT_TITLE: Record<string, string> = {
-  xp_boost: "XP Boost active! ⚡",
-  focus_boost: "Focus Boost active! 🎯",
-  streak_shield: "Streak Shield ready 🛡️",
-};
 
 /** "11h 42m" / "42m" left until a boost window closes; "" once it's past. */
 function formatRemaining(iso: string | null): string {
@@ -30,50 +14,25 @@ function formatRemaining(iso: string | null): string {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-export function StatPerksSection() {
+export function StatPerksSection({ hideHeader = false }: { hideHeader?: boolean } = {}) {
   const { data, isLoading } = useGetStatPerks();
-  const buyMutation = useBuyStatPerk();
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+  const { buy, isPending } = useBuyPerk();
 
   const perks = data?.perks ?? [];
 
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: getGetStatPerksQueryKey() });
-    queryClient.invalidateQueries({ queryKey: getGetCoinsQueryKey() });
-    queryClient.invalidateQueries({ queryKey: getGetMyStatsQueryKey() }); // streak-freeze count surfaces here
-  };
-
-  const handleBuy = (perk: StatPerk) => {
-    buyMutation.mutate(
-      { id: perk.id },
-      {
-        onSuccess: (res) => {
-          invalidate();
-          if (res.purchased) {
-            toast({ title: BOUGHT_TITLE[perk.id] ?? "Perk bought!", description: perk.description });
-          } else if (res.reason === "at_max") {
-            toast({ title: "You're fully shielded 🛡️", description: "Use one before stocking up again." });
-          } else {
-            toast({ title: `${res.remaining} more to go`, description: "Keep going — you're close." });
-          }
-        },
-        onError: (err: any) => toast({ title: apiErrorMessage(err, "Couldn't buy perk"), variant: "destructive" }),
-      },
-    );
-  };
-
   return (
     <div className="space-y-3">
-      <div>
-        <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <Zap className="w-4 h-4 text-amber-400" />
-          Power-Ups
-        </h2>
-        <p className="text-xs text-muted-foreground mt-1">
-          Spend coins to play stronger. Boosts stack their timer; nothing here ever costs you XP or a streak.
-        </p>
-      </div>
+      {!hideHeader && (
+        <div>
+          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Zap className="w-4 h-4 text-amber-400" />
+            Power-Ups
+          </h2>
+          <p className="text-xs text-muted-foreground mt-1">
+            Spend coins to play stronger. Boosts stack their timer; nothing here ever costs you XP or a streak.
+          </p>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -122,8 +81,8 @@ export function StatPerksSection() {
                 ) : perk.affordable ? (
                   <Button
                     size="sm"
-                    onClick={() => handleBuy(perk)}
-                    disabled={buyMutation.isPending}
+                    onClick={() => buy(perk)}
+                    disabled={isPending}
                     className="bg-amber-500 hover:bg-amber-500/90 text-black w-full"
                   >
                     {boostActive ? "Extend" : "Buy"}

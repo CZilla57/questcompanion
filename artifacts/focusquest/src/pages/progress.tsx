@@ -1,11 +1,11 @@
 import {
   ActivityItem, useGetMe, useGetMyStats, useGetMyBadges, useGetMyXpHistory,
-  useBuyStreakFreeze, getGetMyStatsQueryKey,
+  useGetStatPerks,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Award, Flame, Trophy, Zap, Star, Rocket,
-  Shield, ShieldCheck, ShieldOff, Check, Timer, Play, Moon,
+  Shield, ShieldCheck, ShieldOff, Check, Timer, Play, Moon, Coins, ShoppingBag,
 } from "lucide-react";
 import { BadgeIcon, BADGE_CATEGORY_STYLE, DEFAULT_BADGE_CATEGORY_STYLE } from "@/lib/badges";
 import { browserTimeZone } from "@/lib/timezone";
@@ -20,11 +20,8 @@ import { HeroSummary } from "@/components/hero-summary";
 import { RecentBadges } from "@/components/recent-badges";
 import { Progress as ProgressBar } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { apiErrorMessage } from "@/lib/api-error";
-
-const FREEZE_COST = 50;
+import { useBuyPerk } from "@/hooks/use-buy-perk";
+import { shieldCardParts } from "@/lib/shield-card";
 
 interface TooltipProps {
   active?: boolean;
@@ -48,10 +45,8 @@ export default function Progress() {
   const { data: stats, isLoading: statsLoading } = useGetMyStats({ tz });
   const { data: userBadges, isLoading: badgesLoading } = useGetMyBadges();
   const { data: xpHistory, isLoading: xpLoading } = useGetMyXpHistory({ days: 14, tz });
-
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const buyFreezeMutation = useBuyStreakFreeze();
+  const { data: perksData } = useGetStatPerks();
+  const { buy: buyPerk, isPending: isBuyingPerk } = useBuyPerk();
 
   if (userLoading || statsLoading || badgesLoading) {
     return (
@@ -63,26 +58,6 @@ export default function Progress() {
 
   if (!stats) return null;
 
-  const handleBuyFreeze = () => {
-    buyFreezeMutation.mutate(undefined, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetMyStatsQueryKey() });
-        toast({
-          title: "Streak Shield Activated!",
-          description: `Spent ${FREEZE_COST} XP. Your next missed day won't break your streak.`,
-          className: "border-cyan-500/50",
-        });
-      },
-      onError: (err: any) => {
-        toast({
-          title: "Can't buy freeze",
-          description: apiErrorMessage(err, "Something went wrong."),
-          variant: "destructive",
-        });
-      },
-    });
-  };
-
   // Levels have variable widths (see gamification.ts), so progress is measured
   // within the current band: points earned into it vs. the band's full span.
   const levelSpan = stats.pointsIntoLevel + stats.pointsToNextLevel;
@@ -90,8 +65,16 @@ export default function Progress() {
     ? (stats.pointsIntoLevel / levelSpan) * 100
     : 100;
 
-  const hasFreeze = stats.streakFreezes > 0;
-  const canAfford = stats.totalPoints >= FREEZE_COST;
+  const shieldPerk = perksData?.perks.find((p) => p.kind === "streak_shield");
+  const heldShields = shieldPerk?.owned ?? stats.streakFreezes;
+  const shield = shieldCardParts({
+    owned: heldShields,
+    atMax: shieldPerk?.atMax === true,
+    affordable: shieldPerk?.affordable === true,
+    remaining: shieldPerk?.remaining ?? 0,
+    coinCost: shieldPerk?.coinCost ?? 0,
+  });
+  const hasFreeze = shield.ready;
 
   const todayXp = stats?.todayPoints ?? 0;
   const maxXp = xpHistory ? Math.max(...xpHistory.map((d) => d.xp), 1) : 1;
@@ -345,40 +328,44 @@ export default function Progress() {
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Streak Shield</span>
-                  {hasFreeze && (
+                  {shield.ready && (
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 uppercase tracking-wider">
                       Ready
                     </span>
                   )}
                 </div>
                 <p className="text-sm mt-0.5">
-                  {hasFreeze
-                    ? <span className="text-cyan-400 font-semibold">1 freeze held — auto-activates if you miss a day</span>
-                    : <span className="text-muted-foreground">Protects your streak from a missed day.</span>
+                  {shield.ready
+                    ? <span className="text-cyan-400 font-semibold">{shield.statusLine}</span>
+                    : <span className="text-muted-foreground">{shield.statusLine}</span>
                   }
                 </p>
               </div>
             </div>
 
             <Button
-              onClick={handleBuyFreeze}
-              disabled={hasFreeze || !canAfford || buyFreezeMutation.isPending}
-              variant={hasFreeze ? "ghost" : "outline"}
-              aria-label={hasFreeze ? "Streak Shield already active" : `Buy Streak Shield for ${FREEZE_COST} XP`}
+              onClick={() => shieldPerk && shield.action.kind === "buy" && buyPerk(shieldPerk)}
+              disabled={!shieldPerk || shield.action.kind !== "buy" || isBuyingPerk}
+              variant={shield.action.kind === "buy" ? "outline" : "ghost"}
+              aria-label={
+                !shieldPerk
+                  ? "Streak Shield"
+                  : shield.action.kind === "buy"
+                    ? `Buy Streak Shield for ${shieldPerk?.coinCost ?? 0} coins`
+                    : shield.action.kind === "full"
+                      ? "Fully shielded"
+                      : shield.action.label
+              }
               className={`cursor-pointer ${
-                hasFreeze
-                  ? "text-muted-foreground cursor-default"
-                  : canAfford
-                    ? "border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500"
-                    : "border-muted text-muted-foreground"
+                shield.action.kind === "buy"
+                  ? "border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500"
+                  : "text-muted-foreground cursor-default"
               }`}
             >
-              {hasFreeze
-                ? <><ShieldCheck className="w-4 h-4 mr-2" aria-hidden /> Shield Active</>
-                : !canAfford
-                  ? <><Shield className="w-4 h-4 mr-2" aria-hidden /> Need {FREEZE_COST} XP</>
-                  : <><Shield className="w-4 h-4 mr-2" aria-hidden /> Buy for {FREEZE_COST} XP</>
-              }
+              {!shieldPerk && <><Shield className="w-4 h-4 mr-2" aria-hidden /> Streak Shield</>}
+              {shieldPerk && shield.action.kind === "full" && <><ShieldCheck className="w-4 h-4 mr-2" aria-hidden /> {shield.action.label}</>}
+              {shieldPerk && shield.action.kind === "saving" && <><Coins className="w-4 h-4 mr-2" aria-hidden /> {shield.action.label}</>}
+              {shieldPerk && shield.action.kind === "buy" && <><Coins className="w-4 h-4 mr-2" aria-hidden /> {shield.action.label}</>}
             </Button>
           </div>
         </CardContent>
@@ -399,6 +386,8 @@ export default function Progress() {
                     {activity.type === 'all_day_bonus'        && <Zap         className="w-4 h-4 text-yellow-500" />}
                     {activity.type === 'streak_freeze_bought' && <Shield      className="w-4 h-4 text-cyan-400" />}
                     {activity.type === 'streak_freeze_used'   && <ShieldCheck className="w-4 h-4 text-cyan-400" />}
+                    {activity.type === 'gear_bought'          && <ShoppingBag className="w-4 h-4 text-amber-400" />}
+                    {activity.type === 'gear_earned'          && <ShoppingBag className="w-4 h-4 text-secondary" />}
                     {activity.type === 'focus_session'        && <Timer       className="w-4 h-4 text-primary" />}
                     {activity.type === 'focus_complete'       && <Timer       className="w-4 h-4 text-primary" />}
                     {activity.type === 'initiation'           && <Play        className="w-4 h-4 text-primary" />}

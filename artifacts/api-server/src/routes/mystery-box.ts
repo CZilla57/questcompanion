@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, dopamineRewardsTable, coinTransactionsTable } from "@workspace/db";
-import { eq, and, sql, gte } from "drizzle-orm";
-import { awardCoins } from "../lib/award-coins";
+import { db, usersTable, dopamineRewardsTable } from "@workspace/db";
+import { eq, sql } from "drizzle-orm";
+import { awardCoins, spendCoins } from "../lib/award-coins";
 import { MYSTERY_COST, canOpenMystery, rollMystery } from "../lib/mystery-box";
 
 const router: IRouter = Router();
@@ -60,19 +60,10 @@ router.post("/mystery-box/open", async (req, res): Promise<void> => {
       return { status: "no_rewards", balance: u?.balance ?? 0 };
     }
 
-    const [updated] = await tx
-      .update(usersTable)
-      .set({ coinBalance: sql`${usersTable.coinBalance} - ${MYSTERY_COST}` })
-      .where(and(eq(usersTable.id, userId), gte(usersTable.coinBalance, MYSTERY_COST)))
-      .returning({ balance: usersTable.coinBalance });
-
-    if (!updated) {
-      const [u] = await tx.select({ balance: usersTable.coinBalance }).from(usersTable).where(eq(usersTable.id, userId));
-      const bal = u?.balance ?? 0;
-      return { status: "insufficient", balance: bal, remaining: Math.max(0, MYSTERY_COST - bal) };
+    const spent = await spendCoins(tx, userId, MYSTERY_COST, "mystery_open");
+    if (!spent.ok) {
+      return { status: "insufficient", balance: spent.balance, remaining: spent.remaining };
     }
-
-    await tx.insert(coinTransactionsTable).values({ userId, amount: -MYSTERY_COST, reason: "mystery_open" });
 
     const { rewardIndex, bonus } = rollMystery(rewards.length, Math.random);
     const reward = rewards[rewardIndex]!;
@@ -82,7 +73,7 @@ router.post("/mystery-box/open", async (req, res): Promise<void> => {
 
     return {
       status: "ok",
-      balance: updated.balance + bonus,
+      balance: spent.balance + bonus,
       bonus,
       reward: { id: reward.id, rewardText: reward.rewardText },
     };

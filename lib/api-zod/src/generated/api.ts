@@ -165,7 +165,7 @@ export const GetMyStatsResponse = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
   "username": zod.string().optional(),
-  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_earned', 'focus_session', 'focus_complete', 'initiation', 'reflection']),
+  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_bought', 'gear_earned', 'focus_session', 'focus_complete', 'initiation', 'reflection']),
   "description": zod.string(),
   "points": zod.number(),
   "createdAt": zod.string()
@@ -212,15 +212,6 @@ export const GetKingdomsResponse = zod.object({
   "kingdomId": zod.string(),
   "kingdomName": zod.string()
 }),zod.null()])
-})
-
-
-/**
- * @summary Spend 50 XP to buy a streak freeze (max 1 held at a time)
- */
-export const BuyStreakFreezeResponse = zod.object({
-  "streakFreezes": zod.number(),
-  "totalPoints": zod.number()
 })
 
 
@@ -1617,7 +1608,7 @@ export const GetPartnerFeedResponseItem = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
   "username": zod.string().optional(),
-  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_earned', 'focus_session', 'focus_complete', 'initiation', 'reflection']),
+  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_bought', 'gear_earned', 'focus_session', 'focus_complete', 'initiation', 'reflection']),
   "description": zod.string(),
   "points": zod.number(),
   "createdAt": zod.string()
@@ -1687,7 +1678,7 @@ export const GetPartnerDetailResponse = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
   "username": zod.string().optional(),
-  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_earned', 'focus_session', 'focus_complete', 'initiation', 'reflection']),
+  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_bought', 'gear_earned', 'focus_session', 'focus_complete', 'initiation', 'reflection']),
   "description": zod.string(),
   "points": zod.number(),
   "createdAt": zod.string()
@@ -1916,7 +1907,7 @@ export const GetGearStoreResponse = zod.object({
   "slot": zod.enum(['weapon', 'helmet', 'armor', 'boots', 'accessory']),
   "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
   "statPower": zod.number(),
-  "costXp": zod.number(),
+  "costCoins": zod.number(),
   "levelRequired": zod.number(),
   "icon": zod.string(),
   "spriteId": zod.string().nullish(),
@@ -1925,18 +1916,20 @@ export const GetGearStoreResponse = zod.object({
   "canAfford": zod.boolean(),
   "meetsLevel": zod.boolean()
 })),
-  "userXp": zod.number(),
+  "coinBalance": zod.number(),
   "userLevel": zod.number()
 })
 
 
 /**
- * @summary Purchase a gear item (deducts XP)
+ * @summary Purchase a gear item with coins (insufficiency is a gentle 200)
  */
 export const BuyGearResponse = zod.object({
-  "success": zod.boolean(),
-  "xpSpent": zod.number(),
-  "remainingXp": zod.number()
+  "purchased": zod.boolean(),
+  "reason": zod.enum(['ok', 'insufficient']),
+  "balance": zod.number(),
+  "remaining": zod.number(),
+  "coinsSpent": zod.number().optional()
 })
 
 
