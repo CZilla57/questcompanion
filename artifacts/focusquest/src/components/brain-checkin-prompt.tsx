@@ -8,6 +8,7 @@ import {
 } from "@workspace/api-client-react";
 import { Button } from "./ui/button";
 import { MODE_META, promptDismissedToday, dismissPromptToday } from "@/lib/brain-mode-meta";
+import { CHIP_PILL_CLASS } from "@/lib/chip";
 import { browserTimeZone } from "@/lib/timezone";
 import { useToast } from "@/hooks/use-toast";
 
@@ -26,7 +27,9 @@ export function BrainCheckinPrompt({ variant = "card" }: { variant?: "card" | "c
   const [dismissedDay, setDismissedDay] = useState<string | null>(() =>
     promptDismissedToday(todayStr) ? todayStr : null,
   );
-  const [expanded, setExpanded] = useState(false);
+  // Day-keyed like dismissal: a cross-midnight session renders tomorrow's
+  // prompt as a chip again instead of keeping yesterday's expanded card.
+  const [expandedDay, setExpandedDay] = useState<string | null>(null);
 
   // checkedInToday covers "expired earlier today" — never re-summon (spec).
   if (!state || state.checkedInToday || dismissedDay === todayStr || state.mode === BrainMode.hyperfocus) return null;
@@ -47,13 +50,12 @@ export function BrainCheckinPrompt({ variant = "card" }: { variant?: "card" | "c
   const dismiss = () => {
     dismissPromptToday(todayStr);
     setDismissedDay(todayStr);
-    setExpanded(false);
+    setExpandedDay(null);
   };
 
-  if (variant === "chip" && !expanded) {
+  if (variant === "chip" && expandedDay !== todayStr) {
     return (
-      <button onClick={() => setExpanded(true)}
-        className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/[0.04] px-3 py-1.5 text-xs text-foreground hover:border-primary/50 transition-colors">
+      <button type="button" onClick={() => setExpandedDay(todayStr)} className={CHIP_PILL_CLASS}>
         <span aria-hidden>🧠</span> How's the brain today?
       </button>
     );
