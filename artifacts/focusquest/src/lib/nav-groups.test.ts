@@ -10,8 +10,11 @@ describe("NAV_GROUPS shape", () => {
   });
   it("keeps every pre-consolidation nav href reachable in some group", () => {
     const reachable = NAV_GROUPS.flatMap((g) => [g.href, ...(g.tabs ?? []).map((t) => t.href)]);
+    // /dopamine-menu and /rewards are the two retired URLs (Honest Coin) —
+    // they redirect to /rewards/treats in App.tsx instead of appearing here.
     for (const href of ["/", "/tasks", "/questlines", "/focus", "/recurring", "/progress",
-      "/insights", "/avatar", "/partners", "/leaderboard", "/dopamine-menu", "/rewards"]) {
+      "/insights", "/avatar", "/partners", "/leaderboard",
+      "/rewards/treats", "/rewards/store", "/rewards/perks"]) {
       expect(reachable).toContain(href);
     }
   });
@@ -28,7 +31,8 @@ describe("activeGroupKey", () => {
     expect(activeGroupKey("/recurring")).toBe("quests");
     expect(activeGroupKey("/insights")).toBe("progress");
     expect(activeGroupKey("/leaderboard")).toBe("allies");
-    expect(activeGroupKey("/dopamine-menu")).toBe("rewards");
+    expect(activeGroupKey("/rewards/treats")).toBe("rewards");
+    expect(activeGroupKey("/rewards/perks")).toBe("rewards");
   });
   it("matches :id subroutes by prefix, but never treats / as a prefix", () => {
     expect(activeGroupKey("/questlines/7")).toBe("quests");

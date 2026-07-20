@@ -14,7 +14,7 @@ function formatRemaining(iso: string | null): string {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-export function StatPerksSection() {
+export function StatPerksSection({ hideHeader = false }: { hideHeader?: boolean } = {}) {
   const { data, isLoading } = useGetStatPerks();
   const { buy, isPending } = useBuyPerk();
 
@@ -22,15 +22,17 @@ export function StatPerksSection() {
 
   return (
     <div className="space-y-3">
-      <div>
-        <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <Zap className="w-4 h-4 text-amber-400" />
-          Power-Ups
-        </h2>
-        <p className="text-xs text-muted-foreground mt-1">
-          Spend coins to play stronger. Boosts stack their timer; nothing here ever costs you XP or a streak.
-        </p>
-      </div>
+      {!hideHeader && (
+        <div>
+          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Zap className="w-4 h-4 text-amber-400" />
+            Power-Ups
+          </h2>
+          <p className="text-xs text-muted-foreground mt-1">
+            Spend coins to play stronger. Boosts stack their timer; nothing here ever costs you XP or a streak.
+          </p>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">

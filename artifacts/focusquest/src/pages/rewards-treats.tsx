@@ -24,7 +24,7 @@ const EXAMPLES = [
   "Grab a snack 🍫",
 ];
 
-export default function DopamineMenu() {
+export default function RewardsTreats() {
   const { data: rewards = [], isLoading } = useGetDopamineRewards();
   const createMutation = useCreateDopamineReward();
   const deleteMutation = useDeleteDopamineReward();
