@@ -112,6 +112,7 @@ export * from './mysteryResultReason';
 export * from './mysteryReward';
 export * from './mysteryStatus';
 export * from './mysteryStatusReason';
+export * from './notificationPrefs';
 export * from './nudge';
 export * from './nudgeInput';
 export * from './nudgeInputKind';

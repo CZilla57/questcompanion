@@ -77,6 +77,7 @@ import type {
   MomentumResponse,
   MysteryResult,
   MysteryStatus,
+  NotificationPrefs,
   Nudge,
   NudgeInput,
   ParseQuickAddInput,
@@ -1691,6 +1692,154 @@ export const useUpdateRecapEmailSettings = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateRecapEmailSettingsMutationOptions(options));
+    }
+
+export const getGetNotificationPrefsUrl = () => {
+
+
+
+
+  return `/api/users/me/notification-prefs`
+}
+
+/**
+ * @summary Per-category push preferences and quiet hours
+ */
+export const getNotificationPrefs = async ( options?: RequestInit): Promise<NotificationPrefs> => {
+
+  return customFetch<NotificationPrefs>(getGetNotificationPrefsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetNotificationPrefsQueryKey = () => {
+    return [
+    `/api/users/me/notification-prefs`
+    ] as const;
+    }
+
+
+export const getGetNotificationPrefsQueryOptions = <TData = Awaited<ReturnType<typeof getNotificationPrefs>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotificationPrefs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetNotificationPrefsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNotificationPrefs>>> = ({ signal }) => getNotificationPrefs({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getNotificationPrefs>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetNotificationPrefsQueryResult = NonNullable<Awaited<ReturnType<typeof getNotificationPrefs>>>
+export type GetNotificationPrefsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Per-category push preferences and quiet hours
+ */
+
+export function useGetNotificationPrefs<TData = Awaited<ReturnType<typeof getNotificationPrefs>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotificationPrefs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetNotificationPrefsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateNotificationPrefsUrl = () => {
+
+
+
+
+  return `/api/users/me/notification-prefs`
+}
+
+/**
+ * @summary Replace push preferences and quiet hours
+ */
+export const updateNotificationPrefs = async (notificationPrefs: NotificationPrefs, options?: RequestInit): Promise<NotificationPrefs> => {
+
+  return customFetch<NotificationPrefs>(getUpdateNotificationPrefsUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      notificationPrefs,)
+  }
+);}
+
+
+
+
+export const getUpdateNotificationPrefsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateNotificationPrefs>>, TError,{data: BodyType<NotificationPrefs>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateNotificationPrefs>>, TError,{data: BodyType<NotificationPrefs>}, TContext> => {
+
+const mutationKey = ['updateNotificationPrefs'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateNotificationPrefs>>, {data: BodyType<NotificationPrefs>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateNotificationPrefs(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateNotificationPrefsMutationResult = NonNullable<Awaited<ReturnType<typeof updateNotificationPrefs>>>
+    export type UpdateNotificationPrefsMutationBody = BodyType<NotificationPrefs>
+    export type UpdateNotificationPrefsMutationError = ErrorType<void>
+
+    /**
+ * @summary Replace push preferences and quiet hours
+ */
+export const useUpdateNotificationPrefs = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateNotificationPrefs>>, TError,{data: BodyType<NotificationPrefs>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateNotificationPrefs>>,
+        TError,
+        {data: BodyType<NotificationPrefs>},
+        TContext
+      > => {
+      return useMutation(getUpdateNotificationPrefsMutationOptions(options));
     }
 
 export const getUnsubscribeRecapEmailsUrl = (params: UnsubscribeRecapEmailsParams,) => {

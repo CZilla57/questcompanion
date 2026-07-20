@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
-import { db, pushSubscriptionsTable } from "@workspace/db";
+import { db, pushSubscriptionsTable, usersTable } from "@workspace/db";
 import { vapidPublicKey, isValidPushEndpoint } from "../lib/push-notifications";
+import { validatePrefsBody } from "../lib/notification-envelope";
 
 const router: IRouter = Router();
 
@@ -66,6 +67,47 @@ router.get("/notifications/subscribed", async (req, res): Promise<void> => {
   const subs = await db.select().from(pushSubscriptionsTable)
     .where(eq(pushSubscriptionsTable.userId, userId));
   res.json({ subscribed: subs.length > 0, count: subs.length });
+});
+
+function prefsShape(u: {
+  notifyProtection: boolean; notifyReminders: boolean; notifyReflection: boolean;
+  notifyHero: boolean; quietHoursStart: number; quietHoursEnd: number;
+}) {
+  return {
+    protection: u.notifyProtection,
+    reminders: u.notifyReminders,
+    reflection: u.notifyReflection,
+    hero: u.notifyHero,
+    quietHoursStart: u.quietHoursStart,
+    quietHoursEnd: u.quietHoursEnd,
+  };
+}
+
+router.get("/users/me/notification-prefs", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.gameUserId));
+  if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
+  res.json(prefsShape(user));
+});
+
+router.put("/users/me/notification-prefs", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const parsed = validatePrefsBody(req.body);
+  if (!parsed.ok) { res.status(400).json({ error: parsed.error }); return; }
+  const v = parsed.value;
+  const [updated] = await db.update(usersTable)
+    .set({
+      notifyProtection: v.protection,
+      notifyReminders: v.reminders,
+      notifyReflection: v.reflection,
+      notifyHero: v.hero,
+      quietHoursStart: v.quietHoursStart,
+      quietHoursEnd: v.quietHoursEnd,
+    })
+    .where(eq(usersTable.id, req.gameUserId))
+    .returning();
+  if (!updated) { res.status(401).json({ error: "Unauthorized" }); return; }
+  res.json(prefsShape(updated));
 });
 
 export default router;
