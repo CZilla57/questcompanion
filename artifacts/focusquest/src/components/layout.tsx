@@ -7,6 +7,7 @@ import { Button } from "./ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
 import { usePwaInstall } from "@/hooks/use-pwa-install";
+import { NAV_GROUPS, activeGroupKey, type NavGroupKey } from "@/lib/nav-groups";
 import { shouldShowInstallButton } from "@/lib/pwa";
 import { subscribeToast, unsubscribeToast } from "@/lib/push";
 import { browserTimeZone } from "@/lib/timezone";
@@ -159,10 +160,8 @@ function LogoutButton({ iconOnly = false }: { iconOnly?: boolean }) {
   );
 }
 
-import { NAV_GROUPS, activeGroupKey } from "@/lib/nav-groups";
-
 // Icons stay presentational, keyed by group; config truth lives in nav-groups.ts.
-const NAV_ICONS: Record<string, typeof Home> = {
+const NAV_ICONS: Record<NavGroupKey, typeof Home> = {
   home: Home, quests: CheckSquare, focus: Timer, progress: BarChart2,
   hero: User, allies: Users, rewards: ShoppingBag,
 };
@@ -332,11 +331,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <item.icon
                   className={`w-5 h-5 flex-shrink-0 transition-all ${isActive ? "drop-shadow-[0_0_5px_rgba(0,255,255,0.8)]" : ""}`}
                 />
-                {item.href === "/partners" && allyUnread > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] min-w-4 h-4 px-1 rounded-full flex items-center justify-center">
-                    {allyUnread}
-                  </span>
-                )}
                 <span className={`text-[10px] font-medium leading-none tracking-wide ${isActive ? "text-primary" : "text-muted-foreground"}`}>
                   {item.label}
                 </span>

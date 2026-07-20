@@ -2,11 +2,12 @@ import { Link } from "wouter";
 import { useGetTodayReflection, getGetTodayReflectionQueryKey } from "@workspace/api-client-react";
 import { browserTimeZone } from "@/lib/timezone";
 import { eveningCardVisible, REFLECTION_CARD_START_HOUR } from "@/lib/reflection-window";
+import { CHIP_PILL_CLASS } from "@/lib/chip";
 import { Card, CardContent } from "@/components/ui/card";
 import { Moon, ChevronRight } from "lucide-react";
 
-/** Dashboard CTA, 17:00 → midnight local while tonight is unanswered.
- * Deliberately fetches WITHOUT draft — seeing the dashboard never spends an
+/** Now-screen CTA, 17:00 → midnight local while tonight is unanswered.
+ * Deliberately fetches WITHOUT draft — seeing the Now screen never spends an
  * LLM call; only opening /reflection drafts the question. */
 export function EveningReflectionCard({ variant = "card" }: { variant?: "card" | "chip" } = {}) {
   const now = new Date();
@@ -22,8 +23,7 @@ export function EveningReflectionCard({ variant = "card" }: { variant?: "card" |
 
   if (variant === "chip") {
     return (
-      <Link href="/reflection"
-        className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/[0.04] px-3 py-1.5 text-xs text-foreground hover:border-primary/50 transition-colors">
+      <Link href="/reflection" className={CHIP_PILL_CLASS}>
         <Moon className="w-3.5 h-3.5 text-primary" aria-hidden /> Evening reflection — 1 minute
       </Link>
     );
