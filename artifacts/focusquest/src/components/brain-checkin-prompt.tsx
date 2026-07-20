@@ -16,7 +16,7 @@ const PROMPT_MODES: BrainMode[] = [
 ];
 
 /** Soft once-a-day check-in ask. Dismissing is silent; hyperfocus mutes it. */
-export function BrainCheckinPrompt() {
+export function BrainCheckinPrompt({ variant = "card" }: { variant?: "card" | "chip" } = {}) {
   const tz = browserTimeZone();
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const { data: state } = useGetBrainState({ tz });
@@ -26,6 +26,7 @@ export function BrainCheckinPrompt() {
   const [dismissedDay, setDismissedDay] = useState<string | null>(() =>
     promptDismissedToday(todayStr) ? todayStr : null,
   );
+  const [expanded, setExpanded] = useState(false);
 
   // checkedInToday covers "expired earlier today" — never re-summon (spec).
   if (!state || state.checkedInToday || dismissedDay === todayStr || state.mode === BrainMode.hyperfocus) return null;
@@ -46,7 +47,17 @@ export function BrainCheckinPrompt() {
   const dismiss = () => {
     dismissPromptToday(todayStr);
     setDismissedDay(todayStr);
+    setExpanded(false);
   };
+
+  if (variant === "chip" && !expanded) {
+    return (
+      <button onClick={() => setExpanded(true)}
+        className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/[0.04] px-3 py-1.5 text-xs text-foreground hover:border-primary/50 transition-colors">
+        <span aria-hidden>🧠</span> How's the brain today?
+      </button>
+    );
+  }
 
   return (
     <div className="rounded-xl border border-primary/25 bg-primary/[0.04] p-4 animate-in fade-in slide-in-from-top-2 duration-300">

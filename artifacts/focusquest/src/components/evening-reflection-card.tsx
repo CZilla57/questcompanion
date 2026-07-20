@@ -8,7 +8,7 @@ import { Moon, ChevronRight } from "lucide-react";
 /** Dashboard CTA, 17:00 → midnight local while tonight is unanswered.
  * Deliberately fetches WITHOUT draft — seeing the dashboard never spends an
  * LLM call; only opening /reflection drafts the question. */
-export function EveningReflectionCard() {
+export function EveningReflectionCard({ variant = "card" }: { variant?: "card" | "chip" } = {}) {
   const now = new Date();
   const inWindow = now.getHours() >= REFLECTION_CARD_START_HOUR;
   const tz = browserTimeZone();
@@ -19,6 +19,15 @@ export function EveningReflectionCard() {
 
   const answered = data?.reflection?.answeredAt != null;
   if (!inWindow || data === undefined || !eveningCardVisible(now, answered)) return null;
+
+  if (variant === "chip") {
+    return (
+      <Link href="/reflection"
+        className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/[0.04] px-3 py-1.5 text-xs text-foreground hover:border-primary/50 transition-colors">
+        <Moon className="w-3.5 h-3.5 text-primary" aria-hidden /> Evening reflection — 1 minute
+      </Link>
+    );
+  }
 
   return (
     <Link href="/reflection">
