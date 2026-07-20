@@ -26,8 +26,9 @@ const files = tsFiles(SRC).map((p) => ({
   src: readFileSync(p, "utf8"),
 }));
 
-// `user.totalPoints - x` / `u.weeklyPoints - x` — a member-access decrement.
-const MEMBER_DECREMENT = /\.(totalPoints|weeklyPoints)\s*-(?!-)/;
+// `totalPoints - x` after any reference (member access OR destructured local) —
+// the bare-identifier form subsumes `.totalPoints - x`.
+const XP_DECREMENT = /\b(totalPoints|weeklyPoints)\s*-(?!-)/;
 // `sql`${usersTable.totalPoints} - x`` — a SQL-side decrement.
 const SQL_DECREMENT = /\$\{usersTable\.(totalPoints|weeklyPoints)\}\s*-/;
 // `points: -x` — a negative-points activity row (the coin ledger uses `amount:`,
@@ -35,21 +36,22 @@ const SQL_DECREMENT = /\$\{usersTable\.(totalPoints|weeklyPoints)\}\s*-/;
 const NEGATIVE_ACTIVITY_POINTS = /points:\s*-/;
 
 const XP_DECREMENT_ALLOWLIST = new Set([
-  "routes/tasks.ts", // uncomplete reversal: bounded by the completion's own snapshot
+  "routes/tasks.ts",     // uncomplete reversal: bounded by the completion's own snapshot
+  "lib/gamification.ts", // pure level math on a caller-supplied param — no user-row writes
 ]);
 
 describe("XP monotonicity (standing guard)", () => {
   it("only the uncomplete reversal may decrement totalPoints/weeklyPoints", () => {
     const offenders = files
       .filter((f) => !XP_DECREMENT_ALLOWLIST.has(f.rel))
-      .filter((f) => MEMBER_DECREMENT.test(f.src) || SQL_DECREMENT.test(f.src))
+      .filter((f) => XP_DECREMENT.test(f.src) || SQL_DECREMENT.test(f.src))
       .map((f) => f.rel);
     expect(offenders).toEqual([]);
   });
 
-  it("the allowlist is honest: tasks.rs still contains the reversal", () => {
+  it("the allowlist is honest: tasks.ts still contains the reversal", () => {
     const tasks = files.find((f) => f.rel === "routes/tasks.ts");
-    expect(tasks && MEMBER_DECREMENT.test(tasks.src)).toBe(true);
+    expect(tasks && XP_DECREMENT.test(tasks.src)).toBe(true);
   });
 
   it("no code path writes a negative-points activity row", () => {
@@ -61,12 +63,12 @@ describe("XP monotonicity (standing guard)", () => {
 
   it("the legacy XP shield endpoint stays dead", () => {
     const users = files.find((f) => f.rel === "routes/users.ts");
-    expect(users?.src).not.toContain("streak-freeze/buy");
-    expect(users?.src).not.toContain("FREEZE_COST");
+    expect(users?.src.includes("streak-freeze/buy")).toBe(false);
+    expect(users?.src.includes("FREEZE_COST")).toBe(false);
   });
 
   it("gear never touches XP columns", () => {
     const gear = files.find((f) => f.rel === "routes/gear.ts");
-    expect(gear?.src).not.toMatch(/(totalPoints|weeklyPoints|currentLevel):\s/);
+    expect(/(totalPoints|weeklyPoints|currentLevel):\s/.test(gear?.src ?? "")).toBe(false);
   });
 });
