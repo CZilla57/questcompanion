@@ -187,15 +187,18 @@ After this quest the ledger's spend reasons are: `redeem`, `mystery_open`,
 
 ## 11. Test plan
 
-- **api-server:** replace legacy streak-freeze buy tests with perk-path coverage of the
-  `/progress` contract (cap 3, at-max, insufficiency, activity row); gear-store tests
-  re-priced (coin affordability, level gate unchanged, ledger row, activity type/points,
-  no-XP-delta); `spendCoins` unit tests; the §6 standing guard file; existing
-  perks/mystery/redeem suites stay green through the refactor.
-- **focusquest:** nav-groups tests (3-tab rewards group, redirect reachability, href
-  uniqueness); progress-page shield card states (held ×N, at-cap, can't-afford copy,
-  success toast in coins); avatar gear store renders coin prices/balance; hub pages
-  render under their new routes with `PageTabs`.
+- **api-server:** both test packages are pure-lib only (no HTTP harness), so coverage
+  lands where the house puts it: `gearCoinCost` cases in `coins.test.ts`; the §6
+  standing guard as a source-scan test file (the tripwire that fails when anyone
+  reintroduces an XP spend or a negative-points activity row — plus a deliberate-trip
+  sanity check); `spendCoins` follows the `awardCoins` precedent (db-coupled, exercised
+  through its callers); existing perks/mystery/redeem/coins suites stay green through
+  the refactor.
+- **focusquest:** nav-groups tests (3-tab rewards group, retired-URL handling, href
+  uniqueness); shield card states as a pure `shieldCardParts` helper with its own tests
+  (held ×N singular/plural, at-cap reassurance, "N more to go", buy label in coins —
+  the `statusRowParts` precedent); avatar/hub rendering is covered by typecheck plus
+  the browser drive, per house practice (no component-render harness exists).
 - **Copy audit:** no surviving user-facing string prices anything in XP
   (`grep -ri "XP" focusquest/src` reviewed for purchase contexts).
 
