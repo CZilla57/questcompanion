@@ -26,8 +26,11 @@ import { draftNarrative } from "./ai/weekly-recap";
 import { isRecapEmailConfigured, sendEmail } from "./email/send-email";
 import { renderRecapEmail } from "./email/render-recap";
 import { generateJson, isAiConfigured } from "./ai/client";
-
-const DEFAULT_USER_ID = 1;
+import {
+  selectPush, KIND_META,
+  type PushCandidate, type EnvelopeState,
+} from "./notification-envelope";
+import type { User } from "@workspace/db";
 
 async function getSubscriptions(userId: number) {
   return db.select().from(pushSubscriptionsTable).where(eq(pushSubscriptionsTable.userId, userId));
@@ -50,57 +53,55 @@ async function notify(userId: number, title: string, body: string, tag: string, 
   }
 }
 
-async function checkContextNudges() {
-  const now = new Date();
-  const users = await db.select().from(usersTable);
-  for (const user of users) {
-    // One user's failure must not abort the pass; dedup gates make retries safe.
-    try {
-      const tz = resolveTimeZone(user.timezone ?? "");
-      const localToday = localDateKey(now, tz);
-      const gate = {
-        now,
-        localHour: localHour(now, tz),
-        localToday,
-        sentDates: {
-          dueToday: user.nudgeDueTodayDate,
-          powerWindow: user.nudgePowerWindowDate,
-          quickWin: user.nudgeQuickWinDate,
-        },
-        contextNudgedAt: user.contextNudgedAt,
-      };
-      const kinds = eligibleKinds(gate);
-      if (kinds.length === 0) continue;
+type ProducedCandidate = PushCandidate & { commit: () => Promise<void> };
 
-      // Every kind needs an open quest — cheapest real query, gates the rest.
-      const openQuests = await db
-        .select({
-          id: tasksTable.id,
-          title: tasksTable.title,
-          dueDate: tasksTable.dueDate,
-          category: tasksTable.category,
-          estimatedMinutes: tasksTable.estimatedMinutes,
-          difficulty: tasksTable.difficulty,
-          priority: tasksTable.priority,
-        })
-        .from(tasksTable)
-        .where(and(
-          eq(tasksTable.userId, user.id),
-          eq(tasksTable.completed, false),
-          or(isNull(tasksTable.dueDate), lte(tasksTable.dueDate, localToday)),
-        ));
-      if (openQuests.length === 0) continue;
+async function contextNudgeCandidate(user: User, now: Date): Promise<ProducedCandidate | null> {
+  const tz = resolveTimeZone(user.timezone ?? "");
+  const localToday = localDateKey(now, tz);
+  const gate = {
+    now,
+    localHour: localHour(now, tz),
+    localToday,
+    sentDates: {
+      dueToday: user.nudgeDueTodayDate,
+      powerWindow: user.nudgePowerWindowDate,
+      quickWin: user.nudgeQuickWinDate,
+    },
+    contextNudgedAt: user.contextNudgedAt,
+  };
+  const kinds = eligibleKinds(gate);
+  if (kinds.length === 0) return null;
 
-      // due_today alone needs no patterns; skip the 4 pattern queries then.
-      const needsPatterns = kinds.includes("power_window") || kinds.includes("quick_win");
-      const patterns = needsPatterns
-        ? derivePatterns(await loadPatternInputs(user.id, tz, now))
-        : null;
+  const openQuests = await db
+    .select({
+      id: tasksTable.id,
+      title: tasksTable.title,
+      dueDate: tasksTable.dueDate,
+      category: tasksTable.category,
+      estimatedMinutes: tasksTable.estimatedMinutes,
+      difficulty: tasksTable.difficulty,
+      priority: tasksTable.priority,
+    })
+    .from(tasksTable)
+    .where(and(
+      eq(tasksTable.userId, user.id),
+      eq(tasksTable.completed, false),
+      or(isNull(tasksTable.dueDate), lte(tasksTable.dueDate, localToday)),
+    ));
+  if (openQuests.length === 0) return null;
 
-      const nudge = selectContextNudge({ ...gate, patterns, openQuests });
-      if (!nudge) continue;
+  const needsPatterns = kinds.includes("power_window") || kinds.includes("quick_win");
+  const patterns = needsPatterns
+    ? derivePatterns(await loadPatternInputs(user.id, tz, now))
+    : null;
 
-      await notify(user.id, nudge.title, nudge.body, nudge.tag, { url: nudge.url });
+  const nudge = selectContextNudge({ ...gate, patterns, openQuests });
+  if (!nudge) return null;
+
+  return {
+    kind: "context_nudge",
+    title: nudge.title, body: nudge.body, tag: nudge.tag, url: nudge.url,
+    commit: async () => {
       const dateColumn =
         nudge.kind === "due_today" ? { nudgeDueTodayDate: localToday }
         : nudge.kind === "power_window" ? { nudgePowerWindowDate: localToday }
@@ -108,248 +109,198 @@ async function checkContextNudges() {
       await db.update(usersTable)
         .set({ ...dateColumn, contextNudgedAt: now })
         .where(eq(usersTable.id, user.id));
-    } catch (err) {
-      logger.error({ err, userId: user.id }, "Context-nudge pass failed for user");
-    }
-  }
+    },
+  };
 }
 
-async function sendDailySummary() {
-  const now = new Date();
-  const currentHour = now.getHours();
-  const currentMinute = now.getMinutes();
+async function heroCareCandidate(user: User, now: Date): Promise<ProducedCandidate | null> {
+  // No hour gate here: the envelope enforces windows in the user's own timezone.
+  const stage = hungerStage(user.lastFedAt, now);
 
-  if (currentHour !== 21 || currentMinute !== 0) return;
-
-  const today = now.toISOString().split("T")[0];
-
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, DEFAULT_USER_ID));
-  if (!user) return;
-
-  const allTodayTasks = await db.select().from(tasksTable).where(
-    and(eq(tasksTable.userId, DEFAULT_USER_ID), eq(tasksTable.dueDate, today)),
-  );
-
-  const completedToday = allTodayTasks.filter((t) => t.completed);
-  const totalTasks = allTodayTasks.length;
-  const doneCount = completedToday.length;
-  const remainingCount = totalTasks - doneCount;
-
-  const todayStart = new Date(today + "T00:00:00.000Z");
-  const activityRows = await db.select().from(activityTable).where(
-    and(
-      eq(activityTable.userId, DEFAULT_USER_ID),
-      gt(activityTable.points, 0),
-    ),
-  );
-  const xpToday = activityRows
-    .filter((a) => a.createdAt >= todayStart)
-    .reduce((sum, a) => sum + a.points, 0);
-
-  const streakDays = user.streakDays;
-  const streakSafe = user.lastActiveDate === today;
-
-  if (totalTasks > 0 && doneCount === totalTasks) {
-    const streakLine = streakDays > 0
-      ? ` ${streakDays}-day streak intact! 🔥`
-      : "";
-    await notify(
-      DEFAULT_USER_ID,
-      "Quest Complete! 🎯",
-      `All ${totalTasks} quest${totalTasks === 1 ? "" : "s"} done · ${xpToday} XP earned today.${streakLine}`,
-      "daily-summary",
-    );
-    return;
-  }
-
-  if (totalTasks > 0 && doneCount > 0 && remainingCount > 0) {
-    const xpLine = xpToday > 0 ? ` · ${xpToday} XP earned` : "";
-    const streakLine = streakSafe ? ` Streak safe (${streakDays}d).` : " A quick quest keeps the momentum going.";
-    await notify(
-      DEFAULT_USER_ID,
-      "Evening Debrief",
-      `${doneCount}/${totalTasks} quests done${xpLine}. ${remainingCount} remaining —${streakLine}`,
-      "daily-summary",
-    );
-    return;
-  }
-
-  if (doneCount === 0 && streakDays > 0) {
-    const taskLine = totalTasks > 0
-      ? ` You have ${totalTasks} quest${totalTasks === 1 ? "" : "s"} open.`
-      : "";
-    await notify(
-      DEFAULT_USER_ID,
-      "Keep the flame going 🔥",
-      `Your ${streakDays}-day streak is one small quest away from continuing.${taskLine}`,
-      "daily-summary",
-    );
-    return;
-  }
-
-  if (doneCount === 0 && totalTasks > 0) {
-    await notify(
-      DEFAULT_USER_ID,
-      "Quest Log Waiting",
-      `${totalTasks} quest${totalTasks === 1 ? "" : "s"} still open today. Even one small win builds momentum!`,
-      "daily-summary",
-    );
-  }
-}
-
-async function checkHeroCare() {
-  const now = new Date();
-  const hour = now.getHours();
-  if (hour < 7 || hour >= 22) return;
-
-  // Hero care is per-user (unlike the legacy DEFAULT_USER_ID passes above).
-  const users = await db.select().from(usersTable);
-  for (const user of users) {
-    // One user's failure (e.g. a transient DB error) must not abort the pass
-    // for everyone else; dedup gates make the next tick's retry safe.
-    try {
-      const stage = hungerStage(user.lastFedAt, now);
-
-      // Hunger warnings: once per stage per episode. Recorded even for users
-      // with no push subscriptions (notify() no-ops) so in-app state stays the
-      // source of truth and a late subscription doesn't trigger stale warnings.
-      const warning = hungerWarning(stage, user.hungerNotifiedStage);
-      if (warning) {
-        await notify(user.id, warning.title, warning.body, warning.tag);
+  const warning = hungerWarning(stage, user.hungerNotifiedStage);
+  if (warning) {
+    return {
+      kind: "hunger_warning",
+      title: warning.title, body: warning.body, tag: warning.tag,
+      commit: async () => {
         await db.update(usersTable)
           .set({ hungerNotifiedStage: stage })
           .where(eq(usersTable.id, user.id));
-        continue; // a warning and a flavor push never share a tick
-      }
+      },
+    };
+  }
 
-      // Companion streak-milestone celebration (positive). Mutually exclusive with
-      // hunger/flavor: the warning above already `continue`d, and a milestone push
-      // `continue`s past flavor. Marker dedups + clears on a broken streak.
-      const milestone = companionMilestonePush(user.streakDays, user.companionMilestoneNotified);
-      if (milestone.push) {
-        await notify(user.id, milestone.push.title, milestone.push.body, milestone.push.tag);
+  const milestone = companionMilestonePush(user.streakDays, user.companionMilestoneNotified);
+  if (milestone.push) {
+    const push = milestone.push;
+    return {
+      kind: "companion_milestone",
+      title: push.title, body: push.body, tag: push.tag,
+      commit: async () => {
         await db.update(usersTable)
           .set({ companionMilestoneNotified: milestone.marker })
           .where(eq(usersTable.id, user.id));
-        continue; // a milestone push and a flavor push never share a tick
-      }
-      if (milestone.marker !== user.companionMilestoneNotified) {
-        // Streak broke since the last push — clear the marker so it can re-celebrate.
-        await db.update(usersTable)
-          .set({ companionMilestoneNotified: milestone.marker })
-          .where(eq(usersTable.id, user.id));
-      }
+      },
+    };
+  }
+  if (milestone.marker !== user.companionMilestoneNotified) {
+    // Maintenance, not a send: streak broke — clear so it can re-celebrate later.
+    await db.update(usersTable)
+      .set({ companionMilestoneNotified: milestone.marker })
+      .where(eq(usersTable.id, user.id));
+  }
 
-      if (shouldSendFlavorPush({ userId: user.id, stage, lastFlavorPushAt: user.lastFlavorPushAt, now })) {
-        const vignette = currentVignette(user.id, stage, user.avatarClass, now);
-        await notify(user.id, "Word from your hero", `Your hero is ${vignette.text}.`, "hero-flavor");
+  if (shouldSendFlavorPush({ userId: user.id, stage, lastFlavorPushAt: user.lastFlavorPushAt, now })) {
+    const vignette = currentVignette(user.id, stage, user.avatarClass, now);
+    return {
+      kind: "hero_flavor",
+      title: "Word from your hero", body: `Your hero is ${vignette.text}.`, tag: "hero-flavor",
+      commit: async () => {
         await db.update(usersTable)
           .set({ lastFlavorPushAt: now })
           .where(eq(usersTable.id, user.id));
-      }
-    } catch (err) {
-      logger.error({ err, userId: user.id }, "Hero-care pass failed for user");
-    }
+      },
+    };
   }
+  return null;
 }
 
-async function checkHyperfocusProtection() {
-  const now = new Date();
-  const users = await db.select().from(usersTable);
-  for (const user of users) {
-    try {
-      const tz = resolveTimeZone(user.timezone ?? "");
-      const [latest] = await db.select().from(brainCheckinsTable)
-        .where(eq(brainCheckinsTable.userId, user.id))
-        .orderBy(desc(brainCheckinsTable.createdAt), desc(brainCheckinsTable.id))
-        .limit(1);
-      const state = deriveBrainState(latest, now, tz);
+async function hyperfocusCandidate(user: User, now: Date): Promise<ProducedCandidate | null> {
+  const tz = resolveTimeZone(user.timezone ?? "");
+  const [latest] = await db.select().from(brainCheckinsTable)
+    .where(eq(brainCheckinsTable.userId, user.id))
+    .orderBy(desc(brainCheckinsTable.createdAt), desc(brainCheckinsTable.id))
+    .limit(1);
+  const state = deriveBrainState(latest, now, tz);
 
-      const sessions = await db.select().from(focusSessionsTable)
-        .where(and(eq(focusSessionsTable.userId, user.id), eq(focusSessionsTable.status, "active")));
+  const sessions = await db.select().from(focusSessionsTable)
+    .where(and(eq(focusSessionsTable.userId, user.id), eq(focusSessionsTable.status, "active")));
 
-      const stretch = protectedStretch({
-        activeSessions: sessions.map((s) => ({ startedAt: s.startedAt, lastIntervalAt: s.lastIntervalAt })),
-        mode: state.mode,
-        hyperfocusSince: state.mode === "hyperfocus" ? state.since : null,
-        now,
-      });
+  const stretch = protectedStretch({
+    activeSessions: sessions.map((s) => ({ startedAt: s.startedAt, lastIntervalAt: s.lastIntervalAt })),
+    mode: state.mode,
+    hyperfocusSince: state.mode === "hyperfocus" ? state.since : null,
+    now,
+  });
 
-      const chosen = selectProtectionNudge({
-        stretch, now, localHour: localHour(now, tz),
-        lastNudgedAt: user.hyperfocusNudgedAt,
-        lastKind: user.hyperfocusLastKind as NudgeKind | null,
-        hungerStage: hungerStage(user.lastFedAt, now),
-        pausedUntil: user.hyperfocusPausedUntil,
-      });
+  const chosen = selectProtectionNudge({
+    stretch, now, localHour: localHour(now, tz),
+    lastNudgedAt: user.hyperfocusNudgedAt,
+    lastKind: user.hyperfocusLastKind as NudgeKind | null,
+    hungerStage: hungerStage(user.lastFedAt, now),
+    pausedUntil: user.hyperfocusPausedUntil,
+  });
+  if (!chosen) return null;
 
-      if (chosen) {
-        await notify(user.id, chosen.title, chosen.body, chosen.tag);
-        await db.update(usersTable)
-          .set({ hyperfocusNudgedAt: now, hyperfocusLastKind: chosen.kind })
-          .where(eq(usersTable.id, user.id));
-      }
-    } catch (err) {
-      logger.error({ err, userId: user.id }, "Hyperfocus-protection pass failed for user");
-    }
-  }
+  return {
+    kind: "hyperfocus",
+    title: chosen.title, body: chosen.body, tag: chosen.tag,
+    commit: async () => {
+      await db.update(usersTable)
+        .set({ hyperfocusNudgedAt: now, hyperfocusLastKind: chosen.kind })
+        .where(eq(usersTable.id, user.id));
+    },
+  };
 }
 
-async function checkReflectionPrompts() {
-  const now = new Date();
-  const users = await db.select().from(usersTable);
-  for (const user of users) {
-    try {
-      // Cheap pre-gates to skip per-user queries; shouldPromptReflection stays
-      // the tested authority on the full rule set.
-      if (!user.timezone) continue; // no tz ⇒ can't compute a local evening (spec §6)
-      const tz = resolveTimeZone(user.timezone);
-      const hour = localHour(now, tz);
-      const localToday = localDateKey(now, tz);
-      if (hour < 19 || hour >= 22 || user.reflectionPromptedDate === localToday) continue;
+async function reflectionCandidate(user: User, now: Date): Promise<ProducedCandidate | null> {
+  if (!user.timezone) return null;
+  const tz = resolveTimeZone(user.timezone);
+  const hour = localHour(now, tz);
+  const localToday = localDateKey(now, tz);
+  if (hour < 19 || hour >= 22 || user.reflectionPromptedDate === localToday) return null;
 
-      const dayStart = localDayStartUtc(localToday, tz);
+  const dayStart = localDayStartUtc(localToday, tz);
 
-      const [todayReflection] = await db.select({ answeredAt: reflectionsTable.answeredAt })
-        .from(reflectionsTable)
-        .where(and(eq(reflectionsTable.userId, user.id), eq(reflectionsTable.localDate, localToday)));
+  const [todayReflection] = await db.select({ answeredAt: reflectionsTable.answeredAt })
+    .from(reflectionsTable)
+    .where(and(eq(reflectionsTable.userId, user.id), eq(reflectionsTable.localDate, localToday)));
 
-      const [completion] = await db.select({ id: tasksTable.id }).from(tasksTable)
-        .where(and(
-          eq(tasksTable.userId, user.id), eq(tasksTable.completed, true),
-          isNotNull(tasksTable.completedAt), gte(tasksTable.completedAt, dayStart),
-        )).limit(1);
-      const [focus] = await db.select({ id: focusSessionsTable.id }).from(focusSessionsTable)
-        .where(and(
-          eq(focusSessionsTable.userId, user.id),
-          gte(focusSessionsTable.startedAt, dayStart),
-          gte(focusSessionsTable.completedIntervals, 1),
-        )).limit(1);
-      const [checkin] = await db.select({ id: brainCheckinsTable.id }).from(brainCheckinsTable)
-        .where(and(eq(brainCheckinsTable.userId, user.id), gte(brainCheckinsTable.createdAt, dayStart)))
-        .limit(1);
+  const [completion] = await db.select({ id: tasksTable.id }).from(tasksTable)
+    .where(and(
+      eq(tasksTable.userId, user.id), eq(tasksTable.completed, true),
+      isNotNull(tasksTable.completedAt), gte(tasksTable.completedAt, dayStart),
+    )).limit(1);
+  const [focus] = await db.select({ id: focusSessionsTable.id }).from(focusSessionsTable)
+    .where(and(
+      eq(focusSessionsTable.userId, user.id),
+      gte(focusSessionsTable.startedAt, dayStart),
+      gte(focusSessionsTable.completedIntervals, 1),
+    )).limit(1);
+  const [checkin] = await db.select({ id: brainCheckinsTable.id }).from(brainCheckinsTable)
+    .where(and(eq(brainCheckinsTable.userId, user.id), gte(brainCheckinsTable.createdAt, dayStart)))
+    .limit(1);
 
-      const should = shouldPromptReflection({
-        localHour: hour,
-        promptedToday: user.reflectionPromptedDate === localToday,
-        answeredToday: todayReflection?.answeredAt != null,
-        hadSignalToday: Boolean(completion || focus || checkin),
-        hasTimezone: true,
-      });
-      if (!should) continue;
+  const should = shouldPromptReflection({
+    localHour: hour,
+    promptedToday: user.reflectionPromptedDate === localToday,
+    answeredToday: todayReflection?.answeredAt != null,
+    hadSignalToday: Boolean(completion || focus || checkin),
+    hasTimezone: true,
+  });
+  if (!should) return null;
 
-      await notify(
-        user.id,
-        "🌙 How did today feel?",
-        "1-minute reflection — what worked today?",
-        "reflection-prompt",
-        { url: "/reflection" },
-      );
+  return {
+    kind: "reflection_prompt",
+    title: "🌙 How did today feel?",
+    body: "1-minute reflection — what worked today?",
+    tag: "reflection-prompt",
+    url: "/reflection",
+    commit: async () => {
       await db.update(usersTable)
         .set({ reflectionPromptedDate: localToday })
         .where(eq(usersTable.id, user.id));
+    },
+  };
+}
+
+async function runEnvelopePass(users: User[], now: Date) {
+  for (const user of users) {
+    try {
+      const candidates: ProducedCandidate[] = [];
+      // Producer order = tie-break order within a class (envelope sort is stable):
+      // protection first, then care warning, context, reflection, milestone, flavor.
+      const producers = [hyperfocusCandidate, heroCareCandidate, contextNudgeCandidate, reflectionCandidate];
+      for (const produce of producers) {
+        try {
+          const c = await produce(user, now);
+          if (c) candidates.push(c);
+        } catch (err) {
+          logger.error({ err, userId: user.id }, "Notification producer failed for user");
+        }
+      }
+      if (candidates.length === 0) continue;
+
+      const tz = resolveTimeZone(user.timezone ?? "");
+      const localToday = localDateKey(now, tz);
+      const state: EnvelopeState = {
+        localHour: localHour(now, tz),
+        localToday,
+        prefs: {
+          protection: user.notifyProtection,
+          reminders: user.notifyReminders,
+          reflection: user.notifyReflection,
+          hero: user.notifyHero,
+          quietHoursStart: user.quietHoursStart,
+          quietHoursEnd: user.quietHoursEnd,
+        },
+        pushesSentDate: user.pushesSentDate,
+        pushesSentCount: user.pushesSentCount,
+        lastPushAt: user.lastPushAt,
+        now,
+      };
+      const winner = selectPush(candidates, state);
+      if (!winner) continue;
+
+      const produced = candidates.find((c) => c === winner)!;
+      await notify(user.id, produced.title, produced.body, produced.tag, produced.url ? { url: produced.url } : undefined);
+      await produced.commit();
+      const sentToday = user.pushesSentDate === localToday ? user.pushesSentCount : 0;
+      await db.update(usersTable)
+        .set({ pushesSentDate: localToday, pushesSentCount: sentToday + 1, lastPushAt: now })
+        .where(eq(usersTable.id, user.id));
     } catch (err) {
-      logger.error({ err, userId: user.id }, "Reflection-prompt pass failed for user");
+      logger.error({ err, userId: user.id }, "Envelope pass failed for user");
     }
   }
 }
@@ -465,9 +416,8 @@ async function loadWeekStatsInputs(userId: number, tz: string, week: LocalWeek, 
   };
 }
 
-async function checkWeeklyRecaps() {
+async function checkWeeklyRecaps(users: User[]) {
   const now = new Date();
-  const users = await db.select().from(usersTable);
   let generated = 0;
   for (const user of users) {
     try {
@@ -556,26 +506,18 @@ async function checkWeeklyRecaps() {
 
 export async function tick() {
   const ran: string[] = [];
+  const now = new Date();
 
   await spawnRecurringTasks();
   ran.push("recurring-tasks");
 
-  await checkContextNudges();
-  ran.push("context-nudges");
+  // One shared users fetch per tick — passes must not re-scan the table.
+  const users = await db.select().from(usersTable);
 
-  await sendDailySummary();
-  ran.push("daily-summary");
+  await runEnvelopePass(users, now);
+  ran.push("notification-envelope");
 
-  await checkHeroCare();
-  ran.push("hero-care");
-
-  await checkHyperfocusProtection();
-  ran.push("hyperfocus-protection");
-
-  await checkReflectionPrompts();
-  ran.push("reflection-prompts");
-
-  await checkWeeklyRecaps();
+  await checkWeeklyRecaps(users);
   ran.push("weekly-recaps");
 
   return ran;
