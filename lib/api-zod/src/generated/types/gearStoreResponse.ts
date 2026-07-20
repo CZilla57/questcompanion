@@ -9,6 +9,6 @@ import type { GearStoreItem } from './gearStoreItem';
 
 export interface GearStoreResponse {
   items: GearStoreItem[];
-  userXp: number;
+  coinBalance: number;
   userLevel: number;
 }

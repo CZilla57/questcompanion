@@ -15,7 +15,7 @@ export interface GearStoreItem {
   slot: GearStoreItemSlot;
   rarity: GearStoreItemRarity;
   statPower: number;
-  costXp: number;
+  costCoins: number;
   levelRequired: number;
   icon: string;
   spriteId?: string | null;

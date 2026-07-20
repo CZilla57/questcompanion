@@ -5,9 +5,12 @@
  * FocusQuest API - ADHD gamified task tracker
  * OpenAPI spec version: 0.1.0
  */
+import type { BuyGearResultReason } from './buyGearResultReason';
 
 export interface BuyGearResult {
-  success: boolean;
-  xpSpent: number;
-  remainingXp: number;
+  purchased: boolean;
+  reason: BuyGearResultReason;
+  balance: number;
+  remaining: number;
+  coinsSpent?: number;
 }

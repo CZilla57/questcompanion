@@ -31,6 +31,7 @@ export * from './brainCheckinSource';
 export * from './brainMode';
 export * from './brainState';
 export * from './buyGearResult';
+export * from './buyGearResultReason';
 export * from './coins';
 export * from './createRescueEvent201';
 export * from './dopamineReward';

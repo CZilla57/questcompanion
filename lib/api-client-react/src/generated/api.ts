@@ -6128,7 +6128,7 @@ export const getBuyGearUrl = (id: number,) => {
 }
 
 /**
- * @summary Purchase a gear item (deducts XP)
+ * @summary Purchase a gear item with coins (insufficiency is a gentle 200)
  */
 export const buyGear = async (id: number, options?: RequestInit): Promise<BuyGearResult> => {
 
@@ -6176,7 +6176,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type BuyGearMutationError = ErrorType<ErrorEnvelope>
 
     /**
- * @summary Purchase a gear item (deducts XP)
+ * @summary Purchase a gear item with coins (insufficiency is a gentle 200)
  */
 export const useBuyGear = <TError = ErrorType<ErrorEnvelope>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyGear>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}

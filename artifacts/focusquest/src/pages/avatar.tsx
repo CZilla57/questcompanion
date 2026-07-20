@@ -28,7 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Sword, HardHat, ShieldHalf, Shield, Footprints, Gem, Crown,
   Zap, Swords, Skull, Trophy, Lock, Check, ShoppingBag,
-  ChevronDown, Wand2,
+  ChevronDown, Wand2, Coins,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -197,7 +197,7 @@ function EquipmentSlotCard({ slot, item }: { slot: typeof SLOT_ORDER[number]; it
 
 function GearCard({
   item,
-  userXp,
+  balance,
   onBuy,
   onEquip,
   onUnequip,
@@ -205,7 +205,7 @@ function GearCard({
   isEquipping,
 }: {
   item: GearStoreItem;
-  userXp: number;
+  balance: number;
   onBuy: (id: number) => void;
   onEquip: (id: number) => void;
   onUnequip: (id: number) => void;
@@ -269,11 +269,11 @@ function GearCard({
           disabled={!item.canAfford || isBuying}
           onClick={() => onBuy(item.id)}
         >
-          <Zap className="w-3 h-3" />
-          {item.costXp.toLocaleString()} XP
+          <Coins className="w-3 h-3" />
+          {item.costCoins.toLocaleString()} coins
           {!item.canAfford && (
             <span className="text-muted-foreground ml-1 text-[10px]">
-              (need {(item.costXp - userXp).toLocaleString()} more)
+              ({(item.costCoins - balance).toLocaleString()} more to go)
             </span>
           )}
         </Button>
@@ -546,12 +546,18 @@ export default function AvatarPage() {
       await Promise.all([
         qc.invalidateQueries({ queryKey: getGetAvatarQueryKey() }),
         qc.invalidateQueries({ queryKey: getGetGearStoreQueryKey() }),
+        qc.invalidateQueries({ queryKey: getGetCoinsQueryKey() }),
       ]);
-      toast({
-        title: "Gear acquired!",
-        description: `-${res.xpSpent} XP spent. ${res.remainingXp} XP remaining.`,
-        className: "border-primary",
-      });
+      if (res.purchased) {
+        toast({
+          title: "Gear acquired!",
+          description: `${res.coinsSpent} coins well spent. ${res.balance} left.`,
+          className: "border-primary",
+        });
+      } else {
+        // Gentle shortfall — mirrors every other coin surface.
+        toast({ title: `${res.remaining} more to go`, description: "Keep going — you're close." });
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Purchase failed";
       toast({ title: "Purchase failed", description: msg, variant: "destructive" });
@@ -596,10 +602,10 @@ export default function AvatarPage() {
     item => slotFilter === "all" || item.slot === slotFilter
   );
 
-  // Surface an "earn XP" hint when the player has unowned gear in the store but can't afford or
+  // Surface an "earn coins" hint when the player has unowned gear in the store but can't afford or
   // meet the level for any of it — otherwise the disabled Buy buttons look like nothing happens.
   const storeItems = storeData?.items ?? [];
-  const showEarnXpHint =
+  const showEarnCoinsHint =
     storeItems.some(i => !i.owned) &&
     !storeItems.some(i => !i.owned && i.canAfford && i.meetsLevel);
 
@@ -768,20 +774,20 @@ export default function AvatarPage() {
 
           {activeTab === "store" && (
             <div className="space-y-4">
-              {/* XP balance */}
+              {/* Coin balance */}
               {storeData && (
-                <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-primary/5 border border-primary/20">
-                  <Zap className="w-4 h-4 text-primary" />
-                  <span className="text-sm text-muted-foreground">Available XP:</span>
-                  <span className="font-bold text-primary">{storeData.userXp.toLocaleString()}</span>
+                <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-amber-400/5 border border-amber-400/20">
+                  <Coins className="w-4 h-4 text-amber-400" />
+                  <span className="text-sm text-muted-foreground">Coins:</span>
+                  <span className="font-bold text-amber-300">{storeData.coinBalance.toLocaleString()}</span>
                   <span className="text-xs text-muted-foreground ml-auto">Level {storeData.userLevel}</span>
                 </div>
               )}
 
-              {showEarnXpHint && (
+              {showEarnCoinsHint && (
                 <p className="text-xs text-muted-foreground flex items-center gap-1.5 px-1">
-                  <Zap className="w-3 h-3 text-primary/70 flex-shrink-0" />
-                  Earn XP by completing quests, then spend it here to unlock and equip gear.
+                  <Coins className="w-3 h-3 text-primary/70 flex-shrink-0" />
+                  Earn coins by completing quests and focus sessions, then spend them here — gear never costs XP.
                 </p>
               )}
 
@@ -816,7 +822,7 @@ export default function AvatarPage() {
                     <GearCard
                       key={item.id}
                       item={item}
-                      userXp={storeData?.userXp ?? 0}
+                      balance={storeData?.coinBalance ?? 0}
                       onBuy={handleBuy}
                       onEquip={handleEquip}
                       onUnequip={handleUnequip}
