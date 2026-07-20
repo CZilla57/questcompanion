@@ -33,7 +33,6 @@ import type {
   BrainCheckinRequest,
   BrainState,
   BuyGearResult,
-  BuyStreakFreeze400,
   Coins,
   CreateRescueEvent201,
   DopamineReward,
@@ -115,7 +114,6 @@ import type {
   StatPerks,
   StepToggleInput,
   StepToggleResponse,
-  StreakFreezeResult,
   SuccessEnvelope,
   SuggestQuestlineQuestsInput,
   SuggestedQuestlineQuests,
@@ -1068,76 +1066,6 @@ export function useGetKingdoms<TData = Awaited<ReturnType<typeof getKingdoms>>, 
 
 
 
-
-export const getBuyStreakFreezeUrl = () => {
-
-
-
-
-  return `/api/users/me/streak-freeze/buy`
-}
-
-/**
- * @summary Spend 50 XP to buy a streak freeze (max 1 held at a time)
- */
-export const buyStreakFreeze = async ( options?: RequestInit): Promise<StreakFreezeResult> => {
-
-  return customFetch<StreakFreezeResult>(getBuyStreakFreezeUrl(),
-  {
-    ...options,
-    method: 'POST'
-
-
-  }
-);}
-
-
-
-
-export const getBuyStreakFreezeMutationOptions = <TError = ErrorType<BuyStreakFreeze400>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyStreakFreeze>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof buyStreakFreeze>>, TError,void, TContext> => {
-
-const mutationKey = ['buyStreakFreeze'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyStreakFreeze>>, void> = () => {
-
-
-          return  buyStreakFreeze(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type BuyStreakFreezeMutationResult = NonNullable<Awaited<ReturnType<typeof buyStreakFreeze>>>
-
-    export type BuyStreakFreezeMutationError = ErrorType<BuyStreakFreeze400>
-
-    /**
- * @summary Spend 50 XP to buy a streak freeze (max 1 held at a time)
- */
-export const useBuyStreakFreeze = <TError = ErrorType<BuyStreakFreeze400>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyStreakFreeze>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof buyStreakFreeze>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getBuyStreakFreezeMutationOptions(options));
-    }
 
 export const getGetMyXpHistoryUrl = (params?: GetMyXpHistoryParams,) => {
   const normalizedParams = new URLSearchParams();

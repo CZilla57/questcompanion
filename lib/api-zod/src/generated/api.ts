@@ -216,15 +216,6 @@ export const GetKingdomsResponse = zod.object({
 
 
 /**
- * @summary Spend 50 XP to buy a streak freeze (max 1 held at a time)
- */
-export const BuyStreakFreezeResponse = zod.object({
-  "streakFreezes": zod.number(),
-  "totalPoints": zod.number()
-})
-
-
-/**
  * @summary Get daily XP earned for the past N days
  */
 export const getMyXpHistoryQueryDaysDefault = 7;

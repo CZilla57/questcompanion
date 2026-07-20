@@ -234,11 +234,6 @@ export interface KingdomsResponse {
   invitation: KingdomInvitation | null;
 }
 
-export interface StreakFreezeResult {
-  streakFreezes: number;
-  totalPoints: number;
-}
-
 export type TaskPriority = typeof TaskPriority[keyof typeof TaskPriority];
 
 
@@ -1941,10 +1936,6 @@ export type GetMyStatsParams = {
  * IANA timezone (e.g. "America/New_York") used to determine the user's local "today". Defaults to UTC when omitted or invalid.
  */
 tz?: string;
-};
-
-export type BuyStreakFreeze400 = {
-  error?: string;
 };
 
 export type GetMyXpHistoryParams = {

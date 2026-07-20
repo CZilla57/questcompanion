@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, type User } from "@workspace/db";
+import { db, usersTable, activityTable, type User } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { redeemDecision } from "../lib/coins";
 import { spendCoins } from "../lib/award-coins";
@@ -97,6 +97,14 @@ router.post("/stat-perks/:id/buy", async (req, res): Promise<void> => {
       const nextOwned = user.streakFreezes + 1;
       owned = nextOwned;
       await tx.update(usersTable).set({ streakFreezes: nextOwned }).where(eq(usersTable.id, userId));
+      // The purchase stays visible in the Activity Log — priced in coins, zero
+      // XP delta (Honest Coin: no negative-points activity rows, ever).
+      await tx.insert(activityTable).values({
+        userId,
+        type: "streak_freeze_bought",
+        description: `Bought a Streak Shield for ${perk.coinCost} coins`,
+        points: 0,
+      });
     } else {
       const current = perk.kind === "xp_boost" ? user.xpBoostExpiresAt : user.focusBoostExpiresAt;
       const next = nextBoostExpiry(current, now, perk.durationHours!);

@@ -392,40 +392,4 @@ router.get("/users/search", async (req, res): Promise<void> => {
   }));
 });
 
-const FREEZE_COST = 50;
-const FREEZE_MAX = 1;
-
-router.post("/users/me/streak-freeze/buy", async (req, res): Promise<void> => {
-  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
-  const userId = req.gameUserId;
-
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
-  if (!user) { res.status(404).json({ error: "User not found" }); return; }
-
-  if (user.streakFreezes >= FREEZE_MAX) {
-    res.status(400).json({ error: "You already have a streak freeze. Use it before buying another." });
-    return;
-  }
-  if (user.totalPoints < FREEZE_COST) {
-    res.status(400).json({ error: `Not enough XP. You need ${FREEZE_COST} XP to buy a streak freeze.` });
-    return;
-  }
-
-  const newTotal = user.totalPoints - FREEZE_COST;
-  const newWeekly = Math.max(0, user.weeklyPoints - FREEZE_COST);
-  const [updated] = await db.update(usersTable)
-    .set({ totalPoints: newTotal, weeklyPoints: newWeekly, streakFreezes: user.streakFreezes + 1 })
-    .where(eq(usersTable.id, userId))
-    .returning();
-
-  await db.insert(activityTable).values({
-    userId,
-    type: "streak_freeze_bought",
-    description: `Bought a Streak Freeze for ${FREEZE_COST} XP`,
-    points: -FREEZE_COST,
-  });
-
-  res.json({ streakFreezes: updated.streakFreezes, totalPoints: updated.totalPoints });
-});
-
 export default router;
