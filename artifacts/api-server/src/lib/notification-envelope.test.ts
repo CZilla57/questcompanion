@@ -68,6 +68,11 @@ describe("selectPush — global gates", () => {
     expect(selectPush([cand("hyperfocus")], state({ now, lastPushAt: recent }))).toBeNull();
     expect(selectPush([cand("hyperfocus")], state({ now, lastPushAt: old }))).not.toBeNull();
   });
+  it("exactly 90 minutes of spacing clears the gate", () => {
+    const now = new Date("2026-07-19T17:00:00Z");
+    const exact = new Date(now.getTime() - PUSH_SPACING_MIN * 60_000);
+    expect(selectPush([cand("hyperfocus")], state({ now, lastPushAt: exact }))).not.toBeNull();
+  });
   it("daily budget caps at 3 for every class, and resets on a new local day", () => {
     const spent = state({ pushesSentDate: "2026-07-19", pushesSentCount: DAILY_PUSH_BUDGET });
     expect(selectPush([cand("hyperfocus")], spent)).toBeNull();
@@ -96,6 +101,16 @@ describe("selectPush — per-candidate filters", () => {
   it("default quiet hours push the reminder window start from 7 to 8", () => {
     expect(selectPush([cand("context_nudge")], state({ localHour: 7 }))).toBeNull();
     expect(selectPush([cand("context_nudge")], state({ localHour: 8 }))).not.toBeNull();
+  });
+  it("category pref off drops even critical candidates", () => {
+    const s = state({ localHour: 12, prefs: { protection: false } });
+    expect(selectPush([cand("hyperfocus")], s)).toBeNull();
+  });
+  it("reflection window starts at 7; milestone window starts at 8", () => {
+    const noQuiet = { quietHoursStart: 0, quietHoursEnd: 0 };
+    expect(selectPush([cand("reflection_prompt")], state({ localHour: 7, prefs: noQuiet }))).not.toBeNull();
+    expect(selectPush([cand("companion_milestone")], state({ localHour: 7, prefs: noQuiet }))).toBeNull();
+    expect(selectPush([cand("companion_milestone")], state({ localHour: 8, prefs: noQuiet }))).not.toBeNull();
   });
 });
 
