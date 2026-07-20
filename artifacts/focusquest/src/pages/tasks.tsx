@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Clock, Plus, Filter, Target, Zap, Info, Sparkles, RefreshCw, Pin } from "lucide-react";
-import { Task, useGetTasks, useCreateTask, useUpdateTask, useBreakdownTask, useGetQuestlines, TaskPriority, useGetTasksMomentum, BrainMode, useGetMyPatterns } from "@workspace/api-client-react";
+import { Calendar as CalendarIcon, Clock, Plus, Filter, Zap, Info, Sparkles, RefreshCw } from "lucide-react";
+import { Task, useGetTasks, useCreateTask, useUpdateTask, useBreakdownTask, useGetQuestlines, TaskPriority } from "@workspace/api-client-react";
 import { TaskItem } from "@/components/task-item";
 import { QuickAddBar } from "@/components/quick-add-bar";
-import { MomentumCard } from "@/components/momentum-card";
+import { TodaysFocus } from "@/components/todays-focus";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -15,13 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { getGetTasksQueryKey, getGetTasksMomentumQueryKey, getGetMyPatternsQueryKey } from "@workspace/api-client-react";
+import { getGetTasksQueryKey, getGetTasksMomentumQueryKey } from "@workspace/api-client-react";
 import { CATEGORIES, CATEGORY_HEX_COLORS } from "@/lib/categories";
 import { parseDueDate, toDueDateString } from "@/lib/reschedule";
-import { momentumBoardState } from "@/lib/momentum-board";
-import { MODE_META } from "@/lib/brain-mode-meta";
-import { inWindowNow } from "@/lib/steering";
-import { formatPowerHours } from "@/lib/rhythms";
 import { browserTimeZone } from "@/lib/timezone";
 import { apiErrorMessage } from "@/lib/api-error";
 import { PageTabs } from "@/components/page-tabs";
@@ -121,53 +117,6 @@ export default function Tasks() {
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  const tz = browserTimeZone();
-  const todayStrKey = format(new Date(), "yyyy-MM-dd");
-  const [skippedIds, setSkippedIds] = useState<number[]>([]);
-  const [altIndex, setAltIndex] = useState(0);
-  const [momentumMinutes, setMomentumMinutes] = useState<number | null>(() => {
-    try {
-      const raw = sessionStorage.getItem("momentumMinutes");
-      if (!raw) return null;
-      const [day, val] = raw.split(":");
-      return day === todayStrKey ? Number(val) || null : null; // cleared daily
-    } catch {
-      return null; // storage unavailable — chips just don't persist
-    }
-  });
-  const setMinutes = (m: number | null) => {
-    setMomentumMinutes(m);
-    try {
-      if (m) sessionStorage.setItem("momentumMinutes", `${todayStrKey}:${m}`);
-      else sessionStorage.removeItem("momentumMinutes");
-    } catch {
-      // storage unavailable — in-memory state still works for this visit
-    }
-  };
-  const { data: momentum, isFetching: momentumLoading } = useGetTasksMomentum({
-    tz,
-    ...(momentumMinutes ? { minutes: momentumMinutes } : {}),
-    ...(skippedIds.length ? { exclude: skippedIds.join(",") } : {}),
-  });
-  const { data: patterns } = useGetMyPatterns({ tz }, { query: { queryKey: getGetMyPatternsQueryKey({ tz }), staleTime: 5 * 60_000 } });
-  // "Not this one": walk the returned alternates first (instant), then refetch with exclude.
-  const batch = momentum?.suggestions ?? [];
-  // Clamp: an invalidation-driven refetch can shrink the batch below a stale altIndex.
-  const visibleSuggestions = batch.slice(altIndex < batch.length ? altIndex : 0);
-  const handleSkip = () => {
-    const current = visibleSuggestions[0];
-    if (!current) return;
-    if (visibleSuggestions.length > 1) {
-      setAltIndex((i) => i + 1);
-    } else {
-      // Exclude EVERY suggestion the user walked past in this batch — a
-      // rejected suggestion must not resurface on the refetch.
-      const batchIds = batch.map((s) => s.task.id);
-      setSkippedIds((ids) => [...ids, ...batchIds.filter((id) => !ids.includes(id))]);
-      setAltIndex(0);
-    }
-  };
 
   const { data: tasks, isLoading } = useGetTasks({
     date: date ? format(date, 'yyyy-MM-dd') : undefined,
@@ -383,84 +332,7 @@ export default function Tasks() {
         )}
       </div>
 
-      {/* Today's Focus section */}
-      {(() => {
-        const board = momentumBoardState(tasks ?? [], visibleSuggestions, todayStrKey);
-        const flavor = MODE_META[momentum?.mode ?? BrainMode.neutral].flavor;
-        // Power-window banner: confidence-gated, hidden for frozen brains, only
-        // while the current hour actually is a window (spec §Client).
-        const showPowerBanner =
-          patterns?.confidence === "ok" &&
-          inWindowNow(new Date(), patterns.powerHours) &&
-          momentum?.mode !== BrainMode.frozen;
-        const powerBanner = showPowerBanner ? (
-          <p className="text-xs text-primary mb-1 flex items-center gap-1">
-            <Zap className="w-3 h-3" aria-hidden />
-            {formatPowerHours(patterns!.powerHours)} — your power window
-          </p>
-        ) : null;
-        const heading = (
-          <div className="flex items-center gap-2">
-            <Target className="w-4 h-4 text-primary" />
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-primary">Today's Focus</h2>
-          </div>
-        );
-        if (board.kind === "empty") {
-          return (
-            <div className="mb-6">
-              <div className="mb-3">{heading}</div>
-              <div className="flex items-center gap-3 p-4 rounded-xl border-2 border-dashed border-primary/25 bg-primary/[0.03]">
-                <Pin className="w-4 h-4 text-primary/70 flex-shrink-0" aria-hidden />
-                <p className="text-sm text-muted-foreground">
-                  Nothing queued — add a quest below and the board takes it from there.
-                </p>
-              </div>
-            </div>
-          );
-        }
-        if (board.kind === "all-done") {
-          return (
-            <div className="mb-6 space-y-3">
-              <div className="mb-3">{heading}</div>
-              <p className="text-sm text-primary/90 px-1">Focus cleared for today ✦</p>
-              {board.suggestion && (
-                <div className="px-1">
-                  <p className="text-xs text-muted-foreground mb-2">One more tiny win, only if you feel like it:</p>
-                  <MomentumCard suggestion={board.suggestion}
-                    minutes={momentumMinutes} onMinutes={setMinutes} onSkip={handleSkip} skipping={momentumLoading} />
-                </div>
-              )}
-            </div>
-          );
-        }
-        return (
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-1">
-              {heading}
-              {board.totalPinned > 0 && (
-                <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-full bg-muted border border-border">
-                  {board.completedCount} / {board.totalPinned} done
-                </span>
-              )}
-            </div>
-            {powerBanner}
-            {flavor && <p className="text-xs text-muted-foreground mb-3">{flavor}</p>}
-            <div className="space-y-2">
-              {board.suggestion && (
-                <MomentumCard suggestion={board.suggestion}
-                  minutes={momentumMinutes} onMinutes={setMinutes} onSkip={handleSkip} skipping={momentumLoading} />
-              )}
-              {board.pinned.length > 0 && (
-                <div className="space-y-2 pl-1 border-l-2 border-primary/30">
-                  {board.pinned.map((task) => (
-                    <TaskItem key={task.id} task={task} onEdit={handleOpenEdit} />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })()}
+      <TodaysFocus tasks={tasks ?? []} showPinned onEditTask={handleOpenEdit} />
 
       <div className="space-y-4">
         {isLoading ? (
