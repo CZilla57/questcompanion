@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useGetLeaderboard, useGetMe, GetLeaderboardPeriod } from "@workspace/api-client-react";
 import { Trophy, Medal, Star, Zap } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PageTabs } from "@/components/page-tabs";
 
 function RankIcon({ rank }: { rank: number }) {
   if (rank === 1) return <Trophy className="w-5 h-5 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]" />;
@@ -40,6 +41,7 @@ export default function Leaderboard() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      <PageTabs group="allies" />
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">

@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiErrorMessage } from "@/lib/api-error";
+import { PageTabs } from "@/components/page-tabs";
 
 function ProgressBar({ done, total }: { done: number; total: number }) {
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
@@ -136,6 +137,7 @@ export default function Questlines() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
+      <PageTabs group="quests" />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><Scroll className="w-6 h-6 text-primary" /> Questlines</h1>

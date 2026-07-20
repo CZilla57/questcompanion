@@ -24,6 +24,7 @@ import { inWindowNow } from "@/lib/steering";
 import { formatPowerHours } from "@/lib/rhythms";
 import { browserTimeZone } from "@/lib/timezone";
 import { apiErrorMessage } from "@/lib/api-error";
+import { PageTabs } from "@/components/page-tabs";
 
 interface PointPreview {
   points: number;
@@ -309,6 +310,7 @@ export default function Tasks() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
+      <PageTabs group="quests" />
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Quest Log</h1>

@@ -25,6 +25,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { CATEGORIES, CATEGORY_COLORS, CATEGORY_HEX_COLORS } from "@/lib/categories";
+import { PageTabs } from "@/components/page-tabs";
 
 const DAYS = [
   { value: 0, short: "Su", label: "Sunday" },
@@ -594,6 +595,7 @@ export default function Recurring() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
+      <PageTabs group="quests" />
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

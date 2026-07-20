@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiErrorMessage } from "@/lib/api-error";
 import { Plus, Trash2, Coffee, Sparkles } from "lucide-react";
 import { MysteryBox } from "@/components/mystery-box";
+import { PageTabs } from "@/components/page-tabs";
 
 const EXAMPLES = [
   "Make a cup of coffee ☕",
@@ -71,6 +72,7 @@ export default function DopamineMenu() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-xl">
+      <PageTabs group="rewards" />
       {/* Header */}
       <div>
         <div className="flex items-center gap-3 mb-2">

@@ -10,6 +10,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
+import { PageTabs } from "@/components/page-tabs";
 
 interface TooltipProps {
   active?: boolean;
@@ -57,6 +58,7 @@ export default function Progress() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      <PageTabs group="progress" />
       <div>
         <h1 className="text-3xl font-bold text-foreground">Commander Profile</h1>
         <p className="text-muted-foreground mt-1">Review your career stats and achievements.</p>
