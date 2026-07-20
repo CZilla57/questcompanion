@@ -8,6 +8,7 @@ export type CoinReason =
   | "streak_milestone"
   | "questline_complete"
   | "boss_win"
+  | "gear"
   | "redeem"
   | "quest_uncomplete"
   | "world_boss_defeat"

@@ -1,4 +1,4 @@
-import type { RewardTier } from "@workspace/db";
+import type { RewardTier, GearRarity } from "@workspace/db";
 
 export type { RewardTier };
 
@@ -50,4 +50,17 @@ export function isStreakMilestone(newStreak: number, oldStreak: number): boolean
 // user holds, never negative. Keeps the balance non-negative and the ledger consistent.
 export function coinsToReverse(requested: number, balance: number): number {
   return Math.max(0, Math.min(requested, balance));
+}
+
+// Gear prices reuse the reward-tier ladder (Honest Coin): the rarity IS the
+// tier, so users meet the same 20/60/150/400 numbers everywhere coins spend.
+export const GEAR_COIN_COST: Record<GearRarity, number> = {
+  common:    20,
+  rare:      60,
+  epic:      150,
+  legendary: 400,
+};
+
+export function gearCoinCost(rarity: GearRarity): number {
+  return GEAR_COIN_COST[rarity];
 }

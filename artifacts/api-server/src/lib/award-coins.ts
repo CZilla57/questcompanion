@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, gte, sql } from "drizzle-orm";
 import { db, usersTable, coinTransactionsTable, type CoinReason } from "@workspace/db";
 import { coinsToReverse } from "./coins";
 
@@ -45,4 +45,46 @@ export async function reverseCoins(
     .set({ coinBalance: sql`${usersTable.coinBalance} - ${removed}` })
     .where(eq(usersTable.id, userId));
   await tx.insert(coinTransactionsTable).values({ userId, amount: -removed, reason });
+}
+
+export type SpendResult =
+  | { ok: true; balance: number }
+  | { ok: false; balance: number; remaining: number };
+
+/**
+ * Spend coins inside the caller's transaction — the one spend grammar
+ * (Honest Coin): a single atomic guarded decrement that only fires when the
+ * balance covers the cost (can never go negative; a concurrent double-spend
+ * can't overspend) plus exactly one negative ledger row. Insufficiency is a
+ * value, not an error: {ok:false, remaining} feeds the gentle "N more to go".
+ */
+export async function spendCoins(
+  tx: Tx,
+  userId: number,
+  cost: number,
+  reason: CoinReason,
+  opts?: { rewardItemId?: number },
+): Promise<SpendResult> {
+  const [updated] = await tx
+    .update(usersTable)
+    .set({ coinBalance: sql`${usersTable.coinBalance} - ${cost}` })
+    .where(and(eq(usersTable.id, userId), gte(usersTable.coinBalance, cost)))
+    .returning({ balance: usersTable.coinBalance });
+
+  if (!updated) {
+    const [u] = await tx
+      .select({ balance: usersTable.coinBalance })
+      .from(usersTable)
+      .where(eq(usersTable.id, userId));
+    const bal = u?.balance ?? 0;
+    return { ok: false, balance: bal, remaining: Math.max(0, cost - bal) };
+  }
+
+  await tx.insert(coinTransactionsTable).values({
+    userId,
+    amount: -cost,
+    reason,
+    rewardItemId: opts?.rewardItemId,
+  });
+  return { ok: true, balance: updated.balance };
 }
