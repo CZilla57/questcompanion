@@ -65,6 +65,17 @@ export async function spendCoins(
   reason: CoinReason,
   opts?: { rewardItemId?: number },
 ): Promise<SpendResult> {
+  // Spends are always positive; a non-positive cost is a caller bug. No-op
+  // (mirroring awardCoins) so this primitive can never mint coins or write
+  // phantom ledger rows.
+  if (cost <= 0) {
+    const [u] = await tx
+      .select({ balance: usersTable.coinBalance })
+      .from(usersTable)
+      .where(eq(usersTable.id, userId));
+    return { ok: true, balance: u?.balance ?? 0 };
+  }
+
   const [updated] = await tx
     .update(usersTable)
     .set({ coinBalance: sql`${usersTable.coinBalance} - ${cost}` })
