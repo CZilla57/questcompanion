@@ -616,8 +616,6 @@ export default function AvatarPage() {
 
   return (
     <div className="space-y-6 pb-8">
-      <HeroIdentity />
-
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -625,6 +623,9 @@ export default function AvatarPage() {
           <p className="text-sm text-muted-foreground mt-0.5">
             Customize your avatar and gear up for the weekly battle
           </p>
+          <div className="mt-2">
+            <HeroIdentity />
+          </div>
         </div>
         {avatarData && (
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30">

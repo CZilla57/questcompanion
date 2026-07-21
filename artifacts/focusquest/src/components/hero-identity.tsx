@@ -49,6 +49,8 @@ export function HeroIdentity() {
           ? "That hero name is already taken. Try another."
           : text.includes("429") || text.includes("once a week")
           ? "Renamed recently — you can rename again soon."
+          : text.includes("400") || text.includes("3–20")
+          ? "Hero names are 3–20 characters: letters, numbers, and underscores."
           : "Something went wrong. Please try again.",
       );
     }
@@ -72,9 +74,9 @@ export function HeroIdentity() {
             </p>
           ) : (
             <form onSubmit={submit} className="space-y-3 mt-2">
-              <Input value={name} onChange={(e) => { setName(e.target.value); setError(null); }} maxLength={20} autoFocus />
+              <Input value={name} onChange={(e) => { setName(e.target.value); setError(null); }} maxLength={20} autoFocus aria-label="Hero name" aria-invalid={!!error} aria-describedby={error ? "rename-error" : undefined} />
               <p className="text-xs text-muted-foreground">3–20 characters, letters, numbers, and underscores. You can rename once a week.</p>
-              {error && <p className="text-xs text-destructive">{error}</p>}
+              {error && <p id="rename-error" className="text-xs text-destructive">{error}</p>}
               <div className="flex justify-end gap-2 pt-2">
                 <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
                 <Button type="submit" disabled={updateMe.isPending || name.trim().length === 0}>
