@@ -32,7 +32,7 @@ export type OutboxEntry = {
 };
 
 export const EMPTY_TRANSCRIPT_MESSAGE = "Couldn't hear anything in this note";
-const PARK_MESSAGE = "Couldn't sync this one — retry or discard.";
+export const PARK_MESSAGE = "Couldn't sync this one — retry or discard.";
 
 export function newCaptureId(): string {
   const c = globalThis.crypto as Crypto | undefined;

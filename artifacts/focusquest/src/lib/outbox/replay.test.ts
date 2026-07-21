@@ -158,4 +158,34 @@ describe("drainOutbox", () => {
     expect(result.stopped).toEqual({ authNeeded: false });
     expect((await store.list())[0].status).toBe("queued");
   });
+
+  it("a retryable failure during the shed-questline retry stops with the entry still queued", async () => {
+    const store = createMemoryStore();
+    await store.add(text("orphan", "2026-07-20T09:00:00Z", { questlineId: 99 }));
+    const createTask = vi.fn()
+      .mockRejectedValueOnce(httpError(422))
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    const result = await drainOutbox(store, api({ createTask }));
+    expect(createTask).toHaveBeenCalledTimes(2);
+    expect(result).toEqual({ synced: 0, parked: 0, stopped: { authNeeded: false } });
+    const [left] = await store.list();
+    expect(left.status).toBe("queued");
+    expect(left.attempts).toBe(1);
+  });
+
+  it("a store failure while recording an outcome stops cleanly; the next drain re-picks the entry", async () => {
+    const store = createMemoryStore();
+    await store.add(text("first", "2026-07-20T09:00:00Z"));
+    const failingStore: typeof store = {
+      ...store,
+      update: vi.fn()
+        .mockImplementationOnce((id: string, patch: Parameters<typeof store.update>[1]) => store.update(id, patch))
+        .mockRejectedValue(new Error("quota")),
+    };
+    const result = await drainOutbox(failingStore, api({ createTask: vi.fn().mockRejectedValue(httpError(400)) }));
+    expect(result).toEqual({ synced: 0, parked: 0, stopped: { authNeeded: false } });
+    expect((await store.list())[0].status).toBe("syncing");
+    const followUp = await drainOutbox(store, api());
+    expect(followUp).toEqual({ synced: 1, parked: 0, stopped: null });
+  });
 });

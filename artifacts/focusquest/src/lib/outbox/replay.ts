@@ -3,6 +3,7 @@ import type { Task, TaskInput } from "@workspace/api-client-react";
 import {
   decideReplayFailure,
   EMPTY_TRANSCRIPT_MESSAGE,
+  PARK_MESSAGE,
   type OutboxEntry,
 } from "./core";
 import type { OutboxStore } from "./store";
@@ -48,9 +49,9 @@ export async function drainOutbox(store: OutboxStore, api: ReplayApi): Promise<D
   for (const entry of await store.list()) {
     if (entry.status === "failed") continue; // parked: manual retry/discard only
 
-    await store.update(entry.id, { status: "syncing", attempts: entry.attempts + 1 });
-
     try {
+      await store.update(entry.id, { status: "syncing", attempts: entry.attempts + 1 });
+
       let input: TaskInput & { clientKey: string };
       if (entry.payload.kind === "text") {
         input = entry.payload.input;
@@ -79,15 +80,26 @@ export async function drainOutbox(store: OutboxStore, api: ReplayApi): Promise<D
       result.synced++;
     } catch (err) {
       const decision = decideReplayFailure(err);
-      if (decision.action === "park" || decision.action === "retry-without-questline") {
-        // retry-without-questline landing here means there was nothing to shed
-        // (or the retry itself failed non-retryably): park it visibly.
-        const message = decision.action === "park" ? decision.message : "Couldn't sync this one — retry or discard.";
-        await store.update(entry.id, { status: "failed", lastError: message });
+      const park = decision.action === "park" || decision.action === "retry-without-questline";
+      try {
+        await store.update(
+          entry.id,
+          park
+            ? { status: "failed", lastError: decision.action === "park" ? decision.message : PARK_MESSAGE }
+            : { status: "queued" },
+        );
+      } catch {
+        // The store itself failed while recording the outcome (quota, tx
+        // abort). Stop cleanly instead of throwing: the entry stays
+        // "syncing", which is not skip-guarded, so the next drain re-attempts
+        // it — and the clientKey makes any redundant create a dedupe.
+        result.stopped = { authNeeded: false };
+        break;
+      }
+      if (park) {
         result.parked++;
         continue;
       }
-      await store.update(entry.id, { status: "queued" });
       result.stopped = { authNeeded: decision.authNeeded === true };
       break;
     }
