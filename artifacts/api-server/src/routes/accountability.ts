@@ -13,7 +13,7 @@ import { awardSocialBadges } from "../lib/badge-awards";
 
 const router: IRouter = Router();
 
-function formatUserSummary(u: typeof usersTable.$inferSelect) {
+export function formatUserSummary(u: typeof usersTable.$inferSelect) {
   const lvl = getLevelInfo(u.totalPoints);
   return {
     id: u.id,
@@ -31,7 +31,7 @@ function formatUserSummary(u: typeof usersTable.$inferSelect) {
  * Returns the accepted partnership row linking `userId` and `otherId` (in either
  * direction), or null if there is none / it is not accepted.
  */
-async function requireAcceptedPartnership(userId: number, otherId: number) {
+export async function requireAcceptedPartnership(userId: number, otherId: number) {
   const [p] = await db.select().from(partnershipsTable).where(
     and(
       eq(partnershipsTable.status, "accepted"),
