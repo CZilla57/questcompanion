@@ -69,7 +69,7 @@ export function WorldBossPanel() {
           <Swords className="w-5 h-5 text-red-400" />
           <div>
             <h3 className="font-bold text-lg">World Boss</h3>
-            <p className="text-sm text-muted-foreground">{boss.weekKey} · everyone vs. one boss</p>
+            <p className="text-sm text-muted-foreground">{boss.weekKey} · this week&rsquo;s raiders vs. one boss</p>
           </div>
         </div>
         {boss.defeated && <span className="text-sm font-bold text-primary">Defeated 🎉</span>}
