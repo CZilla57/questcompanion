@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Switch, Route, Redirect, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -134,6 +134,14 @@ function OnboardingScreen() {
 function OnboardingGate({ children }: { children: React.ReactNode }) {
   const { data: stats, isLoading, error, fetchStatus } = useGetMyStats({ tz: browserTimeZone() });
   const putTz = usePutMyTimezone();
+  // Latch: once the gate has admitted the app (positive answer or offline
+  // grace), a background stats refetch must not yank the shell back to the
+  // spinner. TanStack v5 resets an errored, data-less query to `pending`
+  // (error cleared) when any observer — e.g. the Now screen's own
+  // useGetMyStats — triggers a refetch; without the latch that unmounts and
+  // remounts the whole subtree in an infinite loop while the server is
+  // unreachable. A positive "not onboarded" answer still clears the latch.
+  const grantedRef = useRef(false);
 
   useEffect(() => {
     // Fire-and-forget: capture the browser's timezone once per authed load so
@@ -153,6 +161,17 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
     record: readSessionRecord(),
   });
 
+  if (verdict === "app") grantedRef.current = true;
+  if (verdict === "onboarding") grantedRef.current = false;
+
+  if (verdict === "onboarding") {
+    return <OnboardingScreen />;
+  }
+
+  if (grantedRef.current) {
+    return <>{children}</>;
+  }
+
   if (isLoading || verdict === "loading") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -162,10 +181,6 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
         </div>
       </div>
     );
-  }
-
-  if (verdict === "onboarding") {
-    return <OnboardingScreen />;
   }
 
   return <>{children}</>;
