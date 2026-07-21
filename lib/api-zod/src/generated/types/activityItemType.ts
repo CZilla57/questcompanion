@@ -23,4 +23,5 @@ export const ActivityItemType = {
   focus_complete: 'focus_complete',
   initiation: 'initiation',
   reflection: 'reflection',
+  body_double: 'body_double',
 } as const;

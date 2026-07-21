@@ -6,9 +6,7 @@ import { NudgePicker } from "@/components/nudge-picker";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Trophy } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import type {
-  HeroLook, Skin, Build, HairStyle, HairColor, FaceId, AvatarClass, EquippedGearLook,
-} from "@/lib/hero/types";
+import { apiHeroToLook } from "@/lib/hero/from-api";
 
 const MILESTONE_ICON: Record<string, string> = {
   level_up: "⭐", badge_earned: "🏅", streak_milestone: "🔥", all_day_bonus: "🎯",
@@ -37,27 +35,7 @@ export default function PartnerDetail() {
     );
   }
 
-  const h = data.hero;
-  const heroLook: HeroLook | null = h ? {
-    skin: (h.avatarSkin ?? "light") as Skin,
-    build: (h.avatarBodyBuild ?? "male") as Build,
-    hairStyle: (h.avatarHairStyle ?? "short") as HairStyle,
-    hairColor: (h.avatarHairColor ?? "brown") as HairColor,
-    face: (h.avatarFace ?? "neutral") as FaceId,
-    beardStyle: (h.avatarBeardStyle ?? "none") as HeroLook["beardStyle"],
-    beardColor: (h.avatarBeardColor ?? "brown") as HeroLook["beardColor"],
-    glasses: (h.avatarGlasses ?? "none") as HeroLook["glasses"],
-    earrings: (h.avatarEarrings ?? "none") as HeroLook["earrings"],
-    avatarClass: (h.avatarClass ?? "fighter") as AvatarClass,
-    tier: Math.min(3, Math.floor(((h.level ?? 1) - 1) / 10)) as 0 | 1 | 2 | 3,
-    equipped: (h.equippedGear ?? [])
-      .filter((g) => g.spriteId)
-      .map((g) => ({
-        slot: g.slot as EquippedGearLook["slot"],
-        spriteId: g.spriteId as string,
-        rarity: g.rarity as EquippedGearLook["rarity"],
-      })),
-  } : null;
+  const heroLook = apiHeroToLook(data.hero);
 
   const behind = data.progress.questsDueToday > 0 && !data.progress.allDoneToday;
 

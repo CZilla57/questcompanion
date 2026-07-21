@@ -167,7 +167,7 @@ export const GetMyStatsResponse = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
   "username": zod.string().optional(),
-  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_bought', 'gear_earned', 'focus_session', 'focus_complete', 'initiation', 'reflection']),
+  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_bought', 'gear_earned', 'focus_session', 'focus_complete', 'initiation', 'reflection', 'body_double']),
   "description": zod.string(),
   "points": zod.number(),
   "createdAt": zod.string()
@@ -1649,7 +1649,7 @@ export const GetPartnerFeedResponseItem = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
   "username": zod.string().optional(),
-  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_bought', 'gear_earned', 'focus_session', 'focus_complete', 'initiation', 'reflection']),
+  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_bought', 'gear_earned', 'focus_session', 'focus_complete', 'initiation', 'reflection', 'body_double']),
   "description": zod.string(),
   "points": zod.number(),
   "createdAt": zod.string()
@@ -1719,7 +1719,7 @@ export const GetPartnerDetailResponse = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
   "username": zod.string().optional(),
-  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_bought', 'gear_earned', 'focus_session', 'focus_complete', 'initiation', 'reflection']),
+  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_bought', 'gear_earned', 'focus_session', 'focus_complete', 'initiation', 'reflection', 'body_double']),
   "description": zod.string(),
   "points": zod.number(),
   "createdAt": zod.string()
