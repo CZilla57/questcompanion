@@ -135,6 +135,10 @@ fail-open); (b) level-derived only (charter's alternate; rejected — acceptance
     host page needs `hero`; the panel additionally needs `allies` per the charter).
   - `StatusRow` (Now) keeps its line but drops the `/progress` link (plain, non-nagging
     text) while `progress` is locked.
+  - Gear-reward toasts (`task-item.tsx`) say "equip it on your Hero page" / "check your
+    Hero page" — a 3-day streak gear drop can land below 100 XP, i.e. before the Hero
+    page exists. While `hero` is locked the toasts keep the celebration but say the item
+    "joined your inventory" instead of pointing at a door that isn't there.
   - `useGetNudges` polling in `layout.tsx` gains `enabled: alliesUnlocked` (no ally
     badge chatter for a nav entry that doesn't exist).
 - **Fresh-account L1 dashboard** (acceptance surface): prompt chips, Today's Focus,
@@ -171,14 +175,16 @@ fail-open); (b) level-derived only (charter's alternate; rejected — acceptance
 
 ## 9. Notifications while doors are closed
 
-`heroCareCandidate` (`lib/notification-scheduler.ts`) returns `null` for users whose
-`hero` feature is locked — a "your hero is hungry" push aimed at someone who has never
-seen the hero (and has no feeding UI) is confusion shaped like shame. Any other
-hero-category producer found in implementation gets the same guard (companion
-streak-milestone pushes ride the completion path and cannot fire pre-L3 in practice —
-verified in implementation). Protection/reminder/reflection categories are L1 features
-and stay untouched. Ally/boss pushes require partnerships/contributions that locked
-users cannot have; no guard needed.
+`heroCareCandidate` (`lib/notification-scheduler.ts:116`) returns `null` for users
+whose `hero` feature is locked — a "your hero is hungry" push aimed at someone who has
+never seen the hero (and has no feeding UI) is confusion shaped like shame. That single
+guard covers all three hero-category producers (hunger warnings, companion
+streak-milestone pushes, and flavor vignettes — all live inside `heroCareCandidate`).
+The milestone-marker maintenance write is skipped too while locked; a stale marker can
+only *suppress* a celebration, never spam one — the safe direction.
+Protection/reminder/reflection categories are L1 features and stay untouched.
+Ally/boss pushes require partnerships/contributions that locked users cannot have; no
+guard needed.
 
 ## 10. Data & API changes (summary)
 
