@@ -74,6 +74,7 @@ import type {
   MobileTokenExchangeRequest,
   MobileTokenExchangeSuccess,
   MomentumResponse,
+  MyWeekComparison,
   MysteryResult,
   MysteryStatus,
   NotificationPrefs,
@@ -5799,6 +5800,83 @@ export function useGetLeaderboard<TData = Awaited<ReturnType<typeof getLeaderboa
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetLeaderboardQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetMyWeekUrl = () => {
+
+
+
+
+  return `/api/leaderboard/my-week`
+}
+
+/**
+ * @summary The viewer's week-so-far vs the same point last week
+ */
+export const getMyWeek = async ( options?: RequestInit): Promise<MyWeekComparison> => {
+
+  return customFetch<MyWeekComparison>(getGetMyWeekUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyWeekQueryKey = () => {
+    return [
+    `/api/leaderboard/my-week`
+    ] as const;
+    }
+
+
+export const getGetMyWeekQueryOptions = <TData = Awaited<ReturnType<typeof getMyWeek>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyWeek>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyWeekQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyWeek>>> = ({ signal }) => getMyWeek({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyWeek>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyWeekQueryResult = NonNullable<Awaited<ReturnType<typeof getMyWeek>>>
+export type GetMyWeekQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The viewer's week-so-far vs the same point last week
+ */
+
+export function useGetMyWeek<TData = Awaited<ReturnType<typeof getMyWeek>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyWeek>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyWeekQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

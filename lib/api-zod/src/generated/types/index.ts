@@ -113,6 +113,8 @@ export * from './mysteryResultReason';
 export * from './mysteryReward';
 export * from './mysteryStatus';
 export * from './mysteryStatusReason';
+export * from './myWeekComparison';
+export * from './myWeekMetric';
 export * from './notificationPrefs';
 export * from './nudge';
 export * from './nudgeInput';

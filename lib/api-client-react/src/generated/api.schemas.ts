@@ -1070,6 +1070,20 @@ export interface LeaderboardEntry {
   tasksCompleted?: number;
 }
 
+export interface MyWeekMetric {
+  current: number;
+  samePointLastWeek: number;
+  lastWeekTotal: number;
+}
+
+export interface MyWeekComparison {
+  timezone: string;
+  weekStartDateKey: string;
+  quests: MyWeekMetric;
+  xp: MyWeekMetric;
+  focusMinutes: MyWeekMetric;
+}
+
 export interface SuccessEnvelope {
   success: boolean;
 }

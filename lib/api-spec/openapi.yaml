@@ -1775,6 +1775,19 @@ paths:
                 items:
                   $ref: "#/components/schemas/LeaderboardEntry"
 
+  /leaderboard/my-week:
+    get:
+      operationId: getMyWeek
+      tags: [leaderboard]
+      summary: The viewer's week-so-far vs the same point last week
+      responses:
+        "200":
+          description: Self-comparison over the viewer's local Monday-anchored weeks
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyWeekComparison"
+
   /users/search:
     get:
       operationId: searchUsers
@@ -3264,6 +3277,32 @@ components:
           type: integer
         tasksCompleted:
           type: integer
+
+    MyWeekMetric:
+      type: object
+      required: [current, samePointLastWeek, lastWeekTotal]
+      properties:
+        current:
+          type: integer
+        samePointLastWeek:
+          type: integer
+        lastWeekTotal:
+          type: integer
+
+    MyWeekComparison:
+      type: object
+      required: [timezone, weekStartDateKey, quests, xp, focusMinutes]
+      properties:
+        timezone:
+          type: string
+        weekStartDateKey:
+          type: string
+        quests:
+          $ref: "#/components/schemas/MyWeekMetric"
+        xp:
+          $ref: "#/components/schemas/MyWeekMetric"
+        focusMinutes:
+          $ref: "#/components/schemas/MyWeekMetric"
 
     SuccessEnvelope:
       type: object
