@@ -141,7 +141,10 @@ export function getOutboxStore(): Promise<OutboxStore> {
       try {
         if (typeof indexedDB === "undefined") throw new Error("no indexedDB");
         return createIdbStore(await openDb());
-      } catch {
+      } catch (err) {
+        // Private mode / disabled storage / broken IDB. The UI already says
+        // "keep the app open" honestly — this names the reason for debugging.
+        console.warn("outbox: IndexedDB unavailable, captures will only survive this session", err);
         return createMemoryStore();
       }
     })();

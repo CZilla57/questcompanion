@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { Sparkles, CalendarClock, Zap, Plus, RefreshCw, Mic, Square } from "lucide-react";
 import { parseQuickAdd, type ParsedQuickAdd } from "@workspace/quick-add";
-import { useParseQuickAdd, getGetTasksQueryKey, getGetTasksMomentumQueryKey, getGetQuestlinesQueryKey, getGetQuestlineQueryKey, customFetch, type TaskInput, type TranscribeResult } from "@workspace/api-client-react";
+import { useParseQuickAdd, getGetTasksQueryKey, getGetTasksMomentumQueryKey, getGetQuestlinesQueryKey, getGetQuestlineQueryKey, type TaskInput } from "@workspace/api-client-react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import { isTooShortToTranscribe, formatElapsed } from "@/lib/voice-recording";
 import { isNetworkError, isDeadZoneError } from "@/lib/net-errors";
 import { makeTextEntry, makeVoiceEntry, newCaptureId } from "@/lib/outbox/core";
 import { getOutboxStore } from "@/lib/outbox/store";
-import { createTaskWithTimeout } from "@/lib/outbox/api";
+import { createTaskWithTimeout, transcribeWithTimeout } from "@/lib/outbox/api";
 
 function dateLabel(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
@@ -167,18 +167,12 @@ export function QuickAddBar({ selectedDate, questlineId }: { selectedDate: Date 
     });
   };
 
-  // orval's generated useTranscribeAudio JSON.stringifies its Blob body (v8
-  // limitation with binary request bodies), which would silently discard the
-  // audio — so this one endpoint calls customFetch directly. The /api base and
-  // error shaping (ApiError.status) still come from the shared client, and the
-  // generated TranscribeResult type keeps the response contract typed.
+  // Not the orval hook: it JSON.stringifies Blob bodies, and a hung upload
+  // must abort into the stash path instead of spinning forever — both live in
+  // transcribeWithTimeout (see lib/outbox/api.ts). Error shaping
+  // (ApiError.status) still comes from the shared client.
   const transcribeMutation = useMutation({
-    mutationFn: (blob: Blob) =>
-      customFetch<TranscribeResult>("/api/tasks/transcribe", {
-        method: "POST",
-        headers: { "content-type": blob.type || "audio/webm" },
-        body: blob,
-      }),
+    mutationFn: (blob: Blob) => transcribeWithTimeout(blob),
   });
 
   const voice = useVoiceRecording({

@@ -25,8 +25,13 @@ export function useAuth(): AuthState {
 
   useEffect(() => {
     let cancelled = false;
+    // 10s cap: a captive portal that blackholes the request must resolve into
+    // "unreachable" (the catch below maps the abort) so consumers can apply
+    // offline grace, instead of holding the auth gate at loading indefinitely.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10_000);
 
-    fetch("/api/auth/user", { credentials: "include" })
+    fetch("/api/auth/user", { credentials: "include", signal: controller.signal })
       .then(async (res) => {
         if (res.ok) {
           const data = (await res.json()) as { user: AuthUser | null };
@@ -37,6 +42,7 @@ export function useAuth(): AuthState {
       })
       .catch(() => ({ user: null, failure: "unreachable" as AuthFailure }))
       .then((result) => {
+        clearTimeout(timer);
         if (!cancelled) {
           setUser(result.user);
           setFailure(result.failure);
@@ -46,6 +52,7 @@ export function useAuth(): AuthState {
 
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
   }, []);
 
