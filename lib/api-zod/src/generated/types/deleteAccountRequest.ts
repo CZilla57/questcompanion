@@ -5,7 +5,8 @@
  * FocusQuest API - ADHD gamified task tracker
  * OpenAPI spec version: 0.1.0
  */
+import type { DeleteAccountRequestConfirm } from './deleteAccountRequestConfirm';
 
 export interface DeleteAccountRequest {
-  confirm: string;
+  confirm: DeleteAccountRequestConfirm;
 }

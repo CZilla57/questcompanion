@@ -53,4 +53,25 @@ describe("USER_DATA_TABLES registry (standing guard)", () => {
     const names = USER_DATA_TABLES.map((t) => t.name);
     expect(new Set(names).size).toBe(names.length);
   });
+
+  it("is topologically delete-safe: every registered table precedes tables it references", () => {
+    // The DELETE /api/me transaction walks the list top-to-bottom, so a table
+    // holding a non-cascading FK into another registered table must come
+    // FIRST (child before parent) or Postgres raises foreign_key_violation.
+    const position = new Map<string, number>();
+    USER_DATA_TABLES.forEach((t, i) => position.set(getTableConfig(t.table as PgTable).name, i));
+
+    const violations: string[] = [];
+    for (const t of USER_DATA_TABLES) {
+      const cfg = getTableConfig(t.table as PgTable);
+      for (const fk of cfg.foreignKeys) {
+        const target = getTableConfig(fk.reference().foreignTable as PgTable).name;
+        if (target === "users" || !position.has(target)) continue;
+        if (position.get(cfg.name)! > position.get(target)!) {
+          violations.push(`${cfg.name} (#${position.get(cfg.name)}) references ${target} (#${position.get(target)}) but is deleted after it`);
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
 });

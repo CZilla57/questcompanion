@@ -3349,6 +3349,7 @@ components:
       properties:
         confirm:
           type: string
+          enum: ["delete my account"]
 
     AccountExport:
       type: object

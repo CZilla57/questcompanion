@@ -1088,8 +1088,15 @@ export interface SuccessEnvelope {
   success: boolean;
 }
 
+export type DeleteAccountRequestConfirm = typeof DeleteAccountRequestConfirm[keyof typeof DeleteAccountRequestConfirm];
+
+
+export const DeleteAccountRequestConfirm = {
+  delete_my_account: 'delete my account',
+} as const;
+
 export interface DeleteAccountRequest {
-  confirm: string;
+  confirm: DeleteAccountRequestConfirm;
 }
 
 export type AccountExportUser = { [key: string]: unknown };

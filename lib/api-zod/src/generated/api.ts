@@ -1855,7 +1855,7 @@ export const GetMyExportResponse = zod.object({
  * @summary Permanently delete the account and every user-keyed row
  */
 export const DeleteMeBody = zod.object({
-  "confirm": zod.string()
+  "confirm": zod.enum(['delete my account'])
 })
 
 export const DeleteMeResponse = zod.object({

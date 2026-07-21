@@ -31,6 +31,8 @@ export const USER_DATA_TABLES: readonly UserDataTable[] = [
   { name: "focus_sessions",     table: focusSessionsTable,    userColumns: [focusSessionsTable.userId] },
   { name: "rescue_events",      table: rescueEventsTable,     userColumns: [rescueEventsTable.userId] },
   { name: "tasks",              table: tasksTable,            userColumns: [tasksTable.userId] },
+  // habit_streaks holds a non-cascading FK into recurring_tasks — child first.
+  { name: "habit_streaks",      table: habitStreaksTable,     userColumns: [habitStreaksTable.userId] },
   { name: "recurring_tasks",    table: recurringTasksTable,   userColumns: [recurringTasksTable.userId] },
   { name: "questlines",         table: questlinesTable,       userColumns: [questlinesTable.userId] },
   { name: "activity",           table: activityTable,         userColumns: [activityTable.userId] },
@@ -38,7 +40,6 @@ export const USER_DATA_TABLES: readonly UserDataTable[] = [
   { name: "reflections",        table: reflectionsTable,      userColumns: [reflectionsTable.userId] },
   { name: "weekly_recaps",      table: weeklyRecapsTable,     userColumns: [weeklyRecapsTable.userId] },
   { name: "initiation_awards",  table: initiationAwardsTable, userColumns: [initiationAwardsTable.userId] },
-  { name: "habit_streaks",      table: habitStreaksTable,     userColumns: [habitStreaksTable.userId] },
   { name: "kingdom_points",     table: kingdomPointsTable,    userColumns: [kingdomPointsTable.userId] },
   { name: "coin_transactions",  table: coinTransactionsTable, userColumns: [coinTransactionsTable.userId] },
   { name: "dopamine_rewards",   table: dopamineRewardsTable,  userColumns: [dopamineRewardsTable.userId] },

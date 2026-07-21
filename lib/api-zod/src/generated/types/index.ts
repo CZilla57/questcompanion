@@ -39,6 +39,7 @@ export * from './buyGearResultReason';
 export * from './coins';
 export * from './createRescueEvent201';
 export * from './deleteAccountRequest';
+export * from './deleteAccountRequestConfirm';
 export * from './dopamineReward';
 export * from './dopamineRewardInput';
 export * from './equippedGearItem';

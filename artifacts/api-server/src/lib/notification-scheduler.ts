@@ -332,7 +332,31 @@ async function runEnvelopePass(users: User[], now: Date) {
         .returning({ id: usersTable.id });
       if (claimed.length === 0) continue; // another tick won this slot
 
-      await notify(user.id, produced.title, produced.body, produced.tag, produced.url ? { url: produced.url } : undefined);
+      try {
+        await notify(user.id, produced.title, produced.body, produced.tag, produced.url ? { url: produced.url } : undefined);
+      } catch (err) {
+        // Nothing was delivered — un-charge OUR claim so a transient failure
+        // can't burn a budget slot or spacing-block protection for 90 min.
+        // Ownership is the exact lastPushAt instant the claim wrote, and no
+        // other tick can have claimed since (spacing sees our fresh claim),
+        // so the snapshot values are the exact pre-claim row state. If the
+        // rollback itself fails we stay charged — the quiet, fail-safe side.
+        // (A throw AFTER delivery — produced.commit below — keeps the charge
+        // on purpose: spacing then caps any repeat instead of allowing dups.)
+        try {
+          await db.update(usersTable)
+            .set({
+              lastPushAt: user.lastPushAt,
+              ...(consumesBudget(produced.kind)
+                ? { pushesSentDate: user.pushesSentDate, pushesSentCount: user.pushesSentCount }
+                : {}),
+            })
+            .where(and(eq(usersTable.id, user.id), eq(usersTable.lastPushAt, now)));
+        } catch (compErr) {
+          logger.warn({ compErr, userId: user.id }, "Failed to roll back push claim after send failure");
+        }
+        throw err;
+      }
       await produced.commit();
     } catch (err) {
       logger.error({ err, userId: user.id }, "Envelope pass failed for user");
