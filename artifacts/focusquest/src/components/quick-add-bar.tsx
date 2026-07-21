@@ -25,6 +25,7 @@ export function QuickAddBar({ selectedDate, questlineId }: { selectedDate: Date 
   const [text, setText] = useState("");
   const [aiFields, setAiFields] = useState<ParsedQuickAdd | null>(null);
   const [xp, setXp] = useState<number | null>(null);
+  const [stashing, setStashing] = useState(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -67,29 +68,42 @@ export function QuickAddBar({ selectedDate, questlineId }: { selectedDate: Date 
     return () => clearTimeout(t);
   }, [parsed.title, parsed.priority]);
 
-  const canCreate = parsed.title.trim().length > 0 && !createMutation.isPending;
+  const canCreate = parsed.title.trim().length > 0 && !createMutation.isPending && !stashing;
   const showSmartParse = parsed.title.trim().length > 0 && !parsed.dueDate && !parsed.dueTime;
 
   const stashCapture = async (input: TaskInput & { clientKey: string }) => {
-    const store = await getOutboxStore();
-    await store.add(makeTextEntry(input));
-    toast(
-      store.persistent
-        ? { title: "Saved — will sync when you're back online ✓", className: "border-primary" }
-        : { title: "Can't save to this browser — keep the app open until you're back online." },
-    );
-    setText("");
-    setAiFields(null);
+    setStashing(true);
+    try {
+      const store = await getOutboxStore();
+      await store.add(makeTextEntry(input));
+      toast(
+        store.persistent
+          ? { title: "Saved — will sync when you're back online ✓", className: "border-primary" }
+          : { title: "Can't save to this browser — keep the app open until you're back online." },
+      );
+      setText("");
+      setAiFields(null);
+    } catch {
+      // Storage itself failed (quota, tx abort). The text is still sitting in
+      // the input — nothing is lost; say so plainly instead of failing silent.
+      toast({ title: "Couldn't save that capture — your text is still here, try again.", variant: "destructive" });
+    } finally {
+      setStashing(false);
+    }
   };
 
   const stashVoice = async (blob: Blob, durationMs: number) => {
-    const store = await getOutboxStore();
-    await store.add(makeVoiceEntry(blob, durationMs, questlineId != null ? { questlineId } : {}));
-    toast(
-      store.persistent
-        ? { title: "Voice note saved — I'll transcribe it when you're back online", className: "border-primary" }
-        : { title: "Can't save to this browser — keep the app open until you're back online." },
-    );
+    try {
+      const store = await getOutboxStore();
+      await store.add(makeVoiceEntry(blob, durationMs, questlineId != null ? { questlineId } : {}));
+      toast(
+        store.persistent
+          ? { title: "Voice note saved — I'll transcribe it when you're back online", className: "border-primary" }
+          : { title: "Can't save to this browser — keep the app open until you're back online." },
+      );
+    } catch {
+      toast({ title: "Couldn't save the voice note — try again, or type it.", variant: "destructive" });
+    }
   };
 
   const handleCreate = () => {
