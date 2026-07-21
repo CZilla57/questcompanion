@@ -23,3 +23,4 @@ export * from "./world-boss";
 export * from "./reflections";
 export * from "./weekly-recaps";
 export * from "./kingdom-points";
+export * from "./body-double";
