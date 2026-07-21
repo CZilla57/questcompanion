@@ -19,6 +19,7 @@ import { browserTimeZone } from "@/lib/timezone";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ProtectionPause } from "@/components/protection-pause";
+import { BodyDoubleCard } from "@/components/body-double-card";
 import { useToast } from "@/hooks/use-toast";
 import { Timer, Pause, Play, Square } from "lucide-react";
 
@@ -208,6 +209,7 @@ export default function Focus() {
             </div>
           </CardContent>
         </Card>
+        <BodyDoubleCard />
       </div>
     );
   }
@@ -255,6 +257,8 @@ export default function Focus() {
       <Button className="w-full" onClick={handleStart} disabled={startMut.isPending || presets.length === 0}>
         {startMut.isPending ? "Starting…" : "Start Focus"}
       </Button>
+
+      <BodyDoubleCard />
     </div>
   );
 }

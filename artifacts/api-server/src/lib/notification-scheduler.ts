@@ -1,9 +1,10 @@
-import { eq, and, gt, desc, gte, isNotNull, or, isNull, lte, lt, ne, sql } from "drizzle-orm";
+import { eq, and, gt, desc, gte, isNotNull, or, isNull, lte, lt, ne, notExists, sql } from "drizzle-orm";
 import {
   db, tasksTable, usersTable, activityTable, pushSubscriptionsTable, focusSessionsTable,
   brainCheckinsTable, reflectionsTable, weeklyRecapsTable, coinTransactionsTable,
   initiationAwardsTable, userBadgesTable, badgesTable, questlinesTable,
-  worldBossAttacksTable, worldBossWeeksTable, type WeekStats,
+  worldBossAttacksTable, worldBossWeeksTable, bodyDoubleRoomsTable, bodyDoubleMembersTable,
+  type WeekStats,
 } from "@workspace/db";
 import { sendPushNotification } from "./push-notifications";
 import { logger } from "./logger";
@@ -31,6 +32,7 @@ import {
   type PushCandidate, type EnvelopeState,
 } from "./notification-envelope";
 import { isFeatureUnlocked } from "./feature-gates";
+import { SWEEP_STALE_MIN, SWEEP_MAX_AGE_HOURS } from "./body-double";
 import { pingHeartbeat } from "./heartbeat";
 import type { User } from "@workspace/db";
 
@@ -566,12 +568,41 @@ async function checkWeeklyRecaps(users: User[]) {
   }
 }
 
+// Act IV Body-Doubling: end abandoned rooms (every active member stale ≥ 90
+// min — heads-down is welcome, a fully-cold room is not) and ancient rooms
+// (≥ 12 h). One cheap UPDATE; no notifications, no envelope interaction. The
+// predicate mirrors lib/body-double.ts shouldSweepRoom, where it is unit-tested.
+export async function sweepBodyDoubleRooms(now: Date): Promise<number> {
+  const staleCutoff = new Date(now.getTime() - SWEEP_STALE_MIN * 60_000);
+  const ageCutoff = new Date(now.getTime() - SWEEP_MAX_AGE_HOURS * 3_600_000);
+  const swept = await db.update(bodyDoubleRoomsTable)
+    .set({ status: "ended", endedAt: now })
+    .where(and(
+      eq(bodyDoubleRoomsTable.status, "open"),
+      or(
+        lt(bodyDoubleRoomsTable.createdAt, ageCutoff),
+        notExists(
+          db.select({ one: sql`1` }).from(bodyDoubleMembersTable).where(and(
+            eq(bodyDoubleMembersTable.roomId, bodyDoubleRoomsTable.id),
+            isNull(bodyDoubleMembersTable.leftAt),
+            gt(bodyDoubleMembersTable.lastSeenAt, staleCutoff),
+          )),
+        ),
+      ),
+    ))
+    .returning({ id: bodyDoubleRoomsTable.id });
+  return swept.length;
+}
+
 export async function tick() {
   const ran: string[] = [];
   const now = new Date();
 
   await spawnRecurringTasks();
   ran.push("recurring-tasks");
+
+  await sweepBodyDoubleRooms(now);
+  ran.push("body-double-sweep");
 
   // One shared users fetch per tick — passes must not re-scan the table.
   const users = await db.select().from(usersTable);

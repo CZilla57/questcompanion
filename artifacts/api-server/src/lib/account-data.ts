@@ -11,7 +11,8 @@
 import { eq, or, type SQL } from "drizzle-orm";
 import type { AnyPgColumn, PgTable } from "drizzle-orm/pg-core";
 import {
-  activityTable, allyNudgesTable, brainCheckinsTable, coinTransactionsTable,
+  activityTable, allyNudgesTable, bodyDoubleMembersTable, bodyDoubleRoomsTable,
+  bodyDoubleSprintsTable, brainCheckinsTable, coinTransactionsTable,
   dopamineRewardsTable, focusSessionsTable, habitStreaksTable, initiationAwardsTable,
   kingdomPointsTable, partnershipsTable, pushSubscriptionsTable, questlinesTable,
   recurringTasksTable, reflectionsTable, rescueEventsTable, rewardStoreItemsTable,
@@ -48,6 +49,11 @@ export const USER_DATA_TABLES: readonly UserDataTable[] = [
   { name: "user_gear",          table: userGearTable,         userColumns: [userGearTable.userId] },
   { name: "weekly_battles",     table: weeklyBattlesTable,    userColumns: [weeklyBattlesTable.userId] },
   { name: "world_boss_attacks", table: worldBossAttacksTable, userColumns: [worldBossAttacksTable.userId] },
+  // Body-double children before rooms; my hosted rooms cascade their other
+  // members'/sprints' rows at the DB level (all room FKs cascade).
+  { name: "body_double_sprints", table: bodyDoubleSprintsTable, userColumns: [bodyDoubleSprintsTable.startedBy] },
+  { name: "body_double_members", table: bodyDoubleMembersTable, userColumns: [bodyDoubleMembersTable.userId] },
+  { name: "body_double_rooms",   table: bodyDoubleRoomsTable,   userColumns: [bodyDoubleRoomsTable.hostId] },
   { name: "push_subscriptions", table: pushSubscriptionsTable, userColumns: [pushSubscriptionsTable.userId] },
   { name: "ally_nudges",        table: allyNudgesTable,       userColumns: [allyNudgesTable.senderId, allyNudgesTable.recipientId] },
   { name: "partnerships",       table: partnershipsTable,     userColumns: [partnershipsTable.requesterId, partnershipsTable.recipientId] },

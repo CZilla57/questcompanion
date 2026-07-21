@@ -1753,6 +1753,175 @@ paths:
                   success: { type: boolean }
                   updated: { type: integer }
 
+  /body-double/rooms/open:
+    get:
+      operationId: getOpenBodyDoubleRooms
+      tags: [accountability]
+      summary: My open body-double room plus open rooms of my accepted allies
+      responses:
+        "200":
+          description: Open rooms visible to me
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [rooms]
+                properties:
+                  rooms:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/BodyDoubleOpenRoom"
+
+  /body-double/rooms:
+    post:
+      operationId: createBodyDoubleRoom
+      tags: [accountability]
+      summary: Open a body-double room (invites accepted allies via push)
+      responses:
+        "201":
+          description: The freshly opened room
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BodyDoubleRoomState"
+
+  /body-double/rooms/{id}:
+    get:
+      operationId: getBodyDoubleRoom
+      tags: [accountability]
+      summary: Room state (the 10s poll — doubles as the presence heartbeat)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Full room state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BodyDoubleRoomState"
+
+  /body-double/rooms/{id}/join:
+    post:
+      operationId: joinBodyDoubleRoom
+      tags: [accountability]
+      summary: Drop in (accepted allies of the host; rejoin clears left_at)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Room state after joining
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BodyDoubleRoomState"
+
+  /body-double/rooms/{id}/leave:
+    post:
+      operationId: leaveBodyDoubleRoom
+      tags: [accountability]
+      summary: Leave gracefully (host leaving ends the room)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Leave outcome
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [left, ended]
+                properties:
+                  left: { type: boolean }
+                  ended: { type: boolean }
+
+  /body-double/rooms/{id}/wave:
+    post:
+      operationId: waveBodyDoubleRoom
+      tags: [accountability]
+      summary: Wave at the room (soft-capped; rate-limited waves are a quiet no-op)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Whether the wave was recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [waved]
+                properties:
+                  waved: { type: boolean }
+
+  /body-double/rooms/{id}/sprints:
+    post:
+      operationId: startBodyDoubleSprint
+      tags: [accountability]
+      summary: Start a shared sprint (one live sprint per room)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BodyDoubleSprintInput"
+      responses:
+        "201":
+          description: The started sprint
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BodyDoubleSprint"
+
+  /body-double/rooms/{id}/sprints/{sprintId}/finish:
+    post:
+      operationId: finishBodyDoubleSprint
+      tags: [accountability]
+      summary: Finish a sprint (validated wall-clock; exactly-once flat bonus to members present)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: sprintId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Completion outcome (soft no-op on races)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [completed, xpAwarded, membersPaid]
+                properties:
+                  completed: { type: boolean }
+                  xpAwarded: { type: integer }
+                  membersPaid: { type: integer }
+
   /leaderboard:
     get:
       operationId: getLeaderboard
@@ -3227,6 +3396,75 @@ components:
         sentTodayCheer:
           type: boolean
 
+    BodyDoubleSprintInput:
+      type: object
+      required: [minutes]
+      properties:
+        minutes:
+          type: integer
+          enum: [15, 25, 50]
+
+    BodyDoubleSprint:
+      type: object
+      required: [id, minutes, startedBy, startedAt]
+      properties:
+        id: { type: integer }
+        minutes: { type: integer, enum: [15, 25, 50] }
+        startedBy: { type: integer }
+        startedAt: { type: string }
+
+    BodyDoubleRoomMember:
+      type: object
+      required: [id, username, currentLevel, totalPoints, isHost, presence, joinedAt]
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        displayName: { type: ["string", "null"] }
+        avatarColor: { type: string }
+        currentLevel: { type: integer }
+        levelName: { type: string }
+        totalPoints: { type: integer }
+        streakDays: { type: integer }
+        hero:
+          oneOf:
+            - $ref: "#/components/schemas/HeroLook"
+            - type: "null"
+        isHost: { type: boolean }
+        presence: { type: string, enum: [here, headsDown] }
+        joinedAt: { type: string }
+        waveAt: { type: ["string", "null"] }
+
+    BodyDoubleRoomState:
+      type: object
+      required: [id, hostId, status, createdAt, isMine, members, serverNow]
+      properties:
+        id: { type: integer }
+        hostId: { type: integer }
+        status: { type: string, enum: [open, ended] }
+        createdAt: { type: string }
+        endedAt: { type: ["string", "null"] }
+        isMine: { type: boolean }
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/BodyDoubleRoomMember"
+        sprint:
+          oneOf:
+            - $ref: "#/components/schemas/BodyDoubleSprint"
+            - type: "null"
+        serverNow: { type: string }
+
+    BodyDoubleOpenRoom:
+      type: object
+      required: [id, host, isMine, amMember, memberCount, createdAt]
+      properties:
+        id: { type: integer }
+        host: { $ref: "#/components/schemas/UserSummary" }
+        isMine: { type: boolean }
+        amMember: { type: boolean }
+        memberCount: { type: integer }
+        createdAt: { type: string }
+
     NudgeInput:
       type: object
       required: [kind, reaction]
@@ -3289,7 +3527,7 @@ components:
           type: string
         type:
           type: string
-          enum: [task_completed, badge_earned, level_up, streak_milestone, all_day_bonus, streak_freeze_bought, streak_freeze_used, gear_bought, gear_earned, focus_session, focus_complete, initiation, reflection]
+          enum: [task_completed, badge_earned, level_up, streak_milestone, all_day_bonus, streak_freeze_bought, streak_freeze_used, gear_bought, gear_earned, focus_session, focus_complete, initiation, reflection, body_double]
         description:
           type: string
         points:

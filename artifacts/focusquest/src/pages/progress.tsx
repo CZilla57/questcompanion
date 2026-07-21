@@ -5,7 +5,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Award, Flame, Trophy, Zap, Star, Rocket,
-  Shield, ShieldCheck, ShieldOff, Check, Timer, Play, Moon, Coins, ShoppingBag,
+  Shield, ShieldCheck, ShieldOff, Check, Timer, Play, Moon, Coins, ShoppingBag, Users,
 } from "lucide-react";
 import { BadgeIcon, BADGE_CATEGORY_STYLE, DEFAULT_BADGE_CATEGORY_STYLE } from "@/lib/badges";
 import { browserTimeZone } from "@/lib/timezone";
@@ -390,6 +390,7 @@ export default function Progress() {
                     {activity.type === 'gear_earned'          && <ShoppingBag className="w-4 h-4 text-secondary" />}
                     {activity.type === 'focus_session'        && <Timer       className="w-4 h-4 text-primary" />}
                     {activity.type === 'focus_complete'       && <Timer       className="w-4 h-4 text-primary" />}
+                    {activity.type === 'body_double'          && <Users       className="w-4 h-4 text-primary" />}
                     {activity.type === 'initiation'           && <Play        className="w-4 h-4 text-primary" />}
                     {activity.type === 'reflection'           && <Moon        className="w-4 h-4 text-primary" />}
                   </div>

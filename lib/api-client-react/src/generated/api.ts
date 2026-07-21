@@ -31,6 +31,9 @@ import type {
   BattleResult,
   BattleStatus,
   BeginBrowserLoginParams,
+  BodyDoubleRoomState,
+  BodyDoubleSprint,
+  BodyDoubleSprintInput,
   BrainCheckinRequest,
   BrainState,
   BuyGearResult,
@@ -40,6 +43,7 @@ import type {
   DopamineReward,
   DopamineRewardInput,
   ErrorEnvelope,
+  FinishBodyDoubleSprint200,
   FocusCompleteInput,
   FocusIntervalInput,
   FocusPreset,
@@ -56,6 +60,7 @@ import type {
   GetMyStatsParams,
   GetMyXpHistoryParams,
   GetNudgesParams,
+  GetOpenBodyDoubleRooms200,
   GetPartnerDetailParams,
   GetQuestlinesParams,
   GetTasksMomentumParams,
@@ -69,6 +74,7 @@ import type {
   InsightsResponse,
   KingdomsResponse,
   LeaderboardEntry,
+  LeaveBodyDoubleRoom200,
   ListFocusSessionsParams,
   LogoutSuccess,
   MarkNudgesRead200,
@@ -134,6 +140,7 @@ import type {
   UserStats,
   UserSummary,
   UserUpdate,
+  WaveBodyDoubleRoom200,
   WorldBossAttackResult,
   WorldBossStatus,
   XpDataPoint
@@ -5728,6 +5735,584 @@ export const useMarkNudgesRead = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getMarkNudgesReadMutationOptions(options));
+    }
+
+export const getGetOpenBodyDoubleRoomsUrl = () => {
+
+
+
+
+  return `/api/body-double/rooms/open`
+}
+
+/**
+ * @summary My open body-double room plus open rooms of my accepted allies
+ */
+export const getOpenBodyDoubleRooms = async ( options?: RequestInit): Promise<GetOpenBodyDoubleRooms200> => {
+
+  return customFetch<GetOpenBodyDoubleRooms200>(getGetOpenBodyDoubleRoomsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetOpenBodyDoubleRoomsQueryKey = () => {
+    return [
+    `/api/body-double/rooms/open`
+    ] as const;
+    }
+
+
+export const getGetOpenBodyDoubleRoomsQueryOptions = <TData = Awaited<ReturnType<typeof getOpenBodyDoubleRooms>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOpenBodyDoubleRooms>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetOpenBodyDoubleRoomsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOpenBodyDoubleRooms>>> = ({ signal }) => getOpenBodyDoubleRooms({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOpenBodyDoubleRooms>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetOpenBodyDoubleRoomsQueryResult = NonNullable<Awaited<ReturnType<typeof getOpenBodyDoubleRooms>>>
+export type GetOpenBodyDoubleRoomsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary My open body-double room plus open rooms of my accepted allies
+ */
+
+export function useGetOpenBodyDoubleRooms<TData = Awaited<ReturnType<typeof getOpenBodyDoubleRooms>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOpenBodyDoubleRooms>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetOpenBodyDoubleRoomsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateBodyDoubleRoomUrl = () => {
+
+
+
+
+  return `/api/body-double/rooms`
+}
+
+/**
+ * @summary Open a body-double room (invites accepted allies via push)
+ */
+export const createBodyDoubleRoom = async ( options?: RequestInit): Promise<BodyDoubleRoomState> => {
+
+  return customFetch<BodyDoubleRoomState>(getCreateBodyDoubleRoomUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getCreateBodyDoubleRoomMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBodyDoubleRoom>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createBodyDoubleRoom>>, TError,void, TContext> => {
+
+const mutationKey = ['createBodyDoubleRoom'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createBodyDoubleRoom>>, void> = () => {
+
+
+          return  createBodyDoubleRoom(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateBodyDoubleRoomMutationResult = NonNullable<Awaited<ReturnType<typeof createBodyDoubleRoom>>>
+
+    export type CreateBodyDoubleRoomMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Open a body-double room (invites accepted allies via push)
+ */
+export const useCreateBodyDoubleRoom = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBodyDoubleRoom>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createBodyDoubleRoom>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getCreateBodyDoubleRoomMutationOptions(options));
+    }
+
+export const getGetBodyDoubleRoomUrl = (id: number,) => {
+
+
+
+
+  return `/api/body-double/rooms/${id}`
+}
+
+/**
+ * @summary Room state (the 10s poll — doubles as the presence heartbeat)
+ */
+export const getBodyDoubleRoom = async (id: number, options?: RequestInit): Promise<BodyDoubleRoomState> => {
+
+  return customFetch<BodyDoubleRoomState>(getGetBodyDoubleRoomUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBodyDoubleRoomQueryKey = (id: number,) => {
+    return [
+    `/api/body-double/rooms/${id}`
+    ] as const;
+    }
+
+
+export const getGetBodyDoubleRoomQueryOptions = <TData = Awaited<ReturnType<typeof getBodyDoubleRoom>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBodyDoubleRoom>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBodyDoubleRoomQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBodyDoubleRoom>>> = ({ signal }) => getBodyDoubleRoom(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBodyDoubleRoom>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBodyDoubleRoomQueryResult = NonNullable<Awaited<ReturnType<typeof getBodyDoubleRoom>>>
+export type GetBodyDoubleRoomQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Room state (the 10s poll — doubles as the presence heartbeat)
+ */
+
+export function useGetBodyDoubleRoom<TData = Awaited<ReturnType<typeof getBodyDoubleRoom>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBodyDoubleRoom>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBodyDoubleRoomQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getJoinBodyDoubleRoomUrl = (id: number,) => {
+
+
+
+
+  return `/api/body-double/rooms/${id}/join`
+}
+
+/**
+ * @summary Drop in (accepted allies of the host; rejoin clears left_at)
+ */
+export const joinBodyDoubleRoom = async (id: number, options?: RequestInit): Promise<BodyDoubleRoomState> => {
+
+  return customFetch<BodyDoubleRoomState>(getJoinBodyDoubleRoomUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getJoinBodyDoubleRoomMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinBodyDoubleRoom>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof joinBodyDoubleRoom>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['joinBodyDoubleRoom'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof joinBodyDoubleRoom>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  joinBodyDoubleRoom(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type JoinBodyDoubleRoomMutationResult = NonNullable<Awaited<ReturnType<typeof joinBodyDoubleRoom>>>
+
+    export type JoinBodyDoubleRoomMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Drop in (accepted allies of the host; rejoin clears left_at)
+ */
+export const useJoinBodyDoubleRoom = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinBodyDoubleRoom>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof joinBodyDoubleRoom>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getJoinBodyDoubleRoomMutationOptions(options));
+    }
+
+export const getLeaveBodyDoubleRoomUrl = (id: number,) => {
+
+
+
+
+  return `/api/body-double/rooms/${id}/leave`
+}
+
+/**
+ * @summary Leave gracefully (host leaving ends the room)
+ */
+export const leaveBodyDoubleRoom = async (id: number, options?: RequestInit): Promise<LeaveBodyDoubleRoom200> => {
+
+  return customFetch<LeaveBodyDoubleRoom200>(getLeaveBodyDoubleRoomUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getLeaveBodyDoubleRoomMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof leaveBodyDoubleRoom>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof leaveBodyDoubleRoom>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['leaveBodyDoubleRoom'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof leaveBodyDoubleRoom>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  leaveBodyDoubleRoom(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LeaveBodyDoubleRoomMutationResult = NonNullable<Awaited<ReturnType<typeof leaveBodyDoubleRoom>>>
+
+    export type LeaveBodyDoubleRoomMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Leave gracefully (host leaving ends the room)
+ */
+export const useLeaveBodyDoubleRoom = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof leaveBodyDoubleRoom>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof leaveBodyDoubleRoom>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getLeaveBodyDoubleRoomMutationOptions(options));
+    }
+
+export const getWaveBodyDoubleRoomUrl = (id: number,) => {
+
+
+
+
+  return `/api/body-double/rooms/${id}/wave`
+}
+
+/**
+ * @summary Wave at the room (soft-capped; rate-limited waves are a quiet no-op)
+ */
+export const waveBodyDoubleRoom = async (id: number, options?: RequestInit): Promise<WaveBodyDoubleRoom200> => {
+
+  return customFetch<WaveBodyDoubleRoom200>(getWaveBodyDoubleRoomUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getWaveBodyDoubleRoomMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof waveBodyDoubleRoom>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof waveBodyDoubleRoom>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['waveBodyDoubleRoom'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof waveBodyDoubleRoom>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  waveBodyDoubleRoom(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type WaveBodyDoubleRoomMutationResult = NonNullable<Awaited<ReturnType<typeof waveBodyDoubleRoom>>>
+
+    export type WaveBodyDoubleRoomMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Wave at the room (soft-capped; rate-limited waves are a quiet no-op)
+ */
+export const useWaveBodyDoubleRoom = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof waveBodyDoubleRoom>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof waveBodyDoubleRoom>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getWaveBodyDoubleRoomMutationOptions(options));
+    }
+
+export const getStartBodyDoubleSprintUrl = (id: number,) => {
+
+
+
+
+  return `/api/body-double/rooms/${id}/sprints`
+}
+
+/**
+ * @summary Start a shared sprint (one live sprint per room)
+ */
+export const startBodyDoubleSprint = async (id: number,
+    bodyDoubleSprintInput: BodyDoubleSprintInput, options?: RequestInit): Promise<BodyDoubleSprint> => {
+
+  return customFetch<BodyDoubleSprint>(getStartBodyDoubleSprintUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      bodyDoubleSprintInput,)
+  }
+);}
+
+
+
+
+export const getStartBodyDoubleSprintMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startBodyDoubleSprint>>, TError,{id: number;data: BodyType<BodyDoubleSprintInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startBodyDoubleSprint>>, TError,{id: number;data: BodyType<BodyDoubleSprintInput>}, TContext> => {
+
+const mutationKey = ['startBodyDoubleSprint'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startBodyDoubleSprint>>, {id: number;data: BodyType<BodyDoubleSprintInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  startBodyDoubleSprint(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartBodyDoubleSprintMutationResult = NonNullable<Awaited<ReturnType<typeof startBodyDoubleSprint>>>
+    export type StartBodyDoubleSprintMutationBody = BodyType<BodyDoubleSprintInput>
+    export type StartBodyDoubleSprintMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Start a shared sprint (one live sprint per room)
+ */
+export const useStartBodyDoubleSprint = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startBodyDoubleSprint>>, TError,{id: number;data: BodyType<BodyDoubleSprintInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startBodyDoubleSprint>>,
+        TError,
+        {id: number;data: BodyType<BodyDoubleSprintInput>},
+        TContext
+      > => {
+      return useMutation(getStartBodyDoubleSprintMutationOptions(options));
+    }
+
+export const getFinishBodyDoubleSprintUrl = (id: number,
+    sprintId: number,) => {
+
+
+
+
+  return `/api/body-double/rooms/${id}/sprints/${sprintId}/finish`
+}
+
+/**
+ * @summary Finish a sprint (validated wall-clock; exactly-once flat bonus to members present)
+ */
+export const finishBodyDoubleSprint = async (id: number,
+    sprintId: number, options?: RequestInit): Promise<FinishBodyDoubleSprint200> => {
+
+  return customFetch<FinishBodyDoubleSprint200>(getFinishBodyDoubleSprintUrl(id,sprintId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getFinishBodyDoubleSprintMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finishBodyDoubleSprint>>, TError,{id: number;sprintId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof finishBodyDoubleSprint>>, TError,{id: number;sprintId: number}, TContext> => {
+
+const mutationKey = ['finishBodyDoubleSprint'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof finishBodyDoubleSprint>>, {id: number;sprintId: number}> = (props) => {
+          const {id,sprintId} = props ?? {};
+
+          return  finishBodyDoubleSprint(id,sprintId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FinishBodyDoubleSprintMutationResult = NonNullable<Awaited<ReturnType<typeof finishBodyDoubleSprint>>>
+
+    export type FinishBodyDoubleSprintMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Finish a sprint (validated wall-clock; exactly-once flat bonus to members present)
+ */
+export const useFinishBodyDoubleSprint = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finishBodyDoubleSprint>>, TError,{id: number;sprintId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof finishBodyDoubleSprint>>,
+        TError,
+        {id: number;sprintId: number},
+        TContext
+      > => {
+      return useMutation(getFinishBodyDoubleSprintMutationOptions(options));
     }
 
 export const getGetLeaderboardUrl = (params?: GetLeaderboardParams,) => {
