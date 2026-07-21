@@ -8,6 +8,7 @@ import { Layout } from "@/components/layout";
 import { useAuth } from "@workspace/auth-web";
 import { useGetMyStats, useUpdateMe, usePutMyTimezone, getGetMyStatsQueryKey } from "@workspace/api-client-react";
 import { browserTimeZone } from "@/lib/timezone";
+import { readSessionRecord, writeSessionRecord, clearSessionRecord, authVerdict, onboardingVerdict } from "@/lib/offline-session";
 import { Swords, Trophy } from "lucide-react";
 
 import NowScreen from "@/pages/now";
@@ -131,7 +132,7 @@ function OnboardingScreen() {
 }
 
 function OnboardingGate({ children }: { children: React.ReactNode }) {
-  const { data: stats, isLoading } = useGetMyStats({ tz: browserTimeZone() });
+  const { data: stats, isLoading, error, fetchStatus } = useGetMyStats({ tz: browserTimeZone() });
   const putTz = usePutMyTimezone();
 
   useEffect(() => {
@@ -141,7 +142,18 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (isLoading) {
+  useEffect(() => {
+    if (stats) writeSessionRecord({ authed: true, onboardingComplete: !!stats.onboardingComplete });
+  }, [stats]);
+
+  const verdict = onboardingVerdict({
+    stats,
+    isPaused: fetchStatus === "paused",
+    error: error ?? null,
+    record: readSessionRecord(),
+  });
+
+  if (isLoading || verdict === "loading") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
@@ -152,7 +164,7 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!stats?.onboardingComplete) {
+  if (verdict === "onboarding") {
     return <OnboardingScreen />;
   }
 
@@ -189,7 +201,12 @@ function Router() {
 }
 
 function AuthGate({ children }: { children: React.ReactNode }) {
-  const { isLoading, isAuthenticated, login } = useAuth();
+  const { isLoading, isAuthenticated, failure, login } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) writeSessionRecord({ authed: true });
+    else if (!isLoading && failure === null) clearSessionRecord(); // authoritative "no"
+  }, [isAuthenticated, isLoading, failure]);
 
   if (isLoading) {
     return (
@@ -202,7 +219,8 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!isAuthenticated) {
+  const verdict = authVerdict({ isAuthenticated, failure, record: readSessionRecord() });
+  if (verdict === "out") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center max-w-sm px-6">
