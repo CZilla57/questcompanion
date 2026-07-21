@@ -31,6 +31,7 @@ import {
   type PushCandidate, type EnvelopeState,
 } from "./notification-envelope";
 import { isFeatureUnlocked } from "./feature-gates";
+import { pingHeartbeat } from "./heartbeat";
 import type { User } from "@workspace/db";
 
 async function getSubscriptions(userId: number) {
@@ -556,6 +557,10 @@ export async function tick() {
 
   await checkWeeklyRecaps(users);
   ran.push("weekly-recaps");
+
+  // Dead-man's switch: ping only after every pass completed, so a heartbeat
+  // gap means "no FULL tick finished" across all schedulers (Act VII q7).
+  if (await pingHeartbeat()) ran.push("heartbeat");
 
   return ran;
 }
