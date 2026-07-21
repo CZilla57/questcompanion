@@ -3,9 +3,8 @@ import { WORLD_BOSS, worldBossHp, dayKey, rollDamage, crossedThreshold } from ".
 
 describe("WORLD_BOSS consts", () => {
   it("exposes the tunable economy knobs", () => {
-    expect(WORLD_BOSS.HP_BASE).toBe(1500);
-    expect(WORLD_BOSS.HP_STEP).toBe(300);
-    expect(WORLD_BOSS.HP_CAP).toBe(5000);
+    expect(WORLD_BOSS.HP_PER_CONTRIBUTOR).toBe(300);
+    expect(WORLD_BOSS.HP_MIN).toBe(300);
     expect(WORLD_BOSS.ATTACK_XP).toBe(15);
     expect(WORLD_BOSS.DEFEAT_COINS).toBe(50);
     expect(WORLD_BOSS.DEFEAT_XP).toBe(250);
@@ -13,16 +12,22 @@ describe("WORLD_BOSS consts", () => {
 });
 
 describe("worldBossHp", () => {
-  it("is HP_BASE in week 1 and escalates by HP_STEP per week", () => {
-    expect(worldBossHp("2026-W01")).toBe(1500);
-    expect(worldBossHp("2026-W02")).toBe(1800);
-    expect(worldBossHp("2026-W10")).toBe(1500 + 9 * 300); // 4200
+  it("scales linearly with prior-week active contributors", () => {
+    expect(worldBossHp(1)).toBe(300);
+    expect(worldBossHp(3)).toBe(900);
+    expect(worldBossHp(10)).toBe(3000);
   });
-  it("clamps at HP_CAP", () => {
-    expect(worldBossHp("2026-W52")).toBe(5000);
+  it("has no cap: big cohorts get proportionally big bosses", () => {
+    expect(worldBossHp(17)).toBe(5100);  // above the old 5000 clamp
+    expect(worldBossHp(300)).toBe(90000);
   });
-  it("falls back to base when the week number can't be parsed", () => {
-    expect(worldBossHp("garbage")).toBe(1500);
+  it("floors at HP_MIN so a quiet or first-ever week is solo-winnable", () => {
+    expect(worldBossHp(0)).toBe(300);
+  });
+  it("sanitizes junk input to the floor", () => {
+    expect(worldBossHp(-5)).toBe(300);
+    expect(worldBossHp(Number.NaN)).toBe(300);
+    expect(worldBossHp(2.9)).toBe(600); // fractional counts floor to ints
   });
 });
 

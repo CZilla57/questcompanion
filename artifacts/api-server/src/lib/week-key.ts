@@ -7,3 +7,10 @@ export function getWeekKey(date: Date = new Date()): string {
   const weekNo = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
 }
+
+/** The ISO week key of 7 days before `now` — the World Boss's cohort-sizing
+ * basis (prior week's active contributors). Date-based, so year boundaries
+ * need no string arithmetic. */
+export function priorWeekKey(now: Date = new Date()): string {
+  return getWeekKey(new Date(now.getTime() - 7 * 86400000));
+}

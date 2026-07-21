@@ -5,7 +5,7 @@ import {
   worldBossWeeksTable, worldBossAttacksTable,
 } from "@workspace/db";
 import { getLevelInfo } from "../lib/gamification";
-import { getWeekKey } from "../lib/week-key";
+import { getWeekKey, priorWeekKey } from "../lib/week-key";
 import { getUserPower } from "./battle";
 import { WORLD_BOSS, worldBossHp, dayKey, rollDamage, crossedThreshold } from "../lib/world-boss";
 import { awardSocialBadges } from "../lib/badge-awards";
@@ -13,11 +13,26 @@ import { awardCoins } from "../lib/award-coins";
 
 const router: IRouter = Router();
 
-// Lazily materialize this week's boss row and return it. The unique(weekKey)
-// constraint makes the insert an atomic no-op if another request already created it.
-async function ensureBossWeek(weekKey: string) {
+// Distinct attackers in `weekKey` — the cohort basis for HP sizing.
+async function priorContributorCount(weekKey: string): Promise<number> {
+  const [row] = await db
+    .select({ n: sql<number>`count(distinct ${worldBossAttacksTable.userId})`.mapWith(Number) })
+    .from(worldBossAttacksTable)
+    .where(eq(worldBossAttacksTable.weekKey, weekKey));
+  return row?.n ?? 0;
+}
+
+// Lazily materialize this week's boss row and return it. HP is sized from the
+// prior week's turnout at creation and snapshotted (mid-week population changes
+// never move a live boss's HP). The unique(weekKey) constraint makes the insert
+// an atomic no-op if another request already created it; racers computed the
+// same prior-week count, so either winner wrote the same HP.
+async function ensureBossWeek(weekKey: string, priorKey: string) {
+  const [existing] = await db.select().from(worldBossWeeksTable)
+    .where(eq(worldBossWeeksTable.weekKey, weekKey));
+  if (existing) return existing;
   await db.insert(worldBossWeeksTable)
-    .values({ weekKey, hp: worldBossHp(weekKey) })
+    .values({ weekKey, hp: worldBossHp(await priorContributorCount(priorKey)) })
     .onConflictDoNothing();
   const [boss] = await db.select().from(worldBossWeeksTable)
     .where(eq(worldBossWeeksTable.weekKey, weekKey));
@@ -40,9 +55,10 @@ router.get("/world-boss/current", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;
 
-  const weekKey = getWeekKey();
-  const today = dayKey();
-  const boss = await ensureBossWeek(weekKey);
+  const now = new Date();
+  const weekKey = getWeekKey(now);
+  const today = dayKey(now);
+  const boss = await ensureBossWeek(weekKey, priorWeekKey(now));
   const yourPower = await getUserPower(userId);
   const allies = await allyIds(userId);
 
@@ -97,9 +113,10 @@ router.post("/world-boss/attack", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;
 
-  const weekKey = getWeekKey();
-  const today = dayKey();
-  await ensureBossWeek(weekKey);
+  const now = new Date();
+  const weekKey = getWeekKey(now);
+  const today = dayKey(now);
+  await ensureBossWeek(weekKey, priorWeekKey(now));
   const power = await getUserPower(userId);
   const damage = rollDamage(power);
 
