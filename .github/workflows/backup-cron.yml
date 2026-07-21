@@ -1,0 +1,28 @@
+# Backup scheduler (Act VII q7 — Steady Ground). cron-job.org is the primary
+# tick; this fires every 5 minutes as the dead-simple fallback so one silent
+# lapse can't stop notifications AND cold-start the dyno. Overlap with the
+# primary is safe: every pass is idempotent and the push budget is claimed
+# atomically. GitHub cron may lag minutes under load — acceptable for a backup.
+name: backup-cron
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: backup-cron
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: POST /api/cron/tick
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl -fsS -X POST "https://getfocusquest.com/api/cron/tick" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            --max-time 60 \
+            -o /dev/null -w "http=%{http_code} time=%{time_total}s\n"

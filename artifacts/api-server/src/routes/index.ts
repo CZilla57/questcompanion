@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import healthRouter from "./health";
 import authRouter from "./auth";
 import usersRouter from "./users";
+import accountRouter from "./account";
 import tasksRouter from "./tasks";
 import momentumRouter from "./momentum";
 import badgesRouter from "./badges";
@@ -34,6 +35,7 @@ router.use(healthRouter);
 router.use(cronRouter);
 router.use(authRouter);
 router.use(usersRouter);
+router.use(accountRouter);
 // /tasks/momentum must beat tasksRouter's /tasks/:id — order matters.
 router.use(momentumRouter);
 router.use(tasksRouter);

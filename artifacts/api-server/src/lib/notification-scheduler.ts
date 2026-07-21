@@ -1,4 +1,4 @@
-import { eq, and, gt, desc, gte, isNotNull, or, isNull, lte, lt } from "drizzle-orm";
+import { eq, and, gt, desc, gte, isNotNull, or, isNull, lte, lt, ne, sql } from "drizzle-orm";
 import {
   db, tasksTable, usersTable, activityTable, pushSubscriptionsTable, focusSessionsTable,
   brainCheckinsTable, reflectionsTable, weeklyRecapsTable, coinTransactionsTable,
@@ -27,10 +27,11 @@ import { isRecapEmailConfigured, sendEmail } from "./email/send-email";
 import { renderRecapEmail } from "./email/render-recap";
 import { generateJson, isAiConfigured } from "./ai/client";
 import {
-  selectPush, consumesBudget,
+  selectPush, consumesBudget, DAILY_PUSH_BUDGET, PUSH_SPACING_MIN,
   type PushCandidate, type EnvelopeState,
 } from "./notification-envelope";
 import { isFeatureUnlocked } from "./feature-gates";
+import { pingHeartbeat } from "./heartbeat";
 import type { User } from "@workspace/db";
 
 async function getSubscriptions(userId: number) {
@@ -301,14 +302,62 @@ async function runEnvelopePass(users: User[], now: Date) {
       if (!winner) continue;
 
       const produced = candidates.find((c) => c === winner)!;
-      await notify(user.id, produced.title, produced.body, produced.tag, produced.url ? { url: produced.url } : undefined);
-      await produced.commit();
-      const sentToday = user.pushesSentDate === localToday ? user.pushesSentCount : 0;
-      await db.update(usersTable)
+
+      // Atomic claim-before-send (Act VII q7): selectPush decided from a
+      // tick-start snapshot, so re-verify spacing + budget against the CURRENT
+      // row in one conditional UPDATE. The row lock serializes overlapping
+      // ticks (primary + backup cron); the loser matches 0 rows and skips.
+      // Charging before the send is the fail-safe direction: a thrown send
+      // loses one quiet slot but can never double-push.
+      const spacingCutoff = new Date(now.getTime() - PUSH_SPACING_MIN * 60_000);
+      const spacingOk = or(isNull(usersTable.lastPushAt), lte(usersTable.lastPushAt, spacingCutoff));
+      const budgetOk = or(
+        isNull(usersTable.pushesSentDate),
+        ne(usersTable.pushesSentDate, localToday),
+        lt(usersTable.pushesSentCount, DAILY_PUSH_BUDGET),
+      );
+      const claimed = await db.update(usersTable)
         .set(consumesBudget(produced.kind)
-          ? { pushesSentDate: localToday, pushesSentCount: sentToday + 1, lastPushAt: now }
+          ? {
+              lastPushAt: now,
+              pushesSentDate: localToday,
+              pushesSentCount: sql`CASE WHEN ${usersTable.pushesSentDate} = ${localToday} THEN ${usersTable.pushesSentCount} + 1 ELSE 1 END`,
+            }
           : { lastPushAt: now })
-        .where(eq(usersTable.id, user.id));
+        .where(and(
+          eq(usersTable.id, user.id),
+          spacingOk,
+          ...(consumesBudget(produced.kind) ? [budgetOk] : []),
+        ))
+        .returning({ id: usersTable.id });
+      if (claimed.length === 0) continue; // another tick won this slot
+
+      try {
+        await notify(user.id, produced.title, produced.body, produced.tag, produced.url ? { url: produced.url } : undefined);
+      } catch (err) {
+        // Nothing was delivered — un-charge OUR claim so a transient failure
+        // can't burn a budget slot or spacing-block protection for 90 min.
+        // Ownership is the exact lastPushAt instant the claim wrote, and no
+        // other tick can have claimed since (spacing sees our fresh claim),
+        // so the snapshot values are the exact pre-claim row state. If the
+        // rollback itself fails we stay charged — the quiet, fail-safe side.
+        // (A throw AFTER delivery — produced.commit below — keeps the charge
+        // on purpose: spacing then caps any repeat instead of allowing dups.)
+        try {
+          await db.update(usersTable)
+            .set({
+              lastPushAt: user.lastPushAt,
+              ...(consumesBudget(produced.kind)
+                ? { pushesSentDate: user.pushesSentDate, pushesSentCount: user.pushesSentCount }
+                : {}),
+            })
+            .where(and(eq(usersTable.id, user.id), eq(usersTable.lastPushAt, now)));
+        } catch (compErr) {
+          logger.warn({ compErr, userId: user.id }, "Failed to roll back push claim after send failure");
+        }
+        throw err;
+      }
+      await produced.commit();
     } catch (err) {
       logger.error({ err, userId: user.id }, "Envelope pass failed for user");
     }
@@ -532,6 +581,10 @@ export async function tick() {
 
   await checkWeeklyRecaps(users);
   ran.push("weekly-recaps");
+
+  // Dead-man's switch: ping only after every pass completed, so a heartbeat
+  // gap means "no FULL tick finished" across all schedulers (Act VII q7).
+  if (await pingHeartbeat()) ran.push("heartbeat");
 
   return ran;
 }

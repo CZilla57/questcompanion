@@ -6,6 +6,9 @@
 // never blocked by a spent budget, never charged against it (consumesBudget) —
 // so a marathon hyperfocus day can't silence protection. Spacing and the
 // deep-night floor still bound critical.
+// NOTE: the scheduler's atomic claim (runEnvelopePass) re-verifies spacing +
+// budget in SQL from these SAME constants. If either ever becomes per-user or
+// per-kind, update BOTH selectPush and the claim WHERE in lockstep.
 export const DAILY_PUSH_BUDGET = 3;
 export const PUSH_SPACING_MIN = 90;
 // Absolute floor, matching lib/hyperfocus.ts DEEP_NIGHT_START/MORNING — no push

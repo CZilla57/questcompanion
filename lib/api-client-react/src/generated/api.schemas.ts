@@ -1088,6 +1088,29 @@ export interface SuccessEnvelope {
   success: boolean;
 }
 
+export type DeleteAccountRequestConfirm = typeof DeleteAccountRequestConfirm[keyof typeof DeleteAccountRequestConfirm];
+
+
+export const DeleteAccountRequestConfirm = {
+  delete_my_account: 'delete my account',
+} as const;
+
+export interface DeleteAccountRequest {
+  confirm: DeleteAccountRequestConfirm;
+}
+
+export type AccountExportUser = { [key: string]: unknown };
+
+export type AccountExportDataItem = { [key: string]: unknown };
+
+export type AccountExportData = {[key: string]: AccountExportDataItem[]};
+
+export interface AccountExport {
+  exportedAt: string;
+  user: AccountExportUser;
+  data: AccountExportData;
+}
+
 export type AvatarProfileAvatarClass = typeof AvatarProfileAvatarClass[keyof typeof AvatarProfileAvatarClass];
 
 

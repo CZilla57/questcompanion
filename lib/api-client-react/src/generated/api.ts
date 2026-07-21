@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AccountExport,
   ActivityItem,
   AllyDetail,
   ApplyDifficultyInput,
@@ -35,6 +36,7 @@ import type {
   BuyGearResult,
   Coins,
   CreateRescueEvent201,
+  DeleteAccountRequest,
   DopamineReward,
   DopamineRewardInput,
   ErrorEnvelope,
@@ -5888,6 +5890,154 @@ export function useGetMyWeek<TData = Awaited<ReturnType<typeof getMyWeek>>, TErr
 
 
 
+
+export const getGetMyExportUrl = () => {
+
+
+
+
+  return `/api/me/export`
+}
+
+/**
+ * @summary Download everything user-keyed as one JSON file
+ */
+export const getMyExport = async ( options?: RequestInit): Promise<AccountExport> => {
+
+  return customFetch<AccountExport>(getGetMyExportUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyExportQueryKey = () => {
+    return [
+    `/api/me/export`
+    ] as const;
+    }
+
+
+export const getGetMyExportQueryOptions = <TData = Awaited<ReturnType<typeof getMyExport>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyExport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyExportQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyExport>>> = ({ signal }) => getMyExport({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyExport>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyExportQueryResult = NonNullable<Awaited<ReturnType<typeof getMyExport>>>
+export type GetMyExportQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Download everything user-keyed as one JSON file
+ */
+
+export function useGetMyExport<TData = Awaited<ReturnType<typeof getMyExport>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyExport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyExportQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getDeleteMeUrl = () => {
+
+
+
+
+  return `/api/me`
+}
+
+/**
+ * @summary Permanently delete the account and every user-keyed row
+ */
+export const deleteMe = async (deleteAccountRequest: DeleteAccountRequest, options?: RequestInit): Promise<SuccessEnvelope> => {
+
+  return customFetch<SuccessEnvelope>(getDeleteMeUrl(),
+  {
+    ...options,
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      deleteAccountRequest,)
+  }
+);}
+
+
+
+
+export const getDeleteMeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMe>>, TError,{data: BodyType<DeleteAccountRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteMe>>, TError,{data: BodyType<DeleteAccountRequest>}, TContext> => {
+
+const mutationKey = ['deleteMe'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteMe>>, {data: BodyType<DeleteAccountRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  deleteMe(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteMeMutationResult = NonNullable<Awaited<ReturnType<typeof deleteMe>>>
+    export type DeleteMeMutationBody = BodyType<DeleteAccountRequest>
+    export type DeleteMeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Permanently delete the account and every user-keyed row
+ */
+export const useDeleteMe = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMe>>, TError,{data: BodyType<DeleteAccountRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteMe>>,
+        TError,
+        {data: BodyType<DeleteAccountRequest>},
+        TContext
+      > => {
+      return useMutation(getDeleteMeMutationOptions(options));
+    }
 
 export const getSearchUsersUrl = (params: SearchUsersParams,) => {
   const normalizedParams = new URLSearchParams();
