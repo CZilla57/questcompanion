@@ -9,6 +9,12 @@ import {
   updateSession,
   type SessionData,
 } from "../lib/auth";
+import { eq } from "drizzle-orm";
+import { db, apiTokensTable, usersTable } from "@workspace/db";
+import { logger } from "../lib/logger";
+import {
+  evaluateShortcutAuth, hashTokenSecret, isShortcutRouteAllowed, isShortcutToken,
+} from "../lib/shortcut-token";
 
 declare global {
   namespace Express {
@@ -54,6 +60,40 @@ async function refreshIfExpired(
   }
 }
 
+async function applyShortcutTokenAuth(req: Request, bearer: string): Promise<void> {
+  // Default-deny: off-whitelist requests never even touch the database.
+  if (!isShortcutRouteAllowed(req.method, req.path)) return;
+
+  const [row] = await db.select().from(apiTokensTable)
+    .where(eq(apiTokensTable.tokenHash, hashTokenSecret(bearer)));
+  const decision = evaluateShortcutAuth({
+    bearer, method: req.method, path: req.path, tokenRow: row,
+  });
+  if (decision.kind !== "allow" || !row) return;
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, row.userId));
+  if (!user) return;
+
+  // Same contract the session path produces; handlers only ever read gameUserId.
+  req.user = {
+    id: user.externalId ?? String(user.id),
+    email: null,
+    firstName: user.displayName ?? user.username,
+    lastName: null,
+    profileImageUrl: null,
+  };
+  req.gameUserId = user.id;
+
+  if (decision.refreshLastUsed) {
+    // Fire-and-forget: an hourly freshness marker isn't worth request latency.
+    void (async () => {
+      await db.update(apiTokensTable)
+        .set({ lastUsedAt: new Date() })
+        .where(eq(apiTokensTable.id, row.id));
+    })().catch((err) => logger.warn({ err }, "api token last_used update failed"));
+  }
+}
+
 export async function authMiddleware(
   req: Request,
   res: Response,
@@ -65,6 +105,17 @@ export async function authMiddleware(
 
   const authHeader = req.headers["authorization"];
   const isBearerAuth = typeof authHeader === "string" && authHeader.startsWith("Bearer ");
+
+  // Pocket Gate (spec D4): an fqs_ bearer is a shortcut token, never a session
+  // id. Handle it entirely here — valid tokens authenticate the three
+  // whitelisted routes; everything else falls through unauthenticated and the
+  // route's own isAuthenticated() check returns the usual 401.
+  const bearer = isBearerAuth ? authHeader.slice(7) : undefined;
+  if (bearer !== undefined && isShortcutToken(bearer)) {
+    await applyShortcutTokenAuth(req, bearer);
+    next();
+    return;
+  }
 
   const sid = getSessionId(req);
   if (!sid) {
