@@ -106,7 +106,11 @@ function EveryonePanel() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div>
+          <h2 className="font-bold text-foreground">The whole fellowship</h2>
+          <p className="text-xs text-muted-foreground">Everyone in the game, ranked by XP.</p>
+        </div>
         <Tabs value={period} onValueChange={(v) => setPeriod(v as GetLeaderboardPeriod)}>
           <TabsList className="bg-card border border-border">
             <TabsTrigger

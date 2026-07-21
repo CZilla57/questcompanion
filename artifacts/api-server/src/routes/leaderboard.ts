@@ -11,28 +11,27 @@ const router: IRouter = Router();
 // quests = completed tasks by completedAt; xp = positive activity points;
 // focus = focused seconds (>0 filters opened-and-abandoned sessions).
 async function totalsInWindow(userId: number, w: Window) {
-  const [q] = await db
-    .select({ n: sql<number>`count(*)`.mapWith(Number) })
-    .from(tasksTable)
-    .where(and(
-      eq(tasksTable.userId, userId), eq(tasksTable.completed, true),
-      isNotNull(tasksTable.completedAt),
-      gte(tasksTable.completedAt, w.start), lt(tasksTable.completedAt, w.end),
-    ));
-  const [x] = await db
-    .select({ n: sql<number>`coalesce(sum(${activityTable.points}), 0)`.mapWith(Number) })
-    .from(activityTable)
-    .where(and(
-      eq(activityTable.userId, userId), gt(activityTable.points, 0),
-      gte(activityTable.createdAt, w.start), lt(activityTable.createdAt, w.end),
-    ));
-  const [f] = await db
-    .select({ n: sql<number>`coalesce(sum(${focusSessionsTable.focusedSeconds}), 0)`.mapWith(Number) })
-    .from(focusSessionsTable)
-    .where(and(
-      eq(focusSessionsTable.userId, userId), gt(focusSessionsTable.focusedSeconds, 0),
-      gte(focusSessionsTable.startedAt, w.start), lt(focusSessionsTable.startedAt, w.end),
-    ));
+  const [[q], [x], [f]] = await Promise.all([
+    db.select({ n: sql<number>`count(*)`.mapWith(Number) })
+      .from(tasksTable)
+      .where(and(
+        eq(tasksTable.userId, userId), eq(tasksTable.completed, true),
+        isNotNull(tasksTable.completedAt),
+        gte(tasksTable.completedAt, w.start), lt(tasksTable.completedAt, w.end),
+      )),
+    db.select({ n: sql<number>`coalesce(sum(${activityTable.points}), 0)`.mapWith(Number) })
+      .from(activityTable)
+      .where(and(
+        eq(activityTable.userId, userId), gt(activityTable.points, 0),
+        gte(activityTable.createdAt, w.start), lt(activityTable.createdAt, w.end),
+      )),
+    db.select({ n: sql<number>`coalesce(sum(${focusSessionsTable.focusedSeconds}), 0)`.mapWith(Number) })
+      .from(focusSessionsTable)
+      .where(and(
+        eq(focusSessionsTable.userId, userId), gt(focusSessionsTable.focusedSeconds, 0),
+        gte(focusSessionsTable.startedAt, w.start), lt(focusSessionsTable.startedAt, w.end),
+      )),
+  ]);
   return {
     quests: q?.n ?? 0,
     xp: x?.n ?? 0,
@@ -44,7 +43,8 @@ router.get("/leaderboard/my-week", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;
 
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  const [user] = await db.select({ timezone: usersTable.timezone })
+    .from(usersTable).where(eq(usersTable.id, userId));
   const tz = resolveTimeZone(user?.timezone);
   const windows = comparisonWindows(new Date(), tz);
 

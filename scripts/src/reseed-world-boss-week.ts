@@ -1,12 +1,15 @@
-// One-shot for Act VII q6: resize the ALREADY-materialized current World Boss
-// week to the new cohort formula (the formula otherwise applies only to weeks
+// One-shot for Act VII q6: resize an ALREADY-materialized World Boss week to
+// the new cohort formula (the formula otherwise applies only to weeks
 // materialized after deploy — W30 was created under the old 5000-cap curve).
 // Run via:
-//   pnpm --filter @workspace/scripts reseed-world-boss-week
+//   pnpm --filter @workspace/scripts reseed-world-boss-week [weekKey]
+// e.g. `... reseed-world-boss-week 2026-W30`. With no arg it targets the week
+// current at RUN time — pass the key explicitly if the week may have rolled
+// over since deploy, or the stale week silently keeps its old HP.
 //
 // Constants mirror api-server's lib/world-boss.ts (HP_PER_CONTRIBUTOR /
 // HP_MIN) — a one-shot script may duplicate them rather than reach into an
-// app package.
+// app package; must track lib/world-boss.ts and lib/week-key.ts if re-run later.
 //
 // Guards:
 //  - never touches a defeated week (payout already settled);
@@ -28,10 +31,22 @@ function getWeekKey(date: Date = new Date()): string {
   return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
 }
 
+// Monday (UTC) of an ISO week key — ISO week 1 contains Jan 4. Lets the
+// prior week derive from the TARGET week, not from the wall clock.
+function isoWeekMonday(weekKey: string): Date {
+  const m = weekKey.match(/^(\d{4})-W(\d{2})$/);
+  if (!m) throw new Error(`Invalid week key: ${weekKey} (expected e.g. 2026-W30)`);
+  const jan4 = new Date(Date.UTC(Number(m[1]), 0, 4));
+  const mondayW1 = new Date(jan4);
+  mondayW1.setUTCDate(jan4.getUTCDate() - ((jan4.getUTCDay() || 7) - 1));
+  const monday = new Date(mondayW1);
+  monday.setUTCDate(mondayW1.getUTCDate() + (Number(m[2]) - 1) * 7);
+  return monday;
+}
+
 async function main() {
-  const now = new Date();
-  const weekKey = getWeekKey(now);
-  const priorKey = getWeekKey(new Date(now.getTime() - 7 * 86400000));
+  const weekKey = process.argv[2] ?? getWeekKey(new Date());
+  const priorKey = getWeekKey(new Date(isoWeekMonday(weekKey).getTime() - 7 * 86400000));
 
   const [prior] = await db
     .select({ n: sql<number>`count(distinct ${worldBossAttacksTable.userId})`.mapWith(Number) })
