@@ -5,6 +5,7 @@
  * FocusQuest API - ADHD gamified task tracker
  * OpenAPI spec version: 0.1.0
  */
+import type { FeatureKey } from './featureKey';
 import type { Questline } from './questline';
 
 export interface QuestlineClaimResult {
@@ -14,4 +15,6 @@ export interface QuestlineClaimResult {
   currentLevel: number;
   levelName: string;
   leveledUp: boolean;
+  /** Gates crossed by this award (for the level-up dialog). Always empty for grandfathered users. */
+  newlyUnlocked: FeatureKey[];
 }

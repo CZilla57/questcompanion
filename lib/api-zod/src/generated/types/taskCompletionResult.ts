@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Badge } from './badge';
+import type { FeatureKey } from './featureKey';
 import type { GearRewardInfo } from './gearRewardInfo';
 import type { SurpriseReward } from './surpriseReward';
 import type { Task } from './task';
@@ -36,4 +37,6 @@ export interface TaskCompletionResult {
   heroRevived?: boolean;
   /** Companion's line for a just-happened bond tier-up or level-up, else null */
   companionReaction?: string | null;
+  /** Gates crossed by this award (for the level-up dialog). Always empty for grandfathered users. */
+  newlyUnlocked: FeatureKey[];
 }

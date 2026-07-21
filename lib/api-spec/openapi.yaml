@@ -193,6 +193,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+        "400":
+          description: Invalid hero name format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: Hero name already taken
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Rename cooldown active
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error, renameAvailableAt]
+                properties:
+                  error:
+                    type: string
+                  renameAvailableAt:
+                    type: string
+                    format: date-time
 
   /users/me/stats:
     get:
@@ -2279,7 +2304,7 @@ components:
 
     User:
       type: object
-      required: [id, username, totalPoints, currentLevel, streakDays, createdAt]
+      required: [id, username, totalPoints, currentLevel, streakDays, createdAt, renameAvailableAt]
       properties:
         id:
           type: integer
@@ -2305,6 +2330,10 @@ components:
           type: integer
         createdAt:
           type: string
+        renameAvailableAt:
+          type: ["string", "null"]
+          format: date-time
+          description: Instant the next hero-name rename opens; null when renaming is available now.
 
     UserSummary:
       type: object
@@ -2337,9 +2366,14 @@ components:
         avatarColor:
           type: string
 
+    FeatureKey:
+      type: string
+      description: Gentle Door progressive-unlock feature groups (keys match client nav groups)
+      enum: [focus, hero, progress, allies, rewards]
+
     UserStats:
       type: object
-      required: [todayPoints, todayTasksTotal, todayTasksCompleted, allDayBonusEarned, weeklyPoints, totalPoints, currentLevel, levelName, streakDays, streakFreezes, pointsToNextLevel, pointsIntoLevel, recentActivity, onboardingComplete]
+      required: [todayPoints, todayTasksTotal, todayTasksCompleted, allDayBonusEarned, weeklyPoints, totalPoints, currentLevel, levelName, streakDays, streakFreezes, pointsToNextLevel, pointsIntoLevel, recentActivity, onboardingComplete, unlockedFeatures]
       properties:
         todayPoints:
           type: integer
@@ -2374,6 +2408,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ActivityItem"
+        unlockedFeatures:
+          type: array
+          description: Features visible to this user. Grandfathered accounts always get all five; locked features are invisible client-side (never teased).
+          items:
+            $ref: "#/components/schemas/FeatureKey"
 
     HeroStatus:
       type: object
@@ -2701,7 +2740,7 @@ components:
 
     TaskCompletionResult:
       type: object
-      required: [task, pointsAwarded, bonusAwarded, bonusPoints, streakBonus, xpMultiplier, newTotalPoints, newLevel, leveledUp, newBadges]
+      required: [task, pointsAwarded, bonusAwarded, bonusPoints, streakBonus, xpMultiplier, newTotalPoints, newLevel, leveledUp, newBadges, newlyUnlocked]
       properties:
         task:
           $ref: "#/components/schemas/Task"
@@ -2752,6 +2791,11 @@ components:
             - type: string
             - type: "null"
           description: Companion's line for a just-happened bond tier-up or level-up, else null
+        newlyUnlocked:
+          type: array
+          description: Gates crossed by this award (for the level-up dialog). Always empty for grandfathered users.
+          items:
+            $ref: "#/components/schemas/FeatureKey"
 
     Questline:
       type: object
@@ -2832,7 +2876,7 @@ components:
 
     QuestlineClaimResult:
       type: object
-      required: [questline, xpAwarded, totalPoints, currentLevel, levelName, leveledUp]
+      required: [questline, xpAwarded, totalPoints, currentLevel, levelName, leveledUp, newlyUnlocked]
       properties:
         questline:
           $ref: "#/components/schemas/Questline"
@@ -2846,6 +2890,11 @@ components:
           type: string
         leveledUp:
           type: boolean
+        newlyUnlocked:
+          type: array
+          description: Gates crossed by this award (for the level-up dialog). Always empty for grandfathered users.
+          items:
+            $ref: "#/components/schemas/FeatureKey"
 
     SuggestQuestlineQuestsInput:
       type: object

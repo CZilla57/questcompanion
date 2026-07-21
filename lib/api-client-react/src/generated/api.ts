@@ -125,6 +125,7 @@ import type {
   TranscribeResult,
   UnsubscribeRecapEmailsOneClickParams,
   UnsubscribeRecapEmailsParams,
+  UpdateMe429,
   User,
   UserBadge,
   UserStats,
@@ -784,7 +785,7 @@ export const updateMe = async (userUpdate: UserUpdate, options?: RequestInit): P
 
 
 
-export const getUpdateMeMutationOptions = <TError = ErrorType<unknown>,
+export const getUpdateMeMutationOptions = <TError = ErrorType<ErrorEnvelope | UpdateMe429>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMe>>, TError,{data: BodyType<UserUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateMe>>, TError,{data: BodyType<UserUpdate>}, TContext> => {
 
@@ -813,12 +814,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateMeMutationResult = NonNullable<Awaited<ReturnType<typeof updateMe>>>
     export type UpdateMeMutationBody = BodyType<UserUpdate>
-    export type UpdateMeMutationError = ErrorType<unknown>
+    export type UpdateMeMutationError = ErrorType<ErrorEnvelope | UpdateMe429>
 
     /**
  * @summary Update current user profile
  */
-export const useUpdateMe = <TError = ErrorType<unknown>,
+export const useUpdateMe = <TError = ErrorType<ErrorEnvelope | UpdateMe429>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMe>>, TError,{data: BodyType<UserUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof updateMe>>,

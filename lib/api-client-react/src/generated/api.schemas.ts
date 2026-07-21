@@ -65,6 +65,11 @@ export interface User {
   longestStreak?: number;
   pointsToNextLevel?: number;
   createdAt: string;
+  /**
+     * Instant the next hero-name rename opens; null when renaming is available now.
+     * @nullable
+     */
+  renameAvailableAt: string | null;
 }
 
 export interface UserSummary {
@@ -84,6 +89,20 @@ export interface UserUpdate {
   displayName?: string;
   avatarColor?: string;
 }
+
+/**
+ * Gentle Door progressive-unlock feature groups (keys match client nav groups)
+ */
+export type FeatureKey = typeof FeatureKey[keyof typeof FeatureKey];
+
+
+export const FeatureKey = {
+  focus: 'focus',
+  hero: 'hero',
+  progress: 'progress',
+  allies: 'allies',
+  rewards: 'rewards',
+} as const;
 
 export type ActivityItemType = typeof ActivityItemType[keyof typeof ActivityItemType];
 
@@ -132,6 +151,8 @@ export interface UserStats {
   /** Points earned since entering the current level band (0 at the band's start) */
   pointsIntoLevel: number;
   recentActivity: ActivityItem[];
+  /** Features visible to this user. Grandfathered accounts always get all five; locked features are invisible client-side (never teased). */
+  unlockedFeatures: FeatureKey[];
 }
 
 export type HeroStatusStage = typeof HeroStatusStage[keyof typeof HeroStatusStage];
@@ -652,6 +673,8 @@ export interface TaskCompletionResult {
   heroRevived?: boolean;
   /** Companion's line for a just-happened bond tier-up or level-up, else null */
   companionReaction?: string | null;
+  /** Gates crossed by this award (for the level-up dialog). Always empty for grandfathered users. */
+  newlyUnlocked: FeatureKey[];
 }
 
 export type QuestlineStatus = typeof QuestlineStatus[keyof typeof QuestlineStatus];
@@ -728,6 +751,8 @@ export interface QuestlineClaimResult {
   currentLevel: number;
   levelName: string;
   leveledUp: boolean;
+  /** Gates crossed by this award (for the level-up dialog). Always empty for grandfathered users. */
+  newlyUnlocked: FeatureKey[];
 }
 
 export interface SuggestQuestlineQuestsInput {
@@ -1946,6 +1971,11 @@ export type HandleBrowserLoginCallbackParams = {
 code?: string;
 state?: string;
 iss?: string;
+};
+
+export type UpdateMe429 = {
+  error: string;
+  renameAvailableAt: string;
 };
 
 export type GetMyStatsParams = {
