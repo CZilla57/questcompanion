@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Switch, Route, Redirect, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -8,6 +8,7 @@ import { Layout } from "@/components/layout";
 import { useAuth } from "@workspace/auth-web";
 import { useGetMyStats, useUpdateMe, usePutMyTimezone, getGetMyStatsQueryKey } from "@workspace/api-client-react";
 import { browserTimeZone } from "@/lib/timezone";
+import { readSessionRecord, writeSessionRecord, clearSessionRecord, authVerdict, onboardingVerdict } from "@/lib/offline-session";
 import { Swords, Trophy } from "lucide-react";
 
 import NowScreen from "@/pages/now";
@@ -131,8 +132,16 @@ function OnboardingScreen() {
 }
 
 function OnboardingGate({ children }: { children: React.ReactNode }) {
-  const { data: stats, isLoading } = useGetMyStats({ tz: browserTimeZone() });
+  const { data: stats, isLoading, error, fetchStatus } = useGetMyStats({ tz: browserTimeZone() });
   const putTz = usePutMyTimezone();
+  // Latch: once the gate has admitted the app (positive answer or offline
+  // grace), a background stats refetch must not yank the shell back to the
+  // spinner. TanStack v5 resets an errored, data-less query to `pending`
+  // (error cleared) when any observer — e.g. the Now screen's own
+  // useGetMyStats — triggers a refetch; without the latch that unmounts and
+  // remounts the whole subtree in an infinite loop while the server is
+  // unreachable. A positive "not onboarded" answer still clears the latch.
+  const grantedRef = useRef(false);
 
   useEffect(() => {
     // Fire-and-forget: capture the browser's timezone once per authed load so
@@ -141,7 +150,29 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (isLoading) {
+  useEffect(() => {
+    if (stats) writeSessionRecord({ authed: true, onboardingComplete: !!stats.onboardingComplete });
+  }, [stats]);
+
+  const verdict = onboardingVerdict({
+    stats,
+    isPaused: fetchStatus === "paused",
+    error: error ?? null,
+    record: readSessionRecord(),
+  });
+
+  if (verdict === "app") grantedRef.current = true;
+  if (verdict === "onboarding") grantedRef.current = false;
+
+  if (verdict === "onboarding") {
+    return <OnboardingScreen />;
+  }
+
+  if (grantedRef.current) {
+    return <>{children}</>;
+  }
+
+  if (isLoading || verdict === "loading") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
@@ -150,10 +181,6 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
         </div>
       </div>
     );
-  }
-
-  if (!stats?.onboardingComplete) {
-    return <OnboardingScreen />;
   }
 
   return <>{children}</>;
@@ -189,7 +216,12 @@ function Router() {
 }
 
 function AuthGate({ children }: { children: React.ReactNode }) {
-  const { isLoading, isAuthenticated, login } = useAuth();
+  const { isLoading, isAuthenticated, failure, login } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) writeSessionRecord({ authed: true });
+    else if (!isLoading && failure === null) clearSessionRecord(); // authoritative "no"
+  }, [isAuthenticated, isLoading, failure]);
 
   if (isLoading) {
     return (
@@ -202,7 +234,8 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!isAuthenticated) {
+  const verdict = authVerdict({ isAuthenticated, failure, record: readSessionRecord() });
+  if (verdict === "out") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center max-w-sm px-6">

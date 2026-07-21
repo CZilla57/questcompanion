@@ -8,6 +8,7 @@ import { EveningReflectionCard } from "@/components/evening-reflection-card";
 import { TodaysFocus } from "@/components/todays-focus";
 import { StatusRow } from "@/components/status-row";
 import { QuickAddBar } from "@/components/quick-add-bar";
+import { OutboxBlock } from "@/components/outbox-block";
 import { Target, Check, X, Clock, Sunrise, Sparkles, Trophy, Award } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -83,7 +84,19 @@ export default function NowScreen() {
     return <NowSkeleton />;
   }
 
-  if (!stats) return null;
+  // Can't reach the server (offline, cold start): capture-first shell instead
+  // of a blank page. Layout already shows the offline banner.
+  if (!stats) {
+    return (
+      <div className="space-y-4 animate-in fade-in duration-300">
+        <p className="text-sm text-muted-foreground">Capture now — sort it out later.</p>
+        <div id="quick-add">
+          <QuickAddBar selectedDate={new Date()} />
+        </div>
+        <OutboxBlock />
+      </div>
+    );
+  }
 
   const pendingTasks = tasks?.filter(t => !t.completed) || [];
   const completedTasks = tasks?.filter(t => t.completed) || [];
@@ -110,6 +123,8 @@ export default function NowScreen() {
       <div id="quick-add">
         <QuickAddBar selectedDate={new Date()} />
       </div>
+
+      <OutboxBlock />
 
       {/* ── Today's Quests ─────────────────────────────────── */}
       <div className="space-y-5">

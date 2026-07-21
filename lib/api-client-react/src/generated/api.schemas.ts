@@ -467,6 +467,12 @@ export interface TaskInput {
      * @nullable
      */
   questlineId?: number | null;
+  /**
+     * Client-generated idempotency key (a UUID). Two creates with the same key for the same user return the same task - the second responds 200 with the existing quest instead of creating a duplicate. Sent on every quick-add capture; offline replays reuse the capture's key.
+     * @minLength 8
+     * @maxLength 64
+     */
+  clientKey?: string;
 }
 
 export type ApplyDifficultyInputLevel = typeof ApplyDifficultyInputLevel[keyof typeof ApplyDifficultyInputLevel];

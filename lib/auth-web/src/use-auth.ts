@@ -3,35 +3,43 @@ import type { AuthUser } from "@workspace/api-client-react";
 
 export type { AuthUser };
 
+/** "unreachable" = we never got an authoritative answer about the session
+ * (fetch rejected, or the server 5xx'd — Render cold starts included).
+ * Consumers may apply offline grace on it; a real 401/logged-out answer
+ * always reports failure: null with user: null. */
+export type AuthFailure = "unreachable" | null;
+
 interface AuthState {
   user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  failure: AuthFailure;
   login: () => void;
   logout: () => void;
 }
 
 export function useAuth(): AuthState {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [failure, setFailure] = useState<AuthFailure>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
     fetch("/api/auth/user", { credentials: "include" })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json() as Promise<{ user: AuthUser | null }>;
-      })
-      .then((data) => {
-        if (!cancelled) {
-          setUser(data.user ?? null);
-          setIsLoading(false);
+      .then(async (res) => {
+        if (res.ok) {
+          const data = (await res.json()) as { user: AuthUser | null };
+          return { user: data.user ?? null, failure: null as AuthFailure };
         }
+        // 5xx is not an answer about the session; anything else is a "no".
+        return { user: null, failure: (res.status >= 500 ? "unreachable" : null) as AuthFailure };
       })
-      .catch(() => {
+      .catch(() => ({ user: null, failure: "unreachable" as AuthFailure }))
+      .then((result) => {
         if (!cancelled) {
-          setUser(null);
+          setUser(result.user);
+          setFailure(result.failure);
           setIsLoading(false);
         }
       });
@@ -58,6 +66,7 @@ export function useAuth(): AuthState {
     user,
     isLoading,
     isAuthenticated: !!user,
+    failure,
     login,
     logout,
   };

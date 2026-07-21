@@ -1,9 +1,93 @@
-self.addEventListener("install", () => {
+const BUILD = { hash: "dev", assets: [] }; // replaced at build time by scripts/inject-sw-precache.mjs
+
+const SHELL_CACHE = `fq-shell-${BUILD.hash}`;
+const FONT_CACHE = "fq-fonts-v1";
+const FONT_HOSTS = ["fonts.googleapis.com", "fonts.gstatic.com"];
+
+self.addEventListener("install", (event) => {
+  if (BUILD.hash !== "dev") {
+    // addAll is deliberately all-or-nothing: a partial shell is worse than
+    // none (index.html referencing un-cached hashed assets). A failed install
+    // retries on the next SW update check — the app stays network-only.
+    event.waitUntil(caches.open(SHELL_CACHE).then((cache) => cache.addAll(BUILD.assets)));
+  }
   self.skipWaiting();
 });
 
+// NOTE: skipWaiting+claim hands an already-open old tab to this SW and deletes
+// its old fq-shell-* cache. Safe today: the app is a single bundle (no lazy
+// chunks) and navigations are network-first, so a reload self-heals. Revisit
+// before adopting route-based code-splitting.
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    (async () => {
+      const names = await caches.keys();
+      await Promise.all(
+        names
+          .filter((n) => n.startsWith("fq-shell-") && n !== SHELL_CACHE)
+          .map((n) => caches.delete(n)),
+      );
+      await self.clients.claim();
+    })(),
+  );
+});
+
+async function cacheFirst(cacheName, request) {
+  const cached = await caches.match(request, { cacheName });
+  if (cached) return cached;
+  const response = await fetch(request);
+  // Only cache full, successful bodies: a 206 partial (Safari range requests)
+  // makes Cache.put throw, and error responses shouldn't be pinned. A put
+  // failure (quota) must never break the response path.
+  if (response.status === 200 || response.type === "opaque") {
+    const cache = await caches.open(cacheName);
+    cache.put(request, response.clone()).catch(() => {});
+  }
+  return response;
+}
+
+self.addEventListener("fetch", (event) => {
+  const { request } = event;
+  // Never intercept mutations — the outbox is app-layer (spec §Part 3).
+  if (request.method !== "GET") return;
+
+  const url = new URL(request.url);
+
+  // API is network-only, always — including /api/login navigations.
+  if (url.origin === self.location.origin && url.pathname.startsWith("/api/")) return;
+
+  // Fonts: cache-first into a small persistent cache so type survives offline.
+  if (FONT_HOSTS.includes(url.hostname)) {
+    event.respondWith(cacheFirst(FONT_CACHE, request));
+    return;
+  }
+
+  // Everything below needs a real build (dev worker is inert) + same origin.
+  if (BUILD.hash === "dev" || url.origin !== self.location.origin) return;
+
+  // Navigations: network-first so deploys land immediately; cached shell offline.
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetch(request).catch(async () => {
+        const shell = await caches.match("/index.html", { cacheName: SHELL_CACHE });
+        // A missing shell (storage evicted) must still resolve to a real
+        // Response — respondWith(undefined) is a hard browser error page.
+        return (
+          shell ??
+          new Response("You're offline and the app isn't cached yet. Reconnect and reload.", {
+            status: 503,
+            headers: { "content-type": "text/plain; charset=utf-8" },
+          })
+        );
+      }),
+    );
+    return;
+  }
+
+  // Precached shell files (hashed → immutable): cache-first.
+  if (BUILD.assets.includes(url.pathname)) {
+    event.respondWith(cacheFirst(SHELL_CACHE, request));
+  }
 });
 
 self.addEventListener("push", (event) => {
@@ -46,10 +130,4 @@ self.addEventListener("notificationclick", (event) => {
       }
     })
   );
-});
-
-self.addEventListener("fetch", () => {
-  // No-op: present only so the app meets PWA installability criteria.
-  // Intentionally does NOT call event.respondWith — every request goes to the
-  // network. There is no offline caching in this version.
 });

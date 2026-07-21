@@ -15,6 +15,13 @@
       "when": 1784529586729,
       "tag": "0001_one_voice_prefs",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784587682254,
+      "tag": "0002_never_lose_a_thought",
+      "breakpoints": true
     }
   ]
 }

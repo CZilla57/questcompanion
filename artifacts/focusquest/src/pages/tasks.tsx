@@ -4,6 +4,7 @@ import { Calendar as CalendarIcon, Clock, Plus, Filter, Zap, Info, Sparkles, Ref
 import { Task, useGetTasks, useCreateTask, useUpdateTask, useBreakdownTask, useGetQuestlines, TaskPriority } from "@workspace/api-client-react";
 import { TaskItem } from "@/components/task-item";
 import { QuickAddBar } from "@/components/quick-add-bar";
+import { OutboxBlock } from "@/components/outbox-block";
 import { TodaysFocus } from "@/components/todays-focus";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -273,6 +274,7 @@ export default function Tasks() {
       </div>
 
       <QuickAddBar selectedDate={date} />
+      <OutboxBlock />
 
       <div className="flex flex-col sm:flex-row gap-4 items-center bg-card p-4 rounded-xl border border-border">
         <Popover>
