@@ -129,8 +129,9 @@ fail-open); (b) level-derived only (charter's alternate; rejected — acceptance
   response carries keys. Copy celebrates the door opening; it never previews the next one.
 - **Embedded surfaces**:
   - `CoinChip` (both layout headers) renders `null` and skips its query while `rewards`
-    is locked. Completion toasts: verify no coin copy leaks pre-L6 (none known — coins
-    surface only in the chip and Rewards pages today).
+    is locked. Completion toasts carry no coin copy. (~~coins surface only in the chip
+    and Rewards pages today~~ — corrected in the Addendum: the L3 gear store also
+    surfaces them.)
   - `WorldBossPanel` (`avatar.tsx:844`) renders only when `allies` is unlocked (its
     host page needs `hero`; the panel additionally needs `allies` per the charter).
   - `StatusRow` (Now) keeps its line but drops the `/progress` link (plain, non-nagging
@@ -214,3 +215,26 @@ guard needed.
    locked-feature name, level requirement, or countdown (grep-level check).
 7. Locked-hero users produce no hero-category push candidates.
 8. `xp-monotonicity` standing guard still green (no new XP writers).
+
+## Addendum (final whole-branch review, 2026-07-20)
+
+**Corrected claim.** §7 originally asserted coins surface only in the header chip and
+the Rewards pages. False since Honest Coin: the **Hero page gear store (unlocks L3)**
+prices gear in coins, shows the wallet ("Coins: N"), a "N more to go" shortfall line,
+and an earn-coins hint (`avatar.tsx` store section). So a fresh account meets the
+currency at L3, three levels before the L6 "Rewards economy" reveal — which in
+practice reveals the Rewards *hub* (Treats/Store/Perks + header chip), not the
+existence of coins.
+
+**Decision for Chad (branch ships behavior-unchanged, option a):**
+- (a) **Accept**: gear is the L3 reveal and its prices come with it; L6 stays the hub
+  reveal. No code change. *(shipped default)*
+- (b) **Tighten**: gate the gear store's wallet-balance row and earn-hint behind
+  `rewards` (prices must stay or the store is unusable), making L6 the first wallet
+  sighting at the cost of an odd "priced but balance-less" store.
+
+**Two review edges recorded as accepted:** other XP raisers (initiation, reflection,
+battle, surprise-XP) unlock silently via the next stats refetch (no celebration hook
+exists on those paths); offline outbox replays of a gate-crossing completion surface
+no celebration either (replay results are processed silently by design — added to the
+airplane-mode checklist).
