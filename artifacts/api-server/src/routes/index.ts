@@ -30,6 +30,7 @@ import patternsRouter from "./patterns";
 import reflectionsRouter from "./reflections";
 import recapsRouter from "./recaps";
 import shortcutTokensRouter from "./shortcut-tokens";
+import shortcutsRouter from "./shortcuts";
 
 const router: IRouter = Router();
 
@@ -42,6 +43,7 @@ router.use(shortcutTokensRouter);
 // /tasks/momentum must beat tasksRouter's /tasks/:id — order matters.
 router.use(momentumRouter);
 router.use(tasksRouter);
+router.use(shortcutsRouter);
 router.use(recurringTasksRouter);
 router.use(badgesRouter);
 router.use(accountabilityRouter);
