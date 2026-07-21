@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@workspace/auth-web";
-import { useGetMyStats, useUpdateMe, usePutMyTimezone, getGetMyStatsQueryKey } from "@workspace/api-client-react";
+import { useGetMyStats, useUpdateMe, usePutMyTimezone, getGetMyStatsQueryKey, ApiError } from "@workspace/api-client-react";
 import { browserTimeZone } from "@/lib/timezone";
 import { readSessionRecord, writeSessionRecord, clearSessionRecord, authVerdict, onboardingVerdict } from "@/lib/offline-session";
 import { isUnlocked, type FeatureKey } from "@/lib/feature-gates";
@@ -65,11 +65,11 @@ function OnboardingScreen() {
       await updateMe.mutateAsync({ data: { username: trimmed } });
       await qc.invalidateQueries({ queryKey: getGetMyStatsQueryKey() });
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "That name is already taken. Try another.";
-      setServerError(msg.includes("409") || msg.includes("unique") || msg.includes("duplicate")
-        ? "That hero name is already taken. Try another."
-        : "Something went wrong. Please try again.");
+      setServerError(
+        err instanceof ApiError && err.status === 409
+          ? "That hero name is already taken. Try another."
+          : "Something went wrong. Please try again.",
+      );
     }
   }
 

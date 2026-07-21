@@ -26,6 +26,10 @@ describe("decideRename", () => {
     expect(decideRename({ ...base, onboardingComplete: false }))
       .toEqual({ kind: "ok", isOnboardingSet: true });
   });
+  it("treats a same-name submit during onboarding as the onboarding set, not a noop", () => {
+    expect(decideRename({ ...base, onboardingComplete: false, requested: "OldName" }))
+      .toEqual({ kind: "ok", isOnboardingSet: true });
+  });
   it("allows the first real rename (usernameChangedAt null)", () => {
     expect(decideRename(base)).toEqual({ kind: "ok", isOnboardingSet: false });
   });

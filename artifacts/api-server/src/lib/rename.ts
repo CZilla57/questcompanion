@@ -19,7 +19,7 @@ export function decideRename(args: {
   now: Date;
 }): RenameDecision {
   const requested = args.requested.trim();
-  if (requested === args.current) return { kind: "noop" };
+  if (requested === args.current && args.onboardingComplete) return { kind: "noop" };
   if (!USERNAME_REGEX.test(requested)) return { kind: "invalid_format" };
   if (args.onboardingComplete && args.usernameChangedAt) {
     const availableAt = new Date(args.usernameChangedAt.getTime() + RENAME_COOLDOWN_MS);

@@ -3,7 +3,7 @@
 // door reopens without ever surfacing an error wall.
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useGetMe, useUpdateMe, getGetMeQueryKey } from "@workspace/api-client-react";
+import { useGetMe, useUpdateMe, getGetMeQueryKey, getGetMyStatsQueryKey, ApiError } from "@workspace/api-client-react";
 import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,16 +40,17 @@ export function HeroIdentity() {
     try {
       await updateMe.mutateAsync({ data: { username: trimmed } });
       await qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
+      await qc.invalidateQueries({ queryKey: getGetMyStatsQueryKey() });
       setOpen(false);
       toast({ title: `You are now ${trimmed}!`, className: "border-primary" });
     } catch (err: unknown) {
-      const text = err instanceof Error ? err.message : "";
+      const status = err instanceof ApiError ? err.status : null;
       setError(
-        text.includes("409") || text.includes("taken")
+        status === 409
           ? "That hero name is already taken. Try another."
-          : text.includes("429") || text.includes("once a week")
+          : status === 429
           ? "Renamed recently — you can rename again soon."
-          : text.includes("400") || text.includes("3–20")
+          : status === 400
           ? "Hero names are 3–20 characters: letters, numbers, and underscores."
           : "Something went wrong. Please try again.",
       );
