@@ -81,6 +81,21 @@ export const usersTable = pgTable("users", {
   pushesSentDate: text("pushes_sent_date"),
   pushesSentCount: integer("pushes_sent_count").notNull().default(0),
   lastPushAt: timestamp("last_push_at"),
+  // Act VII Gentle Door (q5): progressive-unlock state.
+  // unlockAll — grandfather flag. The column default stamps TRUE onto every row
+  // that exists when the migration runs (pre-quest behavior: everything open);
+  // only the auth create path inserts FALSE, so exactly the accounts born after
+  // this ship get the gentle door. Unforeseen insert paths fail open.
+  unlockAll: boolean("unlock_all").notNull().default(true),
+  // Monotonic unlock floor: highest level reached before any XP reversal.
+  // Written ONLY in the /uncomplete transaction (the sole XP-lowering path) —
+  // forward progress needs no writes because derived level covers it. Gates
+  // read max(derived level, highestLevel) so a seen door never closes.
+  highestLevel: integer("highest_level").notNull().default(1),
+  // Rename cooldown anchor: set on each successful post-onboarding rename;
+  // null until the first real rename (the onboarding set doesn't start the
+  // clock — a minute-zero typo must be fixable immediately).
+  usernameChangedAt: timestamp("username_changed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
