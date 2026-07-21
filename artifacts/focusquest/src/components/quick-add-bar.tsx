@@ -11,7 +11,7 @@ import { CATEGORY_HEX_COLORS, CATEGORY_LABEL } from "@/lib/categories";
 import { formatTime12h } from "@/lib/format-time";
 import { useVoiceRecording } from "@/hooks/use-voice-recording";
 import { isTooShortToTranscribe, formatElapsed } from "@/lib/voice-recording";
-import { isNetworkError } from "@/lib/net-errors";
+import { isNetworkError, isDeadZoneError } from "@/lib/net-errors";
 import { makeTextEntry, makeVoiceEntry, newCaptureId } from "@/lib/outbox/core";
 import { getOutboxStore } from "@/lib/outbox/store";
 import { createTaskWithTimeout } from "@/lib/outbox/api";
@@ -134,7 +134,7 @@ export function QuickAddBar({ selectedDate, questlineId }: { selectedDate: Date 
         }
       },
       onError: (err) => {
-        if (isNetworkError(err)) { void stashCapture(input); return; }
+        if (isDeadZoneError(err)) { void stashCapture(input); return; }
         toast({ title: "Couldn't add that quest", variant: "destructive" });
       },
     });

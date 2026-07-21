@@ -244,10 +244,16 @@ happened); it then shows up under that date like any other quest.
   Double-tap dedupe for free.
 - The create call moves from the orval `useCreateTask` hook to a direct
   `customFetch` call (the transcribe endpoint already sets this precedent) so
-  it can pass `AbortSignal.timeout(10_000)` and classify failures: an
-  `ApiError` is a server answer (keep today's destructive toast); a fetch
-  `TypeError`/abort — or `navigator.onLine === false` checked up front — is a
-  dead zone. Generated types (`CreateTaskInput`, `Task`) still type the call.
+  it can pass `AbortSignal.timeout(10_000)` and classify failures: a 4xx
+  `ApiError` is a real server rejection (keep today's destructive toast); a
+  fetch `TypeError`/abort, a **5xx** (cold start, server down — the same
+  unreachable class the gates grace), or `navigator.onLine === false` checked
+  up front is a dead zone. *(Amended 2026-07-20 during live verification: 5xx
+  originally kept the destructive toast, which loses the capture on exactly
+  the failures replay already retries. Voice transcribe keeps its
+  network-only stash: its 503 means "not configured" — a persistent state
+  whose honest copy stays, and stashing it would wedge the drain.)* Generated
+  types (`CreateTaskInput`, `Task`) still type the call.
 - Dead zone → write outbox entry, clear the input, optimistic toast:
   *"Saved — will sync when you're back online ✓"*. (Thanks to the idempotency
   key, a timed-out request that actually landed server-side just dedupes on
