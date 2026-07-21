@@ -1818,6 +1818,30 @@ export const GetLeaderboardResponse = zod.array(GetLeaderboardResponseItem)
 
 
 /**
+ * @summary The viewer's week-so-far vs the same point last week
+ */
+export const GetMyWeekResponse = zod.object({
+  "timezone": zod.string(),
+  "weekStartDateKey": zod.string(),
+  "quests": zod.object({
+  "current": zod.number(),
+  "samePointLastWeek": zod.number(),
+  "lastWeekTotal": zod.number()
+}),
+  "xp": zod.object({
+  "current": zod.number(),
+  "samePointLastWeek": zod.number(),
+  "lastWeekTotal": zod.number()
+}),
+  "focusMinutes": zod.object({
+  "current": zod.number(),
+  "samePointLastWeek": zod.number(),
+  "lastWeekTotal": zod.number()
+})
+})
+
+
+/**
  * @summary Search for users by username
  */
 export const SearchUsersQueryParams = zod.object({

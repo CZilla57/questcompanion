@@ -332,7 +332,10 @@ const MAX_GENERATE_PER_TICK = 3;
 /** Raw rows for the closed local week. Personal stats use the user's local
  * Mon 00:00 → next Mon 00:00 instants; the World Boss block keys on the UTC
  * ISO week (how boss data is stored) — the 0-12h boundary mismatch is an
- * accepted spec tradeoff (spec §5). */
+ * accepted spec tradeoff (spec §5).
+ * The quests/xp/focus predicates are mirrored by totalsInWindow in
+ * routes/leaderboard.ts (GET /leaderboard/my-week) — keep the two grammars
+ * in lockstep or the recap email and the My Week page will disagree. */
 async function loadWeekStatsInputs(userId: number, tz: string, week: LocalWeek, now: Date): Promise<WeekStatsInputs> {
   const startUtc = localDayStartUtc(week.startDateKey, tz);
   const endUtc = localDayStartUtc(week.endDateKeyExclusive, tz);

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getWeekKey } from "./week-key";
+import { getWeekKey, priorWeekKey } from "./week-key";
 
 describe("getWeekKey", () => {
   it("formats as YYYY-Www with a zero-padded week number", () => {
@@ -19,5 +19,15 @@ describe("getWeekKey", () => {
     const mon = getWeekKey(new Date(Date.UTC(2026, 6, 20))); // Mon 2026-07-20
     expect(sun).toBe("2026-W29");
     expect(mon).toBe("2026-W30");
+  });
+});
+
+describe("priorWeekKey", () => {
+  it("is the key of the week 7 days earlier", () => {
+    expect(priorWeekKey(new Date(Date.UTC(2026, 6, 21)))).toBe("2026-W29");
+    expect(priorWeekKey(new Date(Date.UTC(2026, 6, 20)))).toBe("2026-W29"); // Monday edge
+  });
+  it("crosses year boundaries without string arithmetic", () => {
+    expect(priorWeekKey(new Date(Date.UTC(2026, 0, 1)))).toBe("2025-W52");
   });
 });
