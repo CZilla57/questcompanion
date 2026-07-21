@@ -6,9 +6,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@workspace/auth-web";
-import { useGetMyStats, useUpdateMe, usePutMyTimezone, getGetMyStatsQueryKey } from "@workspace/api-client-react";
+import { useGetMyStats, useUpdateMe, usePutMyTimezone, getGetMyStatsQueryKey, ApiError } from "@workspace/api-client-react";
 import { browserTimeZone } from "@/lib/timezone";
 import { readSessionRecord, writeSessionRecord, clearSessionRecord, authVerdict, onboardingVerdict } from "@/lib/offline-session";
+import { isUnlocked, type FeatureKey } from "@/lib/feature-gates";
+import { USERNAME_REGEX, heroNameError } from "@/lib/username";
 import { Swords, Trophy } from "lucide-react";
 
 import NowScreen from "@/pages/now";
@@ -37,8 +39,6 @@ const queryClient = new QueryClient({
   },
 });
 
-const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
-
 function OnboardingScreen() {
   const [heroName, setHeroName] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -58,24 +58,18 @@ function OnboardingScreen() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!isFormatValid) {
-      setValidationError(
-        trimmed.length < 3
-          ? "Hero name must be at least 3 characters."
-          : trimmed.length > 20
-          ? "Hero name must be 20 characters or fewer."
-          : "Only letters, numbers, and underscores allowed."
-      );
+      setValidationError(heroNameError(heroName));
       return;
     }
     try {
       await updateMe.mutateAsync({ data: { username: trimmed } });
       await qc.invalidateQueries({ queryKey: getGetMyStatsQueryKey() });
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "That name is already taken. Try another.";
-      setServerError(msg.includes("409") || msg.includes("unique") || msg.includes("duplicate")
-        ? "That hero name is already taken. Try another."
-        : "Something went wrong. Please try again.");
+      setServerError(
+        err instanceof ApiError && err.status === 409
+          ? "That hero name is already taken. Try another."
+          : "Something went wrong. Please try again.",
+      );
     }
   }
 
@@ -91,7 +85,7 @@ function OnboardingScreen() {
         </div>
         <h1 className="mb-2 text-2xl font-bold tracking-tight">Choose Your Hero Name</h1>
         <p className="mb-8 text-sm text-muted-foreground">
-          This is the name other players will see on the leaderboard. You can't change it later.
+          This is the name other players will see. You can change it later.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -186,6 +180,29 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Gentle Door: locked pages are unreachable by URL too — quiet redirect home,
+// no message (invisible, not scolded). Missing stats (offline) fails open.
+function withGate<P extends object>(feature: FeatureKey, Page: React.ComponentType<P>) {
+  function GatedPage(props: P) {
+    const { data: stats } = useGetMyStats({ tz: browserTimeZone() });
+    if (stats && !isUnlocked(stats.unlockedFeatures, feature)) return <Redirect to="/" />;
+    return <Page {...props} />;
+  }
+  GatedPage.displayName = `Gated(${Page.displayName ?? Page.name ?? "Page"})`;
+  return GatedPage;
+}
+
+const FocusGated = withGate("focus", Focus);
+const AvatarGated = withGate("hero", AvatarPage);
+const ProgressGated = withGate("progress", Progress);
+const InsightsGated = withGate("progress", Insights);
+const PartnersGated = withGate("allies", Partners);
+const PartnerDetailGated = withGate("allies", PartnerDetail);
+const LeaderboardGated = withGate("allies", Leaderboard);
+const RewardsTreatsGated = withGate("rewards", RewardsTreats);
+const RewardsStoreGated = withGate("rewards", RewardsStore);
+const RewardsPerksGated = withGate("rewards", RewardsPerks);
+
 function Router() {
   return (
     <Layout>
@@ -194,18 +211,18 @@ function Router() {
         <Route path="/tasks" component={Tasks} />
         <Route path="/questlines/:id" component={QuestlineDetail} />
         <Route path="/questlines" component={Questlines} />
-        <Route path="/focus" component={Focus} />
+        <Route path="/focus" component={FocusGated} />
         <Route path="/reflection" component={Reflection} />
         <Route path="/recurring" component={Recurring} />
-        <Route path="/progress" component={Progress} />
-        <Route path="/insights" component={Insights} />
-        <Route path="/partners/:id" component={PartnerDetail} />
-        <Route path="/partners" component={Partners} />
-        <Route path="/leaderboard" component={Leaderboard} />
-        <Route path="/avatar" component={AvatarPage} />
-        <Route path="/rewards/treats" component={RewardsTreats} />
-        <Route path="/rewards/store" component={RewardsStore} />
-        <Route path="/rewards/perks" component={RewardsPerks} />
+        <Route path="/progress" component={ProgressGated} />
+        <Route path="/insights" component={InsightsGated} />
+        <Route path="/partners/:id" component={PartnerDetailGated} />
+        <Route path="/partners" component={PartnersGated} />
+        <Route path="/leaderboard" component={LeaderboardGated} />
+        <Route path="/avatar" component={AvatarGated} />
+        <Route path="/rewards/treats" component={RewardsTreatsGated} />
+        <Route path="/rewards/store" component={RewardsStoreGated} />
+        <Route path="/rewards/perks" component={RewardsPerksGated} />
         {/* Honest Coin: the two retired reward URLs land on the hub's default tab. */}
         <Route path="/dopamine-menu"><Redirect to="/rewards/treats" /></Route>
         <Route path="/rewards"><Redirect to="/rewards/treats" /></Route>

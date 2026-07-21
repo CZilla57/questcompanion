@@ -3,6 +3,7 @@ import { eq, and, desc, inArray } from "drizzle-orm";
 import { db, questlinesTable, tasksTable, taskStepsTable, usersTable, activityTable, type Questline } from "@workspace/db";
 import { computeProgress, isReadyToClaim, computeRewardXp } from "../lib/questlines";
 import { getLevelInfo } from "../lib/gamification";
+import { newlyUnlocked, type FeatureKey } from "../lib/feature-gates";
 import { formatTask } from "./tasks";
 import { assignPoints } from "../lib/auto-points";
 import { isAiConfigured, generateJson, AiClientError } from "../lib/ai/client";
@@ -207,7 +208,7 @@ router.post("/questlines/:id/claim", async (req, res): Promise<void> => {
   type Outcome =
     | { status: "not_found" }
     | { status: "not_ready" }
-    | { status: "ok"; row: Questline; progress: { total: number; done: number }; xp: number; totalPoints: number; level: number; levelName: string; leveledUp: boolean };
+    | { status: "ok"; row: Questline; progress: { total: number; done: number }; xp: number; totalPoints: number; level: number; levelName: string; leveledUp: boolean; unlockedByAward: FeatureKey[] };
 
   const outcome = await db.transaction(async (tx): Promise<Outcome> => {
     // Lock the user row so concurrent claims can't double-award or read stale totals.
@@ -229,6 +230,7 @@ router.post("/questlines/:id/claim", async (req, res): Promise<void> => {
     const newTotal = user.totalPoints + xp;
     const beforeLevel = getLevelInfo(user.totalPoints).level;
     const afterLevel = getLevelInfo(newTotal);
+    const unlockedByAward = newlyUnlocked(user, beforeLevel, afterLevel.level);
 
     await tx.update(usersTable).set({
       totalPoints: newTotal,
@@ -260,6 +262,7 @@ router.post("/questlines/:id/claim", async (req, res): Promise<void> => {
       level: afterLevel.level,
       levelName: afterLevel.name,
       leveledUp: afterLevel.level > beforeLevel,
+      unlockedByAward,
     };
   });
 
@@ -273,6 +276,7 @@ router.post("/questlines/:id/claim", async (req, res): Promise<void> => {
     currentLevel: outcome.level,
     levelName: outcome.levelName,
     leveledUp: outcome.leveledUp,
+    newlyUnlocked: outcome.unlockedByAward,
   });
 });
 

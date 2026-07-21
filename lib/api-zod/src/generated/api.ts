@@ -111,7 +111,8 @@ export const GetMeResponse = zod.object({
   "streakDays": zod.number(),
   "longestStreak": zod.number().optional(),
   "pointsToNextLevel": zod.number().optional(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "renameAvailableAt": zod.coerce.date().nullable().describe('Instant the next hero-name rename opens; null when renaming is available now.')
 })
 
 
@@ -136,7 +137,8 @@ export const UpdateMeResponse = zod.object({
   "streakDays": zod.number(),
   "longestStreak": zod.number().optional(),
   "pointsToNextLevel": zod.number().optional(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "renameAvailableAt": zod.coerce.date().nullable().describe('Instant the next hero-name rename opens; null when renaming is available now.')
 })
 
 
@@ -169,7 +171,8 @@ export const GetMyStatsResponse = zod.object({
   "description": zod.string(),
   "points": zod.number(),
   "createdAt": zod.string()
-}))
+})),
+  "unlockedFeatures": zod.array(zod.enum(['focus', 'hero', 'progress', 'allies', 'rewards']).describe('Gentle Door progressive-unlock feature groups (keys match client nav groups)')).describe('Features visible to this user. Grandfathered accounts always get all five; locked features are invisible client-side (never teased).')
 })
 
 
@@ -792,7 +795,8 @@ export const CompleteTaskResponse = zod.object({
   "focusBonusAwarded": zod.boolean().optional().describe('Whether the all-3-focus-quests bonus was awarded'),
   "focusBonusPoints": zod.number().optional().describe('XP awarded for completing all 3 focus quests'),
   "heroRevived": zod.boolean().optional().describe('True when this completion revived a fainted hero (fed after ≥7 days)'),
-  "companionReaction": zod.union([zod.string(),zod.null()]).optional().describe('Companion\'s line for a just-happened bond tier-up or level-up, else null')
+  "companionReaction": zod.union([zod.string(),zod.null()]).optional().describe('Companion\'s line for a just-happened bond tier-up or level-up, else null'),
+  "newlyUnlocked": zod.array(zod.enum(['focus', 'hero', 'progress', 'allies', 'rewards']).describe('Gentle Door progressive-unlock feature groups (keys match client nav groups)')).describe('Gates crossed by this award (for the level-up dialog). Always empty for grandfathered users.')
 })
 
 
@@ -1332,7 +1336,8 @@ export const ClaimQuestlineResponse = zod.object({
   "totalPoints": zod.number(),
   "currentLevel": zod.number(),
   "levelName": zod.string(),
-  "leveledUp": zod.boolean()
+  "leveledUp": zod.boolean(),
+  "newlyUnlocked": zod.array(zod.enum(['focus', 'hero', 'progress', 'allies', 'rewards']).describe('Gentle Door progressive-unlock feature groups (keys match client nav groups)')).describe('Gates crossed by this award (for the level-up dialog). Always empty for grandfathered users.')
 })
 
 

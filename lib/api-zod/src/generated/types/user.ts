@@ -20,4 +20,9 @@ export interface User {
   longestStreak?: number;
   pointsToNextLevel?: number;
   createdAt: string;
+  /**
+     * Instant the next hero-name rename opens; null when renaming is available now.
+     * @nullable
+     */
+  renameAvailableAt: Date | null;
 }

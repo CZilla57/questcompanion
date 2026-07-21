@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ActivityItem } from './activityItem';
+import type { FeatureKey } from './featureKey';
 
 export interface UserStats {
   todayPoints: number;
@@ -25,4 +26,6 @@ export interface UserStats {
   /** Points earned since entering the current level band (0 at the band's start) */
   pointsIntoLevel: number;
   recentActivity: ActivityItem[];
+  /** Features visible to this user. Grandfathered accounts always get all five; locked features are invisible client-side (never teased). */
+  unlockedFeatures: FeatureKey[];
 }

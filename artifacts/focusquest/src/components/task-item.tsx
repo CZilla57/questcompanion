@@ -18,6 +18,7 @@ import { Calendar } from "./ui/calendar";
 import { parseDueDate, toDueDateString, todayDueDate, tomorrowDueDate, nextWeekDueDate } from "@/lib/reschedule";
 import { showSteeringChip, nextPowerWindowSlot, type PowerWindowSlot } from "@/lib/steering";
 import { apiErrorMessage } from "@/lib/api-error";
+import { isUnlocked } from "@/lib/feature-gates";
 import { RescueSheet } from "./rescue-sheet";
 
 interface TaskItemProps {
@@ -72,6 +73,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
   const { data: patterns } = useGetMyPatterns({ tz: browserTimeZone() }, { query: { queryKey: getGetMyPatternsQueryKey({ tz: browserTimeZone() }), staleTime: 5 * 60_000 } });
   const { data: brainState } = useGetBrainState({ tz: browserTimeZone() });
   const multiplier = !task.completed && stats ? getMultiplierDisplay(stats.streakDays) : null;
+  const heroUnlocked = isUnlocked(stats?.unlockedFeatures, "hero");
 
   const completeMutation = useCompleteTask();
   const uncompleteMutation = useUncompleteTask();
@@ -171,7 +173,9 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
             const styleClass = rarityStyles[res.gearReward.rarity] ?? rarityStyles.common;
             toast({
               title: `${res.gearReward.icon} Gear Reward Unlocked!`,
-              description: `${res.gearReward.name} (${res.gearReward.rarity}) — equip it on your Hero page`,
+              description: heroUnlocked
+                ? `${res.gearReward.name} (${res.gearReward.rarity}) — equip it on your Hero page`
+                : `${res.gearReward.name} (${res.gearReward.rarity}) joined your inventory`,
               className: `border ${styleClass}`,
             });
           }
@@ -193,7 +197,9 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
               const g = res.surpriseReward.gear;
               toast({
                 title: `🎲 Surprise Drop! ${g.icon} ${g.name}`,
-                description: `A random ${g.rarity} item appeared — check your Hero page!`,
+                description: heroUnlocked
+                  ? `A random ${g.rarity} item appeared — check your Hero page!`
+                  : `A random ${g.rarity} item joined your inventory!`,
                 className: `border ${rarityStyles[g.rarity] ?? rarityStyles.common}`,
               });
             }

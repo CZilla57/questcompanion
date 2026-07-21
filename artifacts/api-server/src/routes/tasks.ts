@@ -4,6 +4,7 @@ import { applyMultiplier } from "../lib/xp-multiplier";
 import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable, taskStepsTable, questlinesTable, brainCheckinsTable } from "@workspace/db";
 import type { DifficultyLevel, VariantLadder } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, DAILY_BONUS_POINTS } from "../lib/gamification";
+import { newlyUnlocked, type FeatureKey } from "../lib/feature-gates";
 import { assignPoints, CATEGORY_LABELS, VALID_CATEGORIES } from "../lib/auto-points";
 import { advanceHabitStreak, reverseHabitStreak, type HabitStreakPreviousState } from "../lib/habit-streaks";
 import { awardStreakGear, getStreakGearRarity, type GearRewardInfo } from "../lib/gear-rewards";
@@ -553,6 +554,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
         newWeeklyPoints: number;
         newLevel: ReturnType<typeof getLevelInfo>;
         leveledUp: boolean;
+        unlockedByAward: FeatureKey[];
         newStreak: number;
         oldStreak: number;
         freezeConsumed: boolean;
@@ -659,6 +661,8 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     const newWeeklyPoints = user.weeklyPoints + pointsToAdd;
     const newLevel = getLevelInfo(newTotalPoints);
     const leveledUp = newLevel.level > oldLevel.level;
+    // Gentle Door: gates crossed by this award (floor-aware; [] for unlockAll).
+    const unlockedByAward = newlyUnlocked(user, oldLevel.level, newLevel.level);
     const newLongestStreak = Math.max(user.longestStreak, newStreak);
 
     // Act VI Living Companion: bond grows by one per completion (monotonic).
@@ -724,6 +728,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       newWeeklyPoints,
       newLevel,
       leveledUp,
+      unlockedByAward,
       newStreak,
       oldStreak: user.streakDays,
       freezeConsumed,
@@ -750,6 +755,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       newTotalPoints: outcome.userPoints,
       newLevel: lvl.level,
       leveledUp: false,
+      newlyUnlocked: [],
       newBadges: [],
       heroRevived: false,
     });
@@ -757,7 +763,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
   }
 
   const { task, boostedBase, pointsToAdd, bonusAwarded, focusBonusAwarded, streakBonus, multiplierLabel, multiplierValue,
-    newTotalPoints, newLevel, leveledUp, newStreak, oldStreak, freezeConsumed, heroRevived, companionReaction } = outcome;
+    newTotalPoints, newLevel, leveledUp, unlockedByAward, newStreak, oldStreak, freezeConsumed, heroRevived, companionReaction } = outcome;
 
   // ─── Post-transaction side effects ───────────────────────────────────────────
   // These run outside the transaction.  Any failure here leaves the user with
@@ -898,6 +904,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     newTotalPoints: finalTotalPoints,
     newLevel: newLevel.level,
     leveledUp,
+    newlyUnlocked: unlockedByAward,
     newBadges: allNewBadges.map((b) => ({
       id: b.id,
       name: b.name,
@@ -999,6 +1006,10 @@ router.post("/tasks/:id/uncomplete", async (req, res): Promise<void> => {
       streakDays: newStreakDays,
       longestStreak: newLongestStreak,
       lastActiveDate: newLastActiveDate,
+      // Gentle Door monotonic floor: capture the pre-reversal level so this XP
+      // drop can never close a door the user has seen. Only written here — the
+      // sole XP-lowering path.
+      highestLevel: Math.max(user.highestLevel, getLevelInfo(user.totalPoints).level),
       ...(freezesToRestore > 0 ? { streakFreezes: user.streakFreezes + freezesToRestore } : {}),
     }).where(eq(usersTable.id, userId));
 

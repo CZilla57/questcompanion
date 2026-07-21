@@ -30,6 +30,7 @@ import {
   selectPush, consumesBudget,
   type PushCandidate, type EnvelopeState,
 } from "./notification-envelope";
+import { isFeatureUnlocked } from "./feature-gates";
 import type { User } from "@workspace/db";
 
 async function getSubscriptions(userId: number) {
@@ -114,6 +115,13 @@ async function contextNudgeCandidate(user: User, now: Date): Promise<ProducedCan
 }
 
 async function heroCareCandidate(user: User, now: Date): Promise<ProducedCandidate | null> {
+  // Gentle Door: no hero-category pushes (hunger, companion milestones, flavor)
+  // while the hero door is closed — "feed your hero" aimed at someone who has
+  // never seen the hero is confusion shaped like shame. Skipping the milestone
+  // marker maintenance too is safe: a stale marker can only suppress a future
+  // celebration, never spam one.
+  if (!isFeatureUnlocked(user, "hero")) return null;
+
   // No hour gate here: the envelope enforces windows in the user's own timezone.
   const stage = hungerStage(user.lastFedAt, now);
 

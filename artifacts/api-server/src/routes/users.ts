@@ -12,6 +12,8 @@ import {
   kingdomForCategory, deriveNeglectInvitation, isWorldResting, kingdomStates,
   LIVELINESS_WINDOW_DAYS, type KingdomId,
 } from "../lib/kingdoms";
+import { unlockedFeatures } from "../lib/feature-gates";
+import { decideRename, isUniqueViolation, renameAvailableAt } from "../lib/rename";
 
 const router: IRouter = Router();
 
@@ -29,6 +31,7 @@ function formatUser(user: typeof usersTable.$inferSelect) {
     streakDays: user.streakDays,
     longestStreak: user.longestStreak,
     pointsToNextLevel: getPointsToNextLevel(user.totalPoints),
+    renameAvailableAt: renameAvailableAt(user.usernameChangedAt, new Date()),
     createdAt: user.createdAt.toISOString(),
   };
 }
@@ -51,19 +54,56 @@ router.patch("/users/me", async (req, res): Promise<void> => {
 
   const { username, displayName, avatarColor } = req.body as { username?: string; displayName?: string; avatarColor?: string };
   const updates: Partial<typeof usersTable.$inferInsert> = {};
-  if (username != null) {
-    updates.username = username;
-    updates.onboardingComplete = true;
-  }
   if (displayName != null) updates.displayName = displayName;
   if (avatarColor != null) updates.avatarColor = avatarColor;
 
-  const [user] = await db.update(usersTable).set(updates).where(eq(usersTable.id, userId)).returning();
-  if (!user) {
-    res.status(404).json({ error: "User not found" });
+  const [current] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (!current) { res.status(404).json({ error: "User not found" }); return; }
+
+  if (username != null) {
+    const decision = decideRename({
+      current: current.username,
+      requested: username,
+      onboardingComplete: current.onboardingComplete,
+      usernameChangedAt: current.usernameChangedAt,
+      now: new Date(),
+    });
+    if (decision.kind === "invalid_format") {
+      res.status(400).json({ error: "Hero names are 3–20 characters: letters, numbers, and underscores." });
+      return;
+    }
+    if (decision.kind === "cooldown") {
+      res.status(429).json({
+        error: "Hero names can change once a week.",
+        renameAvailableAt: decision.renameAvailableAt.toISOString(),
+      });
+      return;
+    }
+    if (decision.kind === "ok") {
+      updates.username = username.trim();
+      updates.onboardingComplete = true;
+      // The onboarding set is free; only real renames start the 7-day clock.
+      if (!decision.isOnboardingSet) updates.usernameChangedAt = new Date();
+    }
+    // "noop": same name — fall through without username updates.
+  }
+
+  if (Object.keys(updates).length === 0) {
+    res.json(formatUser(current));
     return;
   }
-  res.json(formatUser(user));
+
+  try {
+    const [user] = await db.update(usersTable).set(updates).where(eq(usersTable.id, userId)).returning();
+    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+    res.json(formatUser(user));
+  } catch (err) {
+    if (isUniqueViolation(err)) {
+      res.status(409).json({ error: "That hero name is already taken. Try another." });
+      return;
+    }
+    throw err;
+  }
 });
 
 router.put("/users/me/timezone", async (req, res): Promise<void> => {
@@ -133,6 +173,7 @@ router.get("/users/me/stats", async (req, res): Promise<void> => {
     onboardingComplete: user.onboardingComplete,
     pointsToNextLevel: getPointsToNextLevel(user.totalPoints),
     pointsIntoLevel: getPointsIntoLevel(user.totalPoints),
+    unlockedFeatures: unlockedFeatures(user),
     recentActivity: recentActivity.map((a) => ({
       id: a.id,
       userId: a.userId,

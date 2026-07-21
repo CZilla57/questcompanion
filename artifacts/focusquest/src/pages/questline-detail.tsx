@@ -15,6 +15,7 @@ import { TaskItem } from "@/components/task-item";
 import { dispatchQuestCompleted } from "@/components/dopamine-overlay";
 import { useToast } from "@/hooks/use-toast";
 import { apiErrorMessage } from "@/lib/api-error";
+import { featureLabel } from "@/lib/feature-gates";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { QuickAddBar } from "@/components/quick-add-bar";
 import { QuestlineEditDialog } from "@/components/questline-edit-dialog";
@@ -59,7 +60,13 @@ export default function QuestlineDetail() {
         dispatchQuestCompleted();
         toast({
           title: `Questline complete! +${res.xpAwarded} XP`,
-          description: res.leveledUp ? `Level up! You're now ${res.levelName}.` : undefined,
+          description: res.leveledUp
+            ? `Level up! You're now ${res.levelName}.${
+                res.newlyUnlocked.length > 0
+                  ? ` ${res.newlyUnlocked.map(featureLabel).join(" & ")} unlocked!`
+                  : ""
+              }`
+            : undefined,
           className: "border-primary bg-primary text-primary-foreground",
         });
       },
