@@ -10,6 +10,7 @@ import { useGetMyStats, useUpdateMe, usePutMyTimezone, getGetMyStatsQueryKey } f
 import { browserTimeZone } from "@/lib/timezone";
 import { readSessionRecord, writeSessionRecord, clearSessionRecord, authVerdict, onboardingVerdict } from "@/lib/offline-session";
 import { isUnlocked, type FeatureKey } from "@/lib/feature-gates";
+import { USERNAME_REGEX, heroNameError } from "@/lib/username";
 import { Swords, Trophy } from "lucide-react";
 
 import NowScreen from "@/pages/now";
@@ -38,8 +39,6 @@ const queryClient = new QueryClient({
   },
 });
 
-const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
-
 function OnboardingScreen() {
   const [heroName, setHeroName] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -59,13 +58,7 @@ function OnboardingScreen() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!isFormatValid) {
-      setValidationError(
-        trimmed.length < 3
-          ? "Hero name must be at least 3 characters."
-          : trimmed.length > 20
-          ? "Hero name must be 20 characters or fewer."
-          : "Only letters, numbers, and underscores allowed."
-      );
+      setValidationError(heroNameError(heroName));
       return;
     }
     try {
@@ -92,7 +85,7 @@ function OnboardingScreen() {
         </div>
         <h1 className="mb-2 text-2xl font-bold tracking-tight">Choose Your Hero Name</h1>
         <p className="mb-8 text-sm text-muted-foreground">
-          This is the name other players will see on the leaderboard. You can't change it later.
+          This is the name other players will see. You can change it later.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">

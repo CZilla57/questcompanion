@@ -3,7 +3,7 @@ import { format, differenceInDays, parseISO } from "date-fns";
 import { Task, TaskPriority, useGetMyStats, useGetTasks, useUpdateTask } from "@workspace/api-client-react";
 import { TaskItem } from "@/components/task-item";
 import { browserTimeZone } from "@/lib/timezone";
-import { isUnlocked } from "@/lib/feature-gates";
+import { isUnlocked, featureLabel } from "@/lib/feature-gates";
 import { BrainCheckinPrompt } from "@/components/brain-checkin-prompt";
 import { EveningReflectionCard } from "@/components/evening-reflection-card";
 import { TodaysFocus } from "@/components/todays-focus";
@@ -295,6 +295,19 @@ export default function NowScreen() {
             <Trophy className="w-20 h-20 text-primary mx-auto mb-6 drop-shadow-[0_0_15px_rgba(0,255,255,0.8)]" aria-hidden />
             <h3 className="text-3xl font-bold text-foreground mb-2">Level {levelUpData?.newLevel}!</h3>
             <p className="text-muted-foreground">{levelUpData?.levelName ?? "Keep the momentum going."}</p>
+
+            {(levelUpData?.newlyUnlocked?.length ?? 0) > 0 && (
+              <div className="mt-6">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-3">Unlocked</h4>
+                <div className="flex justify-center gap-3 flex-wrap">
+                  {levelUpData.newlyUnlocked.map((k: string) => (
+                    <div key={k} className="px-4 py-2 bg-primary/10 border border-primary/40 rounded-lg text-sm font-bold text-primary">
+                      {featureLabel(k)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {levelUpData?.newBadges?.length > 0 && (
               <div className="mt-8">

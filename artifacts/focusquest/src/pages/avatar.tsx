@@ -21,6 +21,7 @@ import { PixelHero } from "@/components/pixel-hero";
 import { HeroCredits } from "@/components/hero-credits";
 import { HeroVitality } from "@/components/hero-vitality";
 import { WorldBossPanel } from "@/components/world-boss-panel";
+import { HeroIdentity } from "@/components/hero-identity";
 import { heroSpriteEffect, type HungerStage } from "@/lib/hero-vitality";
 import type { AvatarClass, HeroLook, Build, Skin, HairStyle, HairColor, FaceId, EquippedGearLook } from "@/lib/hero/types";
 import { skins as SKIN_OPTIONS, hairColors as HAIR_COLOR_OPTIONS } from "@workspace/hero-options";
@@ -615,6 +616,8 @@ export default function AvatarPage() {
 
   return (
     <div className="space-y-6 pb-8">
+      <HeroIdentity />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
