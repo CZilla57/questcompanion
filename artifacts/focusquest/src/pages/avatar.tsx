@@ -10,6 +10,7 @@ import {
   useGetBattleCurrent,
   useEnterBattle,
   useGetHeroStatus,
+  useGetMyStats,
   getGetAvatarQueryKey,
   getGetGearStoreQueryKey,
   getGetBattleCurrentQueryKey,
@@ -23,6 +24,8 @@ import { WorldBossPanel } from "@/components/world-boss-panel";
 import { heroSpriteEffect, type HungerStage } from "@/lib/hero-vitality";
 import type { AvatarClass, HeroLook, Build, Skin, HairStyle, HairColor, FaceId, EquippedGearLook } from "@/lib/hero/types";
 import { skins as SKIN_OPTIONS, hairColors as HAIR_COLOR_OPTIONS } from "@workspace/hero-options";
+import { browserTimeZone } from "@/lib/timezone";
+import { isUnlocked } from "@/lib/feature-gates";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -465,6 +468,7 @@ export default function AvatarPage() {
   const { data: avatarData, isLoading: avatarLoading } = useGetAvatar();
   const { data: heroStatus } = useGetHeroStatus();
   const { data: storeData, isLoading: storeLoading } = useGetGearStore();
+  const { data: gateStats } = useGetMyStats({ tz: browserTimeZone() });
   const updateAvatar = useUpdateAvatar();
   const buyGear = useBuyGear();
   const equipGear = useEquipGear();
@@ -841,7 +845,8 @@ export default function AvatarPage() {
           {activeTab === "battle" && (
             <div className="space-y-4">
               <BattlePanel />
-              <WorldBossPanel />
+              {/* World Boss is an allies-gate (L5) feature hosted on the hero page. */}
+              {isUnlocked(gateStats?.unlockedFeatures, "allies") && <WorldBossPanel />}
             </div>
           )}
         </div>

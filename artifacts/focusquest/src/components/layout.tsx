@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { useLocation } from "wouter";
 import { Link } from "wouter";
 import { Home, CheckSquare, BarChart2, Users, X, Zap, Bell, BellOff, Menu, User, LogOut, Timer, Download, ShoppingBag } from "lucide-react";
-import { useGetNudges, useGetBrainState, BrainMode } from "@workspace/api-client-react";
+import { useGetNudges, useGetBrainState, useGetMyStats, getGetNudgesQueryKey, BrainMode } from "@workspace/api-client-react";
 import { Button } from "./ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
 import { usePwaInstall } from "@/hooks/use-pwa-install";
 import { useOutboxSync } from "@/hooks/use-outbox";
 import { NAV_GROUPS, activeGroupKey, type NavGroupKey } from "@/lib/nav-groups";
+import { isNavGroupVisible, isUnlocked } from "@/lib/feature-gates";
 import { shouldShowInstallButton } from "@/lib/pwa";
 import { subscribeToast, unsubscribeToast } from "@/lib/push";
 import { browserTimeZone } from "@/lib/timezone";
@@ -174,7 +175,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const activeKey = activeGroupKey(location);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { data: navNudges } = useGetNudges();
+  const { data: gateStats } = useGetMyStats({ tz: browserTimeZone() });
+  const unlocked = gateStats?.unlockedFeatures;
+  const navItems = allNavItems.filter((i) => isNavGroupVisible(i.key, unlocked));
+  const mobileItems = navItems.filter((i) => i.mobileShow);
+  const alliesUnlocked = isUnlocked(unlocked, "allies");
+  // No ally-nudge polling for a nav entry that doesn't exist yet. orval + TQ v5:
+  // passing query options requires re-supplying the queryKey.
+  const { data: navNudges } = useGetNudges(undefined, {
+    query: { enabled: alliesUnlocked, queryKey: getGetNudgesQueryKey() },
+  });
   const allyUnread = (navNudges ?? []).filter((n) => !n.readAt).length;
   const { data: brainState } = useGetBrainState({ tz: browserTimeZone() });
   useOutboxSync();
@@ -251,7 +261,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             Mobile top margin includes the status-bar inset — the drawer spans the
             full screen under a translucent status bar (viewport-fit=cover). */}
         <nav className="flex-1 px-4 space-y-1 mt-[calc(env(safe-area-inset-top)+2rem)] md:mt-0 overflow-y-auto" aria-label="Main navigation">
-          {allNavItems.map((item) => {
+          {navItems.map((item) => {
             const isActive = activeKey === item.key;
             return (
               <Link
@@ -318,7 +328,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         aria-label="Mobile navigation"
         className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-card/95 backdrop-blur-md border-t border-border flex items-stretch safe-bottom"
       >
-        {mobileNavItems.map((item) => {
+        {mobileItems.map((item) => {
           const isActive = activeKey === item.key;
           return (
             <Link

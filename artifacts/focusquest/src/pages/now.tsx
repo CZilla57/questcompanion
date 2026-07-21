@@ -3,6 +3,7 @@ import { format, differenceInDays, parseISO } from "date-fns";
 import { Task, TaskPriority, useGetMyStats, useGetTasks, useUpdateTask } from "@workspace/api-client-react";
 import { TaskItem } from "@/components/task-item";
 import { browserTimeZone } from "@/lib/timezone";
+import { isUnlocked } from "@/lib/feature-gates";
 import { BrainCheckinPrompt } from "@/components/brain-checkin-prompt";
 import { EveningReflectionCard } from "@/components/evening-reflection-card";
 import { TodaysFocus } from "@/components/todays-focus";
@@ -167,7 +168,7 @@ export default function NowScreen() {
       </div>
 
       {/* ── Status row ─────────────────────────────────────── */}
-      {stats && <StatusRow stats={stats} />}
+      {stats && <StatusRow stats={stats} linkToProgress={isUnlocked(stats.unlockedFeatures, "progress")} />}
 
       {/* ── XP Decay Warning ──────────────────────────────── */}
       {showDecayWarning && (
