@@ -1008,6 +1008,91 @@ export interface AllyDetail {
   sentTodayCheer: boolean;
 }
 
+export type BodyDoubleSprintInputMinutes = typeof BodyDoubleSprintInputMinutes[keyof typeof BodyDoubleSprintInputMinutes];
+
+
+export const BodyDoubleSprintInputMinutes = {
+  NUMBER_15: 15,
+  NUMBER_25: 25,
+  NUMBER_50: 50,
+} as const;
+
+export interface BodyDoubleSprintInput {
+  minutes: BodyDoubleSprintInputMinutes;
+}
+
+export type BodyDoubleSprintMinutes = typeof BodyDoubleSprintMinutes[keyof typeof BodyDoubleSprintMinutes];
+
+
+export const BodyDoubleSprintMinutes = {
+  NUMBER_15: 15,
+  NUMBER_25: 25,
+  NUMBER_50: 50,
+} as const;
+
+export interface BodyDoubleSprint {
+  id: number;
+  minutes: BodyDoubleSprintMinutes;
+  startedBy: number;
+  startedAt: string;
+}
+
+export type BodyDoubleRoomMemberPresence = typeof BodyDoubleRoomMemberPresence[keyof typeof BodyDoubleRoomMemberPresence];
+
+
+export const BodyDoubleRoomMemberPresence = {
+  here: 'here',
+  headsDown: 'headsDown',
+} as const;
+
+export interface BodyDoubleRoomMember {
+  id: number;
+  username: string;
+  /** @nullable */
+  displayName?: string | null;
+  avatarColor?: string;
+  currentLevel: number;
+  levelName?: string;
+  totalPoints: number;
+  streakDays?: number;
+  hero?: HeroLook | null;
+  isHost: boolean;
+  presence: BodyDoubleRoomMemberPresence;
+  joinedAt: string;
+  /** @nullable */
+  waveAt?: string | null;
+}
+
+export type BodyDoubleRoomStateStatus = typeof BodyDoubleRoomStateStatus[keyof typeof BodyDoubleRoomStateStatus];
+
+
+export const BodyDoubleRoomStateStatus = {
+  open: 'open',
+  ended: 'ended',
+} as const;
+
+export interface BodyDoubleRoomState {
+  id: number;
+  hostId: number;
+  status: BodyDoubleRoomStateStatus;
+  createdAt: string;
+  /** @nullable */
+  endedAt?: string | null;
+  isMine: boolean;
+  members: BodyDoubleRoomMember[];
+  sprint?: BodyDoubleSprint | null;
+  serverNow: string;
+}
+
+export interface BodyDoubleOpenRoom {
+  id: number;
+  host: UserSummary;
+  isMine: boolean;
+  amMember: boolean;
+  memberCount: number;
+  createdAt: string;
+}
+
 export type NudgeInputKind = typeof NudgeInputKind[keyof typeof NudgeInputKind];
 
 
@@ -2195,6 +2280,25 @@ offset?: number;
 export type MarkNudgesRead200 = {
   success: boolean;
   updated: number;
+};
+
+export type GetOpenBodyDoubleRooms200 = {
+  rooms: BodyDoubleOpenRoom[];
+};
+
+export type LeaveBodyDoubleRoom200 = {
+  left: boolean;
+  ended: boolean;
+};
+
+export type WaveBodyDoubleRoom200 = {
+  waved: boolean;
+};
+
+export type FinishBodyDoubleSprint200 = {
+  completed: boolean;
+  xpAwarded: number;
+  membersPaid: number;
 };
 
 export type GetLeaderboardParams = {

@@ -1791,6 +1791,181 @@ export const MarkNudgesReadResponse = zod.object({
 
 
 /**
+ * @summary My open body-double room plus open rooms of my accepted allies
+ */
+export const GetOpenBodyDoubleRoomsResponse = zod.object({
+  "rooms": zod.array(zod.object({
+  "id": zod.number(),
+  "host": zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "displayName": zod.string().nullish(),
+  "avatarColor": zod.string().optional(),
+  "currentLevel": zod.number(),
+  "levelName": zod.string().optional(),
+  "totalPoints": zod.number(),
+  "streakDays": zod.number().optional()
+}),
+  "isMine": zod.boolean(),
+  "amMember": zod.boolean(),
+  "memberCount": zod.number(),
+  "createdAt": zod.string()
+}))
+})
+
+
+/**
+ * @summary Room state (the 10s poll — doubles as the presence heartbeat)
+ */
+export const GetBodyDoubleRoomResponse = zod.object({
+  "id": zod.number(),
+  "hostId": zod.number(),
+  "status": zod.enum(['open', 'ended']),
+  "createdAt": zod.string(),
+  "endedAt": zod.string().nullish(),
+  "isMine": zod.boolean(),
+  "members": zod.array(zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "displayName": zod.string().nullish(),
+  "avatarColor": zod.string().optional(),
+  "currentLevel": zod.number(),
+  "levelName": zod.string().optional(),
+  "totalPoints": zod.number(),
+  "streakDays": zod.number().optional(),
+  "hero": zod.union([zod.object({
+  "avatarColor": zod.string(),
+  "avatarClass": zod.string(),
+  "avatarSkin": zod.string(),
+  "avatarHairStyle": zod.string().optional(),
+  "avatarHairColor": zod.string().optional(),
+  "avatarBodyBuild": zod.string().optional(),
+  "avatarFace": zod.string().optional(),
+  "avatarBeardStyle": zod.string().optional(),
+  "avatarBeardColor": zod.string().optional(),
+  "avatarGlasses": zod.string().optional(),
+  "avatarEarrings": zod.string().optional(),
+  "level": zod.number(),
+  "battlePower": zod.number(),
+  "equippedGear": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slot": zod.enum(['weapon', 'helmet', 'armor', 'boots', 'accessory']),
+  "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
+  "statPower": zod.number(),
+  "icon": zod.string(),
+  "spriteId": zod.string().nullish()
+}))
+}),zod.null()]).optional(),
+  "isHost": zod.boolean(),
+  "presence": zod.enum(['here', 'headsDown']),
+  "joinedAt": zod.string(),
+  "waveAt": zod.string().nullish()
+})),
+  "sprint": zod.union([zod.object({
+  "id": zod.number(),
+  "minutes": zod.union([zod.literal(15),zod.literal(25),zod.literal(50)]),
+  "startedBy": zod.number(),
+  "startedAt": zod.string()
+}),zod.null()]).optional(),
+  "serverNow": zod.string()
+})
+
+
+/**
+ * @summary Drop in (accepted allies of the host; rejoin clears left_at)
+ */
+export const JoinBodyDoubleRoomResponse = zod.object({
+  "id": zod.number(),
+  "hostId": zod.number(),
+  "status": zod.enum(['open', 'ended']),
+  "createdAt": zod.string(),
+  "endedAt": zod.string().nullish(),
+  "isMine": zod.boolean(),
+  "members": zod.array(zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "displayName": zod.string().nullish(),
+  "avatarColor": zod.string().optional(),
+  "currentLevel": zod.number(),
+  "levelName": zod.string().optional(),
+  "totalPoints": zod.number(),
+  "streakDays": zod.number().optional(),
+  "hero": zod.union([zod.object({
+  "avatarColor": zod.string(),
+  "avatarClass": zod.string(),
+  "avatarSkin": zod.string(),
+  "avatarHairStyle": zod.string().optional(),
+  "avatarHairColor": zod.string().optional(),
+  "avatarBodyBuild": zod.string().optional(),
+  "avatarFace": zod.string().optional(),
+  "avatarBeardStyle": zod.string().optional(),
+  "avatarBeardColor": zod.string().optional(),
+  "avatarGlasses": zod.string().optional(),
+  "avatarEarrings": zod.string().optional(),
+  "level": zod.number(),
+  "battlePower": zod.number(),
+  "equippedGear": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slot": zod.enum(['weapon', 'helmet', 'armor', 'boots', 'accessory']),
+  "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
+  "statPower": zod.number(),
+  "icon": zod.string(),
+  "spriteId": zod.string().nullish()
+}))
+}),zod.null()]).optional(),
+  "isHost": zod.boolean(),
+  "presence": zod.enum(['here', 'headsDown']),
+  "joinedAt": zod.string(),
+  "waveAt": zod.string().nullish()
+})),
+  "sprint": zod.union([zod.object({
+  "id": zod.number(),
+  "minutes": zod.union([zod.literal(15),zod.literal(25),zod.literal(50)]),
+  "startedBy": zod.number(),
+  "startedAt": zod.string()
+}),zod.null()]).optional(),
+  "serverNow": zod.string()
+})
+
+
+/**
+ * @summary Leave gracefully (host leaving ends the room)
+ */
+export const LeaveBodyDoubleRoomResponse = zod.object({
+  "left": zod.boolean(),
+  "ended": zod.boolean()
+})
+
+
+/**
+ * @summary Wave at the room (soft-capped; rate-limited waves are a quiet no-op)
+ */
+export const WaveBodyDoubleRoomResponse = zod.object({
+  "waved": zod.boolean()
+})
+
+
+/**
+ * @summary Start a shared sprint (one live sprint per room)
+ */
+export const StartBodyDoubleSprintBody = zod.object({
+  "minutes": zod.union([zod.literal(15),zod.literal(25),zod.literal(50)])
+})
+
+
+/**
+ * @summary Finish a sprint (validated wall-clock; exactly-once flat bonus to members present)
+ */
+export const FinishBodyDoubleSprintResponse = zod.object({
+  "completed": zod.boolean(),
+  "xpAwarded": zod.number(),
+  "membersPaid": zod.number()
+})
+
+
+/**
  * @summary Get top users ranked by points
  */
 export const getLeaderboardQueryPeriodDefault = `alltime`;
