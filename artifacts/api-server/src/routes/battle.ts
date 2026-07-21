@@ -6,17 +6,12 @@ import { calcBattlePower } from "./avatar";
 import { awardCoins } from "../lib/award-coins";
 import { COIN_EARN } from "../lib/coins";
 import { getWeekKey } from "../lib/week-key";
+import { getBossPower } from "../lib/solo-boss";
 
 const router: IRouter = Router();
 
 const BATTLE_WIN_XP = 500;
 const BATTLE_LOSE_XP = 75;
-
-function getBossPower(weekKey: string): number {
-  const match = weekKey.match(/W(\d+)$/);
-  const weekNo = match ? parseInt(match[1], 10) : 1;
-  return Math.min(90 + (weekNo - 1) * 70, 750);
-}
 
 export async function getUserPower(userId: number): Promise<number> {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
@@ -38,8 +33,8 @@ router.get("/battle/current", async (req, res): Promise<void> => {
   const userId = req.gameUserId;
 
   const weekKey = getWeekKey();
-  const bossPower = getBossPower(weekKey);
   const yourPower = await getUserPower(userId);
+  const bossPower = getBossPower(yourPower);
 
   const [existing] = await db.select()
     .from(weeklyBattlesTable)
@@ -64,8 +59,8 @@ router.post("/battle/enter", async (req, res): Promise<void> => {
   const userId = req.gameUserId;
 
   const weekKey = getWeekKey();
-  const bossPower = getBossPower(weekKey);
   const yourPower = await getUserPower(userId);
+  const bossPower = getBossPower(yourPower);
 
   // Roll between 75% and 125% of player power
   const roll = Math.round(yourPower * (0.75 + Math.random() * 0.5));
