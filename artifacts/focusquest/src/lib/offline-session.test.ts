@@ -79,3 +79,13 @@ describe("onboardingVerdict", () => {
     expect(onboardingVerdict({ stats: undefined, isPaused: true, error: null, record: record({ onboardingComplete: false }) })).toBe("loading");
   });
 });
+
+describe("default-storage path is crash-safe (node has no localStorage — the exact class of env where referencing it fails)", () => {
+  it("read returns null instead of throwing", () => {
+    expect(readSessionRecord()).toBeNull();
+  });
+  it("write and clear are silent no-ops instead of throwing", () => {
+    expect(() => writeSessionRecord({ authed: true })).not.toThrow();
+    expect(() => clearSessionRecord()).not.toThrow();
+  });
+});

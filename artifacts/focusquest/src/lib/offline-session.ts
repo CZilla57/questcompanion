@@ -11,9 +11,10 @@ export type SessionRecord = {
 
 const KEY = "fq.offline-session";
 
-export function readSessionRecord(storage: Pick<Storage, "getItem"> = localStorage): SessionRecord | null {
+export function readSessionRecord(storage?: Pick<Storage, "getItem">): SessionRecord | null {
   try {
-    const raw = storage.getItem(KEY);
+    const s = storage ?? localStorage;
+    const raw = s.getItem(KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<SessionRecord>;
     if (typeof parsed !== "object" || parsed === null) return null;
@@ -29,24 +30,26 @@ export function readSessionRecord(storage: Pick<Storage, "getItem"> = localStora
 
 export function writeSessionRecord(
   patch: Partial<Omit<SessionRecord, "savedAt">>,
-  storage: Pick<Storage, "getItem" | "setItem"> = localStorage,
+  storage?: Pick<Storage, "getItem" | "setItem">,
 ): void {
   try {
-    const current = readSessionRecord(storage);
+    const s = storage ?? localStorage;
+    const current = readSessionRecord(s);
     const next: SessionRecord = {
       authed: patch.authed ?? current?.authed ?? false,
       onboardingComplete: patch.onboardingComplete ?? current?.onboardingComplete ?? false,
       savedAt: new Date().toISOString(),
     };
-    storage.setItem(KEY, JSON.stringify(next));
+    s.setItem(KEY, JSON.stringify(next));
   } catch {
     // Storage unavailable (private mode): grace simply won't apply.
   }
 }
 
-export function clearSessionRecord(storage: Pick<Storage, "removeItem"> = localStorage): void {
+export function clearSessionRecord(storage?: Pick<Storage, "removeItem">): void {
   try {
-    storage.removeItem(KEY);
+    const s = storage ?? localStorage;
+    s.removeItem(KEY);
   } catch {
     /* ignore */
   }
