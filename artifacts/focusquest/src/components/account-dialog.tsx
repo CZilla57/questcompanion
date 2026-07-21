@@ -7,15 +7,56 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { confirmPhraseOk, DELETE_PHRASE } from "@/lib/account";
+import { usePwaInstall } from "@/hooks/use-pwa-install";
+import { confirmPhraseOk, DELETE_PHRASE, exportFileName, exportStrategy } from "@/lib/account";
 
 /** Account settings + Danger zone (Act VII q7). Plain copy, no dark patterns:
  * export is one tap, deletion is honest about being unrecoverable and takes a
  * typed phrase — friction, not guilt. */
 export function AccountDialog() {
   const { toast } = useToast();
+  const { isStandalone } = usePwaInstall();
   const del = useDeleteMe();
   const [phrase, setPhrase] = useState("");
+  const [exporting, setExporting] = useState(false);
+
+  // Never navigate to the export URL: in the chrome-less standalone webview
+  // that lands on the raw JSON with no way back — restart-the-app territory
+  // (found in the on-device walkthrough). Fetch and hand the file over instead.
+  async function onExport() {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/me/export", { credentials: "include" });
+      if (!res.ok) throw new Error(`Export failed (${res.status})`);
+      const blob = await res.blob();
+      const file = new File([blob], exportFileName(new Date()), { type: "application/json" });
+
+      const canShareFiles = typeof navigator.canShare === "function" && navigator.canShare({ files: [file] });
+      if (exportStrategy({ standalone: isStandalone, canShareFiles }) === "share") {
+        try {
+          await navigator.share({ files: [file], title: "FocusQuest export" });
+        } catch (e) {
+          // Dismissing the share sheet is a choice, not an error.
+          if (!(e instanceof DOMException && e.name === "AbortError")) throw e;
+        }
+        return;
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Something went wrong";
+      toast({ title: "Couldn't export your data", description: msg, variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  }
 
   async function onDelete() {
     try {
@@ -35,7 +76,10 @@ export function AccountDialog() {
           <Settings className="w-5 h-5" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      {/* No auto-focus: letting Radix focus the first control lands on the
+          confirm input on some paths and pops the mobile keyboard over a
+          dialog nobody has read yet. Focus follows the user's own tap. */}
+      <DialogContent className="max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Your account</DialogTitle>
           <DialogDescription>Your data belongs to you — take it or erase it.</DialogDescription>
@@ -48,8 +92,8 @@ export function AccountDialog() {
           <p className="text-xs text-muted-foreground">
             One JSON file with everything: quests, check-ins, reflections, coins, hero, history.
           </p>
-          <Button asChild variant="outline" size="sm">
-            <a href="/api/me/export" download>Download export</a>
+          <Button variant="outline" size="sm" onClick={onExport} disabled={exporting}>
+            {exporting ? "Preparing…" : "Download export"}
           </Button>
         </div>
 
