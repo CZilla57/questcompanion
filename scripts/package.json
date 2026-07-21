@@ -10,12 +10,14 @@
     "seed-gear": "tsx ./src/seed-gear.ts",
     "seed-badges": "tsx ./src/seed-badges.ts",
     "backfill-badges": "tsx ./src/backfill-badges.ts",
+    "reseed-world-boss-week": "tsx ./src/reseed-world-boss-week.ts",
     "render-status": "tsx ./src/render-status.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@workspace/db": "workspace:*",
     "@workspace/hero-options": "workspace:*",
+    "drizzle-orm": "catalog:",
     "pngjs": "^7.0.0"
   },
   "devDependencies": {

@@ -610,6 +610,9 @@ importers:
       '@workspace/hero-options':
         specifier: workspace:*
         version: link:../lib/hero-options
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.2(@types/pg@8.20.0)(pg@8.20.0)
       pngjs:
         specifier: ^7.0.0
         version: 7.0.0
