@@ -183,11 +183,13 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
 // Gentle Door: locked pages are unreachable by URL too — quiet redirect home,
 // no message (invisible, not scolded). Missing stats (offline) fails open.
 function withGate<P extends object>(feature: FeatureKey, Page: React.ComponentType<P>) {
-  return function GatedPage(props: P) {
+  function GatedPage(props: P) {
     const { data: stats } = useGetMyStats({ tz: browserTimeZone() });
     if (stats && !isUnlocked(stats.unlockedFeatures, feature)) return <Redirect to="/" />;
     return <Page {...props} />;
-  };
+  }
+  GatedPage.displayName = `Gated(${Page.displayName ?? Page.name ?? "Page"})`;
+  return GatedPage;
 }
 
 const FocusGated = withGate("focus", Focus);

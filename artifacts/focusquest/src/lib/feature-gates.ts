@@ -1,5 +1,5 @@
 // Act VII Gentle Door (q5). Locked features are INVISIBLE — no teasers, no
-// "unlocks at level N", no countdowns (anti-shame law). The client renders
+// level-N teasers, no countdowns (anti-shame law). The client renders
 // whatever the server's `unlockedFeatures` list says; an ABSENT list (offline
 // shell, cold start) fails OPEN — this is pacing, not authorization, and a
 // grandfathered user offline must never lose chrome.
@@ -21,6 +21,8 @@ export function isNavGroupVisible(
   unlockedFeatures: readonly string[] | undefined,
 ): boolean {
   if (ALWAYS_ON.has(key)) return true;
+  // Safe by construction: every non-always-on NavGroupKey is a FeatureKey —
+  // nav-groups.ts and this module share the same key vocabulary.
   return isUnlocked(unlockedFeatures, key as FeatureKey);
 }
 

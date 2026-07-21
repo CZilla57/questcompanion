@@ -169,7 +169,6 @@ const NAV_ICONS: Record<NavGroupKey, typeof Home> = {
   hero: User, allies: Users, rewards: ShoppingBag,
 };
 const allNavItems = NAV_GROUPS.map((g) => ({ ...g, icon: NAV_ICONS[g.key] }));
-const mobileNavItems = allNavItems.filter((i) => i.mobileShow);
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
