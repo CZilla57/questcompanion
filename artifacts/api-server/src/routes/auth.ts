@@ -101,7 +101,9 @@ async function upsertGameUser(claims: Record<string, unknown>): Promise<{ id: nu
   const capture = resolveEmailCapture(claims.email, { email: null, recapUnsubscribeToken: null }, randomUUID);
   const [created] = await db
     .insert(usersTable)
-    .values({ externalId, username, ...(capture ?? {}) })
+    // unlockAll false: accounts born after the Gentle Door get progressive
+    // unlock; every pre-existing row was stamped true by the migration default.
+    .values({ externalId, username, unlockAll: false, ...(capture ?? {}) })
     .returning({ id: usersTable.id });
 
   await seedStarterQuests(created.id);
