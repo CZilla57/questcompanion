@@ -37,11 +37,13 @@ async function cacheFirst(cacheName, request) {
   if (cached) return cached;
   const response = await fetch(request);
   // Only cache full, successful bodies: a 206 partial (Safari range requests)
-  // makes Cache.put throw, and error responses shouldn't be pinned. A put
-  // failure (quota) must never break the response path.
+  // makes Cache.put throw, and error responses shouldn't be pinned. The whole
+  // write is fire-and-forget — caches.open included, so a storage failure
+  // (quota, teardown) can never reject respondWith after a successful fetch.
+  // Clone synchronously, before the page starts consuming the body.
   if (response.status === 200 || response.type === "opaque") {
-    const cache = await caches.open(cacheName);
-    cache.put(request, response.clone()).catch(() => {});
+    const copy = response.clone();
+    caches.open(cacheName).then((cache) => cache.put(request, copy)).catch(() => {});
   }
   return response;
 }

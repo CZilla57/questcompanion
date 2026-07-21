@@ -24,7 +24,7 @@ describe("drainOutbox", () => {
     await store.add(text("first", "2026-07-20T09:00:00Z"));
     const a = api();
     const result = await drainOutbox(store, a);
-    expect(result).toEqual({ synced: 2, parked: 0, stopped: null });
+    expect(result).toEqual({ synced: 2, parked: 0, stopped: null, syncedQuestlineIds: [] });
     const calls = (a.createTask as ReturnType<typeof vi.fn>).mock.calls.map(([input]) => input);
     expect(calls.map((c) => c.title)).toEqual(["first", "second"]);
     expect(calls.map((c) => c.clientKey)).toEqual([key("first"), key("second")]);
@@ -37,7 +37,7 @@ describe("drainOutbox", () => {
     await store.add(text("second", "2026-07-20T10:00:00Z"));
     const a = api({ createTask: vi.fn().mockRejectedValue(new TypeError("Failed to fetch")) });
     const result = await drainOutbox(store, a);
-    expect(result).toEqual({ synced: 0, parked: 0, stopped: { authNeeded: false } });
+    expect(result).toEqual({ synced: 0, parked: 0, stopped: { authNeeded: false }, syncedQuestlineIds: [] });
     const left = await store.list();
     expect(left).toHaveLength(2);
     expect(left.every((e) => e.status === "queued")).toBe(true);
@@ -64,14 +64,14 @@ describe("drainOutbox", () => {
     }
   });
 
-  it("422 retries exactly once without questlineId, then succeeds", async () => {
+  it("422 retries exactly once without questlineId, then succeeds — the shed questline is NOT reported as synced-into", async () => {
     const store = createMemoryStore();
     await store.add(text("orphan", "2026-07-20T09:00:00Z", { questlineId: 99 }));
     const createTask = vi.fn()
       .mockRejectedValueOnce(httpError(422))
       .mockResolvedValueOnce({ id: 1 });
     const result = await drainOutbox(store, api({ createTask }));
-    expect(result).toEqual({ synced: 1, parked: 0, stopped: null });
+    expect(result).toEqual({ synced: 1, parked: 0, stopped: null, syncedQuestlineIds: [] });
     expect(createTask).toHaveBeenCalledTimes(2);
     expect(createTask.mock.calls[0][0].questlineId).toBe(99);
     expect(createTask.mock.calls[1][0]).not.toHaveProperty("questlineId");
@@ -102,7 +102,7 @@ describe("drainOutbox", () => {
       .mockRejectedValueOnce(httpError(400))
       .mockResolvedValueOnce({ id: 1 });
     const result = await drainOutbox(store, api({ createTask }));
-    expect(result).toEqual({ synced: 1, parked: 1, stopped: null });
+    expect(result).toEqual({ synced: 1, parked: 1, stopped: null, syncedQuestlineIds: [] });
     const left = await store.list();
     expect(left).toHaveLength(1);
     expect(left[0].status).toBe("failed");
@@ -142,7 +142,7 @@ describe("drainOutbox", () => {
     await store.add(makeVoiceEntry(new Blob(["x"], { type: "audio/webm" }), 9_000, { now: new Date("2026-07-20T09:00:00Z") }));
     const a = api({ transcribe: vi.fn().mockResolvedValue({ text: "   " }) });
     const result = await drainOutbox(store, a);
-    expect(result).toEqual({ synced: 0, parked: 1, stopped: null });
+    expect(result).toEqual({ synced: 0, parked: 1, stopped: null, syncedQuestlineIds: [] });
     const [left] = await store.list();
     expect(left.status).toBe("failed");
     expect(left.lastError).toBe("Couldn't hear anything in this note");
@@ -167,13 +167,14 @@ describe("drainOutbox", () => {
       .mockRejectedValueOnce(new TypeError("Failed to fetch"));
     const result = await drainOutbox(store, api({ createTask }));
     expect(createTask).toHaveBeenCalledTimes(2);
-    expect(result).toEqual({ synced: 0, parked: 0, stopped: { authNeeded: false } });
+    expect(result).toEqual({ synced: 0, parked: 0, stopped: { authNeeded: false }, syncedQuestlineIds: [] });
     const [left] = await store.list();
     expect(left.status).toBe("queued");
     expect(left.attempts).toBe(1);
   });
 
-  it("a store failure while recording an outcome stops cleanly; the next drain re-picks the entry", async () => {
+  it("a store failure while recording an outcome stops cleanly and logs why; the next drain re-picks the entry", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const store = createMemoryStore();
     await store.add(text("first", "2026-07-20T09:00:00Z"));
     const failingStore: typeof store = {
@@ -183,9 +184,39 @@ describe("drainOutbox", () => {
         .mockRejectedValue(new Error("quota")),
     };
     const result = await drainOutbox(failingStore, api({ createTask: vi.fn().mockRejectedValue(httpError(400)) }));
-    expect(result).toEqual({ synced: 0, parked: 0, stopped: { authNeeded: false } });
+    expect(result).toEqual({ synced: 0, parked: 0, stopped: { authNeeded: false }, syncedQuestlineIds: [] });
     expect((await store.list())[0].status).toBe("syncing");
+    // The invisible failure path is the one that must say something.
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]).toContainEqual(new Error("quota"));
     const followUp = await drainOutbox(store, api());
-    expect(followUp).toEqual({ synced: 1, parked: 0, stopped: null });
+    expect(followUp).toEqual({ synced: 1, parked: 0, stopped: null, syncedQuestlineIds: [] });
+    expect(warn).toHaveBeenCalledTimes(1); // a clean drain stays quiet
+    warn.mockRestore();
+  });
+
+  it("reports the distinct questline ids the synced creates actually landed in", async () => {
+    const store = createMemoryStore();
+    await store.add(text("a", "2026-07-20T09:00:00Z", { questlineId: 7 }));
+    await store.add(text("b", "2026-07-20T10:00:00Z", { questlineId: 7 }));
+    await store.add(text("c", "2026-07-20T11:00:00Z", { questlineId: 12 }));
+    await store.add(text("d", "2026-07-20T12:00:00Z"));
+    const result = await drainOutbox(store, api());
+    expect(result).toEqual({ synced: 4, parked: 0, stopped: null, syncedQuestlineIds: [7, 12] });
+  });
+
+  it("voice: a voice capture's questline id is reported when its create lands", async () => {
+    const store = createMemoryStore();
+    await store.add(
+      makeVoiceEntry(new Blob(["x"], { type: "audio/webm" }), 9_000, {
+        now: new Date("2026-07-20T09:00:00Z"),
+        tz: "UTC",
+        questlineId: 5,
+      }),
+    );
+    const a = api();
+    const result = await drainOutbox(store, a);
+    expect((a.createTask as ReturnType<typeof vi.fn>).mock.calls[0][0].questlineId).toBe(5);
+    expect(result.syncedQuestlineIds).toEqual([5]);
   });
 });

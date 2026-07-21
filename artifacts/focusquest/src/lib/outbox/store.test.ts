@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { createMemoryStore, outboxChanged } from "./store";
+import { createMemoryStore, getOutboxStore, outboxChanged } from "./store";
 import { makeTextEntry } from "./core";
 
 const entry = (key: string, at: string) =>
@@ -53,5 +53,17 @@ describe("memory OutboxStore (contract for both adapters)", () => {
     await s.remove(e.id);
     outboxChanged.removeEventListener("change", spy);
     expect(spy).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("getOutboxStore", () => {
+  it("falls back to a session-only memory store when IndexedDB is unavailable — and logs why", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    // Node has no indexedDB global, which is exactly the fallback condition.
+    const store = await getOutboxStore();
+    expect(store.persistent).toBe(false);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0][0])).toMatch(/IndexedDB/i);
+    warn.mockRestore();
   });
 });

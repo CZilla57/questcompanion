@@ -18,6 +18,10 @@ export type DrainResult = {
   parked: number;
   /** Non-null when the drain halted early on a retryable failure. */
   stopped: null | { authNeeded: boolean };
+  /** Distinct questline ids the synced creates actually landed in, so the
+   * caller can invalidate each questline's detail query — a shed-questline
+   * retry created its quest WITHOUT the questline and doesn't count. */
+  syncedQuestlineIds: number[];
 };
 
 /** Build the create body for a voice entry from its transcript. Deterministic
@@ -44,7 +48,8 @@ function stripQuestline(input: TaskInput & { clientKey: string }): TaskInput & {
 /** Sequential oldest-first drain. Retryable failures stop the whole drain so
  * order is preserved across triggers; terminal failures park and continue. */
 export async function drainOutbox(store: OutboxStore, api: ReplayApi): Promise<DrainResult> {
-  const result: DrainResult = { synced: 0, parked: 0, stopped: null };
+  const result: DrainResult = { synced: 0, parked: 0, stopped: null, syncedQuestlineIds: [] };
+  const syncedQuestlines = new Set<number>();
 
   for (const entry of await store.list()) {
     if (entry.status === "failed") continue; // parked: manual retry/discard only
@@ -70,7 +75,8 @@ export async function drainOutbox(store: OutboxStore, api: ReplayApi): Promise<D
       } catch (err) {
         // One shed-the-questline retry: the capture outranks its grouping.
         if (decideReplayFailure(err).action === "retry-without-questline" && input.questlineId != null) {
-          await api.createTask(stripQuestline(input));
+          input = stripQuestline(input);
+          await api.createTask(input);
         } else {
           throw err;
         }
@@ -78,6 +84,7 @@ export async function drainOutbox(store: OutboxStore, api: ReplayApi): Promise<D
 
       await store.remove(entry.id);
       result.synced++;
+      if (input.questlineId != null) syncedQuestlines.add(input.questlineId);
     } catch (err) {
       const decision = decideReplayFailure(err);
       const park = decision.action === "park" || decision.action === "retry-without-questline";
@@ -88,11 +95,13 @@ export async function drainOutbox(store: OutboxStore, api: ReplayApi): Promise<D
             ? { status: "failed", lastError: decision.action === "park" ? decision.message : PARK_MESSAGE }
             : { status: "queued" },
         );
-      } catch {
+      } catch (storeErr) {
         // The store itself failed while recording the outcome (quota, tx
         // abort). Stop cleanly instead of throwing: the entry stays
         // "syncing", which is not skip-guarded, so the next drain re-attempts
-        // it — and the clientKey makes any redundant create a dedupe.
+        // it — and the clientKey makes any redundant create a dedupe. Nothing
+        // else surfaces this path, so at least say why the drain went quiet.
+        console.warn("outbox: couldn't record a replay outcome, stopping this drain", storeErr);
         result.stopped = { authNeeded: false };
         break;
       }
@@ -105,6 +114,7 @@ export async function drainOutbox(store: OutboxStore, api: ReplayApi): Promise<D
     }
   }
 
+  result.syncedQuestlineIds = [...syncedQuestlines];
   return result;
 }
 
