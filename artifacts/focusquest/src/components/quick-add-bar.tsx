@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { Sparkles, CalendarClock, Zap, Plus, RefreshCw, Mic, Square } from "lucide-react";
 import { parseQuickAdd, type ParsedQuickAdd } from "@workspace/quick-add";
-import { useCreateTask, useParseQuickAdd, getGetTasksQueryKey, getGetTasksMomentumQueryKey, getGetQuestlinesQueryKey, getGetQuestlineQueryKey, customFetch, type TranscribeResult } from "@workspace/api-client-react";
+import { useParseQuickAdd, getGetTasksQueryKey, getGetTasksMomentumQueryKey, getGetQuestlinesQueryKey, getGetQuestlineQueryKey, customFetch, type TaskInput, type TranscribeResult } from "@workspace/api-client-react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,10 @@ import { CATEGORY_HEX_COLORS, CATEGORY_LABEL } from "@/lib/categories";
 import { formatTime12h } from "@/lib/format-time";
 import { useVoiceRecording } from "@/hooks/use-voice-recording";
 import { isTooShortToTranscribe, formatElapsed } from "@/lib/voice-recording";
+import { isNetworkError } from "@/lib/net-errors";
+import { makeTextEntry, makeVoiceEntry, newCaptureId } from "@/lib/outbox/core";
+import { getOutboxStore } from "@/lib/outbox/store";
+import { createTaskWithTimeout } from "@/lib/outbox/api";
 
 function dateLabel(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
@@ -24,7 +28,11 @@ export function QuickAddBar({ selectedDate, questlineId }: { selectedDate: Date 
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const createMutation = useCreateTask();
+  // Direct call instead of the orval hook so the capture path controls its
+  // timeout signal and can classify server-answer vs dead-zone failures.
+  const createMutation = useMutation({
+    mutationFn: (input: TaskInput & { clientKey: string }) => createTaskWithTimeout(input),
+  });
   const parseMutation = useParseQuickAdd();
 
   // Deterministic parse runs live on every keystroke.
@@ -62,19 +70,44 @@ export function QuickAddBar({ selectedDate, questlineId }: { selectedDate: Date 
   const canCreate = parsed.title.trim().length > 0 && !createMutation.isPending;
   const showSmartParse = parsed.title.trim().length > 0 && !parsed.dueDate && !parsed.dueTime;
 
+  const stashCapture = async (input: TaskInput & { clientKey: string }) => {
+    const store = await getOutboxStore();
+    await store.add(makeTextEntry(input));
+    toast(
+      store.persistent
+        ? { title: "Saved — will sync when you're back online ✓", className: "border-primary" }
+        : { title: "Can't save to this browser — keep the app open until you're back online." },
+    );
+    setText("");
+    setAiFields(null);
+  };
+
+  const stashVoice = async (blob: Blob, durationMs: number) => {
+    const store = await getOutboxStore();
+    await store.add(makeVoiceEntry(blob, durationMs, questlineId != null ? { questlineId } : {}));
+    toast(
+      store.persistent
+        ? { title: "Voice note saved — I'll transcribe it when you're back online", className: "border-primary" }
+        : { title: "Can't save to this browser — keep the app open until you're back online." },
+    );
+  };
+
   const handleCreate = () => {
     if (!canCreate) return;
     const dueDate = parsed.dueDate ?? format(selectedDate ?? new Date(), "yyyy-MM-dd");
-    createMutation.mutate({
-      data: {
-        title: parsed.title,
-        dueDate,
-        priority: (parsed.priority ?? "medium") as any,
-        ...(parsed.dueTime ? { dueTime: parsed.dueTime } : {}),
-        ...(parsed.category ? { category: parsed.category as any } : {}),
-        ...(questlineId != null ? { questlineId } : {}),
-      },
-    }, {
+    const input: TaskInput & { clientKey: string } = {
+      title: parsed.title,
+      dueDate,
+      priority: (parsed.priority ?? "medium") as any,
+      ...(parsed.dueTime ? { dueTime: parsed.dueTime } : {}),
+      ...(parsed.category ? { category: parsed.category as any } : {}),
+      ...(questlineId != null ? { questlineId } : {}),
+      // Every create carries a key — double-taps and timed-out-but-landed
+      // requests dedupe server-side instead of duplicating.
+      clientKey: newCaptureId(),
+    };
+    if (!navigator.onLine) { void stashCapture(input); return; }
+    createMutation.mutate(input, {
       onSuccess: (task) => {
         toast({ title: `Quest added — ${task.points} XP`, className: "border-primary" });
         setText("");
@@ -86,7 +119,10 @@ export function QuickAddBar({ selectedDate, questlineId }: { selectedDate: Date 
           queryClient.invalidateQueries({ queryKey: getGetQuestlineQueryKey(questlineId) });
         }
       },
-      onError: () => toast({ title: "Couldn't add that quest", variant: "destructive" }),
+      onError: (err) => {
+        if (isNetworkError(err)) { void stashCapture(input); return; }
+        toast({ title: "Couldn't add that quest", variant: "destructive" });
+      },
     });
   };
 
@@ -140,6 +176,10 @@ export function QuickAddBar({ selectedDate, questlineId }: { selectedDate: Date 
       if (autoStopped) {
         toast({ title: "Hit the 60-second limit — transcribing what I got." });
       }
+      if (!navigator.onLine) {
+        void stashVoice(blob, durationMs);
+        return;
+      }
       transcribeMutation.mutate(blob, {
         onSuccess: ({ text: transcript }) => {
           if (!transcript.trim()) {
@@ -154,6 +194,7 @@ export function QuickAddBar({ selectedDate, questlineId }: { selectedDate: Date 
           handleSmartParse(transcript);
         },
         onError: (err: any) => {
+          if (isNetworkError(err)) { void stashVoice(blob, durationMs); return; }
           const status = err?.status;
           const msg =
             status === 503 ? "Voice input isn't set up yet."
