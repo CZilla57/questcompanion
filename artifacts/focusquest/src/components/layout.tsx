@@ -30,6 +30,7 @@ import { CoinChip } from "./coin-chip";
 import { RescueSheet } from "./rescue-sheet";
 import { ProtectionPause } from "./protection-pause";
 import { NotificationPrefsPanel } from "./notification-prefs";
+import { AccountDialog } from "./account-dialog";
 
 function NotificationBell() {
   const { state, isSubscribed, supported, subscribe, unsubscribe } = useNotifications();
@@ -210,6 +211,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <BrainModeChip />
           <InstallButton />
           <NotificationBell />
+          <AccountDialog />
           <TooltipProvider>
             <LogoutButton iconOnly />
           </TooltipProvider>
@@ -252,6 +254,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <BrainModeChip />
             <InstallButton />
             <NotificationBell />
+            <AccountDialog />
           </div>
         </div>
 
