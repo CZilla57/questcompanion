@@ -79,6 +79,7 @@ import type {
   LogoutSuccess,
   MarkNudgesRead200,
   MarkNudgesReadInput,
+  MintShortcutTokenRequest,
   MobileTokenExchangeRequest,
   MobileTokenExchangeSuccess,
   MomentumResponse,
@@ -116,6 +117,11 @@ import type {
   RewardStoreItemInput,
   SearchUsersParams,
   SentNudge,
+  ShortcutCaptureRequest,
+  ShortcutCaptureResponse,
+  ShortcutTodayPayload,
+  ShortcutTokenMinted,
+  ShortcutTokenSummary,
   SnoozeDifficultyOffer200,
   StartFocusSessionInput,
   StartFocusSessionParams,
@@ -6623,6 +6629,372 @@ export const useDeleteMe = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getDeleteMeMutationOptions(options));
     }
+
+export const getListShortcutTokensUrl = () => {
+
+
+
+
+  return `/api/shortcut-tokens`
+}
+
+/**
+ * @summary List active Pocket Gate tokens (metadata only, never hashes)
+ */
+export const listShortcutTokens = async ( options?: RequestInit): Promise<ShortcutTokenSummary[]> => {
+
+  return customFetch<ShortcutTokenSummary[]>(getListShortcutTokensUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListShortcutTokensQueryKey = () => {
+    return [
+    `/api/shortcut-tokens`
+    ] as const;
+    }
+
+
+export const getListShortcutTokensQueryOptions = <TData = Awaited<ReturnType<typeof listShortcutTokens>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listShortcutTokens>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListShortcutTokensQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listShortcutTokens>>> = ({ signal }) => listShortcutTokens({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listShortcutTokens>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListShortcutTokensQueryResult = NonNullable<Awaited<ReturnType<typeof listShortcutTokens>>>
+export type ListShortcutTokensQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List active Pocket Gate tokens (metadata only, never hashes)
+ */
+
+export function useListShortcutTokens<TData = Awaited<ReturnType<typeof listShortcutTokens>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listShortcutTokens>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListShortcutTokensQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getMintShortcutTokenUrl = () => {
+
+
+
+
+  return `/api/shortcut-tokens`
+}
+
+/**
+ * @summary Mint a Pocket Gate token — plaintext returned exactly once
+ */
+export const mintShortcutToken = async (mintShortcutTokenRequest?: MintShortcutTokenRequest, options?: RequestInit): Promise<ShortcutTokenMinted> => {
+
+  return customFetch<ShortcutTokenMinted>(getMintShortcutTokenUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      mintShortcutTokenRequest,)
+  }
+);}
+
+
+
+
+export const getMintShortcutTokenMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof mintShortcutToken>>, TError,{data?: BodyType<MintShortcutTokenRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof mintShortcutToken>>, TError,{data?: BodyType<MintShortcutTokenRequest>}, TContext> => {
+
+const mutationKey = ['mintShortcutToken'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof mintShortcutToken>>, {data?: BodyType<MintShortcutTokenRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  mintShortcutToken(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MintShortcutTokenMutationResult = NonNullable<Awaited<ReturnType<typeof mintShortcutToken>>>
+    export type MintShortcutTokenMutationBody = BodyType<MintShortcutTokenRequest> | undefined
+    export type MintShortcutTokenMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Mint a Pocket Gate token — plaintext returned exactly once
+ */
+export const useMintShortcutToken = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof mintShortcutToken>>, TError,{data?: BodyType<MintShortcutTokenRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof mintShortcutToken>>,
+        TError,
+        {data?: BodyType<MintShortcutTokenRequest>},
+        TContext
+      > => {
+      return useMutation(getMintShortcutTokenMutationOptions(options));
+    }
+
+export const getRevokeShortcutTokenUrl = (id: number,) => {
+
+
+
+
+  return `/api/shortcut-tokens/${id}`
+}
+
+/**
+ * @summary Revoke a Pocket Gate token (idempotent)
+ */
+export const revokeShortcutToken = async (id: number, options?: RequestInit): Promise<SuccessEnvelope> => {
+
+  return customFetch<SuccessEnvelope>(getRevokeShortcutTokenUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRevokeShortcutTokenMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeShortcutToken>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeShortcutToken>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['revokeShortcutToken'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeShortcutToken>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  revokeShortcutToken(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeShortcutTokenMutationResult = NonNullable<Awaited<ReturnType<typeof revokeShortcutToken>>>
+
+    export type RevokeShortcutTokenMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Revoke a Pocket Gate token (idempotent)
+ */
+export const useRevokeShortcutToken = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeShortcutToken>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeShortcutToken>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRevokeShortcutTokenMutationOptions(options));
+    }
+
+export const getShortcutCaptureUrl = () => {
+
+
+
+
+  return `/api/shortcuts/capture`
+}
+
+/**
+ * @summary One-tap quest capture from the iPhone Shortcut (token or session auth)
+ */
+export const shortcutCapture = async (shortcutCaptureRequest: ShortcutCaptureRequest, options?: RequestInit): Promise<ShortcutCaptureResponse> => {
+
+  return customFetch<ShortcutCaptureResponse>(getShortcutCaptureUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      shortcutCaptureRequest,)
+  }
+);}
+
+
+
+
+export const getShortcutCaptureMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shortcutCapture>>, TError,{data: BodyType<ShortcutCaptureRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof shortcutCapture>>, TError,{data: BodyType<ShortcutCaptureRequest>}, TContext> => {
+
+const mutationKey = ['shortcutCapture'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof shortcutCapture>>, {data: BodyType<ShortcutCaptureRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  shortcutCapture(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ShortcutCaptureMutationResult = NonNullable<Awaited<ReturnType<typeof shortcutCapture>>>
+    export type ShortcutCaptureMutationBody = BodyType<ShortcutCaptureRequest>
+    export type ShortcutCaptureMutationError = ErrorType<unknown>
+
+    /**
+ * @summary One-tap quest capture from the iPhone Shortcut (token or session auth)
+ */
+export const useShortcutCapture = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof shortcutCapture>>, TError,{data: BodyType<ShortcutCaptureRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof shortcutCapture>>,
+        TError,
+        {data: BodyType<ShortcutCaptureRequest>},
+        TContext
+      > => {
+      return useMutation(getShortcutCaptureMutationOptions(options));
+    }
+
+export const getShortcutTodayUrl = () => {
+
+
+
+
+  return `/api/shortcuts/today`
+}
+
+/**
+ * @summary Today's open quests as a title→id dictionary for Choose from List
+ */
+export const shortcutToday = async ( options?: RequestInit): Promise<ShortcutTodayPayload> => {
+
+  return customFetch<ShortcutTodayPayload>(getShortcutTodayUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getShortcutTodayQueryKey = () => {
+    return [
+    `/api/shortcuts/today`
+    ] as const;
+    }
+
+
+export const getShortcutTodayQueryOptions = <TData = Awaited<ReturnType<typeof shortcutToday>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof shortcutToday>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getShortcutTodayQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof shortcutToday>>> = ({ signal }) => shortcutToday({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof shortcutToday>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ShortcutTodayQueryResult = NonNullable<Awaited<ReturnType<typeof shortcutToday>>>
+export type ShortcutTodayQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Today's open quests as a title→id dictionary for Choose from List
+ */
+
+export function useShortcutToday<TData = Awaited<ReturnType<typeof shortcutToday>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof shortcutToday>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getShortcutTodayQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getSearchUsersUrl = (params: SearchUsersParams,) => {
   const normalizedParams = new URLSearchParams();
