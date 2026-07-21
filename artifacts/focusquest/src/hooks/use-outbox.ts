@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { getGetTasksQueryKey, getGetTasksMomentumQueryKey } from "@workspace/api-client-react";
+import {
+  getGetTasksQueryKey,
+  getGetTasksMomentumQueryKey,
+  getGetQuestlinesQueryKey,
+} from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import type { OutboxEntry } from "@/lib/outbox/core";
 import { getOutboxStore, outboxChanged } from "@/lib/outbox/store";
@@ -41,6 +45,8 @@ export function useOutboxActions() {
         if (result.synced > 0) {
           queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetTasksMomentumQueryKey() });
+          // Replayed captures may belong to a questline — refresh its counts too.
+          queryClient.invalidateQueries({ queryKey: getGetQuestlinesQueryKey() });
           toast({
             title: `Synced ${result.synced} quest${result.synced === 1 ? "" : "s"} ✓`,
             className: "border-primary",

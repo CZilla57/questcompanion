@@ -562,6 +562,37 @@ export const CreateTaskBody = zod.object({
   "clientKey": zod.string().min(createTaskBodyClientKeyMin).max(createTaskBodyClientKeyMax).optional().describe('Client-generated idempotency key (a UUID). Two creates with the same key for the same user return the same task - the second responds 200 with the existing quest instead of creating a duplicate. Sent on every quick-add capture; offline replays reuse the capture\'s key.')
 })
 
+export const CreateTaskResponse = zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "points": zod.number(),
+  "completed": zod.boolean(),
+  "completedAt": zod.string().nullish(),
+  "dueDate": zod.string().nullable(),
+  "priority": zod.enum(['low', 'medium', 'high']),
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'self_care', 'errands', 'travel', 'default']),
+  "categoryLabel": zod.string(),
+  "createdAt": zod.string(),
+  "estimatedMinutes": zod.number().nullish().describe('Time the user estimated the quest would take (in minutes)'),
+  "actualMinutes": zod.number().nullish().describe('Time the user actually spent on the quest (in minutes)'),
+  "isDailyFocus": zod.boolean().optional().describe('Whether this quest is pinned as a daily focus'),
+  "focusDate": zod.string().nullish().describe('The date (YYYY-MM-DD) this quest was pinned as focus'),
+  "isAnchored": zod.boolean().optional().describe('A no-deadline quest that stays visible until completed'),
+  "dueTime": zod.string().nullish().describe('Optional time of day (HH:mm, 24-hour)'),
+  "steps": zod.array(zod.object({
+  "id": zod.number(),
+  "text": zod.string(),
+  "position": zod.number(),
+  "done": zod.boolean()
+})).describe('AI-generated first-step checklist attached to this quest'),
+  "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
+  "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
+  "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)'),
+  "bigSwing": zod.boolean().describe('True when this quest is a \"big swing\" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows')
+})
+
 
 /**
  * @summary Parse a natural-language quick-add line into structured task fields

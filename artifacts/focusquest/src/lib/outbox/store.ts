@@ -73,11 +73,26 @@ function tx<T>(db: IDBDatabase, mode: IDBTransactionMode, run: (store: IDBObject
   });
 }
 
+/** Readwrite ops resolve on COMMIT, not request success: some browsers
+ * (Firefox) defer quota errors to commit time, and the capture path's
+ * "Saved ✓" toast must never precede durability. Mirrors update()'s pattern. */
+function writeTx(db: IDBDatabase, run: (store: IDBObjectStore) => void): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const t = db.transaction(STORE, "readwrite");
+    run(t.objectStore(STORE));
+    t.oncomplete = () => resolve();
+    t.onabort = () => reject(t.error ?? new Error("indexedDB tx aborted"));
+    t.onerror = () => reject(t.error ?? new Error("indexedDB tx failed"));
+  });
+}
+
 function createIdbStore(db: IDBDatabase): OutboxStore {
   return {
     persistent: true,
     async add(entry) {
-      await tx(db, "readwrite", (s) => s.put(entry));
+      await writeTx(db, (s) => {
+        s.put(entry);
+      });
       emit();
     },
     async list() {
@@ -108,7 +123,9 @@ function createIdbStore(db: IDBDatabase): OutboxStore {
       if (found) emit();
     },
     async remove(id) {
-      await tx(db, "readwrite", (s) => s.delete(id));
+      await writeTx(db, (s) => {
+        s.delete(id);
+      });
       emit();
     },
   };

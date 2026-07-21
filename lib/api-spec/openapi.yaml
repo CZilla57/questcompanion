@@ -533,6 +533,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Task"
+        "200":
+          description: Replay of an existing capture (same user + clientKey) - the existing task, no new row created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
 
   /tasks/parse:
     post:
