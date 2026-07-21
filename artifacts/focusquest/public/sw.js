@@ -6,11 +6,18 @@ const FONT_HOSTS = ["fonts.googleapis.com", "fonts.gstatic.com"];
 
 self.addEventListener("install", (event) => {
   if (BUILD.hash !== "dev") {
+    // addAll is deliberately all-or-nothing: a partial shell is worse than
+    // none (index.html referencing un-cached hashed assets). A failed install
+    // retries on the next SW update check — the app stays network-only.
     event.waitUntil(caches.open(SHELL_CACHE).then((cache) => cache.addAll(BUILD.assets)));
   }
   self.skipWaiting();
 });
 
+// NOTE: skipWaiting+claim hands an already-open old tab to this SW and deletes
+// its old fq-shell-* cache. Safe today: the app is a single bundle (no lazy
+// chunks) and navigations are network-first, so a reload self-heals. Revisit
+// before adopting route-based code-splitting.
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
@@ -29,9 +36,12 @@ async function cacheFirst(cacheName, request) {
   const cached = await caches.match(request, { cacheName });
   if (cached) return cached;
   const response = await fetch(request);
-  if (response.ok || response.type === "opaque") {
+  // Only cache full, successful bodies: a 206 partial (Safari range requests)
+  // makes Cache.put throw, and error responses shouldn't be pinned. A put
+  // failure (quota) must never break the response path.
+  if (response.status === 200 || response.type === "opaque") {
     const cache = await caches.open(cacheName);
-    cache.put(request, response.clone());
+    cache.put(request, response.clone()).catch(() => {});
   }
   return response;
 }
@@ -57,7 +67,20 @@ self.addEventListener("fetch", (event) => {
 
   // Navigations: network-first so deploys land immediately; cached shell offline.
   if (request.mode === "navigate") {
-    event.respondWith(fetch(request).catch(() => caches.match("/index.html", { cacheName: SHELL_CACHE })));
+    event.respondWith(
+      fetch(request).catch(async () => {
+        const shell = await caches.match("/index.html", { cacheName: SHELL_CACHE });
+        // A missing shell (storage evicted) must still resolve to a real
+        // Response — respondWith(undefined) is a hard browser error page.
+        return (
+          shell ??
+          new Response("You're offline and the app isn't cached yet. Reconnect and reload.", {
+            status: 503,
+            headers: { "content-type": "text/plain; charset=utf-8" },
+          })
+        );
+      }),
+    );
     return;
   }
 

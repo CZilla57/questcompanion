@@ -30,6 +30,8 @@ function makeFixtureDist(): string {
   mkdirSync(path.join(dist, "assets"));
   writeFileSync(path.join(dist, "assets", "index-Abc123.js"), "js");
   writeFileSync(path.join(dist, "assets", "index-Def456.css"), "css");
+  mkdirSync(path.join(dist, "assets", "nested"));
+  writeFileSync(path.join(dist, "assets", "nested", "deep.js"), "nested");
   mkdirSync(path.join(dist, "icons"));
   writeFileSync(path.join(dist, "icons", "icon-192.png"), "png");
   mkdirSync(path.join(dist, "lpc"));
@@ -58,6 +60,7 @@ describe("collectPrecache", () => {
     expect(assets).not.toContain("/sw.js");
     expect(assets).not.toContain("/opengraph.jpg");
     expect(assets).not.toContain("/robots.txt");
+    expect(assets.some((a) => a.includes("/nested/"))).toBe(false);
   });
 
   it("hash is deterministic and changes when index.html content changes", () => {

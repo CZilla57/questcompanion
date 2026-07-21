@@ -23,9 +23,11 @@ export function collectPrecache(distDir) {
     totalBytes += statSync(path.join(distDir, f)).size;
   }
   for (const dir of DIRS) {
-    for (const f of readdirSync(path.join(distDir, dir)).sort()) {
-      assets.push(`/${dir}/${f}`);
-      totalBytes += statSync(path.join(distDir, dir, f)).size;
+    for (const entry of readdirSync(path.join(distDir, dir), { withFileTypes: true })) {
+      // Nested dirs / stray non-files would 404 in addAll and fail the whole install.
+      if (!entry.isFile()) continue;
+      assets.push(`/${dir}/${entry.name}`);
+      totalBytes += statSync(path.join(distDir, dir, entry.name)).size;
     }
   }
   assets.sort();
