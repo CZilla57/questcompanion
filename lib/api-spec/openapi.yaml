@@ -1788,6 +1788,38 @@ paths:
               schema:
                 $ref: "#/components/schemas/MyWeekComparison"
 
+  /me/export:
+    get:
+      operationId: getMyExport
+      tags: [users]
+      summary: Download everything user-keyed as one JSON file
+      responses:
+        "200":
+          description: Attachment JSON of the user's rows across all user-keyed tables
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountExport"
+
+  /me:
+    delete:
+      operationId: deleteMe
+      tags: [users]
+      summary: Permanently delete the account and every user-keyed row
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteAccountRequest"
+      responses:
+        "200":
+          description: Account deleted; session destroyed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessEnvelope"
+
   /users/search:
     get:
       operationId: searchUsers
@@ -3310,6 +3342,30 @@ components:
       properties:
         success:
           type: boolean
+
+    DeleteAccountRequest:
+      type: object
+      required: [confirm]
+      properties:
+        confirm:
+          type: string
+
+    AccountExport:
+      type: object
+      required: [exportedAt, user, data]
+      properties:
+        exportedAt:
+          type: string
+        user:
+          type: object
+          additionalProperties: true
+        data:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: object
+              additionalProperties: true
 
     EquippedGearItem:
       type: object

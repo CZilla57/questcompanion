@@ -1842,6 +1842,28 @@ export const GetMyWeekResponse = zod.object({
 
 
 /**
+ * @summary Download everything user-keyed as one JSON file
+ */
+export const GetMyExportResponse = zod.object({
+  "exportedAt": zod.string(),
+  "user": zod.record(zod.string(), zod.unknown()),
+  "data": zod.record(zod.string(), zod.array(zod.record(zod.string(), zod.unknown())))
+})
+
+
+/**
+ * @summary Permanently delete the account and every user-keyed row
+ */
+export const DeleteMeBody = zod.object({
+  "confirm": zod.string()
+})
+
+export const DeleteMeResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
  * @summary Search for users by username
  */
 export const SearchUsersQueryParams = zod.object({

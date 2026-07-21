@@ -1088,6 +1088,22 @@ export interface SuccessEnvelope {
   success: boolean;
 }
 
+export interface DeleteAccountRequest {
+  confirm: string;
+}
+
+export type AccountExportUser = { [key: string]: unknown };
+
+export type AccountExportDataItem = { [key: string]: unknown };
+
+export type AccountExportData = {[key: string]: AccountExportDataItem[]};
+
+export interface AccountExport {
+  exportedAt: string;
+  user: AccountExportUser;
+  data: AccountExportData;
+}
+
 export type AvatarProfileAvatarClass = typeof AvatarProfileAvatarClass[keyof typeof AvatarProfileAvatarClass];
 
 
