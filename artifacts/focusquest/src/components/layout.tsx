@@ -7,6 +7,7 @@ import { Button } from "./ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
 import { usePwaInstall } from "@/hooks/use-pwa-install";
+import { useOutboxSync } from "@/hooks/use-outbox";
 import { NAV_GROUPS, activeGroupKey, type NavGroupKey } from "@/lib/nav-groups";
 import { shouldShowInstallButton } from "@/lib/pwa";
 import { subscribeToast, unsubscribeToast } from "@/lib/push";
@@ -21,6 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Switch } from "@/components/ui/switch";
 import { DopamineOverlay } from "./dopamine-overlay";
 import { InstallBanner } from "./install-banner";
+import { OfflineBanner } from "./offline-banner";
 import { EmergencyModeProvider } from "./emergency-mode";
 import { BrainModeChip } from "./brain-mode-chip";
 import { CoinChip } from "./coin-chip";
@@ -175,6 +177,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { data: navNudges } = useGetNudges();
   const allyUnread = (navNudges ?? []).filter((n) => !n.readAt).length;
   const { data: brainState } = useGetBrainState({ tz: browserTimeZone() });
+  useOutboxSync();
 
   return (
     <EmergencyModeProvider renderRescue={(task, close, onRejected) => (
@@ -304,6 +307,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <ProtectionPause />
             </div>
           )}
+          <OfflineBanner />
           <InstallBanner />
           {children}
         </div>
