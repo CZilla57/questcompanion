@@ -11,7 +11,7 @@ export interface NavTab {
   // `undefined` when ungated) so `t.feature` stays legal across the
   // as-const union element type instead of vanishing from literals that
   // omitted it.
-  feature?: FeatureKey;
+  feature: FeatureKey | undefined;
 }
 export interface NavGroup {
   key: string;
