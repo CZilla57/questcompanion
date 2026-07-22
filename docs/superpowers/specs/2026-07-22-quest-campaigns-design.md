@@ -79,7 +79,31 @@ One migration, all additive. No backfill: every existing questline is simply cam
 2. **At most one running campaign per user** — enforced by the partial unique index. Starting a
    second campaign sets the current one to `set_aside` inside the same transaction.
 3. **Deleting a campaign never deletes work.** `set null` unlinks its questlines; they survive as
-   ordinary questlines with their quests intact — the same promise questlines make to quests.
+   ordinary questlines with their quests intact — the same promise questlines make to quests. The
+   delete transaction also clears `chapter_order` and `chapter_beat`, so a freed questline never
+   carries narration from a campaign it has left.
+
+### Amendments ruled during implementation (2026-07-22)
+
+These were not in the original design. They are load-bearing — read them before changing anything
+about claiming or chapter membership.
+
+- **ONE CAMPAIGN PER QUESTLINE, EVER.** Recycling completed questlines through fresh campaigns was
+  an unlimited-XP hole. Three rules close it, with no migration: attaching a questline that already
+  belongs to another campaign is a 409; a completed campaign's chapters can never be detached; a
+  completed campaign can never be deleted (it is a permanent chronicle entry).
+- **`completed` is terminal.** `canTransition(from, to)` refuses any transition out of `completed`,
+  and `isCampaignReadyToClaim` additionally requires `reward_xp_awarded IS NULL`, so the claim is
+  idempotent even if a future status path forgets the guard. Without this, a completed campaign
+  could be reopened and re-claimed forever.
+- **Lock order is campaign-before-questline on every path that touches both tables.** The claim
+  locks user → campaign → chapters; the questline route peeks unlocked, locks the campaign, locks
+  the questline, then re-verifies `campaign_id` under the lock. Deviating reintroduces either a
+  race (a detach freeing a chapter mid-claim) or a deadlock.
+- **The adopt path has a UI**, and chapters can be removed as well as added — add-only made one
+  mis-added chapter block the claim forever.
+- **The chapter cap is client-side only.** `PATCH /questlines/:id` has no chapter-count limit;
+  the UI hides the add control at five. Exceeding five costs the user work for no extra reward.
 4. **XP monotonicity holds** (standing guard from [[project-honest-coin]]): the claim only ever
    adds. No campaign path decrements XP.
 5. **Registry:** `campaigns` is added to `USER_DATA_TABLES` **after** `questlines` in the delete
