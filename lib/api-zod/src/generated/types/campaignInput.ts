@@ -19,6 +19,9 @@ export interface CampaignInput {
   /** @nullable */
   endingBeat?: string | null;
   storySource?: CampaignInputStorySource;
-  /** Chapter questlines to create atomically. Empty is legal (adopt-only path). */
+  /**
+     * Chapter questlines to create atomically. Empty is legal (adopt-only path).
+     * @maxItems 5
+     */
   chapters?: CampaignInputChaptersItem[];
 }

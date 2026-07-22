@@ -9,10 +9,14 @@ import {
 } from "@workspace/db";
 import {
   computeCampaignProgress, isCampaignReadyToClaim, computeCampaignRewardXp,
-  nextChapter, renumber,
+  nextChapter, renumber, canTransition, clampString, validateStringOrNull,
+  validateQuestlineIds,
 } from "../lib/campaigns";
 import { curatedArc, MIN_CHAPTERS, MAX_CHAPTERS } from "../lib/campaign-arc";
-import { suggestCampaignArc, CampaignArcParseError } from "../lib/ai/campaign-arc";
+import {
+  suggestCampaignArc, CampaignArcParseError,
+  MAX_TITLE_LENGTH, MAX_PREMISE_LENGTH, MAX_BEAT_LENGTH,
+} from "../lib/ai/campaign-arc";
 import { computeProgress } from "../lib/questlines";
 import { getLevelInfo } from "../lib/gamification";
 import { newlyUnlocked, type FeatureKey } from "../lib/feature-gates";
@@ -20,21 +24,10 @@ import { assignPoints } from "../lib/auto-points";
 import { isAiConfigured, generateJson, AiClientError } from "../lib/ai/client";
 import { suggestCooldown } from "../lib/ai/suggest-cooldown";
 import { sanitizeQuestTitles } from "../lib/ai/questline-quests";
+import { isUniqueViolation } from "../lib/rename";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
-
-/** Postgres unique-violation, walked through the driver's cause chain — the
- * same technique lib/rename.ts uses. Our only unique index is the
- * one-running-campaign-per-user partial index. */
-function isUniqueViolation(err: unknown): boolean {
-  let e: unknown = err;
-  for (let i = 0; i < 5 && e; i++) {
-    if (typeof e === "object" && (e as { code?: string }).code === "23505") return true;
-    e = (e as { cause?: unknown }).cause;
-  }
-  return false;
-}
 
 export function formatCampaign(row: Campaign, progress: { total: number; done: number }) {
   return {
@@ -128,20 +121,47 @@ router.post("/campaigns", async (req, res): Promise<void> => {
   const userId = req.gameUserId;
 
   const { title, arcPremise, endingBeat, storySource, chapters } = req.body as {
-    title?: string; arcPremise?: string | null; endingBeat?: string | null;
+    title?: unknown; arcPremise?: unknown; endingBeat?: unknown;
     storySource?: string;
-    chapters?: { title?: string; beat?: string | null; questTitles?: string[] }[];
+    chapters?: unknown;
   };
-  if (!title || !title.trim()) { res.status(400).json({ error: "title is required" }); return; }
+  if (typeof title !== "string" || !title.trim()) {
+    res.status(400).json({ error: "title is required" });
+    return;
+  }
+  const cleanTitle = clampString(title, MAX_TITLE_LENGTH);
 
-  const cleanChapters = (Array.isArray(chapters) ? chapters : [])
-    .map((c) => ({
-      title: typeof c.title === "string" ? c.title.trim() : "",
-      beat: typeof c.beat === "string" ? c.beat : null,
-      questTitles: Array.isArray(c.questTitles) ? sanitizeQuestTitles(c.questTitles) : [],
-    }))
-    .filter((c) => c.title.length > 0)
-    .slice(0, MAX_CHAPTERS);
+  const arcPremiseResult = validateStringOrNull(arcPremise, MAX_PREMISE_LENGTH);
+  if (!arcPremiseResult.ok) { res.status(400).json({ error: "arcPremise must be a string or null" }); return; }
+  const endingBeatResult = validateStringOrNull(endingBeat, MAX_BEAT_LENGTH);
+  if (!endingBeatResult.ok) { res.status(400).json({ error: "endingBeat must be a string or null" }); return; }
+
+  // Slice to MAX_CHAPTERS BEFORE mapping/sanitizing, so an oversized payload
+  // never gets fully processed just to be thrown away.
+  const rawChapters = (Array.isArray(chapters) ? chapters : []).slice(0, MAX_CHAPTERS);
+  const cleanChapters: { title: string; beat: string | null; questTitles: string[] }[] = [];
+  for (const raw of rawChapters) {
+    if (typeof raw !== "object" || raw === null) {
+      res.status(400).json({ error: "each chapter must be an object" });
+      return;
+    }
+    const c = raw as { title?: unknown; beat?: unknown; questTitles?: unknown };
+    if (typeof c.title !== "string") {
+      res.status(400).json({ error: "chapter title must be a string" });
+      return;
+    }
+    const chapterTitle = clampString(c.title, MAX_TITLE_LENGTH);
+    if (!chapterTitle) continue; // blank after trim — same silent-skip as before
+
+    const beatResult = validateStringOrNull(c.beat, MAX_BEAT_LENGTH);
+    if (!beatResult.ok) { res.status(400).json({ error: "chapter beat must be a string or null" }); return; }
+
+    cleanChapters.push({
+      title: chapterTitle,
+      beat: beatResult.value,
+      questTitles: Array.isArray(c.questTitles) ? sanitizeQuestTitles(c.questTitles as string[]) : [],
+    });
+  }
 
   try {
     const created = await db.transaction(async (tx) => {
@@ -153,9 +173,9 @@ router.post("/campaigns", async (req, res): Promise<void> => {
 
       const [campaign] = await tx.insert(campaignsTable).values({
         userId,
-        title: title.trim(),
-        arcPremise: arcPremise ?? null,
-        endingBeat: endingBeat ?? null,
+        title: cleanTitle,
+        arcPremise: arcPremiseResult.value,
+        endingBeat: endingBeatResult.value,
         storySource: storySource === "ai" ? "ai" : "curated",
       }).returning();
 
@@ -226,29 +246,66 @@ router.patch("/campaigns/:id", async (req, res): Promise<void> => {
   if (id == null) { res.status(400).json({ error: "Invalid id" }); return; }
 
   const { title, arcPremise, endingBeat, status } = req.body as {
-    title?: string; arcPremise?: string | null; endingBeat?: string | null; status?: string;
+    title?: unknown; arcPremise?: unknown; endingBeat?: unknown; status?: unknown;
   };
-  if (status != null && status !== "running" && status !== "set_aside") {
+  if (status !== undefined && status !== "running" && status !== "set_aside") {
     res.status(400).json({ error: "status must be running or set_aside" });
     return;
   }
+  const statusValue = status as "running" | "set_aside" | undefined;
 
   const updates: Partial<typeof campaignsTable.$inferInsert> = {};
-  if (title != null) {
-    if (!title.trim()) { res.status(400).json({ error: "title cannot be empty" }); return; }
-    updates.title = title.trim();
+  if (title !== undefined) {
+    if (typeof title !== "string" || !title.trim()) {
+      res.status(400).json({ error: "title cannot be empty" });
+      return;
+    }
+    updates.title = clampString(title, MAX_TITLE_LENGTH);
   }
-  if (arcPremise !== undefined) updates.arcPremise = arcPremise;
-  if (endingBeat !== undefined) updates.endingBeat = endingBeat;
-  if (status != null) {
-    updates.status = status;
-    updates.setAsideAt = status === "set_aside" ? new Date() : null;
+  if (arcPremise !== undefined) {
+    const r = validateStringOrNull(arcPremise, MAX_PREMISE_LENGTH);
+    if (!r.ok) { res.status(400).json({ error: "arcPremise must be a string or null" }); return; }
+    updates.arcPremise = r.value;
+  }
+  if (endingBeat !== undefined) {
+    const r = validateStringOrNull(endingBeat, MAX_BEAT_LENGTH);
+    if (!r.ok) { res.status(400).json({ error: "endingBeat must be a string or null" }); return; }
+    updates.endingBeat = r.value;
+  }
+  if (statusValue !== undefined) {
+    updates.status = statusValue;
+    updates.setAsideAt = statusValue === "set_aside" ? new Date() : null;
   }
 
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "No fields to update" });
+    return;
+  }
+
+  type Outcome =
+    | { kind: "not_found" }
+    | { kind: "conflict" }
+    | { kind: "ok"; row: Campaign };
+
   try {
-    const row = await db.transaction(async (tx) => {
+    const outcome = await db.transaction(async (tx): Promise<Outcome> => {
+      // Lock and read the target FIRST — before any stand-down write — so a
+      // request for a nonexistent campaign can never commit a side effect
+      // (e.g. standing down the user's actually-running campaign) on its way
+      // to a 404.
+      const [existing] = await tx.select().from(campaignsTable)
+        .where(and(eq(campaignsTable.id, id), eq(campaignsTable.userId, userId)))
+        .for("update");
+      if (!existing) return { kind: "not_found" };
+
+      // completed is terminal: a no-op (status omitted, or echoed back
+      // unchanged) is fine, but any real transition out of completed —
+      // in particular reopening it to running for a re-claim — is refused.
+      const targetStatus = statusValue ?? existing.status;
+      if (!canTransition(existing.status, targetStatus)) return { kind: "conflict" };
+
       // Resuming stands down whatever else was running (one at a time).
-      if (status === "running") {
+      if (statusValue === "running") {
         await tx.update(campaignsTable)
           .set({ status: "set_aside", setAsideAt: new Date() })
           .where(and(eq(campaignsTable.userId, userId), eq(campaignsTable.status, "running")));
@@ -256,12 +313,17 @@ router.patch("/campaigns/:id", async (req, res): Promise<void> => {
       const [updated] = await tx.update(campaignsTable).set(updates)
         .where(and(eq(campaignsTable.id, id), eq(campaignsTable.userId, userId)))
         .returning();
-      return updated;
+      return { kind: "ok", row: updated! };
     });
-    if (!row) { res.status(404).json({ error: "Campaign not found" }); return; }
+
+    if (outcome.kind === "not_found") { res.status(404).json({ error: "Campaign not found" }); return; }
+    if (outcome.kind === "conflict") {
+      res.status(409).json({ error: "Campaign is already completed" });
+      return;
+    }
 
     const chapters = await loadChapters(id, userId);
-    res.json(formatCampaign(row, computeCampaignProgress(chapters)));
+    res.json(formatCampaign(outcome.row, computeCampaignProgress(chapters)));
   } catch (err) {
     if (isUniqueViolation(err)) {
       res.status(409).json({ error: "Another campaign is already running" });
@@ -272,23 +334,43 @@ router.patch("/campaigns/:id", async (req, res): Promise<void> => {
 });
 
 // Delete a campaign; the FK's ON DELETE SET NULL unlinks its chapters.
-// The questlines and all their quests survive.
+// The questlines and all their quests survive. A completed campaign is a
+// permanent chronicle entry and may never be deleted — that, together with
+// the completed-chapters-never-detach rule above, means a claimed chapter can
+// never be freed up to be claimed again in a different campaign.
 router.delete("/campaigns/:id", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;
   const id = parseId(req.params.id);
   if (id == null) { res.status(400).json({ error: "Invalid id" }); return; }
 
-  const [row] = await db.delete(campaignsTable)
-    .where(and(eq(campaignsTable.id, id), eq(campaignsTable.userId, userId)))
-    .returning();
-  if (!row) { res.status(404).json({ error: "Campaign not found" }); return; }
+  type Outcome = { kind: "not_found" } | { kind: "completed" } | { kind: "ok" };
 
+  const outcome = await db.transaction(async (tx): Promise<Outcome> => {
+    const [existing] = await tx.select().from(campaignsTable)
+      .where(and(eq(campaignsTable.id, id), eq(campaignsTable.userId, userId)))
+      .for("update");
+    if (!existing) return { kind: "not_found" };
+    if (existing.status === "completed") return { kind: "completed" };
+
+    await tx.delete(campaignsTable)
+      .where(and(eq(campaignsTable.id, id), eq(campaignsTable.userId, userId)));
+    return { kind: "ok" };
+  });
+
+  if (outcome.kind === "not_found") { res.status(404).json({ error: "Campaign not found" }); return; }
+  if (outcome.kind === "completed") {
+    res.status(409).json({ error: "A completed campaign is part of your chronicle" });
+    return;
+  }
   res.sendStatus(204);
 });
 
 // Set the full ordered chapter list. Omitted questlines are detached — one
 // write per row, from one computed sequence, so nothing can disagree on order.
+// One campaign per questline, EVER: a questline already claimed by a
+// different campaign 409s instead of being poached, and a completed
+// campaign's chapters can never be detached at all.
 router.patch("/campaigns/:id/chapters", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;
@@ -296,24 +378,40 @@ router.patch("/campaigns/:id/chapters", async (req, res): Promise<void> => {
   if (id == null) { res.status(400).json({ error: "Invalid id" }); return; }
 
   const { questlineIds } = req.body as { questlineIds?: unknown };
-  if (!Array.isArray(questlineIds) || questlineIds.some((q) => typeof q !== "number")) {
-    res.status(400).json({ error: "questlineIds must be an array of integers" });
-    return;
-  }
+  const validated = validateQuestlineIds(questlineIds, MAX_CHAPTERS);
+  if (!validated.ok) { res.status(400).json({ error: validated.error }); return; }
 
-  const [campaign] = await db.select().from(campaignsTable)
-    .where(and(eq(campaignsTable.id, id), eq(campaignsTable.userId, userId)));
-  if (!campaign) { res.status(404).json({ error: "Campaign not found" }); return; }
+  type Outcome =
+    | { kind: "not_found" }
+    | { kind: "completed" }
+    | { kind: "conflict" }
+    | { kind: "ok"; campaign: Campaign };
 
-  // Only questlines this user actually owns may become chapters.
-  const owned = questlineIds.length
-    ? await db.select({ id: questlinesTable.id }).from(questlinesTable)
-        .where(and(inArray(questlinesTable.id, questlineIds as number[]), eq(questlinesTable.userId, userId)))
-    : [];
-  const ownedIds = new Set(owned.map((o) => o.id));
-  const ordered = renumber((questlineIds as number[]).filter((q) => ownedIds.has(q)));
+  const outcome = await db.transaction(async (tx): Promise<Outcome> => {
+    const [campaign] = await tx.select().from(campaignsTable)
+      .where(and(eq(campaignsTable.id, id), eq(campaignsTable.userId, userId)))
+      .for("update");
+    if (!campaign) return { kind: "not_found" };
+    if (campaign.status === "completed") return { kind: "completed" };
 
-  await db.transaction(async (tx) => {
+    // Only questlines this user actually owns may become chapters.
+    const owned = validated.ids.length
+      ? await tx.select({ id: questlinesTable.id, campaignId: questlinesTable.campaignId })
+          .from(questlinesTable)
+          .where(and(inArray(questlinesTable.id, validated.ids), eq(questlinesTable.userId, userId)))
+          .orderBy(asc(questlinesTable.id))
+          .for("update")
+      : [];
+
+    // A questline already spoken for by a DIFFERENT campaign may never be
+    // poached by reorder — ids already on THIS campaign are the normal case.
+    for (const q of owned) {
+      if (q.campaignId != null && q.campaignId !== id) return { kind: "conflict" };
+    }
+
+    const ownedIds = new Set(owned.map((o) => o.id));
+    const ordered = renumber(validated.ids.filter((qId) => ownedIds.has(qId)));
+
     // Detach everything currently attached, then re-attach the new sequence.
     await tx.update(questlinesTable)
       .set({ campaignId: null, chapterOrder: null })
@@ -324,12 +422,24 @@ router.patch("/campaigns/:id/chapters", async (req, res): Promise<void> => {
         .set({ campaignId: id, chapterOrder })
         .where(and(eq(questlinesTable.id, questlineId), eq(questlinesTable.userId, userId)));
     }
+
+    return { kind: "ok", campaign };
   });
+
+  if (outcome.kind === "not_found") { res.status(404).json({ error: "Campaign not found" }); return; }
+  if (outcome.kind === "completed") {
+    res.status(409).json({ error: "A completed campaign's chapters are part of its record" });
+    return;
+  }
+  if (outcome.kind === "conflict") {
+    res.status(409).json({ error: "A questline can only belong to one campaign" });
+    return;
+  }
 
   const chapters = await loadChapters(id, userId);
   const current = nextChapter(chapters);
   res.json({
-    campaign: formatCampaign(campaign, computeCampaignProgress(chapters)),
+    campaign: formatCampaign(outcome.campaign, computeCampaignProgress(chapters)),
     chapters,
     currentChapterId: current ? current.questlineId : null,
   });

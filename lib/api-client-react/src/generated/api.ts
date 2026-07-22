@@ -4777,7 +4777,7 @@ export const deleteCampaign = async (id: number, options?: RequestInit): Promise
 
 
 
-export const getDeleteCampaignMutationOptions = <TError = ErrorType<unknown>,
+export const getDeleteCampaignMutationOptions = <TError = ErrorType<ErrorEnvelope>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCampaign>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteCampaign>>, TError,{id: number}, TContext> => {
 
@@ -4806,12 +4806,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type DeleteCampaignMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCampaign>>>
 
-    export type DeleteCampaignMutationError = ErrorType<unknown>
+    export type DeleteCampaignMutationError = ErrorType<ErrorEnvelope>
 
     /**
  * @summary Delete a campaign (its chapters are unlinked, never deleted)
  */
-export const useDeleteCampaign = <TError = ErrorType<unknown>,
+export const useDeleteCampaign = <TError = ErrorType<ErrorEnvelope>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCampaign>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof deleteCampaign>>,

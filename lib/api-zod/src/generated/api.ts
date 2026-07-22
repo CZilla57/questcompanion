@@ -1399,6 +1399,8 @@ export const createCampaignBodyTitleMax = 120;
 
 export const createCampaignBodyChaptersItemTitleMax = 120;
 
+export const createCampaignBodyChaptersMax = 5;
+
 
 
 export const CreateCampaignBody = zod.object({
@@ -1410,7 +1412,7 @@ export const CreateCampaignBody = zod.object({
   "title": zod.string().max(createCampaignBodyChaptersItemTitleMax),
   "beat": zod.string().nullish(),
   "questTitles": zod.array(zod.string()).optional()
-})).optional().describe('Chapter questlines to create atomically. Empty is legal (adopt-only path).')
+})).max(createCampaignBodyChaptersMax).optional().describe('Chapter questlines to create atomically. Empty is legal (adopt-only path).')
 })
 
 
@@ -1480,8 +1482,13 @@ export const UpdateCampaignResponse = zod.object({
 /**
  * @summary Set the full ordered chapter list for a campaign
  */
+
+export const reorderCampaignChaptersBodyQuestlineIdsMax = 5;
+
+
+
 export const ReorderCampaignChaptersBody = zod.object({
-  "questlineIds": zod.array(zod.number()).describe('Full ordered chapter list. Anything omitted is detached.')
+  "questlineIds": zod.array(zod.number().min(1)).max(reorderCampaignChaptersBodyQuestlineIdsMax).describe('Full ordered chapter list. Anything omitted is detached. Capped at the same 5-chapter limit as campaign creation.')
 })
 
 export const ReorderCampaignChaptersResponse = zod.object({

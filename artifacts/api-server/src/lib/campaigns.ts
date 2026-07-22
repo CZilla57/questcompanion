@@ -16,12 +16,78 @@ export function computeCampaignProgress(
   return { total, done };
 }
 
-/** Claimable only while running, holding at least one chapter, all chapters done. */
+/** Claimable only while running, holding at least one chapter, all chapters done,
+ * and never already paid out. The last clause is belt-and-braces: canTransition
+ * already stops a completed campaign from being reopened, but a campaign should
+ * never be claimable twice even if that guard is ever bypassed or removed. */
 export function isCampaignReadyToClaim(
-  campaign: { status: string },
+  campaign: { status: string; rewardXpAwarded: number | null },
   progress: { total: number; done: number },
 ): boolean {
-  return campaign.status === "running" && progress.total >= 1 && progress.done === progress.total;
+  return (
+    campaign.status === "running" &&
+    campaign.rewardXpAwarded == null &&
+    progress.total >= 1 &&
+    progress.done === progress.total
+  );
+}
+
+const KNOWN_CAMPAIGN_STATUSES = new Set(["running", "set_aside", "completed"]);
+
+/** Pure state-machine guard for PATCH /campaigns/:id. `completed` is TERMINAL —
+ * once claimed, a campaign can never move to any other status again (that is
+ * exactly the reopen-and-reclaim exploit this closes). `running` and
+ * `set_aside` freely swap. A no-op (same status, including completed ->
+ * completed) is always allowed, since editing title/premise/beat shouldn't be
+ * blocked just because a status field happened to be echoed back unchanged.
+ * Unknown statuses on either side are always rejected. */
+export function canTransition(from: string, to: string): boolean {
+  if (!KNOWN_CAMPAIGN_STATUSES.has(from) || !KNOWN_CAMPAIGN_STATUSES.has(to)) return false;
+  if (from === to) return true;
+  if (from === "completed") return false;
+  return (from === "running" && to === "set_aside") || (from === "set_aside" && to === "running");
+}
+
+/** Trim and clamp a string to a max length, shared by every title/premise/beat
+ * field so server limits agree with the OpenAPI contract in one place. */
+export function clampString(value: string, maxLength: number): string {
+  const trimmed = value.trim();
+  return trimmed.length > maxLength ? trimmed.slice(0, maxLength) : trimmed;
+}
+
+export type StringOrNullResult = { ok: true; value: string | null } | { ok: false };
+
+/** Validate+clamp an unknown request value that must be a string or null/absent
+ * (arcPremise, endingBeat, chapter beat). Guards against the type-confusion bug
+ * where a number or object silently reaches drizzle's text column, or throws
+ * on `.trim()`. */
+export function validateStringOrNull(value: unknown, maxLength: number): StringOrNullResult {
+  if (value === undefined || value === null) return { ok: true, value: null };
+  if (typeof value !== "string") return { ok: false };
+  return { ok: true, value: clampString(value, maxLength) };
+}
+
+export type QuestlineIdsResult = { ok: true; ids: number[] } | { ok: false; error: string };
+
+/** Validate the reorder-chapters payload: must be an array of positive integers,
+ * capped at maxLength (the same MAX_CHAPTERS the create path already enforces).
+ * `1.5` and unbounded arrays are both rejected here rather than silently
+ * accepted into a huge in-transaction update loop. */
+export function validateQuestlineIds(raw: unknown, maxLength: number): QuestlineIdsResult {
+  if (!Array.isArray(raw)) {
+    return { ok: false, error: "questlineIds must be an array of integers" };
+  }
+  if (raw.length > maxLength) {
+    return { ok: false, error: `questlineIds cannot exceed ${maxLength} chapters` };
+  }
+  const ids: number[] = [];
+  for (const v of raw) {
+    if (typeof v !== "number" || !Number.isInteger(v) || v <= 0) {
+      return { ok: false, error: "questlineIds must be an array of integers" };
+    }
+    ids.push(v);
+  }
+  return { ok: true, ids };
 }
 
 /** One-time payout. Clamped at zero — XP monotonicity is a standing guard. */

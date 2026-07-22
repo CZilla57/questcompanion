@@ -1497,7 +1497,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "409":
-          description: Another campaign is already running
+          description: Another campaign is already running, or this campaign is already completed (completed is terminal — it can never be reopened)
           content:
             application/json:
               schema:
@@ -1515,6 +1515,18 @@ paths:
       responses:
         "204":
           description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: A completed campaign is a permanent chronicle entry and may never be deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
 
   /campaigns/{id}/chapters:
     patch:
@@ -1540,8 +1552,20 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CampaignDetail"
+        "400":
+          description: questlineIds was not an array of positive integers, or exceeded the chapter cap
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "404":
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: A completed campaign's chapters can never be detached, or a questlineId already belongs to a different campaign (one campaign per questline, ever)
           content:
             application/json:
               schema:
@@ -3441,6 +3465,7 @@ components:
         chapters:
           type: array
           description: Chapter questlines to create atomically. Empty is legal (adopt-only path).
+          maxItems: 5
           items:
             type: object
             required: [title]
@@ -3476,9 +3501,11 @@ components:
       properties:
         questlineIds:
           type: array
-          description: Full ordered chapter list. Anything omitted is detached.
+          description: Full ordered chapter list. Anything omitted is detached. Capped at the same 5-chapter limit as campaign creation.
+          maxItems: 5
           items:
             type: integer
+            minimum: 1
 
     CampaignClaimResult:
       type: object

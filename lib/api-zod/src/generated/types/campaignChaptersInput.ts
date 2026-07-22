@@ -7,6 +7,9 @@
  */
 
 export interface CampaignChaptersInput {
-  /** Full ordered chapter list. Anything omitted is detached. */
+  /**
+     * Full ordered chapter list. Anything omitted is detached. Capped at the same 5-chapter limit as campaign creation.
+     * @maxItems 5
+     */
   questlineIds: number[];
 }

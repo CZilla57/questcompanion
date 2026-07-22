@@ -831,7 +831,10 @@ export interface CampaignInput {
   /** @nullable */
   endingBeat?: string | null;
   storySource?: CampaignInputStorySource;
-  /** Chapter questlines to create atomically. Empty is legal (adopt-only path). */
+  /**
+     * Chapter questlines to create atomically. Empty is legal (adopt-only path).
+     * @maxItems 5
+     */
   chapters?: CampaignInputChaptersItem[];
 }
 
@@ -857,7 +860,10 @@ export interface CampaignUpdate {
 }
 
 export interface CampaignChaptersInput {
-  /** Full ordered chapter list. Anything omitted is detached. */
+  /**
+     * Full ordered chapter list. Anything omitted is detached. Capped at the same 5-chapter limit as campaign creation.
+     * @maxItems 5
+     */
   questlineIds: number[];
 }
 
