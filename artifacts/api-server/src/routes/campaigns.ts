@@ -2,7 +2,7 @@
 // decision lives in lib/campaigns.ts, lib/campaign-arc.ts, lib/ai/campaign-arc.ts.
 // Chapters are ORDERED BUT NEVER GATED: nothing here hides or blocks a quest.
 import { Router, type IRouter } from "express";
-import { eq, and, asc, desc, inArray } from "drizzle-orm";
+import { eq, and, asc, desc, inArray, notInArray } from "drizzle-orm";
 import {
   db, campaignsTable, questlinesTable, tasksTable, usersTable, activityTable,
   type Campaign,
@@ -411,14 +411,25 @@ router.patch("/campaigns/:id/chapters", async (req, res): Promise<void> => {
 
     const ownedIds = new Set(owned.map((o) => o.id));
     const ordered = renumber(validated.ids.filter((qId) => ownedIds.has(qId)));
+    const orderedIds = ordered.map((o) => o.id);
 
-    // Detach everything currently attached, then re-attach the new sequence.
-    // Clears chapterBeat too, matching the other detach door (PATCH
-    // /questlines/:id) — otherwise a detached questline keeps narrating a
-    // campaign it no longer belongs to.
+    // Detach only the chapters that are LEAVING — currently attached to this
+    // campaign but absent from the new ordered list. Clearing chapterBeat
+    // here is right for THEM: a questline that leaves a campaign must not
+    // keep narrating it, matching the other detach door (PATCH
+    // /questlines/:id). Chapters that survive the reorder are re-attached
+    // below with only campaignId/chapterOrder touched, so a pure reorder (or
+    // an append) never wipes the authored story text of a surviving chapter.
+    // notInArray([]) compiles to `true` (drizzle special-cases the empty
+    // list), so when every current chapter is leaving this still matches all
+    // of them rather than silently matching none.
     await tx.update(questlinesTable)
       .set({ campaignId: null, chapterOrder: null, chapterBeat: null })
-      .where(and(eq(questlinesTable.campaignId, id), eq(questlinesTable.userId, userId)));
+      .where(and(
+        eq(questlinesTable.campaignId, id),
+        eq(questlinesTable.userId, userId),
+        notInArray(questlinesTable.id, orderedIds),
+      ));
 
     for (const { id: questlineId, chapterOrder } of ordered) {
       await tx.update(questlinesTable)

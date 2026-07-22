@@ -157,6 +157,19 @@ export function canDetachFromCampaign(currentCampaignStatus: string): boolean {
   return currentCampaignStatus !== "completed";
 }
 
+export type CampaignIdResult = { ok: true; value: number | null } | { ok: false };
+
+/** Validate `campaignId` on PATCH /questlines/:id: a non-negative integer
+ * (attach), or null (detach). Guards the same type-confusion 500 as
+ * chapterOrder below — `1.5` or `true` reaching drizzle's integer `eq()`
+ * straight from the body throws a Postgres 22P02 instead of failing cleanly
+ * with a 400, on a route the contract already documents as 400/404/409. */
+export function validateCampaignId(value: unknown): CampaignIdResult {
+  if (value === null) return { ok: true, value: null };
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) return { ok: false };
+  return { ok: true, value };
+}
+
 export type ChapterOrderResult = { ok: true; value: number | null } | { ok: false };
 
 /** Validate `chapterOrder` on PATCH /questlines/:id: a non-negative integer,

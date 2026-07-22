@@ -12,6 +12,7 @@ import {
   decideAttachToCampaign,
   canDetachFromCampaign,
   validateChapterOrder,
+  validateCampaignId,
   detachConflictsWithChapterOrder,
   validateTitle,
   validateOptionalString,
@@ -257,6 +258,28 @@ describe("validateChapterOrder", () => {
   });
   it("rejects a boolean", () => {
     expect(validateChapterOrder(true)).toEqual({ ok: false });
+  });
+});
+
+describe("validateCampaignId", () => {
+  it("accepts a non-negative integer", () => {
+    expect(validateCampaignId(0)).toEqual({ ok: true, value: 0 });
+    expect(validateCampaignId(7)).toEqual({ ok: true, value: 7 });
+  });
+  it("accepts null (detach)", () => {
+    expect(validateCampaignId(null)).toEqual({ ok: true, value: null });
+  });
+  it("rejects a fractional number — the type-confusion bug this guards against", () => {
+    expect(validateCampaignId(1.5)).toEqual({ ok: false });
+  });
+  it("rejects a negative integer", () => {
+    expect(validateCampaignId(-1)).toEqual({ ok: false });
+  });
+  it("rejects a string", () => {
+    expect(validateCampaignId("3")).toEqual({ ok: false });
+  });
+  it("rejects a boolean — the other type-confusion bug this guards against", () => {
+    expect(validateCampaignId(true)).toEqual({ ok: false });
   });
 });
 
