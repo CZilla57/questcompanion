@@ -1390,10 +1390,10 @@ Insert immediately after the `QuestlineInput` schema block in `components.schema
       enum: [focus, hero, progress, allies, rewards, campaigns]
 ```
 
-`ActivityItem.type` (~line 3613) — append the two new activity types. Note `questline_complete` is missing today and is inserted here too, since the route already writes it:
+`ActivityItem.type` (~line 3613) — append `campaign_complete`. Note `questline_complete` is missing today and is inserted here too, since the route already writes it. There is deliberately **no `campaign_chapter` value**: chapters ARE questlines, so a chapter clear already writes `questline_complete` — a second row would double-report the same work in the feed and fire ally cheers twice (controller ruling, 2026-07-22):
 
 ```yaml
-          enum: [task_completed, badge_earned, level_up, streak_milestone, all_day_bonus, streak_freeze_bought, streak_freeze_used, gear_bought, gear_earned, focus_session, focus_complete, initiation, reflection, body_double, questline_complete, campaign_chapter, campaign_complete]
+          enum: [task_completed, badge_earned, level_up, streak_milestone, all_day_bonus, streak_freeze_bought, streak_freeze_used, gear_bought, gear_earned, focus_session, focus_complete, initiation, reflection, body_double, questline_complete, campaign_complete]
 ```
 
 - [ ] **Step 5: Add chapter fields to the Questline schema**
@@ -2693,7 +2693,10 @@ git commit -m "feat(campaigns): campaign detail with ordered chapters and claim"
 // with the suggestion above it.
 import { Link } from "wouter";
 import { Map as MapIcon } from "lucide-react";
-import { useGetMyStats, useGetCampaigns, useGetCampaign, getGetCampaignQueryKey } from "@workspace/api-client-react";
+import {
+  useGetMyStats, useGetCampaigns, useGetCampaign,
+  getGetCampaignQueryKey, getGetCampaignsQueryKey,
+} from "@workspace/api-client-react";
 import { isUnlocked } from "@/lib/feature-gates";
 import { browserTimeZone } from "@/lib/timezone";
 
@@ -2702,7 +2705,9 @@ export function CampaignNowLine() {
   const unlocked = isUnlocked(stats?.unlockedFeatures, "campaigns");
 
   const { data: campaigns } = useGetCampaigns({
-    query: { enabled: unlocked, queryKey: ["campaigns", "now-line"] },
+    // Reuse the generated key — a bespoke key would open a SECOND cache entry
+    // for the same request and refetch the list twice on every Now render.
+    query: { enabled: unlocked, queryKey: getGetCampaignsQueryKey() },
   });
   const running = (campaigns ?? []).find((c) => c.status === "running");
 

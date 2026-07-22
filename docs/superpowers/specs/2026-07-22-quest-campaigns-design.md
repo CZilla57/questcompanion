@@ -160,9 +160,11 @@ is absent. Two-line addition to `api-server/src/lib/feature-gates.ts` and its cl
 
 - Chapter cleared → `chapter_beat` rides the **existing questline claim celebration**.
 - Campaign cleared → `ending_beat` in the campaign claim celebration + a permanent chronicle entry.
-- Activity rows `campaign_chapter` and `campaign_complete` (both added to the spec's
-  `ActivityItem.type` enum — see gotcha below). `campaign_complete` joins `MILESTONE_TYPES` so
-  allies can cheer it, the same hook `questline_complete` uses.
+- Activity: **only** `campaign_complete` is written (added to the spec's `ActivityItem.type`
+  enum — see gotcha below). A chapter clear writes nothing extra, because chapters ARE
+  questlines and already emit `questline_complete`; a second row would double-report the same
+  work in the feed and fire ally cheers twice (decided 2026-07-22). `campaign_complete` joins
+  `MILESTONE_TYPES` so allies can cheer it, the same hook `questline_complete` uses.
 
 **Now screen.** One compact line when a running campaign exists — *"Chapter 2 of 4 — Clear the
 back wall"* — linking through. Nothing when there is no running campaign. It sits under the
