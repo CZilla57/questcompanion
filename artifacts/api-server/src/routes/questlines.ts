@@ -2,7 +2,10 @@ import { Router, type IRouter } from "express";
 import { eq, and, desc, inArray } from "drizzle-orm";
 import { db, questlinesTable, tasksTable, taskStepsTable, usersTable, activityTable, campaignsTable, type Questline } from "@workspace/db";
 import { computeProgress, isReadyToClaim, computeRewardXp } from "../lib/questlines";
-import { canAttachToCampaign, canDetachFromCampaign } from "../lib/campaigns";
+import {
+  decideAttachToCampaign, canDetachFromCampaign, validateChapterOrder,
+  detachConflictsWithChapterOrder, validateTitle, validateOptionalString,
+} from "../lib/campaigns";
 import { getLevelInfo } from "../lib/gamification";
 import { newlyUnlocked, type FeatureKey } from "../lib/feature-gates";
 import { formatTask } from "./tasks";
@@ -163,9 +166,10 @@ router.get("/questlines/:id", async (req, res): Promise<void> => {
 // PATCH /campaigns/:id/chapters is the primary door into campaign membership;
 // this route is a SECOND door onto the same state, so it enforces the same
 // one-campaign-per-questline-EVER rule: attaching is refused (409) when the
-// questline already belongs to a different campaign, and detaching is
-// refused (409) when its current campaign is completed — those chapters are
-// part of a claimed record and can never be freed up to be claimed again.
+// questline already belongs to a different campaign OR when the target
+// campaign is itself completed, and detaching is refused (409) when its
+// current campaign is completed — those chapters are part of a claimed
+// record and can never be freed up to be claimed again.
 router.patch("/questlines/:id", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;
@@ -173,16 +177,45 @@ router.patch("/questlines/:id", async (req, res): Promise<void> => {
   if (id == null) { res.status(400).json({ error: "Invalid id" }); return; }
 
   const { title, description, color, campaignId, chapterOrder } = req.body as {
-    title?: string; description?: string | null; color?: string | null;
-    campaignId?: number | null; chapterOrder?: number | null;
+    title?: unknown; description?: unknown; color?: unknown;
+    campaignId?: number | null; chapterOrder?: unknown;
   };
+
   const updates: Partial<typeof questlinesTable.$inferInsert> = {};
   if (title != null) {
-    if (!title.trim()) { res.status(400).json({ error: "title cannot be empty" }); return; }
-    updates.title = title.trim();
+    const r = validateTitle(title);
+    if (!r.ok) { res.status(400).json({ error: "title cannot be empty" }); return; }
+    updates.title = r.value;
   }
-  if (description !== undefined) updates.description = description;
-  if (color !== undefined) updates.color = color;
+  if (description !== undefined) {
+    const r = validateOptionalString(description);
+    if (!r.ok) { res.status(400).json({ error: "description must be a string or null" }); return; }
+    updates.description = r.value;
+  }
+  if (color !== undefined) {
+    const r = validateOptionalString(color);
+    if (!r.ok) { res.status(400).json({ error: "color must be a string or null" }); return; }
+    updates.color = r.value;
+  }
+
+  // A detach (campaignId: null) paired with an explicit chapterOrder is
+  // contradictory — rejected outright rather than letting one silently win.
+  if (detachConflictsWithChapterOrder(campaignId, chapterOrder as number | null | undefined)) {
+    res.status(400).json({ error: "Cannot set chapterOrder while detaching from a campaign" });
+    return;
+  }
+
+  let validatedChapterOrder: number | null | undefined;
+  if (chapterOrder !== undefined) {
+    const r = validateChapterOrder(chapterOrder);
+    if (!r.ok) { res.status(400).json({ error: "chapterOrder must be a non-negative integer or null" }); return; }
+    validatedChapterOrder = r.value;
+  }
+
+  if (Object.keys(updates).length === 0 && campaignId === undefined && chapterOrder === undefined) {
+    res.status(400).json({ error: "No fields to update" });
+    return;
+  }
 
   type Outcome =
     | { kind: "not_found" }
@@ -191,35 +224,75 @@ router.patch("/questlines/:id", async (req, res): Promise<void> => {
     | { kind: "ok"; row: Questline };
 
   const outcome = await db.transaction(async (tx): Promise<Outcome> => {
-    // Lock the target FIRST — before consulting or touching campaignsTable —
-    // so a request for a nonexistent/foreign questline can never commit a
-    // side effect on its way to a 404.
+    // Peek the questline UNLOCKED first, filtered by ownership, so a request
+    // for a nonexistent/foreign questline never touches campaignsTable at
+    // all (no lock, no read) on its way to a 404. This also tells us which
+    // campaign (if any) needs to be locked BEFORE the questline row itself.
+    const [peek] = await tx.select({ id: questlinesTable.id, campaignId: questlinesTable.campaignId })
+      .from(questlinesTable)
+      .where(and(eq(questlinesTable.id, id), eq(questlinesTable.userId, userId)));
+    if (!peek) return { kind: "not_found" };
+
+    // Lock order: campaign row THEN questline row — outer-to-inner, matching
+    // POST /campaigns/:id/claim and PATCH /campaigns/:id/chapters (both lock
+    // the campaign before any questline row). Locking in the same order on
+    // every door prevents a deadlock between them; locking the campaign row
+    // at all (rather than only reading its status) is what closes the
+    // original race, where this route read "running" and committed a detach
+    // while a claim elsewhere was mid-flight on the same campaign.
+    let lockedCampaign: { id: number; status: string } | null = null;
+    if (campaignId !== undefined) {
+      // Attaching locks the TARGET campaign; detaching locks the questline's
+      // CURRENT campaign (from the peek). A bare field edit with no
+      // campaignId in the payload touches no campaign row at all.
+      const campaignToLock = campaignId != null ? campaignId : peek.campaignId;
+      if (campaignToLock != null) {
+        const [c] = await tx.select({ id: campaignsTable.id, status: campaignsTable.status })
+          .from(campaignsTable)
+          .where(and(eq(campaignsTable.id, campaignToLock), eq(campaignsTable.userId, userId)))
+          .for("update");
+        if (campaignId != null && !c) return { kind: "campaign_not_found" };
+        lockedCampaign = c ?? null;
+      }
+    }
+
+    // NOW lock the questline row, and re-read its campaignId to confirm it
+    // is still what the peek saw. If it changed in between (another request
+    // attached/detached it while we were locking the campaign above), the
+    // campaign row we just locked may no longer be the right one — treat
+    // that race as a conflict rather than acting on stale information.
     const [existing] = await tx.select().from(questlinesTable)
       .where(and(eq(questlinesTable.id, id), eq(questlinesTable.userId, userId)))
       .for("update");
     if (!existing) return { kind: "not_found" };
+    if (existing.campaignId !== peek.campaignId) {
+      return { kind: "conflict", error: "Questline was changed concurrently — try again" };
+    }
 
     // Campaign membership (Act VI). Attaching an ALREADY-COMPLETED questline is
-    // deliberately allowed: if the work is done, the chapter counts.
+    // deliberately allowed: if the work is done, the chapter counts. Attaching
+    // INTO an already-completed campaign is a different question and is
+    // refused below — that campaign's chapters are a claimed record.
     if (campaignId !== undefined) {
       if (campaignId != null) {
-        const [owned] = await tx.select({ id: campaignsTable.id }).from(campaignsTable)
-          .where(and(eq(campaignsTable.id, campaignId), eq(campaignsTable.userId, userId)));
-        if (!owned) return { kind: "campaign_not_found" };
+        if (!lockedCampaign) return { kind: "campaign_not_found" };
 
-        // One campaign per questline, EVER: a questline already claimed by a
-        // different campaign may never be poached through this route.
-        if (!canAttachToCampaign(existing.campaignId, campaignId)) {
-          return { kind: "conflict", error: "A questline can only belong to one campaign" };
+        const decision = decideAttachToCampaign(existing.campaignId, campaignId, lockedCampaign.status);
+        if (!decision.ok) {
+          const error = decision.reason === "completed_campaign"
+            ? "A completed campaign's chapters are part of its record"
+            : "A questline can only belong to one campaign";
+          return { kind: "conflict", error };
         }
         updates.campaignId = campaignId;
       } else {
         // Detaching clears the chapter's position too — a stray order on an
         // unattached questline would sort wrong if it were ever re-adopted.
+        // A missing campaign row fails CLOSED (conflict), not open — the FK
+        // makes this unreachable today, but a load-bearing invariant should
+        // never default to "permit" when its input is absent.
         if (existing.campaignId != null) {
-          const [currentCampaign] = await tx.select({ status: campaignsTable.status })
-            .from(campaignsTable).where(eq(campaignsTable.id, existing.campaignId));
-          if (currentCampaign && !canDetachFromCampaign(currentCampaign.status)) {
+          if (!lockedCampaign || !canDetachFromCampaign(lockedCampaign.status)) {
             return { kind: "conflict", error: "A completed campaign's chapters are part of its record" };
           }
         }
@@ -228,7 +301,10 @@ router.patch("/questlines/:id", async (req, res): Promise<void> => {
         updates.chapterBeat = null;
       }
     }
-    if (chapterOrder !== undefined) updates.chapterOrder = chapterOrder;
+    // Safe from the detach-clear above: the early 400 guard already rejected
+    // campaignId === null combined with an explicit chapterOrder, so this
+    // only ever runs alongside an attach or a bare chapterOrder-only edit.
+    if (chapterOrder !== undefined) updates.chapterOrder = validatedChapterOrder;
 
     const [updated] = await tx.update(questlinesTable).set(updates)
       .where(and(eq(questlinesTable.id, id), eq(questlinesTable.userId, userId)))

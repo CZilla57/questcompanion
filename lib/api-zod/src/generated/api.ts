@@ -1296,6 +1296,8 @@ export const GetQuestlineResponse = zod.object({
  */
 export const updateQuestlineBodyTitleMax = 120;
 
+export const updateQuestlineBodyChapterOrderMin = 0;
+
 
 
 export const UpdateQuestlineBody = zod.object({
@@ -1303,7 +1305,7 @@ export const UpdateQuestlineBody = zod.object({
   "description": zod.string().nullish(),
   "color": zod.string().nullish(),
   "campaignId": zod.number().nullish(),
-  "chapterOrder": zod.number().nullish()
+  "chapterOrder": zod.number().min(updateQuestlineBodyChapterOrderMin).nullish()
 }).describe('Partial update — every field optional.')
 
 export const UpdateQuestlineResponse = zod.object({

@@ -413,8 +413,11 @@ router.patch("/campaigns/:id/chapters", async (req, res): Promise<void> => {
     const ordered = renumber(validated.ids.filter((qId) => ownedIds.has(qId)));
 
     // Detach everything currently attached, then re-attach the new sequence.
+    // Clears chapterBeat too, matching the other detach door (PATCH
+    // /questlines/:id) — otherwise a detached questline keeps narrating a
+    // campaign it no longer belongs to.
     await tx.update(questlinesTable)
-      .set({ campaignId: null, chapterOrder: null })
+      .set({ campaignId: null, chapterOrder: null, chapterBeat: null })
       .where(and(eq(questlinesTable.campaignId, id), eq(questlinesTable.userId, userId)));
 
     for (const { id: questlineId, chapterOrder } of ordered) {
@@ -469,8 +472,14 @@ router.post("/campaigns/:id/claim", async (req, res): Promise<void> => {
       .for("update");
     if (!row) return { status: "not_found" };
 
+    // Lock the chapter rows too — without this, a concurrent PATCH
+    // /questlines/:id detach can free a chapter this transaction is about to
+    // pay for: it reads "completed" here, computes and commits XP, while the
+    // other transaction (which only locked the campaign row, not these rows)
+    // detaches the questline in between. Locking the chapters closes that gap.
     const chapters = await tx.select({ status: questlinesTable.status }).from(questlinesTable)
-      .where(and(eq(questlinesTable.campaignId, id), eq(questlinesTable.userId, userId)));
+      .where(and(eq(questlinesTable.campaignId, id), eq(questlinesTable.userId, userId)))
+      .for("update");
     const progress = computeCampaignProgress(chapters);
 
     if (!isCampaignReadyToClaim(row, progress)) return { status: "not_ready" };

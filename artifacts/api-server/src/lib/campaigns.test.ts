@@ -9,8 +9,12 @@ import {
   clampString,
   validateStringOrNull,
   validateQuestlineIds,
-  canAttachToCampaign,
+  decideAttachToCampaign,
   canDetachFromCampaign,
+  validateChapterOrder,
+  detachConflictsWithChapterOrder,
+  validateTitle,
+  validateOptionalString,
 } from "./campaigns";
 
 describe("computeCampaignProgress", () => {
@@ -201,15 +205,24 @@ describe("validateQuestlineIds", () => {
   });
 });
 
-describe("canAttachToCampaign", () => {
-  it("allows attaching an unclaimed questline (no current campaign)", () => {
-    expect(canAttachToCampaign(null, 5)).toBe(true);
+describe("decideAttachToCampaign", () => {
+  it("allows attaching an unclaimed questline to a running campaign", () => {
+    expect(decideAttachToCampaign(null, 5, "running")).toEqual({ ok: true });
+  });
+  it("allows attaching an unclaimed questline to a set-aside campaign", () => {
+    expect(decideAttachToCampaign(null, 5, "set_aside")).toEqual({ ok: true });
   });
   it("allows re-sending the campaign the questline is already in (no-op)", () => {
-    expect(canAttachToCampaign(5, 5)).toBe(true);
+    expect(decideAttachToCampaign(5, 5, "running")).toEqual({ ok: true });
   });
   it("blocks attaching to a different campaign than the one it's already in — the recycle-for-XP exploit this closes", () => {
-    expect(canAttachToCampaign(5, 6)).toBe(false);
+    expect(decideAttachToCampaign(5, 6, "running")).toEqual({ ok: false, reason: "different_campaign" });
+  });
+  it("blocks attaching into a completed campaign — mirrors PATCH /campaigns/:id/chapters refusing a completed target", () => {
+    expect(decideAttachToCampaign(null, 5, "completed")).toEqual({ ok: false, reason: "completed_campaign" });
+  });
+  it("blocks even a no-op resend into a campaign that has since completed — no exception for re-sending the same id", () => {
+    expect(decideAttachToCampaign(5, 5, "completed")).toEqual({ ok: false, reason: "completed_campaign" });
   });
 });
 
@@ -222,5 +235,81 @@ describe("canDetachFromCampaign", () => {
   });
   it("blocks detaching from a completed campaign — its chapters are part of the record", () => {
     expect(canDetachFromCampaign("completed")).toBe(false);
+  });
+});
+
+describe("validateChapterOrder", () => {
+  it("accepts a non-negative integer", () => {
+    expect(validateChapterOrder(0)).toEqual({ ok: true, value: 0 });
+    expect(validateChapterOrder(7)).toEqual({ ok: true, value: 7 });
+  });
+  it("accepts null", () => {
+    expect(validateChapterOrder(null)).toEqual({ ok: true, value: null });
+  });
+  it("rejects a fractional number — the type-confusion bug this guards against", () => {
+    expect(validateChapterOrder(1.5)).toEqual({ ok: false });
+  });
+  it("rejects a negative integer", () => {
+    expect(validateChapterOrder(-1)).toEqual({ ok: false });
+  });
+  it("rejects a string", () => {
+    expect(validateChapterOrder("3")).toEqual({ ok: false });
+  });
+  it("rejects a boolean", () => {
+    expect(validateChapterOrder(true)).toEqual({ ok: false });
+  });
+});
+
+describe("detachConflictsWithChapterOrder", () => {
+  it("flags a detach paired with an explicit chapterOrder", () => {
+    expect(detachConflictsWithChapterOrder(null, 7)).toBe(true);
+  });
+  it("flags a detach paired with an explicit null chapterOrder too", () => {
+    expect(detachConflictsWithChapterOrder(null, null)).toBe(true);
+  });
+  it("does not flag a detach with no chapterOrder field", () => {
+    expect(detachConflictsWithChapterOrder(null, undefined)).toBe(false);
+  });
+  it("does not flag an attach paired with chapterOrder", () => {
+    expect(detachConflictsWithChapterOrder(5, 2)).toBe(false);
+  });
+  it("does not flag a plain field edit with no campaignId at all", () => {
+    expect(detachConflictsWithChapterOrder(undefined, 2)).toBe(false);
+  });
+});
+
+describe("validateTitle", () => {
+  it("accepts and trims a valid title", () => {
+    expect(validateTitle("  Chapter One  ")).toEqual({ ok: true, value: "Chapter One" });
+  });
+  it("rejects an empty-after-trim title", () => {
+    expect(validateTitle("   ")).toEqual({ ok: false });
+  });
+  it("rejects a number — the type-confusion bug this guards against (.trim() on a non-string throws)", () => {
+    expect(validateTitle(5)).toEqual({ ok: false });
+  });
+  it("rejects null", () => {
+    expect(validateTitle(null)).toEqual({ ok: false });
+  });
+});
+
+describe("validateOptionalString", () => {
+  it("accepts undefined as null (field not provided)", () => {
+    expect(validateOptionalString(undefined)).toEqual({ ok: true, value: null });
+  });
+  it("accepts null as-is", () => {
+    expect(validateOptionalString(null)).toEqual({ ok: true, value: null });
+  });
+  it("accepts a string unchanged, with no trimming or clamping", () => {
+    expect(validateOptionalString("  spaced  ")).toEqual({ ok: true, value: "  spaced  " });
+  });
+  it("accepts an empty string", () => {
+    expect(validateOptionalString("")).toEqual({ ok: true, value: "" });
+  });
+  it("rejects a number — the type-confusion bug this guards against", () => {
+    expect(validateOptionalString(5)).toEqual({ ok: false });
+  });
+  it("rejects an object", () => {
+    expect(validateOptionalString({ a: 1 })).toEqual({ ok: false });
   });
 });

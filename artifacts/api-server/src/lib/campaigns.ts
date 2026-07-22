@@ -120,18 +120,32 @@ export function renumber(orderedIds: number[]): { id: number; chapterOrder: numb
   return unique.map((id, i) => ({ id, chapterOrder: i }));
 }
 
+export type AttachDecision =
+  | { ok: true }
+  | { ok: false; reason: "different_campaign" }
+  | { ok: false; reason: "completed_campaign" };
+
 /** ATTACH guard for PATCH /questlines/:id — the second door into campaign
  * membership (the first is PATCH /campaigns/:id/chapters). One campaign per
  * questline, EVER: attaching is allowed only when the questline currently
- * belongs to no campaign. Re-sending the campaign it is already in is a
- * no-op, not an error; attaching to a DIFFERENT campaign while already
- * claimed by one must be refused so a completed questline can never be
- * recycled through a second campaign for unlimited XP. */
-export function canAttachToCampaign(
+ * belongs to no campaign (or is already in the target one — a no-op resend).
+ * Attaching to a DIFFERENT campaign while already claimed by one is refused
+ * so a completed questline can never be recycled through a second campaign
+ * for unlimited XP. Attaching into a campaign that is itself already
+ * COMPLETED is refused too, with no no-op exception — that mirrors
+ * PATCH /campaigns/:id/chapters, which refuses to touch a completed
+ * campaign's chapter list at all, so the two doors never disagree about
+ * whether a paid chronicle entry can be edited. */
+export function decideAttachToCampaign(
   currentCampaignId: number | null,
   targetCampaignId: number,
-): boolean {
-  return currentCampaignId == null || currentCampaignId === targetCampaignId;
+  targetCampaignStatus: string,
+): AttachDecision {
+  if (targetCampaignStatus === "completed") return { ok: false, reason: "completed_campaign" };
+  if (currentCampaignId != null && currentCampaignId !== targetCampaignId) {
+    return { ok: false, reason: "different_campaign" };
+  }
+  return { ok: true };
 }
 
 /** DETACH guard for PATCH /questlines/:id. Mirrors the same rule enforced on
@@ -141,4 +155,52 @@ export function canAttachToCampaign(
  * again in a different campaign. */
 export function canDetachFromCampaign(currentCampaignStatus: string): boolean {
   return currentCampaignStatus !== "completed";
+}
+
+export type ChapterOrderResult = { ok: true; value: number | null } | { ok: false };
+
+/** Validate `chapterOrder` on PATCH /questlines/:id: a non-negative integer,
+ * or null. Guards the same type-confusion 500 as the other validators here —
+ * `1.5` or `"x"` reaching drizzle's integer column straight from the body. */
+export function validateChapterOrder(value: unknown): ChapterOrderResult {
+  if (value === null) return { ok: true, value: null };
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) return { ok: false };
+  return { ok: true, value };
+}
+
+/** True when the request both detaches (`campaignId: null`) and supplies an
+ * explicit `chapterOrder` — a contradictory combination that used to leave a
+ * stray order on a freshly-detached questline (the detach clear ran first,
+ * then this unconditionally overwrote it). Rejected as a single 400 instead
+ * of silently picking a winner. */
+export function detachConflictsWithChapterOrder(
+  campaignId: number | null | undefined,
+  chapterOrder: number | null | undefined,
+): boolean {
+  return campaignId === null && chapterOrder !== undefined;
+}
+
+export type TitleResult = { ok: true; value: string } | { ok: false };
+
+/** Type-check + trim a required title field (questline or campaign title).
+ * Guards the same type-confusion 500 as validateStringOrNull — `.trim()` on
+ * a non-string throws — for the one field that is required rather than
+ * optional. */
+export function validateTitle(value: unknown): TitleResult {
+  if (typeof value !== "string") return { ok: false };
+  const trimmed = value.trim();
+  if (!trimmed) return { ok: false };
+  return { ok: true, value: trimmed };
+}
+
+export type OptionalStringResult = { ok: true; value: string | null } | { ok: false };
+
+/** Type-check (no length cap — the contract declares none for these fields)
+ * an unknown value that must be a string or null/absent: questline
+ * description and color. Same type-confusion guard as validateStringOrNull,
+ * for fields with no declared max length to clamp to. */
+export function validateOptionalString(value: unknown): OptionalStringResult {
+  if (value === undefined || value === null) return { ok: true, value: null };
+  if (typeof value !== "string") return { ok: false };
+  return { ok: true, value };
 }

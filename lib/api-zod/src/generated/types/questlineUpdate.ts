@@ -21,6 +21,9 @@ export interface QuestlineUpdate {
   color?: string | null;
   /** @nullable */
   campaignId?: number | null;
-  /** @nullable */
+  /**
+     * @minimum 0
+     * @nullable
+     */
   chapterOrder?: number | null;
 }
