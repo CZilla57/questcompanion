@@ -21,6 +21,9 @@ import { useToast } from "@/hooks/use-toast";
 import { apiErrorMessage } from "@/lib/api-error";
 import { featureLabel } from "@/lib/feature-gates";
 
+// Must stay in lockstep with MAX_CHAPTERS in artifacts/api-server/src/lib/campaign-arc.ts
+const MAX_CHAPTERS = 5;
+
 export default function CampaignDetail() {
   const params = useParams();
   const id = parseInt(params.id ?? "", 10);
@@ -222,10 +225,16 @@ export default function CampaignDetail() {
         )}
       </div>
 
-      {campaign.status !== "completed" && (
+      {campaign.status !== "completed" && chapters.length < MAX_CHAPTERS && (
         <Button variant="outline" size="sm" className="mt-3 gap-1" onClick={() => setAddChapterOpen(true)}>
           <Plus className="w-4 h-4" /> Add a chapter
         </Button>
+      )}
+
+      {campaign.status !== "completed" && chapters.length >= MAX_CHAPTERS && (
+        <p className="mt-3 text-xs text-muted-foreground">
+          This campaign has its full five chapters.
+        </p>
       )}
 
       {campaign.ready && (
