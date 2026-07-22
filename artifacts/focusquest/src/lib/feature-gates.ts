@@ -21,8 +21,9 @@ export function isNavGroupVisible(
   unlockedFeatures: readonly string[] | undefined,
 ): boolean {
   if (ALWAYS_ON.has(key)) return true;
-  // Safe by construction: every non-always-on NavGroupKey is a FeatureKey —
-  // nav-groups.ts and this module share the same key vocabulary.
+  // Safe by construction: every non-always-on NavGroupKey is a FeatureKey.
+  // The sets diverged because campaigns is a FeatureKey but not a NavGroupKey
+  // (it gates a tab within the always-on quests group).
   return isUnlocked(unlockedFeatures, key as FeatureKey);
 }
 
