@@ -153,10 +153,16 @@ export function ShortcutTokensCard() {
               Get Contents of URL — <code className="break-all">{base}/api/shortcuts/today</code>,
               Method GET, same Authorization header
             </li>
-            <li>Get Dictionary Value — key <code>quests</code>, then Choose from List</li>
-            <li>Get Dictionary Value — the Chosen Item's key in <code>quests</code> (this is the quest id)</li>
+            <li>Get Dictionary Value — Value for key <code>quests</code></li>
+            <li>Get Dictionary Value — All Keys (a plain list of the quest titles)</li>
+            <li>Choose from List — shows the titles</li>
             <li>
-              Get Contents of URL — <code className="break-all">{base}/api/tasks/</code>[id]<code>/complete</code>,
+              Get Dictionary Value — Value for key <code>Chosen Item</code>, then tap the “in”
+              variable → Select Variable → the Dictionary Value from step 2 (it defaults to
+              Chosen Item, which is wrong). This is the quest id.
+            </li>
+            <li>
+              Get Contents of URL — <code className="break-all">{base}/api/tasks/</code>[Dictionary Value]<code>/complete</code>,
               Method POST, same header, Request Body JSON (empty)
             </li>
             <li>Get Dictionary Value — key <code>pointsAwarded</code></li>
