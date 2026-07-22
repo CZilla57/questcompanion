@@ -145,7 +145,14 @@ export default function CampaignDetail() {
           toast({ title: "Chapter removed — the questline is still right where it was" });
         },
         onError: (err: unknown) => {
-          toast({ title: apiErrorMessage(err, "Could not remove that chapter"), variant: "destructive" });
+          refresh();
+          const status = err instanceof ApiError ? err.status : null;
+          toast({
+            // A 409 here (campaign just completed) is a plain explanation,
+            // not an error scold — no destructive style.
+            title: apiErrorMessage(err, "Could not remove that chapter"),
+            variant: status === 409 ? undefined : "destructive",
+          });
         },
       },
     );
