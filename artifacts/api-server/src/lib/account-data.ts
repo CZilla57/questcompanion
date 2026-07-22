@@ -12,7 +12,7 @@ import { eq, or, type SQL } from "drizzle-orm";
 import type { AnyPgColumn, PgTable } from "drizzle-orm/pg-core";
 import {
   activityTable, allyNudgesTable, apiTokensTable, bodyDoubleMembersTable, bodyDoubleRoomsTable,
-  bodyDoubleSprintsTable, brainCheckinsTable, coinTransactionsTable,
+  bodyDoubleSprintsTable, brainCheckinsTable, campaignsTable, coinTransactionsTable,
   dopamineRewardsTable, focusSessionsTable, habitStreaksTable, initiationAwardsTable,
   kingdomPointsTable, partnershipsTable, pushSubscriptionsTable, questlinesTable,
   recurringTasksTable, reflectionsTable, rescueEventsTable, rewardStoreItemsTable,
@@ -36,6 +36,9 @@ export const USER_DATA_TABLES: readonly UserDataTable[] = [
   { name: "habit_streaks",      table: habitStreaksTable,     userColumns: [habitStreaksTable.userId] },
   { name: "recurring_tasks",    table: recurringTasksTable,   userColumns: [recurringTasksTable.userId] },
   { name: "questlines",         table: questlinesTable,       userColumns: [questlinesTable.userId] },
+  // Quest Campaigns: chapters (questlines) unlink above, so the campaign row
+  // is safe to delete once its questlines are gone.
+  { name: "campaigns",          table: campaignsTable,        userColumns: [campaignsTable.userId] },
   { name: "activity",           table: activityTable,         userColumns: [activityTable.userId] },
   { name: "brain_checkins",     table: brainCheckinsTable,    userColumns: [brainCheckinsTable.userId] },
   { name: "reflections",        table: reflectionsTable,      userColumns: [reflectionsTable.userId] },
