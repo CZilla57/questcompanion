@@ -167,7 +167,7 @@ message-shaped wrapper — a high-risk refactor of battle-tested code for cosmet
 ### Rate limits (D8)
 
 Per-user in-memory cooldowns, same primitive as the existing `parseCooldown` family
-(one call per interval): capture 6s (~10/min), today 2s (~30/min), mint 10s — pure
+(one call per interval): capture 2s (~30/min), today 2s (~30/min), mint 10s — pure
 anti-spam, since the 5-active cap is the real bound and back-to-back "iPhone"/"iPad"
 mints must stay pleasant. Token-miss requests fall through to plain 401s (entropy is
 the real defense; no lockout bookkeeping).
@@ -247,7 +247,7 @@ shortcut endpoints are documented for the recipe but consumed by Shortcuts, not 
   points/category applied.
 - **Today:** dated + anchored buckets; incomplete only; dedup suffixes; 25 cap;
   all-clear message at zero.
-- **Account:** deletion removes `api_tokens` rows; export omits them; completeness
+- **Account:** deletion removes `api_tokens` rows; export includes them; completeness
   guard passes with the new classification.
 
 ## 14. Non-goals / phase 2
@@ -278,5 +278,5 @@ shortcut endpoints are documented for the recipe but consumed by Shortcuts, not 
 | D5 | Capture = deterministic `parseQuickAdd` only; dateless → local today; **never auto-anchored** |
 | D6 | Today = app's dated+anchored buckets, title→id dict, " (2)" dedup, cap 25 |
 | D7 | Completion reuses `POST /tasks/:id/complete` verbatim — zero duplication of the critical transaction |
-| D8 | Cooldown-primitive rate limits (capture ~10/min, today ~30/min, mint 10s anti-spam — the 5-active cap is the real bound) |
+| D8 | Cooldown-primitive rate limits (capture ~30/min, today ~30/min, mint 10s anti-spam — the 5-active cap is the real bound); capture 429 carries a Shortcut-visible `message` |
 | D9 | *(revised)* `api_tokens` registered in `USER_DATA_TABLES`: deleted with the account **and** exported (hash is one-way); standing guard untouched |

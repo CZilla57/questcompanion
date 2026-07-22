@@ -33,5 +33,5 @@ Mint a token in the app UI (account dialog → Home Screen Shortcuts), then:
 ## Recipes
 
 The user-facing set-up guide lives in the app (account dialog → Set-up guide);
-the same steps are in the spec §10. Rate limits: capture 6s, today 2s, mint 10s
+the same steps are in the spec §10. Rate limits: capture 2s, today 2s, mint 10s
 per user (in-memory, reset on deploy). Revocation is immediate.

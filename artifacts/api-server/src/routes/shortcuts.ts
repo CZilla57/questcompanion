@@ -20,7 +20,7 @@ router.post("/shortcuts/capture", async (req, res): Promise<void> => {
   if (!text) { res.status(400).json({ error: "text is required" }); return; }
   if (text.length > CAPTURE_MAX_LEN) { res.status(400).json({ error: "text is too long" }); return; }
   if (!captureCooldown.tryAcquire(userId)) {
-    res.status(429).json({ error: "Slow down a moment before capturing again." });
+    res.status(429).json({ error: "Slow down a moment before capturing again.", message: "Too fast — wait a breath and add that again ⚡" });
     return;
   }
 

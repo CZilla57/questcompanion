@@ -110,7 +110,7 @@ export async function authMiddleware(
   // id. Handle it entirely here — valid tokens authenticate the three
   // whitelisted routes; everything else falls through unauthenticated and the
   // route's own isAuthenticated() check returns the usual 401.
-  const bearer = isBearerAuth ? authHeader.slice(7) : undefined;
+  const bearer = isBearerAuth ? authHeader.slice(7).trimStart() : undefined;
   if (bearer !== undefined && isShortcutToken(bearer)) {
     await applyShortcutTokenAuth(req, bearer);
     next();

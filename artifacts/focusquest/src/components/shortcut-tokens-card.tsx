@@ -33,8 +33,9 @@ export function ShortcutTokensCard() {
       setCopied(false);
       setLabel("");
       await refetchList();
-    } catch {
-      toast({ title: "Couldn't create the token", variant: "destructive" });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Something went wrong";
+      toast({ title: "Couldn't create the token", description: msg, variant: "destructive" });
     }
   }
 
@@ -54,8 +55,9 @@ export function ShortcutTokensCard() {
       setConfirmRevokeId(null);
       await refetchList();
       toast({ title: "Token revoked" });
-    } catch {
-      toast({ title: "Couldn't revoke the token", variant: "destructive" });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Something went wrong";
+      toast({ title: "Couldn't revoke the token", description: msg, variant: "destructive" });
     }
   }
 
@@ -107,8 +109,7 @@ export function ShortcutTokensCard() {
               <span className="truncate">
                 {t.label ?? "Token"}
                 <span className="text-muted-foreground">
-                  {" · "}
-                  {t.lastUsedAt ? `used ${new Date(t.lastUsedAt).toLocaleDateString()}` : "never used"}
+                  {" · "}{new Date(t.createdAt).toLocaleDateString()}{" · "}{t.lastUsedAt ? `used ${new Date(t.lastUsedAt).toLocaleDateString()}` : "never used"}
                 </span>
               </span>
               {confirmRevokeId === t.id ? (
