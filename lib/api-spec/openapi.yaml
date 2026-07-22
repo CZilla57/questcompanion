@@ -1303,7 +1303,7 @@ paths:
     patch:
       operationId: updateQuestline
       tags: [questlines]
-      summary: Update a questline's title/description/color
+      summary: Update a questline's title/description/color, or attach/detach it as a campaign chapter
       parameters:
         - name: id
           in: path
@@ -1323,6 +1323,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Questline"
+        "404":
+          description: Questline not found, or campaignId does not reference a campaign you own
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: Attaching a questline already claimed by a different campaign, or detaching from a completed campaign
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
     delete:
       operationId: deleteQuestline
       tags: [questlines]

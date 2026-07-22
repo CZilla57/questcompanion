@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
 import { eq, and, desc, inArray } from "drizzle-orm";
-import { db, questlinesTable, tasksTable, taskStepsTable, usersTable, activityTable, type Questline } from "@workspace/db";
+import { db, questlinesTable, tasksTable, taskStepsTable, usersTable, activityTable, campaignsTable, type Questline } from "@workspace/db";
 import { computeProgress, isReadyToClaim, computeRewardXp } from "../lib/questlines";
+import { canAttachToCampaign, canDetachFromCampaign } from "../lib/campaigns";
 import { getLevelInfo } from "../lib/gamification";
 import { newlyUnlocked, type FeatureKey } from "../lib/feature-gates";
 import { formatTask } from "./tasks";
@@ -30,6 +31,9 @@ export function formatQuestline(row: Questline, progress: { total: number; done:
     rewardXpAwarded: row.rewardXpAwarded ?? null,
     completedAt: row.completedAt ? row.completedAt.toISOString() : null,
     createdAt: row.createdAt.toISOString(),
+    campaignId: row.campaignId ?? null,
+    chapterOrder: row.chapterOrder ?? null,
+    chapterBeat: row.chapterBeat ?? null,
   };
 }
 
@@ -155,15 +159,22 @@ router.get("/questlines/:id", async (req, res): Promise<void> => {
   });
 });
 
-// Update title/description/color.
+// Update title/description/color, or attach/detach as a campaign chapter.
+// PATCH /campaigns/:id/chapters is the primary door into campaign membership;
+// this route is a SECOND door onto the same state, so it enforces the same
+// one-campaign-per-questline-EVER rule: attaching is refused (409) when the
+// questline already belongs to a different campaign, and detaching is
+// refused (409) when its current campaign is completed — those chapters are
+// part of a claimed record and can never be freed up to be claimed again.
 router.patch("/questlines/:id", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;
   const id = parseId(req.params.id);
   if (id == null) { res.status(400).json({ error: "Invalid id" }); return; }
 
-  const { title, description, color } = req.body as {
+  const { title, description, color, campaignId, chapterOrder } = req.body as {
     title?: string; description?: string | null; color?: string | null;
+    campaignId?: number | null; chapterOrder?: number | null;
   };
   const updates: Partial<typeof questlinesTable.$inferInsert> = {};
   if (title != null) {
@@ -173,14 +184,65 @@ router.patch("/questlines/:id", async (req, res): Promise<void> => {
   if (description !== undefined) updates.description = description;
   if (color !== undefined) updates.color = color;
 
-  const [row] = await db.update(questlinesTable).set(updates)
-    .where(and(eq(questlinesTable.id, id), eq(questlinesTable.userId, userId)))
-    .returning();
-  if (!row) { res.status(404).json({ error: "Questline not found" }); return; }
+  type Outcome =
+    | { kind: "not_found" }
+    | { kind: "campaign_not_found" }
+    | { kind: "conflict"; error: string }
+    | { kind: "ok"; row: Questline };
+
+  const outcome = await db.transaction(async (tx): Promise<Outcome> => {
+    // Lock the target FIRST — before consulting or touching campaignsTable —
+    // so a request for a nonexistent/foreign questline can never commit a
+    // side effect on its way to a 404.
+    const [existing] = await tx.select().from(questlinesTable)
+      .where(and(eq(questlinesTable.id, id), eq(questlinesTable.userId, userId)))
+      .for("update");
+    if (!existing) return { kind: "not_found" };
+
+    // Campaign membership (Act VI). Attaching an ALREADY-COMPLETED questline is
+    // deliberately allowed: if the work is done, the chapter counts.
+    if (campaignId !== undefined) {
+      if (campaignId != null) {
+        const [owned] = await tx.select({ id: campaignsTable.id }).from(campaignsTable)
+          .where(and(eq(campaignsTable.id, campaignId), eq(campaignsTable.userId, userId)));
+        if (!owned) return { kind: "campaign_not_found" };
+
+        // One campaign per questline, EVER: a questline already claimed by a
+        // different campaign may never be poached through this route.
+        if (!canAttachToCampaign(existing.campaignId, campaignId)) {
+          return { kind: "conflict", error: "A questline can only belong to one campaign" };
+        }
+        updates.campaignId = campaignId;
+      } else {
+        // Detaching clears the chapter's position too — a stray order on an
+        // unattached questline would sort wrong if it were ever re-adopted.
+        if (existing.campaignId != null) {
+          const [currentCampaign] = await tx.select({ status: campaignsTable.status })
+            .from(campaignsTable).where(eq(campaignsTable.id, existing.campaignId));
+          if (currentCampaign && !canDetachFromCampaign(currentCampaign.status)) {
+            return { kind: "conflict", error: "A completed campaign's chapters are part of its record" };
+          }
+        }
+        updates.campaignId = null;
+        updates.chapterOrder = null;
+        updates.chapterBeat = null;
+      }
+    }
+    if (chapterOrder !== undefined) updates.chapterOrder = chapterOrder;
+
+    const [updated] = await tx.update(questlinesTable).set(updates)
+      .where(and(eq(questlinesTable.id, id), eq(questlinesTable.userId, userId)))
+      .returning();
+    return { kind: "ok", row: updated! };
+  });
+
+  if (outcome.kind === "not_found") { res.status(404).json({ error: "Questline not found" }); return; }
+  if (outcome.kind === "campaign_not_found") { res.status(404).json({ error: "Campaign not found" }); return; }
+  if (outcome.kind === "conflict") { res.status(409).json({ error: outcome.error }); return; }
 
   const members = await db.select({ completed: tasksTable.completed }).from(tasksTable)
     .where(and(eq(tasksTable.questlineId, id), eq(tasksTable.userId, userId)));
-  res.json(formatQuestline(row, computeProgress(members)));
+  res.json(formatQuestline(outcome.row, computeProgress(members)));
 });
 
 // Delete a questline; the FK's ON DELETE SET NULL unlinks its quests.

@@ -4181,7 +4181,7 @@ export const getUpdateQuestlineUrl = (id: number,) => {
 }
 
 /**
- * @summary Update a questline's title/description/color
+ * @summary Update a questline's title/description/color, or attach/detach it as a campaign chapter
  */
 export const updateQuestline = async (id: number,
     questlineUpdate: QuestlineUpdate, options?: RequestInit): Promise<Questline> => {
@@ -4199,7 +4199,7 @@ export const updateQuestline = async (id: number,
 
 
 
-export const getUpdateQuestlineMutationOptions = <TError = ErrorType<unknown>,
+export const getUpdateQuestlineMutationOptions = <TError = ErrorType<ErrorEnvelope>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateQuestline>>, TError,{id: number;data: BodyType<QuestlineUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateQuestline>>, TError,{id: number;data: BodyType<QuestlineUpdate>}, TContext> => {
 
@@ -4228,12 +4228,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateQuestlineMutationResult = NonNullable<Awaited<ReturnType<typeof updateQuestline>>>
     export type UpdateQuestlineMutationBody = BodyType<QuestlineUpdate>
-    export type UpdateQuestlineMutationError = ErrorType<unknown>
+    export type UpdateQuestlineMutationError = ErrorType<ErrorEnvelope>
 
     /**
- * @summary Update a questline's title/description/color
+ * @summary Update a questline's title/description/color, or attach/detach it as a campaign chapter
  */
-export const useUpdateQuestline = <TError = ErrorType<unknown>,
+export const useUpdateQuestline = <TError = ErrorType<ErrorEnvelope>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateQuestline>>, TError,{id: number;data: BodyType<QuestlineUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof updateQuestline>>,

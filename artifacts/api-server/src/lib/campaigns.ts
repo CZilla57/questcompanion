@@ -119,3 +119,26 @@ export function renumber(orderedIds: number[]): { id: number; chapterOrder: numb
   const unique = orderedIds.filter((id) => (seen.has(id) ? false : (seen.add(id), true)));
   return unique.map((id, i) => ({ id, chapterOrder: i }));
 }
+
+/** ATTACH guard for PATCH /questlines/:id — the second door into campaign
+ * membership (the first is PATCH /campaigns/:id/chapters). One campaign per
+ * questline, EVER: attaching is allowed only when the questline currently
+ * belongs to no campaign. Re-sending the campaign it is already in is a
+ * no-op, not an error; attaching to a DIFFERENT campaign while already
+ * claimed by one must be refused so a completed questline can never be
+ * recycled through a second campaign for unlimited XP. */
+export function canAttachToCampaign(
+  currentCampaignId: number | null,
+  targetCampaignId: number,
+): boolean {
+  return currentCampaignId == null || currentCampaignId === targetCampaignId;
+}
+
+/** DETACH guard for PATCH /questlines/:id. Mirrors the same rule enforced on
+ * PATCH /campaigns/:id/chapters: a completed campaign's chapters are part of
+ * its record and may never be detached — that, together with the attach
+ * guard above, means a claimed chapter can never be freed up to be claimed
+ * again in a different campaign. */
+export function canDetachFromCampaign(currentCampaignStatus: string): boolean {
+  return currentCampaignStatus !== "completed";
+}

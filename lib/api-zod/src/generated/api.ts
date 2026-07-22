@@ -1292,7 +1292,7 @@ export const GetQuestlineResponse = zod.object({
 
 
 /**
- * @summary Update a questline's title/description/color
+ * @summary Update a questline's title/description/color, or attach/detach it as a campaign chapter
  */
 export const updateQuestlineBodyTitleMax = 120;
 

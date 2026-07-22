@@ -9,6 +9,8 @@ import {
   clampString,
   validateStringOrNull,
   validateQuestlineIds,
+  canAttachToCampaign,
+  canDetachFromCampaign,
 } from "./campaigns";
 
 describe("computeCampaignProgress", () => {
@@ -196,5 +198,29 @@ describe("validateQuestlineIds", () => {
   });
   it("accepts an array exactly at the cap", () => {
     expect(validateQuestlineIds([1, 2, 3, 4, 5], 5).ok).toBe(true);
+  });
+});
+
+describe("canAttachToCampaign", () => {
+  it("allows attaching an unclaimed questline (no current campaign)", () => {
+    expect(canAttachToCampaign(null, 5)).toBe(true);
+  });
+  it("allows re-sending the campaign the questline is already in (no-op)", () => {
+    expect(canAttachToCampaign(5, 5)).toBe(true);
+  });
+  it("blocks attaching to a different campaign than the one it's already in — the recycle-for-XP exploit this closes", () => {
+    expect(canAttachToCampaign(5, 6)).toBe(false);
+  });
+});
+
+describe("canDetachFromCampaign", () => {
+  it("allows detaching from a running campaign", () => {
+    expect(canDetachFromCampaign("running")).toBe(true);
+  });
+  it("allows detaching from a set-aside campaign", () => {
+    expect(canDetachFromCampaign("set_aside")).toBe(true);
+  });
+  it("blocks detaching from a completed campaign — its chapters are part of the record", () => {
+    expect(canDetachFromCampaign("completed")).toBe(false);
   });
 });
