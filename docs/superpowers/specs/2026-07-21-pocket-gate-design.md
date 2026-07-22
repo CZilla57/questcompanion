@@ -150,9 +150,9 @@ ordering (anchored first, then newest); capped at 25.
   "quests": { "Buy milk": 42, "Email Sam": 57, "Email Sam (2)": 61 } }
 ```
 
-`quests` is a flat title→id dictionary because that's the shape Shortcuts' native
-`Choose from List` consumes with zero scripting; duplicate titles get " (2)" suffixes
-server-side.
+`quests` is a flat title→id dictionary: `All Keys` gives `Choose from List` its titles,
+and the chosen title then keys the id lookup — the two-hop flow §10 records as the one
+that actually works on-device. Duplicate titles get " (2)" suffixes server-side.
 
 **Completion — reuse `POST /api/tasks/:id/complete` verbatim (D7).**
 The completion transaction ([tasks.ts:522](../../../artifacts/api-server/src/routes/tasks.ts))
@@ -205,14 +205,23 @@ New section **"📱 Home Screen Shortcuts"** in the existing account dialog:
 3. `Get Dictionary Value` — `message`.
 4. `Show Notification` — the message.
 
-**Recipe B — "Quest Done"** (≈6 actions)
+**Recipe B — "Quest Done"** (≈7 actions)
+
+*(Corrected after on-device testing, iOS 26, 2026-07-21: feeding the `quests`
+dictionary straight into `Choose from List` shows the VALUES — raw quest ids — as the
+list rows, despite Apple's own docs claiming keys are shown. The community-standard
+detour below — All Keys → pick → keyed lookup — is the verified-working flow.)*
 
 1. `Get Contents of URL` — `GET …/api/shortcuts/today` · same auth header.
-2. `Get Dictionary Value` — `quests` → `Choose from List` (shows titles as a native picker).
-3. `Get Dictionary Value` — chosen title from `quests` → the id.
-4. `Get Contents of URL` — `POST …/api/tasks/<id>/complete` · same header · empty JSON body.
-5. `Get Dictionary Value` — `pointsAwarded`.
-6. `Show Notification` — *"Quest complete! +{pointsAwarded} XP"*.
+2. `Get Dictionary Value` — Value for key `quests`.
+3. `Get Dictionary Value` — All Keys → a plain list of the quest titles.
+4. `Choose from List` — shows the titles.
+5. `Get Dictionary Value` — Value for key `Chosen Item` **in the step-2 dictionary** —
+   the "in" parameter must be re-pointed via Select Variable (it defaults to Chosen
+   Item) → the quest id.
+6. `Get Contents of URL` — `POST …/api/tasks/<id>/complete` · same header · empty JSON body.
+7. *(optional)* `Get Dictionary Value` — `pointsAwarded` → `Show Notification` —
+   *"Quest complete! +{pointsAwarded} XP"*.
 
 Then: long-press home screen → Shortcuts widget (both fit a medium widget) — and the
 same shortcuts are automatically available from the Lock Screen, Control Center, the
