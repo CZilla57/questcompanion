@@ -8,7 +8,7 @@
 import { useState } from "react";
 import { Link, useParams, useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Map as MapIcon, Trophy, ChevronRight, Check, Pause, Play, Trash2, Plus } from "lucide-react";
+import { Map as MapIcon, Trophy, ChevronRight, Check, Pause, Play, Trash2, Plus, X } from "lucide-react";
 import {
   useGetCampaign, useUpdateCampaign, useClaimCampaign, useDeleteCampaign,
   useGetQuestlines, useUpdateQuestline,
@@ -32,6 +32,7 @@ export default function CampaignDetail() {
   const [, navigate] = useLocation();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [addChapterOpen, setAddChapterOpen] = useState(false);
+  const [removeChapter, setRemoveChapter] = useState<{ id: number; title: string } | null>(null);
 
   const { data, isLoading } = useGetCampaign(id);
   const updateMutation = useUpdateCampaign();
@@ -127,6 +128,29 @@ export default function CampaignDetail() {
     );
   };
 
+  // Detach via the same questline-update hook the picker uses to attach —
+  // the server enforces every rule (a completed campaign's chapters 409),
+  // this just gives an in-app way out of a mis-added chapter instead of
+  // deleting the whole campaign. The questline and its quests are untouched;
+  // it only stops being a chapter here.
+  const handleRemoveChapter = () => {
+    if (!removeChapter) return;
+    attachMutation.mutate(
+      { id: removeChapter.id, data: { campaignId: null } },
+      {
+        onSuccess: () => {
+          refresh();
+          queryClient.invalidateQueries({ queryKey: getGetQuestlinesQueryKey() });
+          setRemoveChapter(null);
+          toast({ title: "Chapter removed — the questline is still right where it was" });
+        },
+        onError: (err: unknown) => {
+          toast({ title: apiErrorMessage(err, "Could not remove that chapter"), variant: "destructive" });
+        },
+      },
+    );
+  };
+
   const handleStatus = (status: "running" | "set_aside") => {
     updateMutation.mutate({ id, data: { status } }, {
       onSuccess: () => {
@@ -196,25 +220,43 @@ export default function CampaignDetail() {
         {chapters.map((ch, i) => {
           const done = ch.status === "completed";
           const current = ch.questlineId === currentChapterId;
+          // A completed campaign is a permanent chronicle entry — no remove
+          // control renders there at all (the server would 409 it anyway).
+          const canRemove = campaign.status !== "completed";
           return (
-            <Link key={ch.questlineId} href={`/questlines/${ch.questlineId}`}
-              className={`block p-4 rounded-xl border transition-all ${
+            <div key={ch.questlineId}
+              className={`flex items-stretch rounded-xl border transition-all ${
                 current ? "border-primary bg-primary/5" : done ? "border-muted bg-muted/20" : "border-border bg-card hover:border-primary/50"
               }`}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Chapter {i + 1}</span>
-                    {current && <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Current</span>}
-                    {done && <Check className="w-3.5 h-3.5 text-emerald-400" aria-label="Chapter complete" />}
+              {/* Remove sits OUTSIDE the Link as a sibling, not nested inside
+                  its activation area, so tapping it removes the chapter
+                  instead of navigating to the questline. */}
+              <Link href={`/questlines/${ch.questlineId}`} className="flex-1 min-w-0 block p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Chapter {i + 1}</span>
+                      {current && <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Current</span>}
+                      {done && <Check className="w-3.5 h-3.5 text-emerald-400" aria-label="Chapter complete" />}
+                    </div>
+                    <h3 className={`font-semibold truncate ${done ? "text-muted-foreground" : "text-foreground"}`}>{ch.title}</h3>
+                    {done && ch.chapterBeat && <p className="text-sm text-muted-foreground italic mt-1">{ch.chapterBeat}</p>}
+                    <p className="text-xs text-muted-foreground mt-1">{ch.done} / {ch.total} quests</p>
                   </div>
-                  <h3 className={`font-semibold truncate ${done ? "text-muted-foreground" : "text-foreground"}`}>{ch.title}</h3>
-                  {done && ch.chapterBeat && <p className="text-sm text-muted-foreground italic mt-1">{ch.chapterBeat}</p>}
-                  <p className="text-xs text-muted-foreground mt-1">{ch.done} / {ch.total} quests</p>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              </div>
-            </Link>
+              </Link>
+              {canRemove && (
+                <button
+                  type="button"
+                  aria-label={`Remove ${ch.title} from this campaign`}
+                  onClick={() => setRemoveChapter({ id: ch.questlineId, title: ch.title })}
+                  className="shrink-0 px-3 flex items-center text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           );
         })}
 
@@ -263,6 +305,21 @@ export default function CampaignDetail() {
             <Button variant="ghost" onClick={() => setDeleteOpen(false)}>Cancel</Button>
             <Button variant="destructive" onClick={handleDelete} disabled={deleteMutation.isPending}>
               {deleteMutation.isPending ? "Deleting…" : "Delete"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={removeChapter != null} onOpenChange={(o) => !o && setRemoveChapter(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Remove this chapter?</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            &ldquo;{removeChapter?.title}&rdquo; stays right where it is as a questline — it just stops being a chapter here.
+          </p>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="ghost" onClick={() => setRemoveChapter(null)}>Cancel</Button>
+            <Button onClick={handleRemoveChapter} disabled={attachMutation.isPending}>
+              {attachMutation.isPending ? "Removing…" : "Remove"}
             </Button>
           </div>
         </DialogContent>

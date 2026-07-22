@@ -91,7 +91,10 @@ export default function Campaigns() {
   const setAside = (campaigns ?? []).filter((c) => c.status === "set_aside");
   const finished = (campaigns ?? []).filter((c) => c.status === "completed");
 
-  const hasChaptersWithoutTitles = chapters.length > 0 && chapters.every((c) => !c.title.trim());
+  // ANY unnamed chapter blocks Begin, not just the all-blank case — on the
+  // curated path titles arrive empty and beats filled in, so naming only
+  // some of them must not silently drop the rest (and their beats).
+  const hasUnnamedChapters = chapters.some((c) => !c.title.trim());
 
   const reset = () => {
     setTitle("");
@@ -117,7 +120,7 @@ export default function Campaigns() {
   };
 
   const handleCreate = () => {
-    if (!title.trim() || createMutation.isPending || hasChaptersWithoutTitles) return;
+    if (!title.trim() || createMutation.isPending || hasUnnamedChapters) return;
     const kept = chapters
       .filter((c) => c.title.trim())
       .map((c) => ({ title: c.title.trim(), beat: c.beat || null }));
@@ -205,7 +208,9 @@ export default function Campaigns() {
               </Button>
               {chapters.length > 0 && (
                 <span className="text-xs text-muted-foreground">
-                  {hasChaptersWithoutTitles ? "Give at least one chapter a name to begin." : "Edit anything before starting"}
+                  {hasUnnamedChapters
+                    ? "Name each chapter to begin — or remove the ones you don't need."
+                    : "Edit anything before starting"}
                 </span>
               )}
             </div>
@@ -240,7 +245,7 @@ export default function Campaigns() {
 
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={reset}>Cancel</Button>
-              <Button onClick={handleCreate} disabled={!title.trim() || createMutation.isPending || hasChaptersWithoutTitles}>
+              <Button onClick={handleCreate} disabled={!title.trim() || createMutation.isPending || hasUnnamedChapters}>
                 {createMutation.isPending ? "Starting…" : "Begin"}
               </Button>
             </div>

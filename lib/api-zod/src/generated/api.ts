@@ -172,7 +172,7 @@ export const GetMyStatsResponse = zod.object({
   "points": zod.number(),
   "createdAt": zod.string()
 })),
-  "unlockedFeatures": zod.array(zod.enum(['focus', 'hero', 'progress', 'allies', 'rewards', 'campaigns']).describe('Gentle Door progressive-unlock feature groups (campaigns gates a tab, not a nav group)')).describe('Features visible to this user. Grandfathered accounts always get all five; locked features are invisible client-side (never teased).')
+  "unlockedFeatures": zod.array(zod.enum(['focus', 'hero', 'progress', 'allies', 'rewards', 'campaigns']).describe('Gentle Door progressive-unlock feature groups. Most keys match a client nav group one-to-one; campaigns is the exception — it gates a tab inside the always-on quests nav group, not a nav group of its own.')).describe('Features visible to this user. Grandfathered accounts always get all five; locked features are invisible client-side (never teased).')
 })
 
 
@@ -796,7 +796,7 @@ export const CompleteTaskResponse = zod.object({
   "focusBonusPoints": zod.number().optional().describe('XP awarded for completing all 3 focus quests'),
   "heroRevived": zod.boolean().optional().describe('True when this completion revived a fainted hero (fed after ≥7 days)'),
   "companionReaction": zod.union([zod.string(),zod.null()]).optional().describe('Companion\'s line for a just-happened bond tier-up or level-up, else null'),
-  "newlyUnlocked": zod.array(zod.enum(['focus', 'hero', 'progress', 'allies', 'rewards', 'campaigns']).describe('Gentle Door progressive-unlock feature groups (campaigns gates a tab, not a nav group)')).describe('Gates crossed by this award (for the level-up dialog). Always empty for grandfathered users.')
+  "newlyUnlocked": zod.array(zod.enum(['focus', 'hero', 'progress', 'allies', 'rewards', 'campaigns']).describe('Gentle Door progressive-unlock feature groups. Most keys match a client nav group one-to-one; campaigns is the exception — it gates a tab inside the always-on quests nav group, not a nav group of its own.')).describe('Gates crossed by this award (for the level-up dialog). Always empty for grandfathered users.')
 })
 
 
@@ -1353,7 +1353,7 @@ export const ClaimQuestlineResponse = zod.object({
   "currentLevel": zod.number(),
   "levelName": zod.string(),
   "leveledUp": zod.boolean(),
-  "newlyUnlocked": zod.array(zod.enum(['focus', 'hero', 'progress', 'allies', 'rewards', 'campaigns']).describe('Gentle Door progressive-unlock feature groups (campaigns gates a tab, not a nav group)')).describe('Gates crossed by this award (for the level-up dialog). Always empty for grandfathered users.')
+  "newlyUnlocked": zod.array(zod.enum(['focus', 'hero', 'progress', 'allies', 'rewards', 'campaigns']).describe('Gentle Door progressive-unlock feature groups. Most keys match a client nav group one-to-one; campaigns is the exception — it gates a tab inside the always-on quests nav group, not a nav group of its own.')).describe('Gates crossed by this award (for the level-up dialog). Always empty for grandfathered users.')
 })
 
 
@@ -1462,7 +1462,7 @@ export const UpdateCampaignBody = zod.object({
   "arcPremise": zod.string().nullish(),
   "endingBeat": zod.string().nullish(),
   "status": zod.enum(['running', 'set_aside']).optional()
-})
+}).describe('Partial update — every field optional.')
 
 export const UpdateCampaignResponse = zod.object({
   "id": zod.number(),
@@ -1547,7 +1547,7 @@ export const ClaimCampaignResponse = zod.object({
   "currentLevel": zod.number(),
   "levelName": zod.string(),
   "leveledUp": zod.boolean(),
-  "newlyUnlocked": zod.array(zod.enum(['focus', 'hero', 'progress', 'allies', 'rewards', 'campaigns']).describe('Gentle Door progressive-unlock feature groups (campaigns gates a tab, not a nav group)')).optional()
+  "newlyUnlocked": zod.array(zod.enum(['focus', 'hero', 'progress', 'allies', 'rewards', 'campaigns']).describe('Gentle Door progressive-unlock feature groups. Most keys match a client nav group one-to-one; campaigns is the exception — it gates a tab inside the always-on quests nav group, not a nav group of its own.')).optional()
 })
 
 

@@ -91,7 +91,7 @@ export interface UserUpdate {
 }
 
 /**
- * Gentle Door progressive-unlock feature groups (campaigns gates a tab, not a nav group)
+ * Gentle Door progressive-unlock feature groups. Most keys match a client nav group one-to-one; campaigns is the exception — it gates a tab inside the always-on quests nav group, not a nav group of its own.
  */
 export type FeatureKey = typeof FeatureKey[keyof typeof FeatureKey];
 
@@ -846,6 +846,9 @@ export const CampaignUpdateStatus = {
   set_aside: 'set_aside',
 } as const;
 
+/**
+ * Partial update — every field optional.
+ */
 export interface CampaignUpdate {
   /**
      * @minLength 1

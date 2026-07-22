@@ -1454,6 +1454,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Campaign"
+        "400":
+          description: title is missing/empty, or a field (arcPremise, endingBeat, a chapter title/beat) is wrong-typed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "409":
           description: Another campaign is already running
           content:
@@ -1508,6 +1514,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Campaign"
+        "400":
+          description: A field was wrong-typed (e.g. title empty, arcPremise/endingBeat not a string or null, status not running/set_aside), or the body had no fields to update
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "404":
           description: Not found
           content:
@@ -1633,17 +1645,11 @@ paths:
               $ref: "#/components/schemas/SuggestCampaignArcInput"
       responses:
         "200":
-          description: Drafted arc. Always returns an arc — curated when AI is unavailable.
+          description: Drafted arc. Always returns a 200 with an arc — a curated arc is returned whenever AI is unavailable, unconfigured, or rate-limited (cooldown), so creation can never be blocked by the model.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuggestedCampaignArc"
-        "429":
-          description: Cooldown — a curated arc is returned instead by the client
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
 
   /focus-sessions/presets:
     get:
@@ -2907,7 +2913,7 @@ components:
 
     FeatureKey:
       type: string
-      description: Gentle Door progressive-unlock feature groups (campaigns gates a tab, not a nav group)
+      description: Gentle Door progressive-unlock feature groups. Most keys match a client nav group one-to-one; campaigns is the exception — it gates a tab inside the always-on quests nav group, not a nav group of its own.
       enum: [focus, hero, progress, allies, rewards, campaigns]
 
     UserStats:
@@ -3500,6 +3506,7 @@ components:
 
     CampaignUpdate:
       type: object
+      description: Partial update — every field optional.
       properties:
         title:
           type: string

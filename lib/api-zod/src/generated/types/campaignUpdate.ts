@@ -7,6 +7,9 @@
  */
 import type { CampaignUpdateStatus } from './campaignUpdateStatus';
 
+/**
+ * Partial update — every field optional.
+ */
 export interface CampaignUpdate {
   /**
      * @minLength 1

@@ -7,7 +7,7 @@
  */
 
 /**
- * Gentle Door progressive-unlock feature groups (campaigns gates a tab, not a nav group)
+ * Gentle Door progressive-unlock feature groups. Most keys match a client nav group one-to-one; campaigns is the exception — it gates a tab inside the always-on quests nav group, not a nav group of its own.
  */
 export type FeatureKey = typeof FeatureKey[keyof typeof FeatureKey];
 

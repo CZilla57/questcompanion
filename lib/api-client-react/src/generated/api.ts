@@ -4990,7 +4990,7 @@ export const suggestCampaignArc = async (suggestCampaignArcInput: SuggestCampaig
 
 
 
-export const getSuggestCampaignArcMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+export const getSuggestCampaignArcMutationOptions = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof suggestCampaignArc>>, TError,{data: BodyType<SuggestCampaignArcInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof suggestCampaignArc>>, TError,{data: BodyType<SuggestCampaignArcInput>}, TContext> => {
 
@@ -5019,12 +5019,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type SuggestCampaignArcMutationResult = NonNullable<Awaited<ReturnType<typeof suggestCampaignArc>>>
     export type SuggestCampaignArcMutationBody = BodyType<SuggestCampaignArcInput>
-    export type SuggestCampaignArcMutationError = ErrorType<ErrorEnvelope>
+    export type SuggestCampaignArcMutationError = ErrorType<unknown>
 
     /**
  * @summary Draft a story arc for a goal (AI, creates nothing)
  */
-export const useSuggestCampaignArc = <TError = ErrorType<ErrorEnvelope>,
+export const useSuggestCampaignArc = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof suggestCampaignArc>>, TError,{data: BodyType<SuggestCampaignArcInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof suggestCampaignArc>>,

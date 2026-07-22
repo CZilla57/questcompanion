@@ -333,8 +333,16 @@ router.patch("/campaigns/:id", async (req, res): Promise<void> => {
   }
 });
 
-// Delete a campaign; the FK's ON DELETE SET NULL unlinks its chapters.
-// The questlines and all their quests survive. A completed campaign is a
+// Delete a campaign. The questlines and all their quests survive, but they
+// must not keep narrating a campaign that no longer exists: the FK's
+// ON DELETE SET NULL only clears campaignId, so chapterOrder and (crucially)
+// chapterBeat are cleared explicitly here, BEFORE the campaign row is
+// deleted — the same three columns the other two detach doors clear (the
+// reorder detach above, and PATCH /questlines/:id). Without this, a freed
+// questline stays campaignId == null with a stale chapterBeat: the add-a-
+// chapter picker offers it, the claim celebration still renders the old
+// beat, and adopting it into a NEW campaign would show the old campaign's
+// story text as the new campaign's chapter beat. A completed campaign is a
 // permanent chronicle entry and may never be deleted — that, together with
 // the completed-chapters-never-detach rule above, means a claimed chapter can
 // never be freed up to be claimed again in a different campaign.
@@ -352,6 +360,10 @@ router.delete("/campaigns/:id", async (req, res): Promise<void> => {
       .for("update");
     if (!existing) return { kind: "not_found" };
     if (existing.status === "completed") return { kind: "completed" };
+
+    await tx.update(questlinesTable)
+      .set({ campaignId: null, chapterOrder: null, chapterBeat: null })
+      .where(and(eq(questlinesTable.campaignId, id), eq(questlinesTable.userId, userId)));
 
     await tx.delete(campaignsTable)
       .where(and(eq(campaignsTable.id, id), eq(campaignsTable.userId, userId)));
