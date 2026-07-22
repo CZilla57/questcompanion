@@ -5,22 +5,17 @@
  * FocusQuest API - ADHD gamified task tracker
  * OpenAPI spec version: 0.1.0
  */
+import type { CampaignUpdateStatus } from './campaignUpdateStatus';
 
-/**
- * Partial update — every field optional.
- */
-export interface QuestlineUpdate {
+export interface CampaignUpdate {
   /**
      * @minLength 1
      * @maxLength 120
      */
   title?: string;
   /** @nullable */
-  description?: string | null;
+  arcPremise?: string | null;
   /** @nullable */
-  color?: string | null;
-  /** @nullable */
-  campaignId?: number | null;
-  /** @nullable */
-  chapterOrder?: number | null;
+  endingBeat?: string | null;
+  status?: CampaignUpdateStatus;
 }

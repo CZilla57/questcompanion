@@ -27,4 +27,10 @@ export interface Questline {
   /** @nullable */
   completedAt?: string | null;
   createdAt: string;
+  /** @nullable */
+  campaignId?: number | null;
+  /** @nullable */
+  chapterOrder?: number | null;
+  /** @nullable */
+  chapterBeat?: string | null;
 }

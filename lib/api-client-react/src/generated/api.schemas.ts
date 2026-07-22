@@ -91,7 +91,7 @@ export interface UserUpdate {
 }
 
 /**
- * Gentle Door progressive-unlock feature groups (keys match client nav groups)
+ * Gentle Door progressive-unlock feature groups (campaigns gates a tab, not a nav group)
  */
 export type FeatureKey = typeof FeatureKey[keyof typeof FeatureKey];
 
@@ -102,6 +102,7 @@ export const FeatureKey = {
   progress: 'progress',
   allies: 'allies',
   rewards: 'rewards',
+  campaigns: 'campaigns',
 } as const;
 
 export type ActivityItemType = typeof ActivityItemType[keyof typeof ActivityItemType];
@@ -122,6 +123,8 @@ export const ActivityItemType = {
   initiation: 'initiation',
   reflection: 'reflection',
   body_double: 'body_double',
+  questline_complete: 'questline_complete',
+  campaign_complete: 'campaign_complete',
 } as const;
 
 export interface ActivityItem {
@@ -706,6 +709,12 @@ export interface Questline {
   /** @nullable */
   completedAt?: string | null;
   createdAt: string;
+  /** @nullable */
+  campaignId?: number | null;
+  /** @nullable */
+  chapterOrder?: number | null;
+  /** @nullable */
+  chapterBeat?: string | null;
 }
 
 export interface QuestlineInput {
@@ -725,6 +734,177 @@ export interface QuestlineInput {
   questTitles?: string[];
 }
 
+export type CampaignStorySource = typeof CampaignStorySource[keyof typeof CampaignStorySource];
+
+
+export const CampaignStorySource = {
+  ai: 'ai',
+  curated: 'curated',
+} as const;
+
+export type CampaignStatus = typeof CampaignStatus[keyof typeof CampaignStatus];
+
+
+export const CampaignStatus = {
+  running: 'running',
+  set_aside: 'set_aside',
+  completed: 'completed',
+} as const;
+
+export interface Campaign {
+  id: number;
+  userId: number;
+  title: string;
+  /** @nullable */
+  arcPremise?: string | null;
+  /** @nullable */
+  endingBeat?: string | null;
+  storySource: CampaignStorySource;
+  status: CampaignStatus;
+  /** Number of chapters */
+  total: number;
+  /** Number of completed chapters */
+  done: number;
+  /** True when running, non-empty, and every chapter is completed */
+  ready: boolean;
+  /** @nullable */
+  rewardXpAwarded?: number | null;
+  /** @nullable */
+  completedAt?: string | null;
+  createdAt: string;
+}
+
+export type CampaignChapterStatus = typeof CampaignChapterStatus[keyof typeof CampaignChapterStatus];
+
+
+export const CampaignChapterStatus = {
+  active: 'active',
+  completed: 'completed',
+} as const;
+
+export interface CampaignChapter {
+  questlineId: number;
+  title: string;
+  /** @nullable */
+  chapterOrder?: number | null;
+  /** @nullable */
+  chapterBeat?: string | null;
+  status: CampaignChapterStatus;
+  total: number;
+  done: number;
+}
+
+export interface CampaignDetail {
+  campaign: Campaign;
+  chapters: CampaignChapter[];
+  /**
+     * Questline id of the first incomplete chapter. Display only — chapters are never gated.
+     * @nullable
+     */
+  currentChapterId?: number | null;
+}
+
+export type CampaignInputStorySource = typeof CampaignInputStorySource[keyof typeof CampaignInputStorySource];
+
+
+export const CampaignInputStorySource = {
+  ai: 'ai',
+  curated: 'curated',
+} as const;
+
+export type CampaignInputChaptersItem = {
+  /** @maxLength 120 */
+  title: string;
+  /** @nullable */
+  beat?: string | null;
+  questTitles?: string[];
+};
+
+export interface CampaignInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  title: string;
+  /** @nullable */
+  arcPremise?: string | null;
+  /** @nullable */
+  endingBeat?: string | null;
+  storySource?: CampaignInputStorySource;
+  /** Chapter questlines to create atomically. Empty is legal (adopt-only path). */
+  chapters?: CampaignInputChaptersItem[];
+}
+
+export type CampaignUpdateStatus = typeof CampaignUpdateStatus[keyof typeof CampaignUpdateStatus];
+
+
+export const CampaignUpdateStatus = {
+  running: 'running',
+  set_aside: 'set_aside',
+} as const;
+
+export interface CampaignUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  title?: string;
+  /** @nullable */
+  arcPremise?: string | null;
+  /** @nullable */
+  endingBeat?: string | null;
+  status?: CampaignUpdateStatus;
+}
+
+export interface CampaignChaptersInput {
+  /** Full ordered chapter list. Anything omitted is detached. */
+  questlineIds: number[];
+}
+
+export interface CampaignClaimResult {
+  campaign: Campaign;
+  /** @nullable */
+  endingBeat?: string | null;
+  xpAwarded: number;
+  totalPoints: number;
+  currentLevel: number;
+  levelName: string;
+  leveledUp: boolean;
+  newlyUnlocked?: FeatureKey[];
+}
+
+export interface SuggestCampaignArcInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  goal: string;
+}
+
+/**
+ * Curated means the model was unavailable — creation still proceeds.
+ */
+export type SuggestedCampaignArcSource = typeof SuggestedCampaignArcSource[keyof typeof SuggestedCampaignArcSource];
+
+
+export const SuggestedCampaignArcSource = {
+  ai: 'ai',
+  curated: 'curated',
+} as const;
+
+export type SuggestedCampaignArcChaptersItem = {
+  title: string;
+  beat: string;
+};
+
+export interface SuggestedCampaignArc {
+  arcPremise: string;
+  endingBeat: string;
+  /** Curated means the model was unavailable — creation still proceeds. */
+  source: SuggestedCampaignArcSource;
+  chapters: SuggestedCampaignArcChaptersItem[];
+}
+
 /**
  * Partial update — every field optional.
  */
@@ -738,6 +918,10 @@ export interface QuestlineUpdate {
   description?: string | null;
   /** @nullable */
   color?: string | null;
+  /** @nullable */
+  campaignId?: number | null;
+  /** @nullable */
+  chapterOrder?: number | null;
 }
 
 export interface QuestlineDetail {

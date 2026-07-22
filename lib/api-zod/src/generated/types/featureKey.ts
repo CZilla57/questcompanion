@@ -7,7 +7,7 @@
  */
 
 /**
- * Gentle Door progressive-unlock feature groups (keys match client nav groups)
+ * Gentle Door progressive-unlock feature groups (campaigns gates a tab, not a nav group)
  */
 export type FeatureKey = typeof FeatureKey[keyof typeof FeatureKey];
 
@@ -18,4 +18,5 @@ export const FeatureKey = {
   progress: 'progress',
   allies: 'allies',
   rewards: 'rewards',
+  campaigns: 'campaigns',
 } as const;

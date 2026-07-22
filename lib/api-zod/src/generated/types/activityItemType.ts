@@ -24,4 +24,6 @@ export const ActivityItemType = {
   initiation: 'initiation',
   reflection: 'reflection',
   body_double: 'body_double',
+  questline_complete: 'questline_complete',
+  campaign_complete: 'campaign_complete',
 } as const;

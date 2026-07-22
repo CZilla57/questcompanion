@@ -167,12 +167,12 @@ export const GetMyStatsResponse = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
   "username": zod.string().optional(),
-  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_bought', 'gear_earned', 'focus_session', 'focus_complete', 'initiation', 'reflection', 'body_double']),
+  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_bought', 'gear_earned', 'focus_session', 'focus_complete', 'initiation', 'reflection', 'body_double', 'questline_complete', 'campaign_complete']),
   "description": zod.string(),
   "points": zod.number(),
   "createdAt": zod.string()
 })),
-  "unlockedFeatures": zod.array(zod.enum(['focus', 'hero', 'progress', 'allies', 'rewards']).describe('Gentle Door progressive-unlock feature groups (keys match client nav groups)')).describe('Features visible to this user. Grandfathered accounts always get all five; locked features are invisible client-side (never teased).')
+  "unlockedFeatures": zod.array(zod.enum(['focus', 'hero', 'progress', 'allies', 'rewards', 'campaigns']).describe('Gentle Door progressive-unlock feature groups (campaigns gates a tab, not a nav group)')).describe('Features visible to this user. Grandfathered accounts always get all five; locked features are invisible client-side (never teased).')
 })
 
 
@@ -796,7 +796,7 @@ export const CompleteTaskResponse = zod.object({
   "focusBonusPoints": zod.number().optional().describe('XP awarded for completing all 3 focus quests'),
   "heroRevived": zod.boolean().optional().describe('True when this completion revived a fainted hero (fed after ≥7 days)'),
   "companionReaction": zod.union([zod.string(),zod.null()]).optional().describe('Companion\'s line for a just-happened bond tier-up or level-up, else null'),
-  "newlyUnlocked": zod.array(zod.enum(['focus', 'hero', 'progress', 'allies', 'rewards']).describe('Gentle Door progressive-unlock feature groups (keys match client nav groups)')).describe('Gates crossed by this award (for the level-up dialog). Always empty for grandfathered users.')
+  "newlyUnlocked": zod.array(zod.enum(['focus', 'hero', 'progress', 'allies', 'rewards', 'campaigns']).describe('Gentle Door progressive-unlock feature groups (campaigns gates a tab, not a nav group)')).describe('Gates crossed by this award (for the level-up dialog). Always empty for grandfathered users.')
 })
 
 
@@ -1210,7 +1210,10 @@ export const GetQuestlinesResponseItem = zod.object({
   "ready": zod.boolean().describe('True when active, non-empty, and every quest is done'),
   "rewardXpAwarded": zod.number().nullish(),
   "completedAt": zod.string().nullish(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "campaignId": zod.number().nullish(),
+  "chapterOrder": zod.number().nullish(),
+  "chapterBeat": zod.string().nullish()
 })
 export const GetQuestlinesResponse = zod.array(GetQuestlinesResponseItem)
 
@@ -1250,7 +1253,10 @@ export const GetQuestlineResponse = zod.object({
   "ready": zod.boolean().describe('True when active, non-empty, and every quest is done'),
   "rewardXpAwarded": zod.number().nullish(),
   "completedAt": zod.string().nullish(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "campaignId": zod.number().nullish(),
+  "chapterOrder": zod.number().nullish(),
+  "chapterBeat": zod.string().nullish()
 }),
   "quests": zod.array(zod.object({
   "id": zod.number(),
@@ -1295,7 +1301,9 @@ export const updateQuestlineBodyTitleMax = 120;
 export const UpdateQuestlineBody = zod.object({
   "title": zod.string().min(1).max(updateQuestlineBodyTitleMax).optional(),
   "description": zod.string().nullish(),
-  "color": zod.string().nullish()
+  "color": zod.string().nullish(),
+  "campaignId": zod.number().nullish(),
+  "chapterOrder": zod.number().nullish()
 }).describe('Partial update — every field optional.')
 
 export const UpdateQuestlineResponse = zod.object({
@@ -1310,7 +1318,10 @@ export const UpdateQuestlineResponse = zod.object({
   "ready": zod.boolean().describe('True when active, non-empty, and every quest is done'),
   "rewardXpAwarded": zod.number().nullish(),
   "completedAt": zod.string().nullish(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "campaignId": zod.number().nullish(),
+  "chapterOrder": zod.number().nullish(),
+  "chapterBeat": zod.string().nullish()
 })
 
 
@@ -1330,14 +1341,17 @@ export const ClaimQuestlineResponse = zod.object({
   "ready": zod.boolean().describe('True when active, non-empty, and every quest is done'),
   "rewardXpAwarded": zod.number().nullish(),
   "completedAt": zod.string().nullish(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "campaignId": zod.number().nullish(),
+  "chapterOrder": zod.number().nullish(),
+  "chapterBeat": zod.string().nullish()
 }),
   "xpAwarded": zod.number(),
   "totalPoints": zod.number(),
   "currentLevel": zod.number(),
   "levelName": zod.string(),
   "leveledUp": zod.boolean(),
-  "newlyUnlocked": zod.array(zod.enum(['focus', 'hero', 'progress', 'allies', 'rewards']).describe('Gentle Door progressive-unlock feature groups (keys match client nav groups)')).describe('Gates crossed by this award (for the level-up dialog). Always empty for grandfathered users.')
+  "newlyUnlocked": zod.array(zod.enum(['focus', 'hero', 'progress', 'allies', 'rewards', 'campaigns']).describe('Gentle Door progressive-unlock feature groups (campaigns gates a tab, not a nav group)')).describe('Gates crossed by this award (for the level-up dialog). Always empty for grandfathered users.')
 })
 
 
@@ -1354,6 +1368,199 @@ export const SuggestQuestlineQuestsBody = zod.object({
 
 export const SuggestQuestlineQuestsResponse = zod.object({
   "quests": zod.array(zod.string())
+})
+
+
+/**
+ * @summary List the current user's campaigns with derived chapter progress
+ */
+export const GetCampaignsResponseItem = zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "arcPremise": zod.string().nullish(),
+  "endingBeat": zod.string().nullish(),
+  "storySource": zod.enum(['ai', 'curated']),
+  "status": zod.enum(['running', 'set_aside', 'completed']),
+  "total": zod.number().describe('Number of chapters'),
+  "done": zod.number().describe('Number of completed chapters'),
+  "ready": zod.boolean().describe('True when running, non-empty, and every chapter is completed'),
+  "rewardXpAwarded": zod.number().nullish(),
+  "completedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const GetCampaignsResponse = zod.array(GetCampaignsResponseItem)
+
+
+/**
+ * @summary Create a campaign, atomically seeding its chapter questlines
+ */
+export const createCampaignBodyTitleMax = 120;
+
+export const createCampaignBodyChaptersItemTitleMax = 120;
+
+
+
+export const CreateCampaignBody = zod.object({
+  "title": zod.string().min(1).max(createCampaignBodyTitleMax),
+  "arcPremise": zod.string().nullish(),
+  "endingBeat": zod.string().nullish(),
+  "storySource": zod.enum(['ai', 'curated']).optional(),
+  "chapters": zod.array(zod.object({
+  "title": zod.string().max(createCampaignBodyChaptersItemTitleMax),
+  "beat": zod.string().nullish(),
+  "questTitles": zod.array(zod.string()).optional()
+})).optional().describe('Chapter questlines to create atomically. Empty is legal (adopt-only path).')
+})
+
+
+/**
+ * @summary Get one campaign with its ordered chapters
+ */
+export const GetCampaignResponse = zod.object({
+  "campaign": zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "arcPremise": zod.string().nullish(),
+  "endingBeat": zod.string().nullish(),
+  "storySource": zod.enum(['ai', 'curated']),
+  "status": zod.enum(['running', 'set_aside', 'completed']),
+  "total": zod.number().describe('Number of chapters'),
+  "done": zod.number().describe('Number of completed chapters'),
+  "ready": zod.boolean().describe('True when running, non-empty, and every chapter is completed'),
+  "rewardXpAwarded": zod.number().nullish(),
+  "completedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+}),
+  "chapters": zod.array(zod.object({
+  "questlineId": zod.number(),
+  "title": zod.string(),
+  "chapterOrder": zod.number().nullish(),
+  "chapterBeat": zod.string().nullish(),
+  "status": zod.enum(['active', 'completed']),
+  "total": zod.number(),
+  "done": zod.number()
+})),
+  "currentChapterId": zod.number().nullish().describe('Questline id of the first incomplete chapter. Display only — chapters are never gated.')
+})
+
+
+/**
+ * @summary Update a campaign's title/story, or set it aside / resume it
+ */
+export const updateCampaignBodyTitleMax = 120;
+
+
+
+export const UpdateCampaignBody = zod.object({
+  "title": zod.string().min(1).max(updateCampaignBodyTitleMax).optional(),
+  "arcPremise": zod.string().nullish(),
+  "endingBeat": zod.string().nullish(),
+  "status": zod.enum(['running', 'set_aside']).optional()
+})
+
+export const UpdateCampaignResponse = zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "arcPremise": zod.string().nullish(),
+  "endingBeat": zod.string().nullish(),
+  "storySource": zod.enum(['ai', 'curated']),
+  "status": zod.enum(['running', 'set_aside', 'completed']),
+  "total": zod.number().describe('Number of chapters'),
+  "done": zod.number().describe('Number of completed chapters'),
+  "ready": zod.boolean().describe('True when running, non-empty, and every chapter is completed'),
+  "rewardXpAwarded": zod.number().nullish(),
+  "completedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Set the full ordered chapter list for a campaign
+ */
+export const ReorderCampaignChaptersBody = zod.object({
+  "questlineIds": zod.array(zod.number()).describe('Full ordered chapter list. Anything omitted is detached.')
+})
+
+export const ReorderCampaignChaptersResponse = zod.object({
+  "campaign": zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "arcPremise": zod.string().nullish(),
+  "endingBeat": zod.string().nullish(),
+  "storySource": zod.enum(['ai', 'curated']),
+  "status": zod.enum(['running', 'set_aside', 'completed']),
+  "total": zod.number().describe('Number of chapters'),
+  "done": zod.number().describe('Number of completed chapters'),
+  "ready": zod.boolean().describe('True when running, non-empty, and every chapter is completed'),
+  "rewardXpAwarded": zod.number().nullish(),
+  "completedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+}),
+  "chapters": zod.array(zod.object({
+  "questlineId": zod.number(),
+  "title": zod.string(),
+  "chapterOrder": zod.number().nullish(),
+  "chapterBeat": zod.string().nullish(),
+  "status": zod.enum(['active', 'completed']),
+  "total": zod.number(),
+  "done": zod.number()
+})),
+  "currentChapterId": zod.number().nullish().describe('Questline id of the first incomplete chapter. Display only — chapters are never gated.')
+})
+
+
+/**
+ * @summary Claim the reward for a campaign whose chapters are all complete
+ */
+export const ClaimCampaignResponse = zod.object({
+  "campaign": zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "arcPremise": zod.string().nullish(),
+  "endingBeat": zod.string().nullish(),
+  "storySource": zod.enum(['ai', 'curated']),
+  "status": zod.enum(['running', 'set_aside', 'completed']),
+  "total": zod.number().describe('Number of chapters'),
+  "done": zod.number().describe('Number of completed chapters'),
+  "ready": zod.boolean().describe('True when running, non-empty, and every chapter is completed'),
+  "rewardXpAwarded": zod.number().nullish(),
+  "completedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+}),
+  "endingBeat": zod.string().nullish(),
+  "xpAwarded": zod.number(),
+  "totalPoints": zod.number(),
+  "currentLevel": zod.number(),
+  "levelName": zod.string(),
+  "leveledUp": zod.boolean(),
+  "newlyUnlocked": zod.array(zod.enum(['focus', 'hero', 'progress', 'allies', 'rewards', 'campaigns']).describe('Gentle Door progressive-unlock feature groups (campaigns gates a tab, not a nav group)')).optional()
+})
+
+
+/**
+ * @summary Draft a story arc for a goal (AI, creates nothing)
+ */
+export const suggestCampaignArcBodyGoalMax = 200;
+
+
+
+export const SuggestCampaignArcBody = zod.object({
+  "goal": zod.string().min(1).max(suggestCampaignArcBodyGoalMax)
+})
+
+export const SuggestCampaignArcResponse = zod.object({
+  "arcPremise": zod.string(),
+  "endingBeat": zod.string(),
+  "source": zod.enum(['ai', 'curated']).describe('Curated means the model was unavailable — creation still proceeds.'),
+  "chapters": zod.array(zod.object({
+  "title": zod.string(),
+  "beat": zod.string()
+}))
 })
 
 
@@ -1649,7 +1856,7 @@ export const GetPartnerFeedResponseItem = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
   "username": zod.string().optional(),
-  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_bought', 'gear_earned', 'focus_session', 'focus_complete', 'initiation', 'reflection', 'body_double']),
+  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_bought', 'gear_earned', 'focus_session', 'focus_complete', 'initiation', 'reflection', 'body_double', 'questline_complete', 'campaign_complete']),
   "description": zod.string(),
   "points": zod.number(),
   "createdAt": zod.string()
@@ -1719,7 +1926,7 @@ export const GetPartnerDetailResponse = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
   "username": zod.string().optional(),
-  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_bought', 'gear_earned', 'focus_session', 'focus_complete', 'initiation', 'reflection', 'body_double']),
+  "type": zod.enum(['task_completed', 'badge_earned', 'level_up', 'streak_milestone', 'all_day_bonus', 'streak_freeze_bought', 'streak_freeze_used', 'gear_bought', 'gear_earned', 'focus_session', 'focus_complete', 'initiation', 'reflection', 'body_double', 'questline_complete', 'campaign_complete']),
   "description": zod.string(),
   "points": zod.number(),
   "createdAt": zod.string()
