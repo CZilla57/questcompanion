@@ -25,6 +25,7 @@ import RewardsTreats from "@/pages/rewards-treats";
 import Focus from "@/pages/focus";
 import PartnerDetail from "@/pages/partner-detail";
 import Campaigns from "@/pages/campaigns";
+import CampaignDetail from "@/pages/campaign-detail";
 import Questlines from "@/pages/questlines";
 import QuestlineDetail from "@/pages/questline-detail";
 import RewardsStore from "@/pages/rewards-store";
@@ -204,6 +205,7 @@ const RewardsTreatsGated = withGate("rewards", RewardsTreats);
 const RewardsStoreGated = withGate("rewards", RewardsStore);
 const RewardsPerksGated = withGate("rewards", RewardsPerks);
 const CampaignsGated = withGate("campaigns", Campaigns);
+const CampaignDetailGated = withGate("campaigns", CampaignDetail);
 
 function Router() {
   return (
@@ -211,6 +213,7 @@ function Router() {
       <Switch>
         <Route path="/" component={NowScreen} />
         <Route path="/tasks" component={Tasks} />
+        <Route path="/campaigns/:id" component={CampaignDetailGated} />
         <Route path="/campaigns" component={CampaignsGated} />
         <Route path="/questlines/:id" component={QuestlineDetail} />
         <Route path="/questlines" component={Questlines} />
