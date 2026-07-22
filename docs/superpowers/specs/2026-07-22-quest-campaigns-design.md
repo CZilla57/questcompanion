@@ -194,9 +194,11 @@ momentum suggestion as context, never competing with it.
 - **Pure libs first (TDD):** `campaigns.ts` (progress, ready, reward curve incl. the 5-chapter cap,
   `nextChapter`, `renumber`), `campaign-arc.ts` (curated selection is deterministic and total),
   `ai/campaign-arc.ts` (prompt shape, parse happy/malformed/short/over-long).
-- **Route tests:** atomic create rolls back fully on a mid-transaction failure; single-running
-  enforcement including the 23505 race; claim exactly-once under a double call; adopt/detach
-  renumbering; 401 unauthed on every route.
+- **No route-level harness exists** in this repo (no supertest; `api-server` tests are pure-lib
+  vitest only). Route correctness is therefore proven the way Body-Doubling proved it: push every
+  decision that can be tested into the pure libs above, then a **live authed drive** against the
+  running server covering create → adopt → reorder → claim → 409 on re-claim, plus 401 probes on
+  each new route. Do not invent a route-test harness as part of this quest.
 - **Registry guard:** the existing schema-walking test must pass with `campaigns` registered in
   FK-safe order.
 - **Client:** gate hides the tab below L4 and fails open without `unlockedFeatures`; preview
