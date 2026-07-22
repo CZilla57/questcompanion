@@ -7,6 +7,7 @@ import { isUnlocked, featureLabel } from "@/lib/feature-gates";
 import { BrainCheckinPrompt } from "@/components/brain-checkin-prompt";
 import { EveningReflectionCard } from "@/components/evening-reflection-card";
 import { TodaysFocus } from "@/components/todays-focus";
+import { CampaignNowLine } from "@/components/campaign-now-line";
 import { StatusRow } from "@/components/status-row";
 import { QuickAddBar } from "@/components/quick-add-bar";
 import { OutboxBlock } from "@/components/outbox-block";
@@ -119,6 +120,9 @@ export default function NowScreen() {
 
       {/* ── Today's Focus (suggestion only — pinned rail lives on /tasks) ── */}
       <TodaysFocus tasks={tasks ?? []} showPinned={false} />
+
+      {/* ── Campaign context (quiet, never a call to action) ──────────── */}
+      <CampaignNowLine />
 
       {/* ── Quick add ──────────────────────────────────────── */}
       <div id="quick-add">
