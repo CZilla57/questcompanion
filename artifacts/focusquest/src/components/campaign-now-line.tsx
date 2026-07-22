@@ -38,7 +38,7 @@ export function CampaignNowLine() {
     <Link href={`/campaigns/${running.id}`}
       className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
       <MapIcon className="w-3.5 h-3.5 text-primary/70" aria-hidden />
-      <span className="truncate">
+      <span className="flex-1 min-w-0 truncate">
         Chapter {index + 1} of {detail.chapters.length} — {chapter.title}
       </span>
     </Link>

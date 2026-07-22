@@ -9,6 +9,8 @@ import {
   getGetQuestlinesQueryKey,
   getGetMyStatsQueryKey,
   getGetCoinsQueryKey,
+  getGetCampaignsQueryKey,
+  getGetCampaignQueryKey,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { TaskItem } from "@/components/task-item";
@@ -63,6 +65,10 @@ export default function QuestlineDetail() {
         queryClient.invalidateQueries({ queryKey: getGetQuestlinesQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetMyStatsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetCoinsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetCampaignsQueryKey() });
+        if (questline.campaignId) {
+          queryClient.invalidateQueries({ queryKey: getGetCampaignQueryKey(questline.campaignId) });
+        }
         dispatchQuestCompleted();
 
         // The chapter beat (if this questline is a campaign chapter) stays
