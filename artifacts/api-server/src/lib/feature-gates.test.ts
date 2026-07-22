@@ -23,8 +23,8 @@ describe("unlockedFeatures", () => {
   it("opens exactly the charter ladder as levels rise", () => {
     expect(unlockedFeatures(fresh(100))).toEqual(["focus"]);
     expect(unlockedFeatures(fresh(250))).toEqual(["focus", "hero"]);
-    expect(unlockedFeatures(fresh(500))).toEqual(["focus", "hero", "progress"]);
-    expect(unlockedFeatures(fresh(850))).toEqual(["focus", "hero", "progress", "allies"]);
+    expect(unlockedFeatures(fresh(500))).toEqual(["focus", "hero", "progress", "campaigns"]);
+    expect(unlockedFeatures(fresh(850))).toEqual(["focus", "hero", "progress", "allies", "campaigns"]);
     expect(unlockedFeatures(fresh(1300))).toEqual([...FEATURE_KEYS]);
   });
   it("gives grandfathered users everything regardless of XP", () => {
@@ -48,7 +48,7 @@ describe("newlyUnlocked", () => {
     expect(newlyUnlocked({ unlockAll: false, highestLevel: 1 }, 1, 2)).toEqual(["focus"]);
   });
   it("reports multiple gates when a big award skips levels", () => {
-    expect(newlyUnlocked({ unlockAll: false, highestLevel: 1 }, 1, 4)).toEqual(["focus", "hero", "progress"]);
+    expect(newlyUnlocked({ unlockAll: false, highestLevel: 1 }, 1, 4)).toEqual(["focus", "hero", "progress", "campaigns"]);
   });
   it("is ALWAYS empty for grandfathered users (they had everything)", () => {
     expect(newlyUnlocked({ unlockAll: true, highestLevel: 1 }, 1, 6)).toEqual([]);
@@ -65,6 +65,20 @@ describe("newlyUnlocked", () => {
 
 describe("gate table", () => {
   it("pins the charter ladder", () => {
-    expect(FEATURE_GATES).toEqual({ focus: 2, hero: 3, progress: 4, allies: 5, rewards: 6 });
+    expect(FEATURE_GATES).toEqual({ focus: 2, hero: 3, progress: 4, allies: 5, rewards: 6, campaigns: 4 });
+  });
+});
+
+describe("campaigns gate (Act VI Quest Campaigns)", () => {
+  const user = (totalPoints: number) => ({ totalPoints, highestLevel: 0, unlockAll: false });
+
+  it("is locked below level 4", () => {
+    expect(isFeatureUnlocked(user(0), "campaigns")).toBe(false);
+  });
+  it("unlocks at the same band as progress", () => {
+    expect(FEATURE_GATES.campaigns).toBe(FEATURE_GATES.progress);
+  });
+  it("is included for grandfathered users", () => {
+    expect(unlockedFeatures({ totalPoints: 0, highestLevel: 0, unlockAll: true })).toContain("campaigns");
   });
 });

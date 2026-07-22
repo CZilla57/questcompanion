@@ -61,3 +61,22 @@ describe("featureLabel", () => {
     expect(featureLabel("mystery")).toBe("mystery");
   });
 });
+
+describe("campaigns gate", () => {
+  it("hides campaigns below L4", () => {
+    expect(isUnlocked(["focus", "hero"], "campaigns")).toBe(false);
+  });
+  it("shows campaigns when the server lists it", () => {
+    expect(isUnlocked(["focus", "hero", "progress", "campaigns"], "campaigns")).toBe(true);
+  });
+  it("fails open when the list is absent (offline shell)", () => {
+    expect(isUnlocked(undefined, "campaigns")).toBe(true);
+  });
+  it("gates the campaign routes", () => {
+    expect(routeFeature("/campaigns")).toBe("campaigns");
+    expect(routeFeature("/campaigns/12")).toBe("campaigns");
+  });
+  it("labels the unlock celebration with a real word", () => {
+    expect(featureLabel("campaigns")).toBe("Campaigns");
+  });
+});
