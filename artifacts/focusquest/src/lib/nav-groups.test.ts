@@ -40,3 +40,21 @@ describe("activeGroupKey", () => {
     expect(activeGroupKey("/reflection")).toBeNull();
   });
 });
+
+describe("campaigns tab", () => {
+  it("lives in the quests group", () => {
+    const quests = NAV_GROUPS.find((g) => g.key === "quests");
+    expect(quests?.tabs?.some((t) => t.href === "/campaigns")).toBe(true);
+  });
+  it("carries the campaigns feature key so it can be gated", () => {
+    const quests = NAV_GROUPS.find((g) => g.key === "quests");
+    const tab = quests?.tabs?.find((t) => t.href === "/campaigns");
+    expect(tab?.feature).toBe("campaigns");
+  });
+  it("lights the Quests group for a campaign detail URL", () => {
+    expect(activeGroupKey("/campaigns/7")).toBe("quests");
+  });
+  it("adds no new top-level nav entry", () => {
+    expect(NAV_GROUPS).toHaveLength(7);
+  });
+});
