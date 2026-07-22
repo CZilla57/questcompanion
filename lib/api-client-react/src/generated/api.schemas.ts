@@ -2078,6 +2078,54 @@ export interface NotificationPrefs {
   quietHoursEnd: number;
 }
 
+export interface ShortcutTokenSummary {
+  id: number;
+  /** @nullable */
+  label: string | null;
+  createdAt: string;
+  /** @nullable */
+  lastUsedAt: string | null;
+}
+
+export interface MintShortcutTokenRequest {
+  /** @maxLength 60 */
+  label?: string;
+}
+
+export interface ShortcutTokenMinted {
+  id: number;
+  /** @nullable */
+  label: string | null;
+  createdAt: string;
+  /** Full fqs_ secret — shown exactly once, store it in the Shortcut. */
+  token: string;
+}
+
+export interface ShortcutCaptureRequest {
+  /** @maxLength 500 */
+  text: string;
+}
+
+export interface ShortcutCaptureResponse {
+  ok: boolean;
+  id: number;
+  title: string;
+  dueDate: string;
+  message: string;
+}
+
+/**
+ * Quest title → task id, duplicate titles suffixed " (2)".
+ */
+export type ShortcutTodayPayloadQuests = {[key: string]: number};
+
+export interface ShortcutTodayPayload {
+  count: number;
+  message: string;
+  /** Quest title → task id, duplicate titles suffixed " (2)". */
+  quests: ShortcutTodayPayloadQuests;
+}
+
 /**
  * Opaque session token — `Bearer <sid>`.
  */

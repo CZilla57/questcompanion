@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { usePwaInstall } from "@/hooks/use-pwa-install";
 import { confirmPhraseOk, DELETE_PHRASE, exportFileName, exportStrategy } from "@/lib/account";
+import { ShortcutTokensCard } from "@/components/shortcut-tokens-card";
 
 /** Account settings + Danger zone (Act VII q7). Plain copy, no dark patterns:
  * export is one tap, deletion is honest about being unrecoverable and takes a
@@ -96,6 +97,8 @@ export function AccountDialog() {
             {exporting ? "Preparing…" : "Download export"}
           </Button>
         </div>
+
+        <ShortcutTokensCard />
 
         <div className="space-y-2 border border-destructive/40 rounded-lg p-3 mt-2">
           <div className="text-sm font-semibold text-destructive flex items-center gap-2">

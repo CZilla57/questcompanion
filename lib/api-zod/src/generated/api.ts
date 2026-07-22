@@ -2039,6 +2039,60 @@ export const DeleteMeResponse = zod.object({
 
 
 /**
+ * @summary List active Pocket Gate tokens (metadata only, never hashes)
+ */
+export const ListShortcutTokensResponseItem = zod.object({
+  "id": zod.number(),
+  "label": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "lastUsedAt": zod.coerce.date().nullable()
+})
+export const ListShortcutTokensResponse = zod.array(ListShortcutTokensResponseItem)
+
+
+/**
+ * @summary Mint a Pocket Gate token — plaintext returned exactly once
+ */
+export const mintShortcutTokenBodyLabelMax = 60;
+
+
+
+export const MintShortcutTokenBody = zod.object({
+  "label": zod.string().max(mintShortcutTokenBodyLabelMax).optional()
+})
+
+
+/**
+ * @summary Revoke a Pocket Gate token (idempotent)
+ */
+export const RevokeShortcutTokenResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary One-tap quest capture from the iPhone Shortcut (token or session auth)
+ */
+export const shortcutCaptureBodyTextMax = 500;
+
+
+
+export const ShortcutCaptureBody = zod.object({
+  "text": zod.string().max(shortcutCaptureBodyTextMax)
+})
+
+
+/**
+ * @summary Today's open quests as a title→id dictionary for Choose from List
+ */
+export const ShortcutTodayResponse = zod.object({
+  "count": zod.number(),
+  "message": zod.string(),
+  "quests": zod.record(zod.string(), zod.number()).describe('Quest title → task id, duplicate titles suffixed \" (2)\".')
+})
+
+
+/**
  * @summary Search for users by username
  */
 export const SearchUsersQueryParams = zod.object({

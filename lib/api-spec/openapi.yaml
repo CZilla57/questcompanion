@@ -1989,6 +1989,89 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessEnvelope"
 
+  /shortcut-tokens:
+    get:
+      operationId: listShortcutTokens
+      tags: [shortcuts]
+      summary: List active Pocket Gate tokens (metadata only, never hashes)
+      responses:
+        "200":
+          description: Active tokens, oldest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ShortcutTokenSummary"
+    post:
+      operationId: mintShortcutToken
+      tags: [shortcuts]
+      summary: Mint a Pocket Gate token — plaintext returned exactly once
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MintShortcutTokenRequest"
+      responses:
+        "201":
+          description: Minted; `token` appears only in this response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShortcutTokenMinted"
+
+  /shortcut-tokens/{id}:
+    delete:
+      operationId: revokeShortcutToken
+      tags: [shortcuts]
+      summary: Revoke a Pocket Gate token (idempotent)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Revoked (or was already gone)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessEnvelope"
+
+  /shortcuts/capture:
+    post:
+      operationId: shortcutCapture
+      tags: [shortcuts]
+      summary: One-tap quest capture from the iPhone Shortcut (token or session auth)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShortcutCaptureRequest"
+      responses:
+        "201":
+          description: Quest created; `message` is notification-ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShortcutCaptureResponse"
+
+  /shortcuts/today:
+    get:
+      operationId: shortcutToday
+      tags: [shortcuts]
+      summary: Today's open quests as a title→id dictionary for Choose from List
+      responses:
+        "200":
+          description: Dated-today plus incomplete anchored quests, capped at 25
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShortcutTodayPayload"
+
   /users/search:
     get:
       operationId: searchUsers
@@ -4694,3 +4777,77 @@ components:
           type: integer
           minimum: 0
           maximum: 23
+
+    ShortcutTokenSummary:
+      type: object
+      required: [id, label, createdAt, lastUsedAt]
+      properties:
+        id:
+          type: integer
+        label:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time
+        lastUsedAt:
+          type: [string, 'null']
+          format: date-time
+
+    MintShortcutTokenRequest:
+      type: object
+      properties:
+        label:
+          type: string
+          maxLength: 60
+
+    ShortcutTokenMinted:
+      type: object
+      required: [id, label, createdAt, token]
+      properties:
+        id:
+          type: integer
+        label:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time
+        token:
+          type: string
+          description: Full fqs_ secret — shown exactly once, store it in the Shortcut.
+
+    ShortcutCaptureRequest:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          maxLength: 500
+
+    ShortcutCaptureResponse:
+      type: object
+      required: [ok, id, title, dueDate, message]
+      properties:
+        ok:
+          type: boolean
+        id:
+          type: integer
+        title:
+          type: string
+        dueDate:
+          type: string
+        message:
+          type: string
+
+    ShortcutTodayPayload:
+      type: object
+      required: [count, message, quests]
+      properties:
+        count:
+          type: integer
+        message:
+          type: string
+        quests:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Quest title → task id, duplicate titles suffixed " (2)".
