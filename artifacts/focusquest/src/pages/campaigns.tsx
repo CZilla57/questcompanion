@@ -91,6 +91,8 @@ export default function Campaigns() {
   const setAside = (campaigns ?? []).filter((c) => c.status === "set_aside");
   const finished = (campaigns ?? []).filter((c) => c.status === "completed");
 
+  const hasChaptersWithoutTitles = chapters.length > 0 && chapters.every((c) => !c.title.trim());
+
   const reset = () => {
     setTitle("");
     setArc(null);
@@ -115,7 +117,7 @@ export default function Campaigns() {
   };
 
   const handleCreate = () => {
-    if (!title.trim()) return;
+    if (!title.trim() || createMutation.isPending || hasChaptersWithoutTitles) return;
     const kept = chapters
       .filter((c) => c.title.trim())
       .map((c) => ({ title: c.title.trim(), beat: c.beat || null }));
@@ -192,7 +194,8 @@ export default function Campaigns() {
           <DialogHeader><DialogTitle>New Campaign</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <Input placeholder="The goal (e.g. Make the garage usable)" value={title} autoFocus
-              onChange={(e) => setTitle(e.target.value)} />
+              onChange={(e) => setTitle(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleCreate(); }} />
 
             <div className="flex items-center justify-between">
               <Button type="button" variant="outline" size="sm" className="gap-1"
@@ -200,7 +203,11 @@ export default function Campaigns() {
                 <Sparkles className="w-3.5 h-3.5" />
                 {suggestMutation.isPending ? "Drafting…" : "Draft the arc"}
               </Button>
-              {chapters.length > 0 && <span className="text-xs text-muted-foreground">Edit anything before starting</span>}
+              {chapters.length > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {hasChaptersWithoutTitles ? "Give at least one chapter a name to begin." : "Edit anything before starting"}
+                </span>
+              )}
             </div>
 
             {arc?.premise && <p className="text-sm italic text-muted-foreground border-l-2 border-primary/40 pl-3">{arc.premise}</p>}
@@ -233,7 +240,7 @@ export default function Campaigns() {
 
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={reset}>Cancel</Button>
-              <Button onClick={handleCreate} disabled={!title.trim() || createMutation.isPending}>
+              <Button onClick={handleCreate} disabled={!title.trim() || createMutation.isPending || hasChaptersWithoutTitles}>
                 {createMutation.isPending ? "Starting…" : "Begin"}
               </Button>
             </div>
