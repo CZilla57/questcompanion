@@ -2,6 +2,7 @@ import { pgTable, serial, integer, text, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
+import { campaignsTable } from "./campaigns";
 
 export const questlinesTable = pgTable("questlines", {
   id: serial("id").primaryKey(),
@@ -16,6 +17,12 @@ export const questlinesTable = pgTable("questlines", {
   rewardXpAwarded: integer("reward_xp_awarded"),
   completedAt: timestamp("completed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  // Act VI Quest Campaigns: a questline may be one chapter of one campaign.
+  // SET NULL keeps the promise questlines make to quests — deleting the parent
+  // unlinks the children, it never deletes work.
+  campaignId: integer("campaign_id").references(() => campaignsTable.id, { onDelete: "set null" }),
+  chapterOrder: integer("chapter_order"),
+  chapterBeat: text("chapter_beat"),
 });
 
 export const insertQuestlineSchema = createInsertSchema(questlinesTable).omit({

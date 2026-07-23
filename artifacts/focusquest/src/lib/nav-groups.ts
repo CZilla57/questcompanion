@@ -1,7 +1,18 @@
 // Single source of truth for the 7-entry nav and its tab groups (Act VII q2).
 // Pure — layout.tsx and page-tabs.tsx both derive from this; icons stay in layout.
+import type { FeatureKey } from "./feature-gates";
 
-export interface NavTab { label: string; href: string }
+export interface NavTab {
+  label: string;
+  href: string;
+  // Act VI Quest Campaigns: a tab inside an ALWAYS-ON group can still be
+  // gated. Undefined means ungated (the common case). Required-but-undefined
+  // like NavGroup.tabs below: every literal keeps the `feature` key (set to
+  // `undefined` when ungated) so `t.feature` stays legal across the
+  // as-const union element type instead of vanishing from literals that
+  // omitted it.
+  feature: FeatureKey | undefined;
+}
 export interface NavGroup {
   key: string;
   label: string;
@@ -18,25 +29,26 @@ export const NAV_GROUPS = [
   {
     key: "quests", label: "Quests", href: "/tasks", mobileShow: true,
     tabs: [
-      { label: "Today", href: "/tasks" },
-      { label: "Questlines", href: "/questlines" },
-      { label: "Recurring", href: "/recurring" },
+      { label: "Today", href: "/tasks", feature: undefined },
+      { label: "Questlines", href: "/questlines", feature: undefined },
+      { label: "Campaigns", href: "/campaigns", feature: "campaigns" },
+      { label: "Recurring", href: "/recurring", feature: undefined },
     ],
   },
   { key: "focus", label: "Focus", href: "/focus", mobileShow: true, tabs: undefined },
   {
     key: "progress", label: "Progress", href: "/progress", mobileShow: true,
     tabs: [
-      { label: "Progress", href: "/progress" },
-      { label: "Insights", href: "/insights" },
+      { label: "Progress", href: "/progress", feature: undefined },
+      { label: "Insights", href: "/insights", feature: undefined },
     ],
   },
   { key: "hero", label: "Hero", href: "/avatar", mobileShow: true, tabs: undefined },
   {
     key: "allies", label: "Allies", href: "/partners", mobileShow: false,
     tabs: [
-      { label: "Allies", href: "/partners" },
-      { label: "Leaderboard", href: "/leaderboard" },
+      { label: "Allies", href: "/partners", feature: undefined },
+      { label: "Leaderboard", href: "/leaderboard", feature: undefined },
     ],
   },
   {
@@ -44,9 +56,9 @@ export const NAV_GROUPS = [
     // /rewards and /dopamine-menu redirect to Treats in App.tsx.
     key: "rewards", label: "Rewards", href: "/rewards/treats", mobileShow: false,
     tabs: [
-      { label: "Treats", href: "/rewards/treats" },
-      { label: "Store", href: "/rewards/store" },
-      { label: "Perks", href: "/rewards/perks" },
+      { label: "Treats", href: "/rewards/treats", feature: undefined },
+      { label: "Store", href: "/rewards/store", feature: undefined },
+      { label: "Perks", href: "/rewards/perks", feature: undefined },
     ],
   },
 ] as const satisfies readonly NavGroup[];

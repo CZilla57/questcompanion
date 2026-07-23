@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Award, Flame, Trophy, Zap, Star, Rocket,
   Shield, ShieldCheck, ShieldOff, Check, Timer, Play, Moon, Coins, ShoppingBag, Users,
+  Map as MapIcon, Scroll,
 } from "lucide-react";
 import { BadgeIcon, BADGE_CATEGORY_STYLE, DEFAULT_BADGE_CATEGORY_STYLE } from "@/lib/badges";
 import { browserTimeZone } from "@/lib/timezone";
@@ -393,6 +394,8 @@ export default function Progress() {
                     {activity.type === 'body_double'          && <Users       className="w-4 h-4 text-primary" />}
                     {activity.type === 'initiation'           && <Play        className="w-4 h-4 text-primary" />}
                     {activity.type === 'reflection'           && <Moon        className="w-4 h-4 text-primary" />}
+                    {activity.type === 'questline_complete'   && <Scroll      className="w-4 h-4 text-primary" />}
+                    {activity.type === 'campaign_complete'    && <MapIcon     className="w-4 h-4 text-primary" />}
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground leading-snug">{activity.description}</p>

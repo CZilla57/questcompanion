@@ -37,6 +37,12 @@ import type {
   BrainCheckinRequest,
   BrainState,
   BuyGearResult,
+  Campaign,
+  CampaignChaptersInput,
+  CampaignClaimResult,
+  CampaignDetail,
+  CampaignInput,
+  CampaignUpdate,
   Coins,
   CreateRescueEvent201,
   DeleteAccountRequest,
@@ -130,7 +136,9 @@ import type {
   StepToggleInput,
   StepToggleResponse,
   SuccessEnvelope,
+  SuggestCampaignArcInput,
   SuggestQuestlineQuestsInput,
+  SuggestedCampaignArc,
   SuggestedQuestlineQuests,
   Task,
   TaskCompletionResult,
@@ -4173,7 +4181,7 @@ export const getUpdateQuestlineUrl = (id: number,) => {
 }
 
 /**
- * @summary Update a questline's title/description/color
+ * @summary Update a questline's title/description/color, or attach/detach it as a campaign chapter
  */
 export const updateQuestline = async (id: number,
     questlineUpdate: QuestlineUpdate, options?: RequestInit): Promise<Questline> => {
@@ -4191,7 +4199,7 @@ export const updateQuestline = async (id: number,
 
 
 
-export const getUpdateQuestlineMutationOptions = <TError = ErrorType<unknown>,
+export const getUpdateQuestlineMutationOptions = <TError = ErrorType<ErrorEnvelope>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateQuestline>>, TError,{id: number;data: BodyType<QuestlineUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateQuestline>>, TError,{id: number;data: BodyType<QuestlineUpdate>}, TContext> => {
 
@@ -4220,12 +4228,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateQuestlineMutationResult = NonNullable<Awaited<ReturnType<typeof updateQuestline>>>
     export type UpdateQuestlineMutationBody = BodyType<QuestlineUpdate>
-    export type UpdateQuestlineMutationError = ErrorType<unknown>
+    export type UpdateQuestlineMutationError = ErrorType<ErrorEnvelope>
 
     /**
- * @summary Update a questline's title/description/color
+ * @summary Update a questline's title/description/color, or attach/detach it as a campaign chapter
  */
-export const useUpdateQuestline = <TError = ErrorType<unknown>,
+export const useUpdateQuestline = <TError = ErrorType<ErrorEnvelope>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateQuestline>>, TError,{id: number;data: BodyType<QuestlineUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof updateQuestline>>,
@@ -4445,6 +4453,586 @@ export const useSuggestQuestlineQuests = <TError = ErrorType<ErrorEnvelope>,
         TContext
       > => {
       return useMutation(getSuggestQuestlineQuestsMutationOptions(options));
+    }
+
+export const getGetCampaignsUrl = () => {
+
+
+
+
+  return `/api/campaigns`
+}
+
+/**
+ * @summary List the current user's campaigns with derived chapter progress
+ */
+export const getCampaigns = async ( options?: RequestInit): Promise<Campaign[]> => {
+
+  return customFetch<Campaign[]>(getGetCampaignsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCampaignsQueryKey = () => {
+    return [
+    `/api/campaigns`
+    ] as const;
+    }
+
+
+export const getGetCampaignsQueryOptions = <TData = Awaited<ReturnType<typeof getCampaigns>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCampaigns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCampaignsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCampaigns>>> = ({ signal }) => getCampaigns({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCampaigns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCampaignsQueryResult = NonNullable<Awaited<ReturnType<typeof getCampaigns>>>
+export type GetCampaignsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the current user's campaigns with derived chapter progress
+ */
+
+export function useGetCampaigns<TData = Awaited<ReturnType<typeof getCampaigns>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCampaigns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCampaignsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateCampaignUrl = () => {
+
+
+
+
+  return `/api/campaigns`
+}
+
+/**
+ * @summary Create a campaign, atomically seeding its chapter questlines
+ */
+export const createCampaign = async (campaignInput: CampaignInput, options?: RequestInit): Promise<Campaign> => {
+
+  return customFetch<Campaign>(getCreateCampaignUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      campaignInput,)
+  }
+);}
+
+
+
+
+export const getCreateCampaignMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCampaign>>, TError,{data: BodyType<CampaignInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCampaign>>, TError,{data: BodyType<CampaignInput>}, TContext> => {
+
+const mutationKey = ['createCampaign'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCampaign>>, {data: BodyType<CampaignInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCampaign(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCampaignMutationResult = NonNullable<Awaited<ReturnType<typeof createCampaign>>>
+    export type CreateCampaignMutationBody = BodyType<CampaignInput>
+    export type CreateCampaignMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Create a campaign, atomically seeding its chapter questlines
+ */
+export const useCreateCampaign = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCampaign>>, TError,{data: BodyType<CampaignInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCampaign>>,
+        TError,
+        {data: BodyType<CampaignInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCampaignMutationOptions(options));
+    }
+
+export const getGetCampaignUrl = (id: number,) => {
+
+
+
+
+  return `/api/campaigns/${id}`
+}
+
+/**
+ * @summary Get one campaign with its ordered chapters
+ */
+export const getCampaign = async (id: number, options?: RequestInit): Promise<CampaignDetail> => {
+
+  return customFetch<CampaignDetail>(getGetCampaignUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCampaignQueryKey = (id: number,) => {
+    return [
+    `/api/campaigns/${id}`
+    ] as const;
+    }
+
+
+export const getGetCampaignQueryOptions = <TData = Awaited<ReturnType<typeof getCampaign>>, TError = ErrorType<ErrorEnvelope>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCampaign>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCampaignQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCampaign>>> = ({ signal }) => getCampaign(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCampaign>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCampaignQueryResult = NonNullable<Awaited<ReturnType<typeof getCampaign>>>
+export type GetCampaignQueryError = ErrorType<ErrorEnvelope>
+
+
+/**
+ * @summary Get one campaign with its ordered chapters
+ */
+
+export function useGetCampaign<TData = Awaited<ReturnType<typeof getCampaign>>, TError = ErrorType<ErrorEnvelope>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCampaign>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCampaignQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateCampaignUrl = (id: number,) => {
+
+
+
+
+  return `/api/campaigns/${id}`
+}
+
+/**
+ * @summary Update a campaign's title/story, or set it aside / resume it
+ */
+export const updateCampaign = async (id: number,
+    campaignUpdate: CampaignUpdate, options?: RequestInit): Promise<Campaign> => {
+
+  return customFetch<Campaign>(getUpdateCampaignUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      campaignUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateCampaignMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCampaign>>, TError,{id: number;data: BodyType<CampaignUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCampaign>>, TError,{id: number;data: BodyType<CampaignUpdate>}, TContext> => {
+
+const mutationKey = ['updateCampaign'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCampaign>>, {id: number;data: BodyType<CampaignUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateCampaign(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCampaignMutationResult = NonNullable<Awaited<ReturnType<typeof updateCampaign>>>
+    export type UpdateCampaignMutationBody = BodyType<CampaignUpdate>
+    export type UpdateCampaignMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Update a campaign's title/story, or set it aside / resume it
+ */
+export const useUpdateCampaign = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCampaign>>, TError,{id: number;data: BodyType<CampaignUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateCampaign>>,
+        TError,
+        {id: number;data: BodyType<CampaignUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateCampaignMutationOptions(options));
+    }
+
+export const getDeleteCampaignUrl = (id: number,) => {
+
+
+
+
+  return `/api/campaigns/${id}`
+}
+
+/**
+ * @summary Delete a campaign (its chapters are unlinked, never deleted)
+ */
+export const deleteCampaign = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteCampaignUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteCampaignMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCampaign>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCampaign>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteCampaign'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCampaign>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteCampaign(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCampaignMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCampaign>>>
+
+    export type DeleteCampaignMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Delete a campaign (its chapters are unlinked, never deleted)
+ */
+export const useDeleteCampaign = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCampaign>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCampaign>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteCampaignMutationOptions(options));
+    }
+
+export const getReorderCampaignChaptersUrl = (id: number,) => {
+
+
+
+
+  return `/api/campaigns/${id}/chapters`
+}
+
+/**
+ * @summary Set the full ordered chapter list for a campaign
+ */
+export const reorderCampaignChapters = async (id: number,
+    campaignChaptersInput: CampaignChaptersInput, options?: RequestInit): Promise<CampaignDetail> => {
+
+  return customFetch<CampaignDetail>(getReorderCampaignChaptersUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      campaignChaptersInput,)
+  }
+);}
+
+
+
+
+export const getReorderCampaignChaptersMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderCampaignChapters>>, TError,{id: number;data: BodyType<CampaignChaptersInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reorderCampaignChapters>>, TError,{id: number;data: BodyType<CampaignChaptersInput>}, TContext> => {
+
+const mutationKey = ['reorderCampaignChapters'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reorderCampaignChapters>>, {id: number;data: BodyType<CampaignChaptersInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reorderCampaignChapters(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReorderCampaignChaptersMutationResult = NonNullable<Awaited<ReturnType<typeof reorderCampaignChapters>>>
+    export type ReorderCampaignChaptersMutationBody = BodyType<CampaignChaptersInput>
+    export type ReorderCampaignChaptersMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Set the full ordered chapter list for a campaign
+ */
+export const useReorderCampaignChapters = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderCampaignChapters>>, TError,{id: number;data: BodyType<CampaignChaptersInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reorderCampaignChapters>>,
+        TError,
+        {id: number;data: BodyType<CampaignChaptersInput>},
+        TContext
+      > => {
+      return useMutation(getReorderCampaignChaptersMutationOptions(options));
+    }
+
+export const getClaimCampaignUrl = (id: number,) => {
+
+
+
+
+  return `/api/campaigns/${id}/claim`
+}
+
+/**
+ * @summary Claim the reward for a campaign whose chapters are all complete
+ */
+export const claimCampaign = async (id: number, options?: RequestInit): Promise<CampaignClaimResult> => {
+
+  return customFetch<CampaignClaimResult>(getClaimCampaignUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getClaimCampaignMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof claimCampaign>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof claimCampaign>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['claimCampaign'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof claimCampaign>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  claimCampaign(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClaimCampaignMutationResult = NonNullable<Awaited<ReturnType<typeof claimCampaign>>>
+
+    export type ClaimCampaignMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Claim the reward for a campaign whose chapters are all complete
+ */
+export const useClaimCampaign = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof claimCampaign>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof claimCampaign>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getClaimCampaignMutationOptions(options));
+    }
+
+export const getSuggestCampaignArcUrl = () => {
+
+
+
+
+  return `/api/campaigns/suggest-arc`
+}
+
+/**
+ * @summary Draft a story arc for a goal (AI, creates nothing)
+ */
+export const suggestCampaignArc = async (suggestCampaignArcInput: SuggestCampaignArcInput, options?: RequestInit): Promise<SuggestedCampaignArc> => {
+
+  return customFetch<SuggestedCampaignArc>(getSuggestCampaignArcUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      suggestCampaignArcInput,)
+  }
+);}
+
+
+
+
+export const getSuggestCampaignArcMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof suggestCampaignArc>>, TError,{data: BodyType<SuggestCampaignArcInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof suggestCampaignArc>>, TError,{data: BodyType<SuggestCampaignArcInput>}, TContext> => {
+
+const mutationKey = ['suggestCampaignArc'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof suggestCampaignArc>>, {data: BodyType<SuggestCampaignArcInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  suggestCampaignArc(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SuggestCampaignArcMutationResult = NonNullable<Awaited<ReturnType<typeof suggestCampaignArc>>>
+    export type SuggestCampaignArcMutationBody = BodyType<SuggestCampaignArcInput>
+    export type SuggestCampaignArcMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Draft a story arc for a goal (AI, creates nothing)
+ */
+export const useSuggestCampaignArc = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof suggestCampaignArc>>, TError,{data: BodyType<SuggestCampaignArcInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof suggestCampaignArc>>,
+        TError,
+        {data: BodyType<SuggestCampaignArcInput>},
+        TContext
+      > => {
+      return useMutation(getSuggestCampaignArcMutationOptions(options));
     }
 
 export const getGetFocusPresetsUrl = () => {

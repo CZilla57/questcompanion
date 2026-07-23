@@ -9,6 +9,8 @@ import {
   getGetQuestlinesQueryKey,
   getGetMyStatsQueryKey,
   getGetCoinsQueryKey,
+  getGetCampaignsQueryKey,
+  getGetCampaignQueryKey,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { TaskItem } from "@/components/task-item";
@@ -37,6 +39,12 @@ export default function QuestlineDetail() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const deleteMutation = useDeleteQuestline();
 
+  if (isLoading) return <div className="max-w-3xl mx-auto px-4 py-6 text-muted-foreground">Loading…</div>;
+  if (!data) return <div className="max-w-3xl mx-auto px-4 py-6 text-muted-foreground">Questline not found.</div>;
+
+  const { questline, quests } = data;
+  const pct = questline.total > 0 ? Math.round((questline.done / questline.total) * 100) : 0;
+
   const handleDelete = () => {
     deleteMutation.mutate({ id }, {
       onSuccess: () => {
@@ -57,16 +65,31 @@ export default function QuestlineDetail() {
         queryClient.invalidateQueries({ queryKey: getGetQuestlinesQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetMyStatsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetCoinsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetCampaignsQueryKey() });
+        if (questline.campaignId) {
+          queryClient.invalidateQueries({ queryKey: getGetCampaignQueryKey(questline.campaignId) });
+        }
         dispatchQuestCompleted();
+
+        // The chapter beat (if this questline is a campaign chapter) stays
+        // first and always shown; level-up/unlock copy is appended after it —
+        // composed the same way campaign-detail.tsx builds its own claim
+        // description.
+        const parts: string[] = [];
+        if (questline.chapterBeat) parts.push(questline.chapterBeat);
+        if (res.leveledUp) {
+          parts.push(
+            `Level up! You're now ${res.levelName}.${
+              res.newlyUnlocked.length > 0
+                ? ` ${res.newlyUnlocked.map(featureLabel).join(" & ")} unlocked!`
+                : ""
+            }`,
+          );
+        }
+
         toast({
           title: `Questline complete! +${res.xpAwarded} XP`,
-          description: res.leveledUp
-            ? `Level up! You're now ${res.levelName}.${
-                res.newlyUnlocked.length > 0
-                  ? ` ${res.newlyUnlocked.map(featureLabel).join(" & ")} unlocked!`
-                  : ""
-              }`
-            : undefined,
+          description: parts.length > 0 ? parts.join(" ") : undefined,
           className: "border-primary bg-primary text-primary-foreground",
         });
       },
@@ -75,12 +98,6 @@ export default function QuestlineDetail() {
       },
     });
   };
-
-  if (isLoading) return <div className="max-w-3xl mx-auto px-4 py-6 text-muted-foreground">Loading…</div>;
-  if (!data) return <div className="max-w-3xl mx-auto px-4 py-6 text-muted-foreground">Questline not found.</div>;
-
-  const { questline, quests } = data;
-  const pct = questline.total > 0 ? Math.round((questline.done / questline.total) * 100) : 0;
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">

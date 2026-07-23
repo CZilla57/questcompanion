@@ -29,6 +29,8 @@ tags:
     description: Focus sessions and Pomodoro timer
   - name: questlines
     description: Grouping quests into goal-oriented questlines
+  - name: campaigns
+    description: Long-horizon goals told as an ordered story arc over questlines
   - name: brain
     description: Brain check-ins, derived mode state, and rescue events
   - name: recaps
@@ -1301,7 +1303,7 @@ paths:
     patch:
       operationId: updateQuestline
       tags: [questlines]
-      summary: Update a questline's title/description/color
+      summary: Update a questline's title/description/color, or attach/detach it as a campaign chapter
       parameters:
         - name: id
           in: path
@@ -1321,6 +1323,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Questline"
+        "400":
+          description: No fields to update, an invalid field type/value (title, description, color, chapterOrder), or a detach (campaignId null) combined with an explicit chapterOrder
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Questline not found, or campaignId does not reference a campaign you own
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: Attaching a questline already claimed by a different campaign, attaching into an already-completed campaign, detaching from a completed campaign, or a concurrent change to the questline's campaign membership
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
     delete:
       operationId: deleteQuestline
       tags: [questlines]
@@ -1402,6 +1422,234 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+
+  /campaigns:
+    get:
+      operationId: getCampaigns
+      tags: [campaigns]
+      summary: List the current user's campaigns with derived chapter progress
+      responses:
+        "200":
+          description: Campaign list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Campaign"
+    post:
+      operationId: createCampaign
+      tags: [campaigns]
+      summary: Create a campaign, atomically seeding its chapter questlines
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CampaignInput"
+      responses:
+        "201":
+          description: Created campaign
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Campaign"
+        "400":
+          description: title is missing/empty, or a field (arcPremise, endingBeat, a chapter title/beat) is wrong-typed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: Another campaign is already running
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /campaigns/{id}:
+    get:
+      operationId: getCampaign
+      tags: [campaigns]
+      summary: Get one campaign with its ordered chapters
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Campaign with chapters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CampaignDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    patch:
+      operationId: updateCampaign
+      tags: [campaigns]
+      summary: Update a campaign's title/story, or set it aside / resume it
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CampaignUpdate"
+      responses:
+        "200":
+          description: Updated campaign
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Campaign"
+        "400":
+          description: A field was wrong-typed (e.g. title empty, arcPremise/endingBeat not a string or null, status not running/set_aside), or the body had no fields to update
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: Another campaign is already running, or this campaign is already completed (completed is terminal — it can never be reopened)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    delete:
+      operationId: deleteCampaign
+      tags: [campaigns]
+      summary: Delete a campaign (its chapters are unlinked, never deleted)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: A completed campaign is a permanent chronicle entry and may never be deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /campaigns/{id}/chapters:
+    patch:
+      operationId: reorderCampaignChapters
+      tags: [campaigns]
+      summary: Set the full ordered chapter list for a campaign
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CampaignChaptersInput"
+      responses:
+        "200":
+          description: Campaign with reordered chapters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CampaignDetail"
+        "400":
+          description: questlineIds was not an array of positive integers, or exceeded the chapter cap
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: A completed campaign's chapters can never be detached, or a questlineId already belongs to a different campaign (one campaign per questline, ever)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /campaigns/{id}/claim:
+    post:
+      operationId: claimCampaign
+      tags: [campaigns]
+      summary: Claim the reward for a campaign whose chapters are all complete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Reward claimed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CampaignClaimResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: Not ready to claim, or already completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /campaigns/suggest-arc:
+    post:
+      operationId: suggestCampaignArc
+      tags: [campaigns]
+      summary: Draft a story arc for a goal (AI, creates nothing)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SuggestCampaignArcInput"
+      responses:
+        "200":
+          description: Drafted arc. Always returns a 200 with an arc — a curated arc is returned whenever AI is unavailable, unconfigured, or rate-limited (cooldown), so creation can never be blocked by the model.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestedCampaignArc"
 
   /focus-sessions/presets:
     get:
@@ -2665,8 +2913,8 @@ components:
 
     FeatureKey:
       type: string
-      description: Gentle Door progressive-unlock feature groups (keys match client nav groups)
-      enum: [focus, hero, progress, allies, rewards]
+      description: Gentle Door progressive-unlock feature groups. Most keys match a client nav group one-to-one; campaigns is the exception — it gates a tab inside the always-on quests nav group, not a nav group of its own.
+      enum: [focus, hero, progress, allies, rewards, campaigns]
 
     UserStats:
       type: object
@@ -3126,6 +3374,12 @@ components:
           type: ["string", "null"]
         createdAt:
           type: string
+        campaignId:
+          type: ["integer", "null"]
+        chapterOrder:
+          type: ["integer", "null"]
+        chapterBeat:
+          type: ["string", "null"]
 
     QuestlineInput:
       type: object
@@ -3147,6 +3401,192 @@ components:
             maxLength: 120
           description: Optional quest titles to create (anchored) with the questline.
 
+    Campaign:
+      type: object
+      required: [id, userId, title, status, storySource, total, done, ready, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        title:
+          type: string
+        arcPremise:
+          type: ["string", "null"]
+        endingBeat:
+          type: ["string", "null"]
+        storySource:
+          type: string
+          enum: [ai, curated]
+        status:
+          type: string
+          enum: [running, set_aside, completed]
+        total:
+          type: integer
+          description: Number of chapters
+        done:
+          type: integer
+          description: Number of completed chapters
+        ready:
+          type: boolean
+          description: True when running, non-empty, and every chapter is completed
+        rewardXpAwarded:
+          type: ["integer", "null"]
+        completedAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    CampaignChapter:
+      type: object
+      required: [questlineId, title, status, total, done]
+      properties:
+        questlineId:
+          type: integer
+        title:
+          type: string
+        chapterOrder:
+          type: ["integer", "null"]
+        chapterBeat:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [active, completed]
+        total:
+          type: integer
+        done:
+          type: integer
+
+    CampaignDetail:
+      type: object
+      required: [campaign, chapters]
+      properties:
+        campaign:
+          $ref: "#/components/schemas/Campaign"
+        chapters:
+          type: array
+          items:
+            $ref: "#/components/schemas/CampaignChapter"
+        currentChapterId:
+          type: ["integer", "null"]
+          description: Questline id of the first incomplete chapter. Display only — chapters are never gated.
+
+    CampaignInput:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        arcPremise:
+          type: ["string", "null"]
+        endingBeat:
+          type: ["string", "null"]
+        storySource:
+          type: string
+          enum: [ai, curated]
+        chapters:
+          type: array
+          description: Chapter questlines to create atomically. Empty is legal (adopt-only path).
+          maxItems: 5
+          items:
+            type: object
+            required: [title]
+            properties:
+              title:
+                type: string
+                maxLength: 120
+              beat:
+                type: ["string", "null"]
+              questTitles:
+                type: array
+                items:
+                  type: string
+
+    CampaignUpdate:
+      type: object
+      description: Partial update — every field optional.
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        arcPremise:
+          type: ["string", "null"]
+        endingBeat:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [running, set_aside]
+
+    CampaignChaptersInput:
+      type: object
+      required: [questlineIds]
+      properties:
+        questlineIds:
+          type: array
+          description: Full ordered chapter list. Anything omitted is detached. Capped at the same 5-chapter limit as campaign creation.
+          maxItems: 5
+          items:
+            type: integer
+            minimum: 1
+
+    CampaignClaimResult:
+      type: object
+      required: [campaign, xpAwarded, totalPoints, currentLevel, levelName, leveledUp]
+      properties:
+        campaign:
+          $ref: "#/components/schemas/Campaign"
+        endingBeat:
+          type: ["string", "null"]
+        xpAwarded:
+          type: integer
+        totalPoints:
+          type: integer
+        currentLevel:
+          type: integer
+        levelName:
+          type: string
+        leveledUp:
+          type: boolean
+        newlyUnlocked:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeatureKey"
+
+    SuggestCampaignArcInput:
+      type: object
+      required: [goal]
+      properties:
+        goal:
+          type: string
+          minLength: 1
+          maxLength: 200
+
+    SuggestedCampaignArc:
+      type: object
+      required: [arcPremise, endingBeat, chapters, source]
+      properties:
+        arcPremise:
+          type: string
+        endingBeat:
+          type: string
+        source:
+          type: string
+          enum: [ai, curated]
+          description: Curated means the model was unavailable — creation still proceeds.
+        chapters:
+          type: array
+          items:
+            type: object
+            required: [title, beat]
+            properties:
+              title:
+                type: string
+              beat:
+                type: string
+
     QuestlineUpdate:
       type: object
       description: Partial update — every field optional.
@@ -3159,6 +3599,11 @@ components:
           type: ["string", "null"]
         color:
           type: ["string", "null"]
+        campaignId:
+          type: ["integer", "null"]
+        chapterOrder:
+          type: ["integer", "null"]
+          minimum: 0
 
     QuestlineDetail:
       type: object
@@ -3610,7 +4055,7 @@ components:
           type: string
         type:
           type: string
-          enum: [task_completed, badge_earned, level_up, streak_milestone, all_day_bonus, streak_freeze_bought, streak_freeze_used, gear_bought, gear_earned, focus_session, focus_complete, initiation, reflection, body_double]
+          enum: [task_completed, badge_earned, level_up, streak_milestone, all_day_bonus, streak_freeze_bought, streak_freeze_used, gear_bought, gear_earned, focus_session, focus_complete, initiation, reflection, body_double, questline_complete, campaign_complete]
         description:
           type: string
         points:

@@ -2,9 +2,10 @@ import { describe, it, expect } from "vitest";
 import { MILESTONE_TYPES, isMilestoneType, hasFreshMilestone } from "./ally-milestones";
 
 describe("MILESTONE_TYPES", () => {
-  it("is exactly the five celebratable types", () => {
+  it("is exactly the six celebratable types", () => {
     expect([...MILESTONE_TYPES]).toEqual([
       "level_up", "badge_earned", "streak_milestone", "all_day_bonus", "questline_complete",
+      "campaign_complete",
     ]);
   });
   it("classifies types", () => {
