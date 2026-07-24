@@ -114,3 +114,44 @@ export function occursOn(rule: RecurrenceRule, dateKey: string): boolean {
   if (target == null) return false;
   return day === target;
 }
+
+/**
+ * Hard ceiling on window iteration. `lead_days` is validated to 0–60 at the
+ * API boundary, so a legitimate window is at most 61 days; this only bounds
+ * the damage from a corrupt row.
+ */
+const MAX_WINDOW_DAYS = 400;
+
+/** Every occurrence in `[from, to]` inclusive, oldest first. */
+export function occurrencesInWindow(rule: RecurrenceRule, from: string, to: string): string[] {
+  const dates: string[] = [];
+  let cursor = from;
+  for (let i = 0; i < MAX_WINDOW_DAYS && cursor <= to; i++) {
+    if (occursOn(rule, cursor)) dates.push(cursor);
+    cursor = addDays(cursor, 1);
+  }
+  return dates;
+}
+
+/**
+ * The cadence period a date belongs to. Streaks count consecutive periods, so
+ * "completed the monthly quest" means "landed in this month", not "landed on
+ * this day" — which is what lets a couple of days late still count.
+ */
+export function cadencePeriodKey(frequency: Frequency, dateKey: string): string {
+  if (frequency === "monthly") return dateKey.slice(0, 7);
+  if (frequency === "yearly") return dateKey.slice(0, 4);
+  return dateKey;
+}
+
+/** The period immediately preceding `periodKey` at the same cadence. */
+export function previousPeriodKey(frequency: Frequency, periodKey: string): string {
+  if (frequency === "monthly") {
+    const year = Number(periodKey.slice(0, 4));
+    const month = Number(periodKey.slice(5, 7));
+    const prev = month === 1 ? { y: year - 1, m: 12 } : { y: year, m: month - 1 };
+    return `${prev.y}-${String(prev.m).padStart(2, "0")}`;
+  }
+  if (frequency === "yearly") return String(Number(periodKey) - 1);
+  return addDays(periodKey, -1);
+}

@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { occursOn, addDays, type RecurrenceRule } from "./recurrence";
+import {
+  occursOn, addDays, occurrencesInWindow, cadencePeriodKey, previousPeriodKey,
+  type RecurrenceRule,
+} from "./recurrence";
 
 function rule(overrides: Partial<RecurrenceRule> = {}): RecurrenceRule {
   return {
@@ -208,5 +211,86 @@ describe("occursOn — yearly", () => {
       frequency: "yearly", monthlyMode: "day_of_month", monthOfYear: null, dayOfMonth: 3, daysOfWeek: [],
     });
     expect(occursOn(bad, "2026-03-03")).toBe(false);
+  });
+});
+
+describe("occurrencesInWindow", () => {
+  it("returns a single date for a zero-width window that matches", () => {
+    const monthly = rule({
+      frequency: "monthly", monthlyMode: "day_of_month", dayOfMonth: 15, daysOfWeek: [],
+    });
+    expect(occurrencesInWindow(monthly, "2026-07-15", "2026-07-15")).toEqual(["2026-07-15"]);
+  });
+
+  it("returns an empty array for a zero-width window that misses", () => {
+    const monthly = rule({
+      frequency: "monthly", monthlyMode: "day_of_month", dayOfMonth: 15, daysOfWeek: [],
+    });
+    expect(occurrencesInWindow(monthly, "2026-07-14", "2026-07-14")).toEqual([]);
+  });
+
+  it("includes an occurrence sitting exactly on each boundary", () => {
+    const weekly = rule({ daysOfWeek: [1, 5] }); // Mondays and Fridays
+    // 2026-07-20 Mon … 2026-07-24 Fri
+    expect(occurrencesInWindow(weekly, "2026-07-20", "2026-07-24")).toEqual([
+      "2026-07-20", "2026-07-24",
+    ]);
+  });
+
+  it("returns dates oldest first", () => {
+    const daily = rule({ daysOfWeek: [0, 1, 2, 3, 4, 5, 6] });
+    expect(occurrencesInWindow(daily, "2026-07-22", "2026-07-24")).toEqual([
+      "2026-07-22", "2026-07-23", "2026-07-24",
+    ]);
+  });
+
+  it("returns nothing when `to` precedes `from`", () => {
+    const daily = rule({ daysOfWeek: [0, 1, 2, 3, 4, 5, 6] });
+    expect(occurrencesInWindow(daily, "2026-07-24", "2026-07-22")).toEqual([]);
+  });
+
+  it("respects endDate landing inside the window", () => {
+    const daily = rule({ daysOfWeek: [0, 1, 2, 3, 4, 5, 6], endDate: "2026-07-23" });
+    expect(occurrencesInWindow(daily, "2026-07-22", "2026-07-25")).toEqual([
+      "2026-07-22", "2026-07-23",
+    ]);
+  });
+
+  it("caps a runaway window instead of looping forever", () => {
+    const daily = rule({ daysOfWeek: [0, 1, 2, 3, 4, 5, 6] });
+    const dates = occurrencesInWindow(daily, "2026-01-01", "2099-01-01");
+    expect(dates.length).toBeLessThanOrEqual(400);
+  });
+});
+
+describe("cadencePeriodKey", () => {
+  it("uses the date itself for weekly", () => {
+    expect(cadencePeriodKey("weekly", "2026-07-24")).toBe("2026-07-24");
+  });
+
+  it("uses year-month for monthly", () => {
+    expect(cadencePeriodKey("monthly", "2026-07-24")).toBe("2026-07");
+  });
+
+  it("uses the year for yearly", () => {
+    expect(cadencePeriodKey("yearly", "2026-07-24")).toBe("2026");
+  });
+});
+
+describe("previousPeriodKey", () => {
+  it("steps back one month", () => {
+    expect(previousPeriodKey("monthly", "2026-07")).toBe("2026-06");
+  });
+
+  it("steps back across a year boundary", () => {
+    expect(previousPeriodKey("monthly", "2026-01")).toBe("2025-12");
+  });
+
+  it("steps back one year", () => {
+    expect(previousPeriodKey("yearly", "2026")).toBe("2025");
+  });
+
+  it("steps back one day for weekly", () => {
+    expect(previousPeriodKey("weekly", "2026-03-01")).toBe("2026-02-28");
   });
 });
