@@ -32,6 +32,15 @@ export function defaultLeadDays(frequency: Frequency): number {
 }
 
 /**
+ * nth_weekday needs exactly one weekday; an empty selection cannot be shown
+ * honestly by a single-select, so seed Monday rather than display a lie.
+ */
+export function ensureWeekdayForMode(daysOfWeek: number[], monthlyMode: MonthlyMode): number[] {
+  if (monthlyMode === "nth_weekday" && daysOfWeek.length === 0) return [1];
+  return daysOfWeek;
+}
+
+/**
  * Send only the fields the chosen rule actually uses. The form keeps every
  * control populated so switching cadence back and forth doesn't lose the
  * user's earlier answers — this is where the unused ones get dropped.

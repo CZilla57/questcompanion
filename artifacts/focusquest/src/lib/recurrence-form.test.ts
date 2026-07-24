@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { defaultLeadDays, toRecurrencePayload, type RecurrenceFormFields } from "./recurrence-form";
+import { defaultLeadDays, ensureWeekdayForMode, toRecurrencePayload, type RecurrenceFormFields } from "./recurrence-form";
 
 function form(overrides: Partial<RecurrenceFormFields> = {}): RecurrenceFormFields {
   return {
@@ -64,5 +64,23 @@ describe("toRecurrencePayload", () => {
       frequency: "yearly", monthlyMode: "day_of_month", monthOfYear: 3, dayOfMonth: 3, leadDays: 14,
     }));
     expect(payload).toMatchObject({ frequency: "yearly", monthOfYear: 3, dayOfMonth: 3, leadDays: 14 });
+  });
+});
+
+describe("ensureWeekdayForMode", () => {
+  it("seeds Monday when nth_weekday mode has no weekday selected", () => {
+    expect(ensureWeekdayForMode([], "nth_weekday")).toEqual([1]);
+  });
+
+  it("leaves an existing weekday selection alone in nth_weekday mode", () => {
+    expect(ensureWeekdayForMode([3], "nth_weekday")).toEqual([3]);
+  });
+
+  it("leaves an empty selection alone in day_of_month mode", () => {
+    expect(ensureWeekdayForMode([], "day_of_month")).toEqual([]);
+  });
+
+  it("leaves a non-empty selection alone in day_of_month mode", () => {
+    expect(ensureWeekdayForMode([2, 4], "day_of_month")).toEqual([2, 4]);
   });
 });

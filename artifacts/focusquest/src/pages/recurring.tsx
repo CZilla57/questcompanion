@@ -27,7 +27,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { CATEGORIES, CATEGORY_COLORS, CATEGORY_HEX_COLORS } from "@/lib/categories";
 import { PageTabs } from "@/components/page-tabs";
 import {
-  defaultLeadDays, toRecurrencePayload,
+  defaultLeadDays, ensureWeekdayForMode, toRecurrencePayload,
   type Frequency, type MonthlyMode,
 } from "@/lib/recurrence-form";
 
@@ -216,7 +216,21 @@ function RecurringTaskForm({
   const valid = Boolean(form.title.trim()) && (!needsWeekday || form.daysOfWeek.length > 0);
 
   const setFrequency = (frequency: Frequency) =>
-    setForm((f) => ({ ...f, frequency, leadDays: defaultLeadDays(frequency) }));
+    setForm((f) => ({
+      ...f,
+      frequency,
+      leadDays: defaultLeadDays(frequency),
+      // Only monthly/yearly render the nth_weekday selector; correcting the
+      // weekly branch's own empty selection would hide its own hint.
+      daysOfWeek: frequency === "weekly" ? f.daysOfWeek : ensureWeekdayForMode(f.daysOfWeek, f.monthlyMode),
+    }));
+
+  const setMonthlyMode = (monthlyMode: MonthlyMode) =>
+    setForm((f) => ({
+      ...f,
+      monthlyMode,
+      daysOfWeek: ensureWeekdayForMode(f.daysOfWeek, monthlyMode),
+    }));
 
   return (
     <form
@@ -332,7 +346,7 @@ function RecurringTaskForm({
                 <button
                   key={m.value}
                   type="button"
-                  onClick={() => set("monthlyMode", m.value)}
+                  onClick={() => setMonthlyMode(m.value)}
                   className={`
                     flex-1 py-2 rounded-lg text-xs font-bold transition-all duration-200 border
                     ${form.monthlyMode === m.value
@@ -541,7 +555,7 @@ function RecurringTaskCard({ task }: { task: RecurringTask }) {
         endDate: form.hasEndDate && form.endDate ? format(form.endDate, "yyyy-MM-dd") : null,
         ...toRecurrencePayload(form),
         ...(form.category ? { category: form.category as any } : {}),
-      } as Parameters<typeof updateMutation.mutate>[0]["data"],
+      },
     }, {
       onSuccess: () => { invalidate(); setEditing(false); toast({ title: "Template updated" }); },
     });
@@ -755,7 +769,7 @@ export default function Recurring() {
         endDate: form.hasEndDate && form.endDate ? format(form.endDate, "yyyy-MM-dd") : undefined,
         ...toRecurrencePayload(form),
         ...(form.category ? { category: form.category as any } : {}),
-      } as Parameters<typeof createMutation.mutate>[0]["data"],
+      },
     }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetRecurringTasksQueryKey() });

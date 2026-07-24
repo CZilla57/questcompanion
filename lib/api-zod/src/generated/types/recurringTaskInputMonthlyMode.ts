@@ -6,7 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type RecurringTaskInputMonthlyMode = typeof RecurringTaskInputMonthlyMode[keyof typeof RecurringTaskInputMonthlyMode];
+/**
+ * @nullable
+ */
+export type RecurringTaskInputMonthlyMode = typeof RecurringTaskInputMonthlyMode[keyof typeof RecurringTaskInputMonthlyMode] | null;
 
 
 export const RecurringTaskInputMonthlyMode = {

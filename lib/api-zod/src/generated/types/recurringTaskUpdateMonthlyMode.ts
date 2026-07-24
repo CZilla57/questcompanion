@@ -6,7 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type RecurringTaskUpdateMonthlyMode = typeof RecurringTaskUpdateMonthlyMode[keyof typeof RecurringTaskUpdateMonthlyMode];
+/**
+ * @nullable
+ */
+export type RecurringTaskUpdateMonthlyMode = typeof RecurringTaskUpdateMonthlyMode[keyof typeof RecurringTaskUpdateMonthlyMode] | null;
 
 
 export const RecurringTaskUpdateMonthlyMode = {

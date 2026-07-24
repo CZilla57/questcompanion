@@ -860,10 +860,10 @@ export const CreateRecurringTaskBody = zod.object({
   "endDate": zod.string().optional(),
   "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'self_care', 'errands', 'travel', 'default']).optional().describe('Optional category override. Auto-detected from title if omitted.'),
   "frequency": zod.enum(['weekly', 'monthly', 'yearly']).default(createRecurringTaskBodyFrequencyDefault),
-  "monthlyMode": zod.enum(['day_of_month', 'nth_weekday']).optional(),
-  "dayOfMonth": zod.number().min(1).max(createRecurringTaskBodyDayOfMonthMax).optional(),
-  "weekOfMonth": zod.number().optional().describe('1-4, or -1 meaning the last such weekday of the month'),
-  "monthOfYear": zod.number().min(1).max(createRecurringTaskBodyMonthOfYearMax).optional(),
+  "monthlyMode": zod.union([zod.literal('day_of_month'),zod.literal('nth_weekday'),zod.literal(null)]).nullish(),
+  "dayOfMonth": zod.number().min(1).max(createRecurringTaskBodyDayOfMonthMax).nullish(),
+  "weekOfMonth": zod.number().nullish().describe('1-4, or -1 meaning the last such weekday of the month'),
+  "monthOfYear": zod.number().min(1).max(createRecurringTaskBodyMonthOfYearMax).nullish(),
   "leadDays": zod.number().min(createRecurringTaskBodyLeadDaysMin).max(createRecurringTaskBodyLeadDaysMax).default(createRecurringTaskBodyLeadDaysDefault)
 })
 
@@ -925,10 +925,10 @@ export const UpdateRecurringTaskBody = zod.object({
   "isActive": zod.boolean().optional(),
   "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'self_care', 'errands', 'travel', 'default']).optional(),
   "frequency": zod.enum(['weekly', 'monthly', 'yearly']).optional(),
-  "monthlyMode": zod.enum(['day_of_month', 'nth_weekday']).optional(),
-  "dayOfMonth": zod.number().min(1).max(updateRecurringTaskBodyDayOfMonthMax).optional(),
-  "weekOfMonth": zod.number().optional().describe('1-4, or -1 meaning the last such weekday of the month'),
-  "monthOfYear": zod.number().min(1).max(updateRecurringTaskBodyMonthOfYearMax).optional(),
+  "monthlyMode": zod.union([zod.literal('day_of_month'),zod.literal('nth_weekday'),zod.literal(null)]).nullish(),
+  "dayOfMonth": zod.number().min(1).max(updateRecurringTaskBodyDayOfMonthMax).nullish(),
+  "weekOfMonth": zod.number().nullish().describe('1-4, or -1 meaning the last such weekday of the month'),
+  "monthOfYear": zod.number().min(1).max(updateRecurringTaskBodyMonthOfYearMax).nullish(),
   "leadDays": zod.number().min(updateRecurringTaskBodyLeadDaysMin).max(updateRecurringTaskBodyLeadDaysMax).optional()
 })
 

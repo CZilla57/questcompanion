@@ -23,19 +23,25 @@ export interface RecurringTaskUpdate {
   isActive?: boolean;
   category?: RecurringTaskUpdateCategory;
   frequency?: RecurringTaskUpdateFrequency;
+  /** @nullable */
   monthlyMode?: RecurringTaskUpdateMonthlyMode;
   /**
      * @minimum 1
      * @maximum 31
+     * @nullable
      */
-  dayOfMonth?: number;
-  /** 1-4, or -1 meaning the last such weekday of the month */
-  weekOfMonth?: number;
+  dayOfMonth?: number | null;
+  /**
+     * 1-4, or -1 meaning the last such weekday of the month
+     * @nullable
+     */
+  weekOfMonth?: number | null;
   /**
      * @minimum 1
      * @maximum 12
+     * @nullable
      */
-  monthOfYear?: number;
+  monthOfYear?: number | null;
   /**
      * @minimum 0
      * @maximum 60

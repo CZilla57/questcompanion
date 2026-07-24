@@ -3793,17 +3793,17 @@ components:
           enum: [weekly, monthly, yearly]
           default: weekly
         monthlyMode:
-          type: string
-          enum: [day_of_month, nth_weekday]
+          type: ["string", "null"]
+          enum: [day_of_month, nth_weekday, null]
         dayOfMonth:
-          type: integer
+          type: ["integer", "null"]
           minimum: 1
           maximum: 31
         weekOfMonth:
-          type: integer
+          type: ["integer", "null"]
           description: "1-4, or -1 meaning the last such weekday of the month"
         monthOfYear:
-          type: integer
+          type: ["integer", "null"]
           minimum: 1
           maximum: 12
         leadDays:
@@ -3842,17 +3842,17 @@ components:
           type: string
           enum: [weekly, monthly, yearly]
         monthlyMode:
-          type: string
-          enum: [day_of_month, nth_weekday]
+          type: ["string", "null"]
+          enum: [day_of_month, nth_weekday, null]
         dayOfMonth:
-          type: integer
+          type: ["integer", "null"]
           minimum: 1
           maximum: 31
         weekOfMonth:
-          type: integer
+          type: ["integer", "null"]
           description: "1-4, or -1 meaning the last such weekday of the month"
         monthOfYear:
-          type: integer
+          type: ["integer", "null"]
           minimum: 1
           maximum: 12
         leadDays:

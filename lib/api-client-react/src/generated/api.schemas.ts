@@ -1102,7 +1102,10 @@ export const RecurringTaskInputFrequency = {
   yearly: 'yearly',
 } as const;
 
-export type RecurringTaskInputMonthlyMode = typeof RecurringTaskInputMonthlyMode[keyof typeof RecurringTaskInputMonthlyMode];
+/**
+ * @nullable
+ */
+export type RecurringTaskInputMonthlyMode = typeof RecurringTaskInputMonthlyMode[keyof typeof RecurringTaskInputMonthlyMode] | null;
 
 
 export const RecurringTaskInputMonthlyMode = {
@@ -1122,19 +1125,25 @@ export interface RecurringTaskInput {
   /** Optional category override. Auto-detected from title if omitted. */
   category?: RecurringTaskInputCategory;
   frequency?: RecurringTaskInputFrequency;
+  /** @nullable */
   monthlyMode?: RecurringTaskInputMonthlyMode;
   /**
      * @minimum 1
      * @maximum 31
+     * @nullable
      */
-  dayOfMonth?: number;
-  /** 1-4, or -1 meaning the last such weekday of the month */
-  weekOfMonth?: number;
+  dayOfMonth?: number | null;
+  /**
+     * 1-4, or -1 meaning the last such weekday of the month
+     * @nullable
+     */
+  weekOfMonth?: number | null;
   /**
      * @minimum 1
      * @maximum 12
+     * @nullable
      */
-  monthOfYear?: number;
+  monthOfYear?: number | null;
   /**
      * @minimum 0
      * @maximum 60
@@ -1178,7 +1187,10 @@ export const RecurringTaskUpdateFrequency = {
   yearly: 'yearly',
 } as const;
 
-export type RecurringTaskUpdateMonthlyMode = typeof RecurringTaskUpdateMonthlyMode[keyof typeof RecurringTaskUpdateMonthlyMode];
+/**
+ * @nullable
+ */
+export type RecurringTaskUpdateMonthlyMode = typeof RecurringTaskUpdateMonthlyMode[keyof typeof RecurringTaskUpdateMonthlyMode] | null;
 
 
 export const RecurringTaskUpdateMonthlyMode = {
@@ -1199,19 +1211,25 @@ export interface RecurringTaskUpdate {
   isActive?: boolean;
   category?: RecurringTaskUpdateCategory;
   frequency?: RecurringTaskUpdateFrequency;
+  /** @nullable */
   monthlyMode?: RecurringTaskUpdateMonthlyMode;
   /**
      * @minimum 1
      * @maximum 31
+     * @nullable
      */
-  dayOfMonth?: number;
-  /** 1-4, or -1 meaning the last such weekday of the month */
-  weekOfMonth?: number;
+  dayOfMonth?: number | null;
+  /**
+     * 1-4, or -1 meaning the last such weekday of the month
+     * @nullable
+     */
+  weekOfMonth?: number | null;
   /**
      * @minimum 1
      * @maximum 12
+     * @nullable
      */
-  monthOfYear?: number;
+  monthOfYear?: number | null;
   /**
      * @minimum 0
      * @maximum 60
