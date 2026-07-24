@@ -172,6 +172,12 @@ function ordinal(n: number): string {
 
 function describeWeekly(days: number[]): string {
   const sorted = [...days].sort((a, b) => a - b);
+
+  // Guard against out-of-range weekday values (same as nth_weekday path in describeRule)
+  if (sorted.some((d) => d < 0 || d > 6)) {
+    return "No schedule set";
+  }
+
   const key = sorted.join(",");
   if (key === "0,1,2,3,4,5,6") return "Every day";
   if (key === "1,2,3,4,5") return "Weekdays";

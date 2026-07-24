@@ -347,4 +347,9 @@ describe("describeRule", () => {
     expect(describeRule(rule({ frequency: "monthly", monthlyMode: null }))).toBe("No schedule set");
     expect(describeRule(rule({ daysOfWeek: [] }))).toBe("No schedule set");
   });
+
+  it("returns 'No schedule set' for weekly rules with out-of-range weekdays", () => {
+    expect(describeRule(rule({ daysOfWeek: [1, 7] }))).toBe("No schedule set");
+    expect(describeRule(rule({ daysOfWeek: [-1, 2] }))).toBe("No schedule set");
+  });
 });
