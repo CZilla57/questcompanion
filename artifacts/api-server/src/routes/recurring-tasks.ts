@@ -45,6 +45,52 @@ async function deleteFutureIncompleteSpawns(recurringTaskId: number, userId: num
     ));
 }
 
+/** Schedule-bearing columns: a change to any of these invalidates already-spawned
+ *  future quests. Everything else (title, description, priority, category,
+ *  timeOfDay) is cosmetic and must leave spawned quests untouched. */
+const SCHEDULE_FIELDS = [
+  "frequency",
+  "monthlyMode",
+  "dayOfMonth",
+  "weekOfMonth",
+  "monthOfYear",
+  "startDate",
+  "endDate",
+  "leadDays",
+  "isActive",
+] as const satisfies readonly (keyof typeof recurringTasksTable.$inferInsert)[];
+
+/**
+ * True only when a PATCH actually changes the template's schedule — not merely
+ * when a schedule field is present in the request body. The official client
+ * PATCHes the whole recurrence payload on every edit (including a title-only
+ * edit), so a presence check would fire every time and be equivalent to the
+ * unconditional delete this replaces. Comparing VALUES is what lets a cosmetic
+ * edit leave already-spawned, still-workable quests (and the task_steps,
+ * focus_sessions, questline assignment, etc. attached to them) alone.
+ *
+ * `daysOfWeek` is stored as CSV and submitted as a number array, so it can't be
+ * compared with `===`; both sides are normalised through `parseDays` (and
+ * order-independently, since only the set of active weekdays is meaningful)
+ * before comparing.
+ */
+function scheduleChanged(
+  existing: typeof recurringTasksTable.$inferSelect,
+  updates: Partial<typeof recurringTasksTable.$inferInsert>,
+): boolean {
+  for (const field of SCHEDULE_FIELDS) {
+    if (field in updates && updates[field] !== existing[field]) return true;
+  }
+
+  if ("daysOfWeek" in updates) {
+    const before = parseDays(existing.daysOfWeek).slice().sort((a, b) => a - b);
+    const after = parseDays(updates.daysOfWeek as string).slice().sort((a, b) => a - b);
+    if (before.length !== after.length || before.some((d, i) => d !== after[i])) return true;
+  }
+
+  return false;
+}
+
 async function formatRecurring(r: typeof recurringTasksTable.$inferSelect) {
   const days = parseDays(r.daysOfWeek);
   const ap = assignPoints(r.title, r.priority);
@@ -272,6 +318,11 @@ router.patch("/recurring-tasks/:id", async (req, res): Promise<void> => {
   if ("monthOfYear" in req.body) updates.monthOfYear = monthOfYear ?? null;
   if (leadDays != null) updates.leadDays = leadDays;
 
+  // Decide before writing: `updates` is exactly what's about to change, and
+  // `existing` is exactly what's about to be overwritten — the only point
+  // where "before" and "after" are both cheaply in hand.
+  const shouldClearSpawns = scheduleChanged(existing, updates);
+
   const [task] = await db
     .update(recurringTasksTable)
     .set(updates)
@@ -281,8 +332,12 @@ router.patch("/recurring-tasks/:id", async (req, res): Promise<void> => {
 
   // The edited rule no longer matches whatever future quests were spawned
   // under the old one — clear them so the next tick spawns fresh from the
-  // new rule instead of leaving a stale, mismatched quest behind.
-  await deleteFutureIncompleteSpawns(id, userId);
+  // new rule instead of leaving a stale, mismatched quest behind. A purely
+  // cosmetic edit (title, description, priority, category, timeOfDay) must
+  // NOT reach here — see scheduleChanged for why.
+  if (shouldClearSpawns) {
+    await deleteFutureIncompleteSpawns(id, userId);
+  }
 
   res.json(await formatRecurring(task));
 });
@@ -330,13 +385,14 @@ router.post("/recurring-tasks/:id/toggle", async (req, res): Promise<void> => {
   const [task] = await db
     .update(recurringTasksTable)
     .set({ isActive: !existing.isActive })
-    .where(eq(recurringTasksTable.id, id))
+    .where(and(eq(recurringTasksTable.id, id), eq(recurringTasksTable.userId, userId)))
     .returning();
+  if (!task) { res.status(404).json({ error: "Not found" }); return; }
 
   // Toggling to INACTIVE ("Paused") must mean nothing more comes from this
   // template — including quests it already spawned into the future. Toggling
   // back on is not a resurrection: the next tick spawns fresh from the rule.
-  if (existing.isActive && task && !task.isActive) {
+  if (existing.isActive && !task.isActive) {
     await deleteFutureIncompleteSpawns(id, userId);
   }
 
@@ -360,15 +416,28 @@ router.post("/recurring-tasks/:id/toggle", async (req, res): Promise<void> => {
  * authoritative guard against duplicates across concurrent scheduler instances.
  * onConflictDoNothing turns a constraint violation into a silent no-op, which
  * is also what makes re-evaluating the same window every minute free.
+ *
+ * The whole function is a no-throw boundary: tick() runs this pass first and
+ * unguarded, and a throw out of here — whether from the initial template
+ * query or from one template's own processing below — would otherwise skip
+ * the body-double sweep, notifications, weekly recaps, and the heartbeat for
+ * every user, every minute. Both the outer query and the per-template loop
+ * body are caught and logged rather than allowed to propagate.
  */
 export async function spawnRecurringTasksForToday(): Promise<number> {
   const now = new Date();
 
-  const rows = await db
-    .select({ tmpl: recurringTasksTable, timezone: usersTable.timezone })
-    .from(recurringTasksTable)
-    .innerJoin(usersTable, eq(recurringTasksTable.userId, usersTable.id))
-    .where(eq(recurringTasksTable.isActive, true));
+  let rows: { tmpl: typeof recurringTasksTable.$inferSelect; timezone: string | null }[];
+  try {
+    rows = await db
+      .select({ tmpl: recurringTasksTable, timezone: usersTable.timezone })
+      .from(recurringTasksTable)
+      .innerJoin(usersTable, eq(recurringTasksTable.userId, usersTable.id))
+      .where(eq(recurringTasksTable.isActive, true));
+  } catch (err) {
+    logger.error({ err }, "Failed to load recurring task templates for spawn");
+    return 0;
+  }
 
   let created = 0;
   for (const { tmpl, timezone } of rows) {
