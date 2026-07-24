@@ -109,3 +109,104 @@ describe("occursOn — malformed rules never throw", () => {
     expect(occursOn(rule({ daysOfWeek: [] }), "2026-07-24")).toBe(false);
   });
 });
+
+describe("occursOn — monthly nth_weekday", () => {
+  // daysOfWeek carries the single weekday for this mode.
+  const firstMonday = rule({
+    frequency: "monthly",
+    monthlyMode: "nth_weekday",
+    weekOfMonth: 1,
+    daysOfWeek: [1],
+  });
+
+  it("matches the first Monday", () => {
+    // July 2026 starts on a Wednesday; the first Monday is the 6th.
+    expect(occursOn(firstMonday, "2026-07-06")).toBe(true);
+    expect(occursOn(firstMonday, "2026-07-13")).toBe(false);
+  });
+
+  it("matches when the month starts on the target weekday", () => {
+    // June 2026 starts on a Monday, so the first Monday is the 1st.
+    expect(occursOn(firstMonday, "2026-06-01")).toBe(true);
+  });
+
+  it("matches the third Friday", () => {
+    const thirdFriday = rule({
+      frequency: "monthly", monthlyMode: "nth_weekday", weekOfMonth: 3, daysOfWeek: [5],
+    });
+    // July 2026 Fridays: 3, 10, 17, 24, 31 — the third is the 17th.
+    expect(occursOn(thirdFriday, "2026-07-17")).toBe(true);
+    expect(occursOn(thirdFriday, "2026-07-24")).toBe(false);
+  });
+
+  it("resolves 'last' in a month with five of that weekday", () => {
+    const lastFriday = rule({
+      frequency: "monthly", monthlyMode: "nth_weekday", weekOfMonth: -1, daysOfWeek: [5],
+    });
+    // July 2026 has five Fridays; the last is the 31st.
+    expect(occursOn(lastFriday, "2026-07-31")).toBe(true);
+    expect(occursOn(lastFriday, "2026-07-24")).toBe(false);
+  });
+
+  it("resolves 'last' in a month with four of that weekday", () => {
+    const lastSaturday = rule({
+      frequency: "monthly", monthlyMode: "nth_weekday", weekOfMonth: -1, daysOfWeek: [6],
+    });
+    // February 2026 Saturdays: 7, 14, 21, 28 — the last is the 28th.
+    expect(occursOn(lastSaturday, "2026-02-28")).toBe(true);
+    expect(occursOn(lastSaturday, "2026-02-21")).toBe(false);
+  });
+
+  it("returns false when nth_weekday has no weekday", () => {
+    const bad = rule({
+      frequency: "monthly", monthlyMode: "nth_weekday", weekOfMonth: 1, daysOfWeek: [],
+    });
+    expect(occursOn(bad, "2026-07-06")).toBe(false);
+  });
+
+  it("returns false for an unsupported week ordinal", () => {
+    const bad = rule({
+      frequency: "monthly", monthlyMode: "nth_weekday", weekOfMonth: 5, daysOfWeek: [1],
+    });
+    expect(occursOn(bad, "2026-07-27")).toBe(false);
+  });
+});
+
+describe("occursOn — yearly", () => {
+  it("matches month plus day, and only that month", () => {
+    const march3 = rule({
+      frequency: "yearly", monthlyMode: "day_of_month", monthOfYear: 3, dayOfMonth: 3, daysOfWeek: [],
+    });
+    expect(occursOn(march3, "2026-03-03")).toBe(true);
+    expect(occursOn(march3, "2027-03-03")).toBe(true);
+    expect(occursOn(march3, "2026-04-03")).toBe(false);
+    expect(occursOn(march3, "2026-03-04")).toBe(false);
+  });
+
+  it("clamps Feb 29 to Feb 28 in a common year", () => {
+    const leapDay = rule({
+      frequency: "yearly", monthlyMode: "day_of_month", monthOfYear: 2, dayOfMonth: 29, daysOfWeek: [],
+    });
+    expect(occursOn(leapDay, "2026-02-28")).toBe(true);
+    expect(occursOn(leapDay, "2028-02-29")).toBe(true);
+    // In a leap year it must NOT also fire on the 28th.
+    expect(occursOn(leapDay, "2028-02-28")).toBe(false);
+  });
+
+  it("supports nth_weekday scoped to a month", () => {
+    const firstMondayOfMarch = rule({
+      frequency: "yearly", monthlyMode: "nth_weekday", monthOfYear: 3, weekOfMonth: 1, daysOfWeek: [1],
+    });
+    // March 2026 starts on a Sunday; the first Monday is the 2nd.
+    expect(occursOn(firstMondayOfMarch, "2026-03-02")).toBe(true);
+    expect(occursOn(firstMondayOfMarch, "2026-03-09")).toBe(false);
+    expect(occursOn(firstMondayOfMarch, "2026-04-06")).toBe(false);
+  });
+
+  it("returns false when yearly has no month", () => {
+    const bad = rule({
+      frequency: "yearly", monthlyMode: "day_of_month", monthOfYear: null, dayOfMonth: 3, daysOfWeek: [],
+    });
+    expect(occursOn(bad, "2026-03-03")).toBe(false);
+  });
+});

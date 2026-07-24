@@ -68,6 +68,24 @@ function targetDay(rule: RecurrenceRule, year: number, month: number): number | 
     return Math.min(wanted, dim);
   }
 
+  if (rule.monthlyMode === "nth_weekday") {
+    const weekday = rule.daysOfWeek[0];
+    const n = rule.weekOfMonth;
+    if (weekday == null || weekday < 0 || weekday > 6) return null;
+    if (n == null || (n !== -1 && (n < 1 || n > 4))) return null;
+
+    if (n === -1) {
+      const lastDow = new Date(Date.UTC(year, month - 1, dim)).getUTCDay();
+      return dim - ((lastDow - weekday + 7) % 7);
+    }
+
+    const firstDow = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+    const day = 1 + ((weekday - firstDow + 7) % 7) + (n - 1) * 7;
+    // The 4th of any weekday always fits (max 1+6+21 = 28 ≤ 28), but guard
+    // anyway so a bad stored ordinal can only mean "no occurrence".
+    return day <= dim ? day : null;
+  }
+
   return null;
 }
 
@@ -86,6 +104,11 @@ export function occursOn(rule: RecurrenceRule, dateKey: string): boolean {
   }
 
   if (rule.monthlyMode == null) return false;
+
+  if (rule.frequency === "yearly") {
+    if (rule.monthOfYear == null || rule.monthOfYear < 1 || rule.monthOfYear > 12) return false;
+    if (month !== rule.monthOfYear) return false;
+  }
 
   const target = targetDay(rule, year, month);
   if (target == null) return false;
