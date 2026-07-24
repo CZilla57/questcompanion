@@ -35,6 +35,10 @@ async function deleteFutureIncompleteSpawns(recurringTaskId: number, userId: num
   await db
     .delete(tasksTable)
     .where(and(
+      // Ownership is already verified by the callers, which scope their
+      // template lookup to this user — but this is a DELETE, so it carries
+      // its own guard rather than trusting the caller to keep doing that.
+      eq(tasksTable.userId, userId),
       eq(tasksTable.recurringTaskId, recurringTaskId),
       eq(tasksTable.completed, false),
       gt(tasksTable.dueDate, today),
