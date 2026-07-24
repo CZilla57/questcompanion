@@ -1,0 +1,21 @@
+# Normalize all text files to LF in the repo and working tree.
+# eol=lf overrides a local core.autocrlf=true, which is what was causing
+# CRLF churn in generated files (e.g. lib/api-zod/src/generated/**).
+* text=auto eol=lf
+
+# Shell scripts must stay LF regardless.
+*.sh text eol=lf
+
+# Binary assets: never touch line endings.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.pdf binary
+*.mp4 binary
