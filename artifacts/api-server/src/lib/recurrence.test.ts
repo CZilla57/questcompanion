@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  occursOn, addDays, occurrencesInWindow, cadencePeriodKey, previousPeriodKey,
+  occursOn, addDays, occurrencesInWindow, cadencePeriodKey, previousPeriodKey, describeRule,
   type RecurrenceRule,
 } from "./recurrence";
 
@@ -292,5 +292,59 @@ describe("previousPeriodKey", () => {
 
   it("steps back one day for weekly", () => {
     expect(previousPeriodKey("weekly", "2026-03-01")).toBe("2026-02-28");
+  });
+});
+
+describe("describeRule", () => {
+  it("names the weekly presets", () => {
+    expect(describeRule(rule({ daysOfWeek: [0, 1, 2, 3, 4, 5, 6] }))).toBe("Every day");
+    expect(describeRule(rule({ daysOfWeek: [1, 2, 3, 4, 5] }))).toBe("Weekdays");
+    expect(describeRule(rule({ daysOfWeek: [0, 6] }))).toBe("Weekends");
+  });
+
+  it("lists arbitrary weekdays in order", () => {
+    expect(describeRule(rule({ daysOfWeek: [3, 1, 5] }))).toBe("Mon, Wed, Fri");
+  });
+
+  it("describes a day-of-month monthly rule", () => {
+    const r = rule({ frequency: "monthly", monthlyMode: "day_of_month", dayOfMonth: 1, daysOfWeek: [] });
+    expect(describeRule(r)).toBe("The 1st of every month");
+  });
+
+  it("uses correct ordinal suffixes", () => {
+    const at = (day: number) =>
+      describeRule(rule({ frequency: "monthly", monthlyMode: "day_of_month", dayOfMonth: day, daysOfWeek: [] }));
+    expect(at(2)).toBe("The 2nd of every month");
+    expect(at(3)).toBe("The 3rd of every month");
+    expect(at(11)).toBe("The 11th of every month");
+    expect(at(21)).toBe("The 21st of every month");
+    expect(at(31)).toBe("The 31st of every month");
+  });
+
+  it("describes an nth-weekday monthly rule", () => {
+    const r = rule({ frequency: "monthly", monthlyMode: "nth_weekday", weekOfMonth: 3, daysOfWeek: [5] });
+    expect(describeRule(r)).toBe("The 3rd Friday of every month");
+  });
+
+  it("describes a last-weekday monthly rule", () => {
+    const r = rule({ frequency: "monthly", monthlyMode: "nth_weekday", weekOfMonth: -1, daysOfWeek: [6] });
+    expect(describeRule(r)).toBe("The last Saturday of every month");
+  });
+
+  it("describes yearly rules", () => {
+    const byDay = rule({
+      frequency: "yearly", monthlyMode: "day_of_month", monthOfYear: 3, dayOfMonth: 3, daysOfWeek: [],
+    });
+    expect(describeRule(byDay)).toBe("Every March 3");
+
+    const byWeekday = rule({
+      frequency: "yearly", monthlyMode: "nth_weekday", monthOfYear: 3, weekOfMonth: 1, daysOfWeek: [1],
+    });
+    expect(describeRule(byWeekday)).toBe("The 1st Monday of every March");
+  });
+
+  it("falls back to a neutral phrase for an incomplete rule", () => {
+    expect(describeRule(rule({ frequency: "monthly", monthlyMode: null }))).toBe("No schedule set");
+    expect(describeRule(rule({ daysOfWeek: [] }))).toBe("No schedule set");
   });
 });

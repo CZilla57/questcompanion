@@ -155,3 +155,63 @@ export function previousPeriodKey(frequency: Frequency, periodKey: string): stri
   if (frequency === "yearly") return String(Number(periodKey) - 1);
   return addDays(periodKey, -1);
 }
+
+const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const WEEKDAY_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const MONTH_LONG = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+function ordinal(n: number): string {
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
+  const suffix = { 1: "st", 2: "nd", 3: "rd" }[n % 10] ?? "th";
+  return `${n}${suffix}`;
+}
+
+function describeWeekly(days: number[]): string {
+  const sorted = [...days].sort((a, b) => a - b);
+  const key = sorted.join(",");
+  if (key === "0,1,2,3,4,5,6") return "Every day";
+  if (key === "1,2,3,4,5") return "Weekdays";
+  if (key === "0,6") return "Weekends";
+  return sorted.map((d) => WEEKDAY_SHORT[d]).join(", ");
+}
+
+/**
+ * The one place the schedule is put into words. Served to the client as
+ * `scheduleLabel` so server and client can never phrase the same rule
+ * differently.
+ */
+export function describeRule(rule: RecurrenceRule): string {
+  const NONE = "No schedule set";
+
+  if (rule.frequency === "weekly") {
+    return rule.daysOfWeek.length === 0 ? NONE : describeWeekly(rule.daysOfWeek);
+  }
+
+  const yearly = rule.frequency === "yearly";
+  if (yearly && (rule.monthOfYear == null || rule.monthOfYear < 1 || rule.monthOfYear > 12)) return NONE;
+  const monthName = yearly ? MONTH_LONG[rule.monthOfYear! - 1] : null;
+
+  if (rule.monthlyMode === "day_of_month") {
+    const day = rule.dayOfMonth;
+    if (day == null || day < 1 || day > 31) return NONE;
+    return yearly ? `Every ${monthName} ${day}` : `The ${ordinal(day)} of every month`;
+  }
+
+  if (rule.monthlyMode === "nth_weekday") {
+    const weekday = rule.daysOfWeek[0];
+    const n = rule.weekOfMonth;
+    if (weekday == null || weekday < 0 || weekday > 6) return NONE;
+    if (n == null || (n !== -1 && (n < 1 || n > 4))) return NONE;
+    const which = n === -1 ? "last" : ordinal(n);
+    const dayName = WEEKDAY_LONG[weekday];
+    return yearly
+      ? `The ${which} ${dayName} of every ${monthName}`
+      : `The ${which} ${dayName} of every month`;
+  }
+
+  return NONE;
+}
