@@ -74,18 +74,27 @@ function getStreakColor(streak: number): string {
   return "text-muted-foreground";
 }
 
-function StreakBadge({ streak, longest, total }: { streak: number; longest: number; total: number }) {
+function streakPhrase(streak: number, unit: string): string {
+  if (unit === "month") return `${streak} ${streak === 1 ? "month" : "months"} in a row`;
+  if (unit === "year") return `${streak} ${streak === 1 ? "year" : "years"} in a row`;
+  return `${streak} day streak`;
+}
+
+function StreakBadge({
+  streak, longest, total, unit,
+}: { streak: number; longest: number; total: number; unit: string }) {
   if (total === 0) return null;
+  const bestLabel = unit === "day" ? `Best: ${longest}` : `Best: ${streakPhrase(longest, unit)}`;
   return (
     <div className="flex items-center gap-3 text-xs flex-wrap">
       <span className={`flex items-center gap-1 font-bold ${getStreakColor(streak)}`}>
         <Flame className={`w-3.5 h-3.5 ${streak > 0 ? "drop-shadow-[0_0_4px_rgba(251,146,60,0.7)]" : ""}`} />
-        {streak} day streak
+        {streakPhrase(streak, unit)}
       </span>
       {longest > 0 && (
         <span className="flex items-center gap-1 text-muted-foreground">
           <Trophy className="w-3 h-3" />
-          Best: {longest}
+          {bestLabel}
         </span>
       )}
       <span className="flex items-center gap-1 text-muted-foreground">
@@ -150,13 +159,6 @@ function DaySelector({
       </div>
     </div>
   );
-}
-
-function formatDays(days: number[]): string {
-  if (days.length === 7) return "Every day";
-  if (JSON.stringify(days) === JSON.stringify([1, 2, 3, 4, 5])) return "Weekdays";
-  if (JSON.stringify(days) === JSON.stringify([0, 6])) return "Weekends";
-  return days.map((d) => DAYS[d]?.short ?? "").join(", ");
 }
 
 interface TaskFormState {
@@ -593,6 +595,7 @@ function RecurringTaskCard({ task }: { task: RecurringTask }) {
   }
 
   const hasStreak = task.totalCompletions > 0;
+  const streakSuffix = task.streakUnit === "day" ? "days" : `${task.streakUnit}s`;
 
   return (
     <div className={`
@@ -630,7 +633,7 @@ function RecurringTaskCard({ task }: { task: RecurringTask }) {
           <div className="flex items-center gap-4 mt-1.5 text-xs text-muted-foreground flex-wrap">
             <span className="flex items-center gap-1">
               <Repeat className="w-3 h-3" />
-              {formatDays(task.daysOfWeek)}
+              {task.scheduleLabel}
             </span>
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
@@ -654,6 +657,7 @@ function RecurringTaskCard({ task }: { task: RecurringTask }) {
                 streak={task.currentStreak}
                 longest={task.longestStreak}
                 total={task.totalCompletions}
+                unit={task.streakUnit}
               />
             </div>
           )}
@@ -706,11 +710,17 @@ function RecurringTaskCard({ task }: { task: RecurringTask }) {
               </p>
             </div>
             <div>
-              <span className="text-xs text-muted-foreground uppercase tracking-wider">Days selected</span>
-              <p className="text-foreground mt-0.5">
-                {task.daysOfWeek.map((d) => DAYS[d]?.label).join(", ")}
-              </p>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">Schedule</span>
+              <p className="text-foreground mt-0.5">{task.scheduleLabel}</p>
             </div>
+            {task.leadDays > 0 && (
+              <div>
+                <span className="text-xs text-muted-foreground uppercase tracking-wider">Appears early</span>
+                <p className="text-foreground mt-0.5">
+                  {task.leadDays} {task.leadDays === 1 ? "day" : "days"} before it's due
+                </p>
+              </div>
+            )}
             {hasStreak && (
               <div>
                 <span className="text-xs text-muted-foreground uppercase tracking-wider">Last completed</span>
@@ -727,8 +737,8 @@ function RecurringTaskCard({ task }: { task: RecurringTask }) {
           {hasStreak && (
             <div className="mt-4 grid grid-cols-3 gap-3">
               {[
-                { label: "Current streak", value: task.currentStreak, icon: <Flame className={`w-4 h-4 ${getStreakColor(task.currentStreak)}`} />, suffix: "days" },
-                { label: "Longest streak", value: task.longestStreak, icon: <Trophy className="w-4 h-4 text-amber-400" />, suffix: "days" },
+                { label: "Current streak", value: task.currentStreak, icon: <Flame className={`w-4 h-4 ${getStreakColor(task.currentStreak)}`} />, suffix: streakSuffix },
+                { label: "Longest streak", value: task.longestStreak, icon: <Trophy className="w-4 h-4 text-amber-400" />, suffix: streakSuffix },
                 { label: "Total done", value: task.totalCompletions, icon: <CheckCircle2 className="w-4 h-4 text-primary" />, suffix: "times" },
               ].map((s) => (
                 <div key={s.label} className="bg-muted/20 rounded-lg p-3 text-center border border-border/50">
