@@ -3,9 +3,9 @@ import { eq, and } from "drizzle-orm";
 import { db, recurringTasksTable, tasksTable, habitStreaksTable, usersTable } from "@workspace/db";
 import { assignPoints, CATEGORY_LABELS, VALID_CATEGORIES } from "../lib/auto-points";
 import { getHabitStreak, EMPTY_STREAK } from "../lib/habit-streaks";
-import { occurrencesInWindow, describeRule, type Frequency } from "../lib/recurrence";
+import { occurrencesInWindow, describeRule } from "../lib/recurrence";
 import { spawnWindow, ruleFromTemplate } from "../lib/spawn-window";
-import { validateRecurrenceInput, streakUnitFor } from "../lib/recurrence-validation";
+import { validateRecurrenceInput, streakUnitFor, mergeRecurrenceUpdate } from "../lib/recurrence-validation";
 
 const router: IRouter = Router();
 
@@ -204,15 +204,22 @@ router.patch("/recurring-tasks/:id", async (req, res): Promise<void> => {
     .where(and(eq(recurringTasksTable.id, id), eq(recurringTasksTable.userId, userId)));
   if (!existing) { res.status(404).json({ error: "Not found" }); return; }
 
-  const merged = {
-    frequency: frequency ?? existing.frequency,
-    daysOfWeek: daysOfWeek ?? parseDays(existing.daysOfWeek),
-    monthlyMode: monthlyMode ?? existing.monthlyMode ?? undefined,
-    dayOfMonth: dayOfMonth ?? existing.dayOfMonth ?? undefined,
-    weekOfMonth: weekOfMonth ?? existing.weekOfMonth ?? undefined,
-    monthOfYear: monthOfYear ?? existing.monthOfYear ?? undefined,
-    leadDays: leadDays ?? existing.leadDays,
-  };
+  // The state we validate must be exactly the state we write: mergeRecurrenceUpdate
+  // uses PRESENCE semantics (a key in the body wins even as `null`), matching the
+  // `updates` block below field-for-field so a PATCH can't validate one rule and
+  // store a different one.
+  const merged = mergeRecurrenceUpdate(
+    {
+      frequency: existing.frequency,
+      daysOfWeek: parseDays(existing.daysOfWeek),
+      monthlyMode: existing.monthlyMode,
+      dayOfMonth: existing.dayOfMonth,
+      weekOfMonth: existing.weekOfMonth,
+      monthOfYear: existing.monthOfYear,
+      leadDays: existing.leadDays,
+    },
+    req.body as Record<string, unknown>,
+  );
   const ruleError = validateRecurrenceInput(merged);
   if (ruleError) { res.status(400).json({ error: ruleError }); return; }
 

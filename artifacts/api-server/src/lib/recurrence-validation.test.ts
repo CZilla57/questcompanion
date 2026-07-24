@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { validateRecurrenceInput, streakUnitFor } from "./recurrence-validation";
+import {
+  validateRecurrenceInput,
+  streakUnitFor,
+  mergeRecurrenceUpdate,
+  type StoredRecurrence,
+} from "./recurrence-validation";
 
 describe("validateRecurrenceInput — weekly", () => {
   it("accepts a weekly rule with days", () => {
@@ -105,5 +110,78 @@ describe("streakUnitFor", () => {
     expect(streakUnitFor("weekly")).toBe("day");
     expect(streakUnitFor("monthly")).toBe("month");
     expect(streakUnitFor("yearly")).toBe("year");
+  });
+});
+
+describe("validateRecurrenceInput — dormant sibling fields", () => {
+  it("rejects an out-of-range dayOfMonth even when the active mode is nth_weekday", () => {
+    expect(validateRecurrenceInput({
+      frequency: "monthly", monthlyMode: "nth_weekday", weekOfMonth: 2, daysOfWeek: [4], dayOfMonth: -999,
+    })).toBe("Day of the month must be between 1 and 31.");
+  });
+
+  it("rejects an out-of-range weekOfMonth even when the active mode is day_of_month", () => {
+    expect(validateRecurrenceInput({
+      frequency: "monthly", monthlyMode: "day_of_month", dayOfMonth: 15, weekOfMonth: 99,
+    })).toBe("Pick the 1st, 2nd, 3rd, 4th, or last week of the month.");
+  });
+
+  it("rejects an out-of-range monthOfYear even when frequency is not yearly", () => {
+    expect(validateRecurrenceInput({
+      frequency: "monthly", monthlyMode: "day_of_month", dayOfMonth: 15, monthOfYear: 13,
+    })).toBe("Pick a month for this yearly schedule.");
+  });
+});
+
+describe("mergeRecurrenceUpdate", () => {
+  const existing: StoredRecurrence = {
+    frequency: "yearly",
+    daysOfWeek: [],
+    monthlyMode: "day_of_month",
+    dayOfMonth: 3,
+    weekOfMonth: null,
+    monthOfYear: 3,
+    leadDays: 0,
+  };
+
+  it("keeps the existing value when a key is absent from the body", () => {
+    const merged = mergeRecurrenceUpdate(existing, {});
+    expect(merged.monthOfYear).toBe(3);
+    expect(merged.dayOfMonth).toBe(3);
+    expect(merged.monthlyMode).toBe("day_of_month");
+    expect(merged.frequency).toBe("yearly");
+  });
+
+  it("overrides the existing value when a key is present with a real value", () => {
+    const merged = mergeRecurrenceUpdate(existing, { monthOfYear: 7 });
+    expect(merged.monthOfYear).toBe(7);
+    // Untouched keys still fall back to the stored row.
+    expect(merged.dayOfMonth).toBe(3);
+  });
+
+  it("clears the value when a key is present with null, rather than falling back", () => {
+    const merged = mergeRecurrenceUpdate(existing, { monthOfYear: null });
+    expect(merged.monthOfYear).toBeUndefined();
+  });
+
+  it("rejects PATCH { monthOfYear: null } on a yearly row (validate matches what gets written)", () => {
+    const merged = mergeRecurrenceUpdate(existing, { monthOfYear: null });
+    expect(validateRecurrenceInput(merged)).toBe("Pick a month for this yearly schedule.");
+  });
+
+  it("rejects PATCH { monthlyMode: null } on a monthly nth_weekday row (validate matches what gets written)", () => {
+    const monthlyExisting: StoredRecurrence = {
+      frequency: "monthly",
+      daysOfWeek: [4],
+      monthlyMode: "nth_weekday",
+      dayOfMonth: null,
+      weekOfMonth: 2,
+      monthOfYear: null,
+      leadDays: 0,
+    };
+    const merged = mergeRecurrenceUpdate(monthlyExisting, { monthlyMode: null });
+    expect(validateRecurrenceInput(merged)).toBe(
+      "Pick how the month is anchored: a day of the month, or a weekday.",
+    );
   });
 });
