@@ -1,4 +1,4 @@
-import { addDays, type Frequency, type MonthlyMode, type RecurrenceRule } from "./recurrence";
+import { addDays, toFrequency, type MonthlyMode, type RecurrenceRule } from "./recurrence";
 import { resolveTimeZone, localDateKey } from "./date-buckets";
 
 /** Upper bound on lead time, mirroring the API validation in routes. */
@@ -31,7 +31,6 @@ export function spawnWindow(
   return { from, to: addDays(from, lead) };
 }
 
-const FREQUENCIES = new Set<Frequency>(["weekly", "monthly", "yearly"]);
 const MODES = new Set<MonthlyMode>(["day_of_month", "nth_weekday"]);
 
 function parseDays(raw: string): number[] {
@@ -43,9 +42,7 @@ function parseDays(raw: string): number[] {
 
 /** Turn a stored template row into a rule the pure engine can evaluate. */
 export function ruleFromTemplate(t: RecurringTaskRow): RecurrenceRule {
-  const frequency = FREQUENCIES.has(t.frequency as Frequency)
-    ? (t.frequency as Frequency)
-    : "weekly";
+  const frequency = toFrequency(t.frequency);
   const monthlyMode = t.monthlyMode && MODES.has(t.monthlyMode as MonthlyMode)
     ? (t.monthlyMode as MonthlyMode)
     : null;

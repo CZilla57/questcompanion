@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   occursOn, addDays, occurrencesInWindow, cadencePeriodKey, previousPeriodKey, describeRule,
+  toFrequency,
   type RecurrenceRule,
 } from "./recurrence";
 
@@ -351,5 +352,29 @@ describe("describeRule", () => {
   it("returns 'No schedule set' for weekly rules with out-of-range weekdays", () => {
     expect(describeRule(rule({ daysOfWeek: [1, 7] }))).toBe("No schedule set");
     expect(describeRule(rule({ daysOfWeek: [-1, 2] }))).toBe("No schedule set");
+  });
+});
+
+describe("toFrequency", () => {
+  it("passes through each valid value unchanged", () => {
+    expect(toFrequency("weekly")).toBe("weekly");
+    expect(toFrequency("monthly")).toBe("monthly");
+    expect(toFrequency("yearly")).toBe("yearly");
+  });
+
+  it("falls back to weekly for an unrecognised string", () => {
+    expect(toFrequency("fortnightly")).toBe("weekly");
+  });
+
+  it("falls back to weekly for null", () => {
+    expect(toFrequency(null)).toBe("weekly");
+  });
+
+  it("falls back to weekly for undefined", () => {
+    expect(toFrequency(undefined)).toBe("weekly");
+  });
+
+  it("falls back to weekly for the empty string", () => {
+    expect(toFrequency("")).toBe("weekly");
   });
 });

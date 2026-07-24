@@ -17,6 +17,21 @@
 export type Frequency = "weekly" | "monthly" | "yearly";
 export type MonthlyMode = "day_of_month" | "nth_weekday";
 
+/**
+ * Narrow an untrusted DB value to a `Frequency`.
+ *
+ * `recurring_tasks.frequency` is a plain `text` column with no CHECK
+ * constraint — nothing in the schema stops a bad row from holding a value
+ * outside the union. An unchecked `as Frequency` cast on that column doesn't
+ * fail loud; it lies, and the streak math downstream (cadencePeriodKey /
+ * previousPeriodKey / nextStreakState) silently miscomputes a streak instead
+ * of throwing. This is the one place that lie gets stopped, for every caller.
+ */
+export function toFrequency(raw: string | null | undefined): Frequency {
+  if (raw === "weekly" || raw === "monthly" || raw === "yearly") return raw;
+  return "weekly";
+}
+
 export interface RecurrenceRule {
   frequency: Frequency;
   /** Weekly: the set of weekdays. nth_weekday: the single weekday of the rule. */

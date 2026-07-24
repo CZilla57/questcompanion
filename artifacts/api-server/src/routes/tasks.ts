@@ -7,7 +7,7 @@ import { getLevelInfo, getPointsToNextLevel, DAILY_BONUS_POINTS } from "../lib/g
 import { newlyUnlocked, type FeatureKey } from "../lib/feature-gates";
 import { assignPoints, CATEGORY_LABELS, VALID_CATEGORIES } from "../lib/auto-points";
 import { advanceHabitStreak, reverseHabitStreak, type HabitStreakPreviousState } from "../lib/habit-streaks";
-import type { Frequency } from "../lib/recurrence";
+import { toFrequency } from "../lib/recurrence";
 import { awardStreakGear, getStreakGearRarity, type GearRewardInfo } from "../lib/gear-rewards";
 import { rollSurpriseReward, type SurpriseRewardResult } from "../lib/surprise-rewards";
 import { grantQualifyingBadges } from "../lib/badge-awards";
@@ -785,7 +785,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       .select({ frequency: recurringTasksTable.frequency })
       .from(recurringTasksTable)
       .where(eq(recurringTasksTable.id, task.recurringTaskId));
-    const frequency = (template?.frequency ?? "weekly") as Frequency;
+    const frequency = toFrequency(template?.frequency);
 
     const result = await advanceHabitStreak(
       userId,
