@@ -26,6 +26,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { CATEGORIES, CATEGORY_COLORS, CATEGORY_HEX_COLORS } from "@/lib/categories";
 import { PageTabs } from "@/components/page-tabs";
+import {
+  defaultLeadDays, toRecurrencePayload,
+  type Frequency, type MonthlyMode,
+} from "@/lib/recurrence-form";
 
 const DAYS = [
   { value: 0, short: "Su", label: "Sunday" },
@@ -35,6 +39,25 @@ const DAYS = [
   { value: 4, short: "Th", label: "Thursday" },
   { value: 5, short: "Fr", label: "Friday" },
   { value: 6, short: "Sa", label: "Saturday" },
+];
+
+const FREQUENCIES: { value: Frequency; label: string }[] = [
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "yearly", label: "Yearly" },
+];
+
+const WEEK_ORDINALS: { value: number; label: string }[] = [
+  { value: 1, label: "1st" },
+  { value: 2, label: "2nd" },
+  { value: 3, label: "3rd" },
+  { value: 4, label: "4th" },
+  { value: -1, label: "Last" },
+];
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
 ];
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -146,6 +169,12 @@ interface TaskFormState {
   startDate: Date;
   hasEndDate: boolean;
   endDate: Date | undefined;
+  frequency: Frequency;
+  monthlyMode: MonthlyMode;
+  dayOfMonth: number;
+  weekOfMonth: number;
+  monthOfYear: number;
+  leadDays: number;
 }
 
 function getDefaultForm(): TaskFormState {
@@ -159,6 +188,12 @@ function getDefaultForm(): TaskFormState {
     startDate: new Date(),
     hasEndDate: false,
     endDate: undefined,
+    frequency: "weekly",
+    monthlyMode: "day_of_month",
+    dayOfMonth: 1,
+    weekOfMonth: 1,
+    monthOfYear: new Date().getMonth() + 1,
+    leadDays: 0,
   };
 }
 
@@ -177,7 +212,11 @@ function RecurringTaskForm({
   const set = (key: keyof TaskFormState, val: unknown) =>
     setForm((f) => ({ ...f, [key]: val }));
 
-  const valid = form.title.trim() && form.daysOfWeek.length > 0;
+  const needsWeekday = form.frequency === "weekly" || form.monthlyMode === "nth_weekday";
+  const valid = Boolean(form.title.trim()) && (!needsWeekday || form.daysOfWeek.length > 0);
+
+  const setFrequency = (frequency: Frequency) =>
+    setForm((f) => ({ ...f, frequency, leadDays: defaultLeadDays(frequency) }));
 
   return (
     <form
@@ -240,11 +279,142 @@ function RecurringTaskForm({
       </div>
 
       <div>
-        <label className="text-sm font-medium text-foreground mb-2 block">Repeat on</label>
-        <DaySelector value={form.daysOfWeek} onChange={(d) => set("daysOfWeek", d)} />
-        {form.daysOfWeek.length === 0 && (
-          <p className="text-xs text-red-400 mt-1">Select at least one day.</p>
+        <label className="text-sm font-medium text-foreground mb-2 block">Repeats</label>
+        <div className="flex gap-1.5 mb-4">
+          {FREQUENCIES.map((f) => (
+            <button
+              key={f.value}
+              type="button"
+              onClick={() => setFrequency(f.value)}
+              className={`
+                flex-1 py-2 rounded-lg text-xs font-bold transition-all duration-200 border
+                ${form.frequency === f.value
+                  ? "bg-primary text-background border-primary shadow-[0_0_8px_rgba(0,255,255,0.4)]"
+                  : "bg-muted/30 text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"}
+              `}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        {form.frequency === "weekly" ? (
+          <>
+            <DaySelector value={form.daysOfWeek} onChange={(d) => set("daysOfWeek", d)} />
+            {form.daysOfWeek.length === 0 && (
+              <p className="text-xs text-red-400 mt-1">Select at least one day.</p>
+            )}
+          </>
+        ) : (
+          <div className="space-y-3">
+            {form.frequency === "yearly" && (
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Month</label>
+                <Select
+                  value={String(form.monthOfYear)}
+                  onValueChange={(v) => set("monthOfYear", Number(v))}
+                >
+                  <SelectTrigger className="border-primary/20 w-48"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {MONTHS.map((m, i) => (
+                      <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="flex gap-1.5">
+              {([
+                { value: "day_of_month", label: "On a date" },
+                { value: "nth_weekday", label: "On a weekday" },
+              ] as { value: MonthlyMode; label: string }[]).map((m) => (
+                <button
+                  key={m.value}
+                  type="button"
+                  onClick={() => set("monthlyMode", m.value)}
+                  className={`
+                    flex-1 py-2 rounded-lg text-xs font-bold transition-all duration-200 border
+                    ${form.monthlyMode === m.value
+                      ? "bg-primary text-background border-primary"
+                      : "bg-muted/30 text-muted-foreground border-border hover:border-primary/40"}
+                  `}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+
+            {form.monthlyMode === "day_of_month" ? (
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Day of the month</label>
+                <Select
+                  value={String(form.dayOfMonth)}
+                  onValueChange={(v) => set("dayOfMonth", Number(v))}
+                >
+                  <SelectTrigger className="border-primary/20 w-32"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                      <SelectItem key={d} value={String(d)}>{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Months without this day use their last day instead.
+                </p>
+              </div>
+            ) : (
+              <div className="flex gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Which</label>
+                  <Select
+                    value={String(form.weekOfMonth)}
+                    onValueChange={(v) => set("weekOfMonth", Number(v))}
+                  >
+                    <SelectTrigger className="border-primary/20 w-28"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {WEEK_ORDINALS.map((o) => (
+                        <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs text-muted-foreground mb-1 block">Weekday</label>
+                  <Select
+                    value={String(form.daysOfWeek[0] ?? 1)}
+                    onValueChange={(v) => set("daysOfWeek", [Number(v)])}
+                  >
+                    <SelectTrigger className="border-primary/20"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {DAYS.map((d) => (
+                        <SelectItem key={d.value} value={String(d.value)}>{d.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+          </div>
         )}
+      </div>
+
+      <div>
+        <label className="text-sm font-medium text-foreground mb-1 block">Show it this early</label>
+        <div className="flex items-center gap-2">
+          <Input
+            type="number"
+            min={0}
+            max={60}
+            value={form.leadDays}
+            onChange={(e) => set("leadDays", Math.min(60, Math.max(0, Number(e.target.value) || 0)))}
+            className="border-primary/20 focus:border-primary w-24"
+          />
+          <span className="text-sm text-muted-foreground">days before it's due</span>
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">
+          The quest appears in your Quest Log early, still dated for the day it's due.
+        </p>
       </div>
 
       <div>
@@ -366,10 +536,10 @@ function RecurringTaskCard({ task }: { task: RecurringTask }) {
         title: form.title,
         description: form.description || undefined,
         priority: form.priority as "low" | "medium" | "high",
-        daysOfWeek: form.daysOfWeek,
         timeOfDay: form.timeOfDay,
         startDate: format(form.startDate, "yyyy-MM-dd"),
         endDate: form.hasEndDate && form.endDate ? format(form.endDate, "yyyy-MM-dd") : null,
+        ...toRecurrencePayload(form),
         ...(form.category ? { category: form.category as any } : {}),
       } as Parameters<typeof updateMutation.mutate>[0]["data"],
     }, {
@@ -388,6 +558,12 @@ function RecurringTaskCard({ task }: { task: RecurringTask }) {
       startDate: parseISO(task.startDate),
       hasEndDate: !!task.endDate,
       endDate: task.endDate ? parseISO(task.endDate) : undefined,
+      frequency: (task.frequency ?? "weekly") as Frequency,
+      monthlyMode: (task.monthlyMode ?? "day_of_month") as MonthlyMode,
+      dayOfMonth: task.dayOfMonth ?? 1,
+      weekOfMonth: task.weekOfMonth ?? 1,
+      monthOfYear: task.monthOfYear ?? new Date().getMonth() + 1,
+      leadDays: task.leadDays ?? 0,
     };
     return (
       <div className="bg-card border border-primary/30 rounded-xl p-5">
@@ -574,12 +750,12 @@ export default function Recurring() {
         title: form.title,
         description: form.description || undefined,
         priority: form.priority as "low" | "medium" | "high",
-        daysOfWeek: form.daysOfWeek,
         timeOfDay: form.timeOfDay,
         startDate: format(form.startDate, "yyyy-MM-dd"),
         endDate: form.hasEndDate && form.endDate ? format(form.endDate, "yyyy-MM-dd") : undefined,
+        ...toRecurrencePayload(form),
         ...(form.category ? { category: form.category as any } : {}),
-      },
+      } as Parameters<typeof createMutation.mutate>[0]["data"],
     }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetRecurringTasksQueryKey() });
