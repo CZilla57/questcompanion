@@ -1,6 +1,8 @@
 import { eq, and, lte } from "drizzle-orm";
 import { db, habitStreaksTable, badgesTable, userBadgesTable, activityTable } from "@workspace/db";
 import { awardStreakGear, getHabitGearRarity, isHabitGearMilestone, type GearRewardInfo } from "./gear-rewards";
+import { nextStreakState } from "./streak-cadence";
+import type { Frequency } from "./recurrence";
 
 export async function getHabitStreak(userId: number, recurringTaskId: number) {
   const [row] = await db
@@ -21,6 +23,10 @@ export interface HabitStreakPreviousState {
   prevLongestStreak: number | null;
   prevTotalCompletions: number | null;
   prevLastCompletedDate: string | null;
+  /** Added with monthly/yearly cadences. Snapshots written before that ship
+   *  lack the key entirely — JSON.parse yields undefined, which must be read
+   *  as null so old completions stay reversible. */
+  prevLastPeriodKey?: string | null;
   wasNew: boolean;
   badgesGrantedIds: number[];
 }
@@ -33,6 +39,7 @@ export async function advanceHabitStreak(
   recurringTaskId: number,
   completionDate: string,
   userLevel: number,
+  cadence: { frequency: Frequency; occurrenceDate: string },
 ): Promise<{
   streak: typeof habitStreaksTable.$inferSelect;
   newBadges: typeof badgesTable.$inferSelect[];
@@ -41,48 +48,47 @@ export async function advanceHabitStreak(
 }> {
   const existing = await getHabitStreak(userId, recurringTaskId);
 
+  const decision = nextStreakState({
+    frequency: cadence.frequency,
+    completionDate,
+    occurrenceDate: cadence.occurrenceDate,
+    existing: existing
+      ? {
+          currentStreak: existing.currentStreak,
+          longestStreak: existing.longestStreak,
+          lastCompletedDate: existing.lastCompletedDate,
+          lastPeriodKey: existing.lastPeriodKey,
+        }
+      : null,
+  });
+
   let streak: typeof habitStreaksTable.$inferSelect;
   let previousState: HabitStreakPreviousState;
 
   if (existing) {
-    // Already counted today — return unchanged with no new badges or gear
-    if (existing.lastCompletedDate === completionDate) {
-      return {
-        streak: existing,
-        newBadges: [],
-        gearReward: null,
-        previousState: {
-          prevCurrentStreak: existing.currentStreak,
-          prevLongestStreak: existing.longestStreak,
-          prevTotalCompletions: existing.totalCompletions,
-          prevLastCompletedDate: existing.lastCompletedDate,
-          wasNew: false,
-          badgesGrantedIds: [],
-        },
-      };
-    }
-
     previousState = {
       prevCurrentStreak: existing.currentStreak,
       prevLongestStreak: existing.longestStreak,
       prevTotalCompletions: existing.totalCompletions,
       prevLastCompletedDate: existing.lastCompletedDate ?? null,
+      prevLastPeriodKey: existing.lastPeriodKey ?? null,
       wasNew: false,
       badgesGrantedIds: [],
     };
 
-    const yesterday = getPreviousDay(completionDate);
-    const newStreak =
-      existing.lastCompletedDate === yesterday ? existing.currentStreak + 1 : 1;
-    const newLongest = Math.max(existing.longestStreak, newStreak);
+    // Already counted for this period — return unchanged, no badges or gear.
+    if (decision.status === "already_counted") {
+      return { streak: existing, newBadges: [], gearReward: null, previousState };
+    }
 
     const [updated] = await db
       .update(habitStreaksTable)
       .set({
-        currentStreak: newStreak,
-        longestStreak: newLongest,
+        currentStreak: decision.currentStreak,
+        longestStreak: decision.longestStreak,
         totalCompletions: existing.totalCompletions + 1,
         lastCompletedDate: completionDate,
+        lastPeriodKey: decision.periodKey,
       })
       .where(eq(habitStreaksTable.id, existing.id))
       .returning();
@@ -93,9 +99,12 @@ export async function advanceHabitStreak(
       prevLongestStreak: null,
       prevTotalCompletions: null,
       prevLastCompletedDate: null,
+      prevLastPeriodKey: null,
       wasNew: true,
       badgesGrantedIds: [],
     };
+
+    const periodKey = decision.status === "advanced" ? decision.periodKey : null;
 
     // The unique constraint on (user_id, recurring_task_id) ensures that even if two
     // concurrent first-time completions race here, only one insert succeeds.
@@ -108,6 +117,7 @@ export async function advanceHabitStreak(
         longestStreak: 1,
         totalCompletions: 1,
         lastCompletedDate: completionDate,
+        lastPeriodKey: periodKey,
       })
       .onConflictDoNothing()
       .returning();
@@ -125,7 +135,12 @@ export async function advanceHabitStreak(
         );
       if (!raced) {
         return {
-          streak: { id: 0, userId, recurringTaskId, currentStreak: 1, longestStreak: 1, totalCompletions: 1, lastCompletedDate: completionDate, createdAt: new Date() },
+          streak: {
+            id: 0, userId, recurringTaskId,
+            currentStreak: 1, longestStreak: 1, totalCompletions: 1,
+            lastCompletedDate: completionDate, lastPeriodKey: periodKey,
+            createdAt: new Date(),
+          },
           newBadges: [],
           gearReward: null,
           previousState,
@@ -137,9 +152,16 @@ export async function advanceHabitStreak(
     }
   }
 
-  // Award any habit_streak milestone badges the user hasn't earned yet
-  const { awarded: newBadges, badgeIds } = await checkAndAwardHabitBadges(userId, streak.currentStreak);
-  previousState.badgesGrantedIds = badgeIds;
+  // habit_streak badge thresholds are days (3, 7, 14, 30). Granting a
+  // "7-day streak" badge for seven YEARS of a yearly quest is a mislabel,
+  // not a reward — so only the daily-cadence path awards them. Gear keys off
+  // totalCompletions, which is cadence-neutral, and stays enabled for all.
+  let newBadges: typeof badgesTable.$inferSelect[] = [];
+  if (cadence.frequency === "weekly") {
+    const result = await checkAndAwardHabitBadges(userId, streak.currentStreak);
+    newBadges = result.awarded;
+    previousState.badgesGrantedIds = result.badgeIds;
+  }
 
   // Award gear for habit completion milestones (5, 15, 30, 60, 100 completions, then every 50)
   let gearReward: GearRewardInfo | null = null;
@@ -191,6 +213,9 @@ export async function reverseHabitStreak(
           longestStreak: previousState.prevLongestStreak!,
           totalCompletions: previousState.prevTotalCompletions!,
           lastCompletedDate: previousState.prevLastCompletedDate,
+          // Absent in snapshots written before cadences shipped — `?? null`
+          // is what keeps those old completions reversible.
+          lastPeriodKey: previousState.prevLastPeriodKey ?? null,
         })
         .where(eq(habitStreaksTable.id, existing.id));
     }
@@ -257,12 +282,6 @@ async function checkAndAwardHabitBadges(
   }
 
   return { awarded, badgeIds };
-}
-
-function getPreviousDay(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00Z");
-  d.setUTCDate(d.getUTCDate() - 1);
-  return d.toISOString().split("T")[0];
 }
 
 export const EMPTY_STREAK = {
