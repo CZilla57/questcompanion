@@ -50,6 +50,13 @@
       "when": 1784737299538,
       "tag": "0006_quest_campaigns",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1784900716216,
+      "tag": "0007_monthly_yearly_recurrence",
+      "breakpoints": true
     }
   ]
 }
