@@ -991,6 +991,35 @@ export const RecurringTaskCategory = {
   default: 'default',
 } as const;
 
+export type RecurringTaskFrequency = typeof RecurringTaskFrequency[keyof typeof RecurringTaskFrequency];
+
+
+export const RecurringTaskFrequency = {
+  weekly: 'weekly',
+  monthly: 'monthly',
+  yearly: 'yearly',
+} as const;
+
+/**
+ * @nullable
+ */
+export type RecurringTaskMonthlyMode = typeof RecurringTaskMonthlyMode[keyof typeof RecurringTaskMonthlyMode] | null;
+
+
+export const RecurringTaskMonthlyMode = {
+  day_of_month: 'day_of_month',
+  nth_weekday: 'nth_weekday',
+} as const;
+
+export type RecurringTaskStreakUnit = typeof RecurringTaskStreakUnit[keyof typeof RecurringTaskStreakUnit];
+
+
+export const RecurringTaskStreakUnit = {
+  day: 'day',
+  month: 'month',
+  year: 'year',
+} as const;
+
 export interface RecurringTask {
   id: number;
   userId: number;
@@ -1014,6 +1043,23 @@ export interface RecurringTask {
   totalCompletions: number;
   /** @nullable */
   lastCompletedDate?: string | null;
+  frequency: RecurringTaskFrequency;
+  /** @nullable */
+  monthlyMode?: RecurringTaskMonthlyMode;
+  /** @nullable */
+  dayOfMonth?: number | null;
+  /**
+     * 1-4, or -1 meaning the last such weekday of the month
+     * @nullable
+     */
+  weekOfMonth?: number | null;
+  /** @nullable */
+  monthOfYear?: number | null;
+  /** Days before the occurrence that the quest appears in the Quest Log */
+  leadDays: number;
+  /** Human phrasing of the schedule, e.g. 'The 3rd Friday of every month' */
+  scheduleLabel: string;
+  streakUnit: RecurringTaskStreakUnit;
   createdAt: string;
 }
 
@@ -1047,18 +1093,53 @@ export const RecurringTaskInputCategory = {
   default: 'default',
 } as const;
 
+export type RecurringTaskInputFrequency = typeof RecurringTaskInputFrequency[keyof typeof RecurringTaskInputFrequency];
+
+
+export const RecurringTaskInputFrequency = {
+  weekly: 'weekly',
+  monthly: 'monthly',
+  yearly: 'yearly',
+} as const;
+
+export type RecurringTaskInputMonthlyMode = typeof RecurringTaskInputMonthlyMode[keyof typeof RecurringTaskInputMonthlyMode];
+
+
+export const RecurringTaskInputMonthlyMode = {
+  day_of_month: 'day_of_month',
+  nth_weekday: 'nth_weekday',
+} as const;
+
 export interface RecurringTaskInput {
   /** @minLength 1 */
   title: string;
   description?: string;
   priority?: RecurringTaskInputPriority;
-  /** @minItems 1 */
-  daysOfWeek: number[];
+  daysOfWeek?: number[];
   timeOfDay: string;
   startDate: string;
   endDate?: string;
   /** Optional category override. Auto-detected from title if omitted. */
   category?: RecurringTaskInputCategory;
+  frequency?: RecurringTaskInputFrequency;
+  monthlyMode?: RecurringTaskInputMonthlyMode;
+  /**
+     * @minimum 1
+     * @maximum 31
+     */
+  dayOfMonth?: number;
+  /** 1-4, or -1 meaning the last such weekday of the month */
+  weekOfMonth?: number;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  monthOfYear?: number;
+  /**
+     * @minimum 0
+     * @maximum 60
+     */
+  leadDays?: number;
 }
 
 export type RecurringTaskUpdatePriority = typeof RecurringTaskUpdatePriority[keyof typeof RecurringTaskUpdatePriority];
@@ -1088,6 +1169,23 @@ export const RecurringTaskUpdateCategory = {
   default: 'default',
 } as const;
 
+export type RecurringTaskUpdateFrequency = typeof RecurringTaskUpdateFrequency[keyof typeof RecurringTaskUpdateFrequency];
+
+
+export const RecurringTaskUpdateFrequency = {
+  weekly: 'weekly',
+  monthly: 'monthly',
+  yearly: 'yearly',
+} as const;
+
+export type RecurringTaskUpdateMonthlyMode = typeof RecurringTaskUpdateMonthlyMode[keyof typeof RecurringTaskUpdateMonthlyMode];
+
+
+export const RecurringTaskUpdateMonthlyMode = {
+  day_of_month: 'day_of_month',
+  nth_weekday: 'nth_weekday',
+} as const;
+
 export interface RecurringTaskUpdate {
   /** @minLength 1 */
   title?: string;
@@ -1100,6 +1198,25 @@ export interface RecurringTaskUpdate {
   endDate?: string | null;
   isActive?: boolean;
   category?: RecurringTaskUpdateCategory;
+  frequency?: RecurringTaskUpdateFrequency;
+  monthlyMode?: RecurringTaskUpdateMonthlyMode;
+  /**
+     * @minimum 1
+     * @maximum 31
+     */
+  dayOfMonth?: number;
+  /** 1-4, or -1 meaning the last such weekday of the month */
+  weekOfMonth?: number;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  monthOfYear?: number;
+  /**
+     * @minimum 0
+     * @maximum 60
+     */
+  leadDays?: number;
 }
 
 export interface XpDataPoint {

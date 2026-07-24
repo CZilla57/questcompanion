@@ -3,8 +3,9 @@ import { eq, and } from "drizzle-orm";
 import { db, recurringTasksTable, tasksTable, habitStreaksTable, usersTable } from "@workspace/db";
 import { assignPoints, CATEGORY_LABELS, VALID_CATEGORIES } from "../lib/auto-points";
 import { getHabitStreak, EMPTY_STREAK } from "../lib/habit-streaks";
-import { occurrencesInWindow } from "../lib/recurrence";
+import { occurrencesInWindow, describeRule, type Frequency } from "../lib/recurrence";
 import { spawnWindow, ruleFromTemplate } from "../lib/spawn-window";
+import { validateRecurrenceInput, streakUnitFor } from "../lib/recurrence-validation";
 
 const router: IRouter = Router();
 
@@ -19,6 +20,7 @@ async function formatRecurring(r: typeof recurringTasksTable.$inferSelect) {
   const days = parseDays(r.daysOfWeek);
   const ap = assignPoints(r.title, r.priority);
   const streak = await getHabitStreak(r.userId, r.id);
+  const rule = ruleFromTemplate(r);
   return {
     id: r.id,
     userId: r.userId,
@@ -32,6 +34,16 @@ async function formatRecurring(r: typeof recurringTasksTable.$inferSelect) {
     startDate: r.startDate,
     endDate: r.endDate,
     isActive: r.isActive,
+    frequency: r.frequency,
+    monthlyMode: r.monthlyMode,
+    dayOfMonth: r.dayOfMonth,
+    weekOfMonth: r.weekOfMonth,
+    monthOfYear: r.monthOfYear,
+    leadDays: r.leadDays,
+    // Server owns the phrasing so client and server can't describe the same
+    // rule differently.
+    scheduleLabel: describeRule(rule),
+    streakUnit: streakUnitFor(rule.frequency),
     estimatedPoints: ap.points,
     currentStreak: streak?.currentStreak ?? EMPTY_STREAK.currentStreak,
     longestStreak: streak?.longestStreak ?? EMPTY_STREAK.longestStreak,
@@ -66,6 +78,12 @@ router.post("/recurring-tasks", async (req, res): Promise<void> => {
     startDate,
     endDate,
     category,
+    frequency = "weekly",
+    monthlyMode,
+    dayOfMonth,
+    weekOfMonth,
+    monthOfYear,
+    leadDays = 0,
   } = req.body as {
     title?: string;
     description?: string;
@@ -75,12 +93,23 @@ router.post("/recurring-tasks", async (req, res): Promise<void> => {
     startDate?: string;
     endDate?: string;
     category?: string;
+    frequency?: string;
+    monthlyMode?: string;
+    dayOfMonth?: number;
+    weekOfMonth?: number;
+    monthOfYear?: number;
+    leadDays?: number;
   };
 
-  if (!title || !daysOfWeek?.length || !startDate) {
-    res.status(400).json({ error: "title, daysOfWeek, and startDate are required" });
+  if (!title || !startDate) {
+    res.status(400).json({ error: "title and startDate are required" });
     return;
   }
+
+  const ruleError = validateRecurrenceInput({
+    frequency, daysOfWeek, monthlyMode, dayOfMonth, weekOfMonth, monthOfYear, leadDays,
+  });
+  if (ruleError) { res.status(400).json({ error: ruleError }); return; }
 
   const autoPoint = assignPoints(title, priority);
   const resolvedCategory = category && VALID_CATEGORIES.has(category) ? category : autoPoint.category;
@@ -93,11 +122,17 @@ router.post("/recurring-tasks", async (req, res): Promise<void> => {
       description,
       priority,
       category: resolvedCategory,
-      daysOfWeek: daysOfWeek.join(","),
+      daysOfWeek: (daysOfWeek ?? []).join(","),
       timeOfDay,
       startDate,
       endDate: endDate ?? null,
       isActive: true,
+      frequency,
+      monthlyMode: monthlyMode ?? null,
+      dayOfMonth: dayOfMonth ?? null,
+      weekOfMonth: weekOfMonth ?? null,
+      monthOfYear: monthOfYear ?? null,
+      leadDays,
     })
     .returning();
 
@@ -139,6 +174,12 @@ router.patch("/recurring-tasks/:id", async (req, res): Promise<void> => {
     endDate,
     isActive,
     category,
+    frequency,
+    monthlyMode,
+    dayOfMonth,
+    weekOfMonth,
+    monthOfYear,
+    leadDays,
   } = req.body as {
     title?: string;
     description?: string;
@@ -149,7 +190,31 @@ router.patch("/recurring-tasks/:id", async (req, res): Promise<void> => {
     endDate?: string | null;
     isActive?: boolean;
     category?: string;
+    frequency?: string;
+    monthlyMode?: string;
+    dayOfMonth?: number;
+    weekOfMonth?: number;
+    monthOfYear?: number;
+    leadDays?: number;
   };
+
+  const [existing] = await db
+    .select()
+    .from(recurringTasksTable)
+    .where(and(eq(recurringTasksTable.id, id), eq(recurringTasksTable.userId, userId)));
+  if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+
+  const merged = {
+    frequency: frequency ?? existing.frequency,
+    daysOfWeek: daysOfWeek ?? parseDays(existing.daysOfWeek),
+    monthlyMode: monthlyMode ?? existing.monthlyMode ?? undefined,
+    dayOfMonth: dayOfMonth ?? existing.dayOfMonth ?? undefined,
+    weekOfMonth: weekOfMonth ?? existing.weekOfMonth ?? undefined,
+    monthOfYear: monthOfYear ?? existing.monthOfYear ?? undefined,
+    leadDays: leadDays ?? existing.leadDays,
+  };
+  const ruleError = validateRecurrenceInput(merged);
+  if (ruleError) { res.status(400).json({ error: ruleError }); return; }
 
   const updates: Partial<typeof recurringTasksTable.$inferInsert> = {};
   if (title != null) updates.title = title;
@@ -161,6 +226,12 @@ router.patch("/recurring-tasks/:id", async (req, res): Promise<void> => {
   if ("endDate" in req.body) updates.endDate = endDate ?? null;
   if (isActive != null) updates.isActive = isActive;
   if (category != null && VALID_CATEGORIES.has(category)) updates.category = category;
+  if (frequency != null) updates.frequency = frequency;
+  if ("monthlyMode" in req.body) updates.monthlyMode = monthlyMode ?? null;
+  if ("dayOfMonth" in req.body) updates.dayOfMonth = dayOfMonth ?? null;
+  if ("weekOfMonth" in req.body) updates.weekOfMonth = weekOfMonth ?? null;
+  if ("monthOfYear" in req.body) updates.monthOfYear = monthOfYear ?? null;
+  if (leadDays != null) updates.leadDays = leadDays;
 
   const [task] = await db
     .update(recurringTasksTable)

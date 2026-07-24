@@ -3694,7 +3694,7 @@ components:
 
     RecurringTask:
       type: object
-      required: [id, userId, title, priority, daysOfWeek, timeOfDay, startDate, isActive, createdAt, currentStreak, longestStreak, totalCompletions, category, categoryLabel]
+      required: [id, userId, title, priority, daysOfWeek, timeOfDay, startDate, isActive, createdAt, currentStreak, longestStreak, totalCompletions, category, categoryLabel, frequency, leadDays, scheduleLabel, streakUnit]
       properties:
         id:
           type: integer
@@ -3736,12 +3736,34 @@ components:
           type: integer
         lastCompletedDate:
           type: ["string", "null"]
+        frequency:
+          type: string
+          enum: [weekly, monthly, yearly]
+        monthlyMode:
+          type: ["string", "null"]
+          enum: [day_of_month, nth_weekday, null]
+        dayOfMonth:
+          type: ["integer", "null"]
+        weekOfMonth:
+          type: ["integer", "null"]
+          description: "1-4, or -1 meaning the last such weekday of the month"
+        monthOfYear:
+          type: ["integer", "null"]
+        leadDays:
+          type: integer
+          description: "Days before the occurrence that the quest appears in the Quest Log"
+        scheduleLabel:
+          type: string
+          description: "Human phrasing of the schedule, e.g. 'The 3rd Friday of every month'"
+        streakUnit:
+          type: string
+          enum: [day, month, year]
         createdAt:
           type: string
 
     RecurringTaskInput:
       type: object
-      required: [title, daysOfWeek, timeOfDay, startDate]
+      required: [title, timeOfDay, startDate]
       properties:
         title:
           type: string
@@ -3756,7 +3778,6 @@ components:
           type: array
           items:
             type: integer
-          minItems: 1
         timeOfDay:
           type: string
         startDate:
@@ -3767,6 +3788,29 @@ components:
           type: string
           enum: [health, deep_work, learning, finance, admin, household, social, creative, self_care, errands, travel, default]
           description: Optional category override. Auto-detected from title if omitted.
+        frequency:
+          type: string
+          enum: [weekly, monthly, yearly]
+          default: weekly
+        monthlyMode:
+          type: string
+          enum: [day_of_month, nth_weekday]
+        dayOfMonth:
+          type: integer
+          minimum: 1
+          maximum: 31
+        weekOfMonth:
+          type: integer
+          description: "1-4, or -1 meaning the last such weekday of the month"
+        monthOfYear:
+          type: integer
+          minimum: 1
+          maximum: 12
+        leadDays:
+          type: integer
+          minimum: 0
+          maximum: 60
+          default: 0
 
     RecurringTaskUpdate:
       type: object
@@ -3794,6 +3838,27 @@ components:
         category:
           type: string
           enum: [health, deep_work, learning, finance, admin, household, social, creative, self_care, errands, travel, default]
+        frequency:
+          type: string
+          enum: [weekly, monthly, yearly]
+        monthlyMode:
+          type: string
+          enum: [day_of_month, nth_weekday]
+        dayOfMonth:
+          type: integer
+          minimum: 1
+          maximum: 31
+        weekOfMonth:
+          type: integer
+          description: "1-4, or -1 meaning the last such weekday of the month"
+        monthOfYear:
+          type: integer
+          minimum: 1
+          maximum: 12
+        leadDays:
+          type: integer
+          minimum: 0
+          maximum: 60
 
     Badge:
       type: object

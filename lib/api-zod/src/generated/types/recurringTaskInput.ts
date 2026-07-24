@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { RecurringTaskInputCategory } from './recurringTaskInputCategory';
+import type { RecurringTaskInputFrequency } from './recurringTaskInputFrequency';
+import type { RecurringTaskInputMonthlyMode } from './recurringTaskInputMonthlyMode';
 import type { RecurringTaskInputPriority } from './recurringTaskInputPriority';
 
 export interface RecurringTaskInput {
@@ -13,11 +15,29 @@ export interface RecurringTaskInput {
   title: string;
   description?: string;
   priority?: RecurringTaskInputPriority;
-  /** @minItems 1 */
-  daysOfWeek: number[];
+  daysOfWeek?: number[];
   timeOfDay: string;
   startDate: string;
   endDate?: string;
   /** Optional category override. Auto-detected from title if omitted. */
   category?: RecurringTaskInputCategory;
+  frequency?: RecurringTaskInputFrequency;
+  monthlyMode?: RecurringTaskInputMonthlyMode;
+  /**
+     * @minimum 1
+     * @maximum 31
+     */
+  dayOfMonth?: number;
+  /** 1-4, or -1 meaning the last such weekday of the month */
+  weekOfMonth?: number;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  monthOfYear?: number;
+  /**
+     * @minimum 0
+     * @maximum 60
+     */
+  leadDays?: number;
 }
