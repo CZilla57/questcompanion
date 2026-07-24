@@ -1,12 +1,13 @@
 import express, { Router, type IRouter } from "express";
 import { eq, and, or, desc, count, inArray, sql } from "drizzle-orm";
 import { applyMultiplier } from "../lib/xp-multiplier";
-import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable, taskStepsTable, questlinesTable, brainCheckinsTable } from "@workspace/db";
+import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable, taskStepsTable, questlinesTable, brainCheckinsTable, recurringTasksTable } from "@workspace/db";
 import type { DifficultyLevel, VariantLadder } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, DAILY_BONUS_POINTS } from "../lib/gamification";
 import { newlyUnlocked, type FeatureKey } from "../lib/feature-gates";
 import { assignPoints, CATEGORY_LABELS, VALID_CATEGORIES } from "../lib/auto-points";
 import { advanceHabitStreak, reverseHabitStreak, type HabitStreakPreviousState } from "../lib/habit-streaks";
+import type { Frequency } from "../lib/recurrence";
 import { awardStreakGear, getStreakGearRarity, type GearRewardInfo } from "../lib/gear-rewards";
 import { rollSurpriseReward, type SurpriseRewardResult } from "../lib/surprise-rewards";
 import { grantQualifyingBadges } from "../lib/badge-awards";
@@ -776,7 +777,23 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
   let habitGearReward: GearRewardInfo | null = null;
   if (task.recurringTaskId) {
     const completionDate = today;
-    const result = await advanceHabitStreak(userId, task.recurringTaskId, completionDate, newLevel.level);
+    // Cadence decides how the streak counts. Bucket on the quest's own due
+    // date, not the day it was ticked off, so a monthly quest finished a
+    // couple of days late still lands in the right period. due_date is
+    // nullable (anchored tasks), so fall back to the completion date.
+    const [template] = await db
+      .select({ frequency: recurringTasksTable.frequency })
+      .from(recurringTasksTable)
+      .where(eq(recurringTasksTable.id, task.recurringTaskId));
+    const frequency = (template?.frequency ?? "weekly") as Frequency;
+
+    const result = await advanceHabitStreak(
+      userId,
+      task.recurringTaskId,
+      completionDate,
+      newLevel.level,
+      { frequency, occurrenceDate: task.dueDate ?? completionDate },
+    );
     habitBadges = result.newBadges;
     habitStreakPreviousState = result.previousState;
     habitGearReward = result.gearReward;
