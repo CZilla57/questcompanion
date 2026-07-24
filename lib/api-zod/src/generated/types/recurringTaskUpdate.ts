@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { RecurringTaskUpdateCategory } from './recurringTaskUpdateCategory';
+import type { RecurringTaskUpdateFrequency } from './recurringTaskUpdateFrequency';
+import type { RecurringTaskUpdateMonthlyMode } from './recurringTaskUpdateMonthlyMode';
 import type { RecurringTaskUpdatePriority } from './recurringTaskUpdatePriority';
 
 export interface RecurringTaskUpdate {
@@ -20,4 +22,29 @@ export interface RecurringTaskUpdate {
   endDate?: string | null;
   isActive?: boolean;
   category?: RecurringTaskUpdateCategory;
+  frequency?: RecurringTaskUpdateFrequency;
+  /** @nullable */
+  monthlyMode?: RecurringTaskUpdateMonthlyMode;
+  /**
+     * @minimum 1
+     * @maximum 31
+     * @nullable
+     */
+  dayOfMonth?: number | null;
+  /**
+     * 1-4, or -1 meaning the last such weekday of the month
+     * @nullable
+     */
+  weekOfMonth?: number | null;
+  /**
+     * @minimum 1
+     * @maximum 12
+     * @nullable
+     */
+  monthOfYear?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 60
+     */
+  leadDays?: number;
 }

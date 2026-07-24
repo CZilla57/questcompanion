@@ -6,7 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { RecurringTaskCategory } from './recurringTaskCategory';
+import type { RecurringTaskFrequency } from './recurringTaskFrequency';
+import type { RecurringTaskMonthlyMode } from './recurringTaskMonthlyMode';
 import type { RecurringTaskPriority } from './recurringTaskPriority';
+import type { RecurringTaskStreakUnit } from './recurringTaskStreakUnit';
 
 export interface RecurringTask {
   id: number;
@@ -31,5 +34,22 @@ export interface RecurringTask {
   totalCompletions: number;
   /** @nullable */
   lastCompletedDate?: string | null;
+  frequency: RecurringTaskFrequency;
+  /** @nullable */
+  monthlyMode?: RecurringTaskMonthlyMode;
+  /** @nullable */
+  dayOfMonth?: number | null;
+  /**
+     * 1-4, or -1 meaning the last such weekday of the month
+     * @nullable
+     */
+  weekOfMonth?: number | null;
+  /** @nullable */
+  monthOfYear?: number | null;
+  /** Days before the occurrence that the quest appears in the Quest Log */
+  leadDays: number;
+  /** Human phrasing of the schedule, e.g. 'The 3rd Friday of every month' */
+  scheduleLabel: string;
+  streakUnit: RecurringTaskStreakUnit;
   createdAt: string;
 }

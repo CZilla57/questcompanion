@@ -821,6 +821,14 @@ export const GetRecurringTasksResponseItem = zod.object({
   "longestStreak": zod.number(),
   "totalCompletions": zod.number(),
   "lastCompletedDate": zod.string().nullish(),
+  "frequency": zod.enum(['weekly', 'monthly', 'yearly']),
+  "monthlyMode": zod.union([zod.literal('day_of_month'),zod.literal('nth_weekday'),zod.literal(null)]).nullish(),
+  "dayOfMonth": zod.number().nullish(),
+  "weekOfMonth": zod.number().nullish().describe('1-4, or -1 meaning the last such weekday of the month'),
+  "monthOfYear": zod.number().nullish(),
+  "leadDays": zod.number().describe('Days before the occurrence that the quest appears in the Quest Log'),
+  "scheduleLabel": zod.string().describe('Human phrasing of the schedule, e.g. \'The 3rd Friday of every month\''),
+  "streakUnit": zod.enum(['day', 'month', 'year']),
   "createdAt": zod.string()
 })
 export const GetRecurringTasksResponse = zod.array(GetRecurringTasksResponseItem)
@@ -831,17 +839,32 @@ export const GetRecurringTasksResponse = zod.array(GetRecurringTasksResponseItem
  */
 
 export const createRecurringTaskBodyPriorityDefault = `medium`;
+export const createRecurringTaskBodyFrequencyDefault = `weekly`;
+export const createRecurringTaskBodyDayOfMonthMax = 31;
+
+export const createRecurringTaskBodyMonthOfYearMax = 12;
+
+export const createRecurringTaskBodyLeadDaysDefault = 0;
+export const createRecurringTaskBodyLeadDaysMin = 0;
+export const createRecurringTaskBodyLeadDaysMax = 60;
+
 
 
 export const CreateRecurringTaskBody = zod.object({
   "title": zod.string().min(1),
   "description": zod.string().optional(),
   "priority": zod.enum(['low', 'medium', 'high']).default(createRecurringTaskBodyPriorityDefault),
-  "daysOfWeek": zod.array(zod.number()).min(1),
+  "daysOfWeek": zod.array(zod.number()).optional(),
   "timeOfDay": zod.string(),
   "startDate": zod.string(),
   "endDate": zod.string().optional(),
-  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'self_care', 'errands', 'travel', 'default']).optional().describe('Optional category override. Auto-detected from title if omitted.')
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'self_care', 'errands', 'travel', 'default']).optional().describe('Optional category override. Auto-detected from title if omitted.'),
+  "frequency": zod.enum(['weekly', 'monthly', 'yearly']).default(createRecurringTaskBodyFrequencyDefault),
+  "monthlyMode": zod.union([zod.literal('day_of_month'),zod.literal('nth_weekday'),zod.literal(null)]).nullish(),
+  "dayOfMonth": zod.number().min(1).max(createRecurringTaskBodyDayOfMonthMax).nullish(),
+  "weekOfMonth": zod.number().nullish().describe('1-4, or -1 meaning the last such weekday of the month'),
+  "monthOfYear": zod.number().min(1).max(createRecurringTaskBodyMonthOfYearMax).nullish(),
+  "leadDays": zod.number().min(createRecurringTaskBodyLeadDaysMin).max(createRecurringTaskBodyLeadDaysMax).default(createRecurringTaskBodyLeadDaysDefault)
 })
 
 
@@ -866,6 +889,14 @@ export const GetRecurringTaskResponse = zod.object({
   "longestStreak": zod.number(),
   "totalCompletions": zod.number(),
   "lastCompletedDate": zod.string().nullish(),
+  "frequency": zod.enum(['weekly', 'monthly', 'yearly']),
+  "monthlyMode": zod.union([zod.literal('day_of_month'),zod.literal('nth_weekday'),zod.literal(null)]).nullish(),
+  "dayOfMonth": zod.number().nullish(),
+  "weekOfMonth": zod.number().nullish().describe('1-4, or -1 meaning the last such weekday of the month'),
+  "monthOfYear": zod.number().nullish(),
+  "leadDays": zod.number().describe('Days before the occurrence that the quest appears in the Quest Log'),
+  "scheduleLabel": zod.string().describe('Human phrasing of the schedule, e.g. \'The 3rd Friday of every month\''),
+  "streakUnit": zod.enum(['day', 'month', 'year']),
   "createdAt": zod.string()
 })
 
@@ -873,6 +904,13 @@ export const GetRecurringTaskResponse = zod.object({
 /**
  * @summary Update a recurring task template
  */
+
+export const updateRecurringTaskBodyDayOfMonthMax = 31;
+
+export const updateRecurringTaskBodyMonthOfYearMax = 12;
+
+export const updateRecurringTaskBodyLeadDaysMin = 0;
+export const updateRecurringTaskBodyLeadDaysMax = 60;
 
 
 
@@ -885,7 +923,13 @@ export const UpdateRecurringTaskBody = zod.object({
   "startDate": zod.string().optional(),
   "endDate": zod.string().nullish(),
   "isActive": zod.boolean().optional(),
-  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'self_care', 'errands', 'travel', 'default']).optional()
+  "category": zod.enum(['health', 'deep_work', 'learning', 'finance', 'admin', 'household', 'social', 'creative', 'self_care', 'errands', 'travel', 'default']).optional(),
+  "frequency": zod.enum(['weekly', 'monthly', 'yearly']).optional(),
+  "monthlyMode": zod.union([zod.literal('day_of_month'),zod.literal('nth_weekday'),zod.literal(null)]).nullish(),
+  "dayOfMonth": zod.number().min(1).max(updateRecurringTaskBodyDayOfMonthMax).nullish(),
+  "weekOfMonth": zod.number().nullish().describe('1-4, or -1 meaning the last such weekday of the month'),
+  "monthOfYear": zod.number().min(1).max(updateRecurringTaskBodyMonthOfYearMax).nullish(),
+  "leadDays": zod.number().min(updateRecurringTaskBodyLeadDaysMin).max(updateRecurringTaskBodyLeadDaysMax).optional()
 })
 
 export const UpdateRecurringTaskResponse = zod.object({
@@ -906,6 +950,14 @@ export const UpdateRecurringTaskResponse = zod.object({
   "longestStreak": zod.number(),
   "totalCompletions": zod.number(),
   "lastCompletedDate": zod.string().nullish(),
+  "frequency": zod.enum(['weekly', 'monthly', 'yearly']),
+  "monthlyMode": zod.union([zod.literal('day_of_month'),zod.literal('nth_weekday'),zod.literal(null)]).nullish(),
+  "dayOfMonth": zod.number().nullish(),
+  "weekOfMonth": zod.number().nullish().describe('1-4, or -1 meaning the last such weekday of the month'),
+  "monthOfYear": zod.number().nullish(),
+  "leadDays": zod.number().describe('Days before the occurrence that the quest appears in the Quest Log'),
+  "scheduleLabel": zod.string().describe('Human phrasing of the schedule, e.g. \'The 3rd Friday of every month\''),
+  "streakUnit": zod.enum(['day', 'month', 'year']),
   "createdAt": zod.string()
 })
 
@@ -931,6 +983,14 @@ export const ToggleRecurringTaskResponse = zod.object({
   "longestStreak": zod.number(),
   "totalCompletions": zod.number(),
   "lastCompletedDate": zod.string().nullish(),
+  "frequency": zod.enum(['weekly', 'monthly', 'yearly']),
+  "monthlyMode": zod.union([zod.literal('day_of_month'),zod.literal('nth_weekday'),zod.literal(null)]).nullish(),
+  "dayOfMonth": zod.number().nullish(),
+  "weekOfMonth": zod.number().nullish().describe('1-4, or -1 meaning the last such weekday of the month'),
+  "monthOfYear": zod.number().nullish(),
+  "leadDays": zod.number().describe('Days before the occurrence that the quest appears in the Quest Log'),
+  "scheduleLabel": zod.string().describe('Human phrasing of the schedule, e.g. \'The 3rd Friday of every month\''),
+  "streakUnit": zod.enum(['day', 'month', 'year']),
   "createdAt": zod.string()
 })
 
