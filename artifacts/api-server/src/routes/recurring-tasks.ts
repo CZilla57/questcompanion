@@ -1,8 +1,10 @@
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
-import { db, recurringTasksTable, tasksTable, habitStreaksTable } from "@workspace/db";
+import { db, recurringTasksTable, tasksTable, habitStreaksTable, usersTable } from "@workspace/db";
 import { assignPoints, CATEGORY_LABELS, VALID_CATEGORIES } from "../lib/auto-points";
 import { getHabitStreak, EMPTY_STREAK } from "../lib/habit-streaks";
+import { occurrencesInWindow } from "../lib/recurrence";
+import { spawnWindow, ruleFromTemplate } from "../lib/spawn-window";
 
 const router: IRouter = Router();
 
@@ -219,40 +221,53 @@ router.post("/recurring-tasks/:id/toggle", async (req, res): Promise<void> => {
   res.json(await formatRecurring(task));
 });
 
-/** Called by the scheduler — creates today's tasks from active recurring templates for all users */
+/**
+ * Called by the scheduler — creates upcoming quests from active recurring
+ * templates for all users.
+ *
+ * Each template is evaluated over `[today, today + leadDays]` **in its owner's
+ * timezone**, and every occurrence in that window is inserted carrying the true
+ * occurrence date as its due date. A quest can therefore appear days early
+ * without pretending to be due early: nudges key off `due_date <= today`, so an
+ * early quest waits quietly until its day.
+ *
+ * Weekly templates have leadDays 0, collapsing the window to a single day —
+ * the pre-cadence behavior, now in the user's own calendar.
+ *
+ * The unique constraint on (user_id, recurring_task_id, due_date) is the
+ * authoritative guard against duplicates across concurrent scheduler instances.
+ * onConflictDoNothing turns a constraint violation into a silent no-op, which
+ * is also what makes re-evaluating the same window every minute free.
+ */
 export async function spawnRecurringTasksForToday(): Promise<number> {
-  const today = new Date();
-  const todayStr = today.toISOString().split("T")[0];
-  const dayOfWeek = today.getDay();
+  const now = new Date();
 
-  const templates = await db
-    .select()
+  const rows = await db
+    .select({ tmpl: recurringTasksTable, timezone: usersTable.timezone })
     .from(recurringTasksTable)
+    .innerJoin(usersTable, eq(recurringTasksTable.userId, usersTable.id))
     .where(eq(recurringTasksTable.isActive, true));
 
   let created = 0;
-  for (const tmpl of templates) {
-    const days = parseDays(tmpl.daysOfWeek);
-    if (!days.includes(dayOfWeek)) continue;
-    if (tmpl.startDate > todayStr) continue;
-    if (tmpl.endDate && tmpl.endDate < todayStr) continue;
+  for (const { tmpl, timezone } of rows) {
+    const { from, to } = spawnWindow(now, timezone, tmpl.leadDays);
+    const dates = occurrencesInWindow(ruleFromTemplate(tmpl), from, to);
+    if (dates.length === 0) continue;
 
     const ap = assignPoints(tmpl.title, tmpl.priority);
-    // The unique constraint on (user_id, recurring_task_id, due_date) is the authoritative
-    // guard against duplicates across concurrent scheduler instances.  onConflictDoNothing
-    // turns a constraint violation into a silent no-op so the scheduler never errors out
-    // when two instances race on the same template.
-    const [inserted] = await db.insert(tasksTable).values({
-      userId: tmpl.userId,
-      recurringTaskId: tmpl.id,
-      title: tmpl.title,
-      description: tmpl.description,
-      points: ap.points,
-      dueDate: todayStr,
-      priority: tmpl.priority,
-      category: tmpl.category,
-    }).onConflictDoNothing().returning({ id: tasksTable.id });
-    if (inserted) created++;
+    for (const dueDate of dates) {
+      const [inserted] = await db.insert(tasksTable).values({
+        userId: tmpl.userId,
+        recurringTaskId: tmpl.id,
+        title: tmpl.title,
+        description: tmpl.description,
+        points: ap.points,
+        dueDate,
+        priority: tmpl.priority,
+        category: tmpl.category,
+      }).onConflictDoNothing().returning({ id: tasksTable.id });
+      if (inserted) created++;
+    }
   }
 
   return created;
