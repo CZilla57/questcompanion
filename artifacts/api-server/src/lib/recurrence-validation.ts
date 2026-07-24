@@ -132,5 +132,9 @@ export function validateRecurrenceInput(input: RecurrenceInput): string | null {
     return "Pick the 1st, 2nd, 3rd, 4th, or last week of the month.";
   }
   if (days.length === 0) return "Pick a weekday for this monthly schedule.";
+  // The engine and describeRule both read daysOfWeek[0] — a second weekday
+  // wouldn't be rejected, just silently ignored, and the stored row would
+  // lie about itself.
+  if (days.length > 1) return "Pick exactly one weekday for this monthly schedule.";
   return null;
 }

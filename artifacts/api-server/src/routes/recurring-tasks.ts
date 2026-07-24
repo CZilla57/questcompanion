@@ -1,19 +1,44 @@
 import { Router, type IRouter } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq, and, gt } from "drizzle-orm";
 import { db, recurringTasksTable, tasksTable, habitStreaksTable, usersTable } from "@workspace/db";
 import { assignPoints, CATEGORY_LABELS, VALID_CATEGORIES } from "../lib/auto-points";
 import { getHabitStreak, EMPTY_STREAK } from "../lib/habit-streaks";
 import { occurrencesInWindow, describeRule } from "../lib/recurrence";
-import { spawnWindow, ruleFromTemplate } from "../lib/spawn-window";
+import { spawnWindow, ruleFromTemplate, parseDays } from "../lib/spawn-window";
 import { validateRecurrenceInput, streakUnitFor, mergeRecurrenceUpdate } from "../lib/recurrence-validation";
+import { resolveTimeZone, localDateKey } from "../lib/date-buckets";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
-function parseDays(raw: string): number[] {
-  return raw
-    .split(",")
-    .map((s) => parseInt(s.trim(), 10))
-    .filter((n) => !isNaN(n) && n >= 0 && n <= 6);
+/**
+ * An edited or paused template must not leave orphaned future quests that no
+ * longer match its rule: editing a monthly template from the 15th to the
+ * 20th mid-window would otherwise leave the already-spawned 15th AND spawn
+ * the 20th (two quests, one occurrence), and pausing a template would leave
+ * its future quests sitting in the log even though "Paused" is supposed to
+ * mean nothing more comes from it. The next scheduler tick re-spawns from
+ * whatever rule is now live, so no re-spawn logic is needed here.
+ *
+ * Only strictly future, still-incomplete quests are removed: completed
+ * quests are history (deleting them would silently rewrite the user's
+ * record and their streaks), and today's/past quests are left alone.
+ */
+async function deleteFutureIncompleteSpawns(recurringTaskId: number, userId: number): Promise<void> {
+  const [owner] = await db
+    .select({ timezone: usersTable.timezone })
+    .from(usersTable)
+    .where(eq(usersTable.id, userId));
+  const tz = resolveTimeZone(owner?.timezone ?? null);
+  const today = localDateKey(new Date(), tz);
+
+  await db
+    .delete(tasksTable)
+    .where(and(
+      eq(tasksTable.recurringTaskId, recurringTaskId),
+      eq(tasksTable.completed, false),
+      gt(tasksTable.dueDate, today),
+    ));
 }
 
 async function formatRecurring(r: typeof recurringTasksTable.$inferSelect) {
@@ -34,7 +59,7 @@ async function formatRecurring(r: typeof recurringTasksTable.$inferSelect) {
     startDate: r.startDate,
     endDate: r.endDate,
     isActive: r.isActive,
-    frequency: r.frequency,
+    frequency: rule.frequency,
     monthlyMode: r.monthlyMode,
     dayOfMonth: r.dayOfMonth,
     weekOfMonth: r.weekOfMonth,
@@ -127,12 +152,15 @@ router.post("/recurring-tasks", async (req, res): Promise<void> => {
       startDate,
       endDate: endDate ?? null,
       isActive: true,
-      frequency,
+      // Destructuring defaults only fire on `undefined` — an explicit
+      // `null` in the body (e.g. `"frequency": null`) sails past them and
+      // would otherwise hit the NOT NULL columns as a 500. Coerce here too.
+      frequency: frequency ?? "weekly",
       monthlyMode: monthlyMode ?? null,
       dayOfMonth: dayOfMonth ?? null,
       weekOfMonth: weekOfMonth ?? null,
       monthOfYear: monthOfYear ?? null,
-      leadDays,
+      leadDays: leadDays ?? 0,
     })
     .returning();
 
@@ -247,6 +275,11 @@ router.patch("/recurring-tasks/:id", async (req, res): Promise<void> => {
     .returning();
   if (!task) { res.status(404).json({ error: "Not found" }); return; }
 
+  // The edited rule no longer matches whatever future quests were spawned
+  // under the old one — clear them so the next tick spawns fresh from the
+  // new rule instead of leaving a stale, mismatched quest behind.
+  await deleteFutureIncompleteSpawns(id, userId);
+
   res.json(await formatRecurring(task));
 });
 
@@ -296,6 +329,13 @@ router.post("/recurring-tasks/:id/toggle", async (req, res): Promise<void> => {
     .where(eq(recurringTasksTable.id, id))
     .returning();
 
+  // Toggling to INACTIVE ("Paused") must mean nothing more comes from this
+  // template — including quests it already spawned into the future. Toggling
+  // back on is not a resurrection: the next tick spawns fresh from the rule.
+  if (existing.isActive && task && !task.isActive) {
+    await deleteFutureIncompleteSpawns(id, userId);
+  }
+
   res.json(await formatRecurring(task));
 });
 
@@ -328,23 +368,33 @@ export async function spawnRecurringTasksForToday(): Promise<number> {
 
   let created = 0;
   for (const { tmpl, timezone } of rows) {
-    const { from, to } = spawnWindow(now, timezone, tmpl.leadDays);
-    const dates = occurrencesInWindow(ruleFromTemplate(tmpl), from, to);
-    if (dates.length === 0) continue;
+    // Per-template, not per-tick: this loop now does an innerJoin, spans up
+    // to a 61-day window, and can issue up to 61 sequential inserts for one
+    // template. tick() runs this pass first and unguarded — a throw here
+    // would otherwise skip the body-double sweep, notifications, weekly
+    // recaps, and the heartbeat for every user, every minute. One bad
+    // template must not cost every other user their day's quests.
+    try {
+      const { from, to } = spawnWindow(now, timezone, tmpl.leadDays);
+      const dates = occurrencesInWindow(ruleFromTemplate(tmpl), from, to);
+      if (dates.length === 0) continue;
 
-    const ap = assignPoints(tmpl.title, tmpl.priority);
-    for (const dueDate of dates) {
-      const [inserted] = await db.insert(tasksTable).values({
-        userId: tmpl.userId,
-        recurringTaskId: tmpl.id,
-        title: tmpl.title,
-        description: tmpl.description,
-        points: ap.points,
-        dueDate,
-        priority: tmpl.priority,
-        category: tmpl.category,
-      }).onConflictDoNothing().returning({ id: tasksTable.id });
-      if (inserted) created++;
+      const ap = assignPoints(tmpl.title, tmpl.priority);
+      for (const dueDate of dates) {
+        const [inserted] = await db.insert(tasksTable).values({
+          userId: tmpl.userId,
+          recurringTaskId: tmpl.id,
+          title: tmpl.title,
+          description: tmpl.description,
+          points: ap.points,
+          dueDate,
+          priority: tmpl.priority,
+          category: tmpl.category,
+        }).onConflictDoNothing().returning({ id: tasksTable.id });
+        if (inserted) created++;
+      }
+    } catch (err) {
+      logger.error({ err, templateId: tmpl.id, userId: tmpl.userId }, "Spawn failed for template");
     }
   }
 

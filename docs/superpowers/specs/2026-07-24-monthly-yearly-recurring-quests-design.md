@@ -166,6 +166,15 @@ Rulings:
 - **No backfill of missed occurrences.** The window only looks forward, matching current behavior.
   A server outage loses that day's spawns, as it does today.
 - Changing `lead_days` on an existing template does not retro-spawn.
+- **Editing a template, or pausing it (toggling to inactive), clears its future incomplete spawned
+  quests.** Lead time spawns up to 60 days ahead with nothing reconciling those quests when the rule
+  changes — editing a monthly template mid-window would otherwise leave the already-spawned old
+  occurrence sitting alongside the newly-spawned one, and pausing would leave future quests in the
+  log even though "Paused" is supposed to mean nothing more comes from it. `PATCH` (after a
+  successful update) and `POST /toggle` (only when toggling to inactive) delete rows with that
+  `recurring_task_id`, `completed = false`, and `due_date` strictly after the owner's local today —
+  completed quests and today's/past quests are never touched. The next tick re-spawns from whatever
+  rule is now live, so no re-spawn logic is needed at edit/pause time.
 
 ### 3. Cadence-aware streaks
 
@@ -246,9 +255,15 @@ The pure engine carries the weight:
 - `startDate` / `endDate` gating, including an `endDate` inside a lead window
 - malformed rules return `[]` rather than throwing
 
-Spawner: idempotence across repeated ticks, exactly one row per lead window, two users in different
-timezones on the same UTC instant landing on different local dates, and `onConflictDoNothing`
-absorbing a concurrent second tick.
+Spawner: this repo has no database test harness (and one is not being added), so nothing here
+exercises the route or the insert loop directly. What's covered is the pure slice that decides
+*what* the spawner would write — `spawn-window.test.ts` covers the window computation itself,
+including two users in different timezones on the same UTC instant landing on different local
+dates, and the DST cases. Duplicate prevention (idempotence across repeated ticks, a concurrent
+second tick landing on the same occurrence) is structural rather than tested: the pre-existing
+`unique(user_id, recurring_task_id, due_date)` index plus `onConflictDoNothing` is what makes a
+re-evaluated window a no-op, and that guarantee was verified by hand rather than by an automated
+test.
 
 Streaks: consecutive months advancing, a skipped month resetting to 1, yearly across a year boundary,
 uncomplete rollback both with and without `prevLastPeriodKey` present in the snapshot, and weekly

@@ -56,6 +56,12 @@ describe("validateRecurrenceInput — monthly", () => {
     })).toBe("Pick a weekday for this monthly schedule.");
   });
 
+  it("rejects more than one weekday for nth_weekday", () => {
+    expect(validateRecurrenceInput({
+      frequency: "monthly", monthlyMode: "nth_weekday", weekOfMonth: 1, daysOfWeek: [1, 3, 5],
+    })).toBe("Pick exactly one weekday for this monthly schedule.");
+  });
+
   it("requires a supported week ordinal", () => {
     const msg = "Pick the 1st, 2nd, 3rd, 4th, or last week of the month.";
     expect(validateRecurrenceInput({

@@ -33,7 +33,7 @@ export function spawnWindow(
 
 const MODES = new Set<MonthlyMode>(["day_of_month", "nth_weekday"]);
 
-function parseDays(raw: string): number[] {
+export function parseDays(raw: string): number[] {
   return raw
     .split(",")
     .map((s) => parseInt(s.trim(), 10))

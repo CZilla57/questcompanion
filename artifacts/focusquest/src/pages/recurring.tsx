@@ -429,14 +429,14 @@ function RecurringTaskForm({
           <span className="text-sm text-muted-foreground">days before it's due</span>
         </div>
         <p className="text-xs text-muted-foreground mt-1">
-          The quest appears in your Quest Log early, still dated for the day it's due.
+          It shows up in Focus and your momentum suggestions early, and lands in your Quest Log on its due date.
         </p>
       </div>
 
       <div>
         <label className="text-sm font-medium text-foreground mb-1 block">
           <Clock className="inline w-3.5 h-3.5 mr-1 text-primary" />
-          Time (tasks created at this time each day)
+          Time of day for this quest
         </label>
         <Input
           type="time"
@@ -818,8 +818,8 @@ export default function Recurring() {
           {[
             { label: "Active templates", value: activeTasks.length },
             { label: "Paused", value: pausedTasks.length },
-            { label: "🔥 Top streak", value: `${topStreak}d` },
-            { label: "Total streak days", value: totalStreak },
+            { label: "🔥 Top streak", value: topStreak },
+            { label: "Total streak", value: totalStreak },
           ].map((s) => (
             <div key={s.label} className="bg-card border border-border rounded-xl p-4 text-center">
               <div className="text-2xl font-bold text-foreground">{s.value}</div>
