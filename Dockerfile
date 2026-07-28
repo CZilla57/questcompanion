@@ -36,9 +36,12 @@ COPY --from=build-api /app/artifacts/api-server/dist ./dist
 COPY --from=build-frontend /app/artifacts/focusquest/dist/public ./dist/public
 # Migration SQL must ship with the image — dist/migrate.mjs reads it at runtime.
 COPY --from=build-api /app/lib/db/drizzle ./dist/drizzle
+# Supabase's pooler chains to a private root CA, so the cert ships too.
+COPY --from=build-api /app/lib/db/certs ./certs
 
 ENV NODE_ENV=production
 ENV PORT=8080
+ENV DATABASE_CA_CERT_PATH=/app/certs/supabase-ca.crt
 
 EXPOSE 8080
 
