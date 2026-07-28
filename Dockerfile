@@ -45,6 +45,8 @@ ENV DATABASE_CA_CERT_PATH=/app/certs/supabase-ca.crt
 
 EXPOSE 8080
 
-# Migrate before serving: a failed migration exits non-zero and aborts the boot
-# rather than leaving a server running against a half-migrated database.
+# Migrate before serving: a bad migration exits non-zero and aborts the boot
+# rather than leaving a server running against a half-migrated database. An
+# unreachable database is retried and then tolerated, so a database outage
+# degrades the app instead of crash-looping the container.
 CMD ["sh", "-c", "node dist/migrate.mjs && exec node --enable-source-maps dist/index.mjs"]
