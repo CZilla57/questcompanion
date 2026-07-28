@@ -24,8 +24,27 @@ const packageCertPath = path.resolve(
 );
 
 export function databaseSsl(): { ca: string[]; rejectUnauthorized: true } | undefined {
-  const certPath = process.env.DATABASE_CA_CERT_PATH ?? packageCertPath;
-  if (!fs.existsSync(certPath)) return undefined;
+  const configured = process.env.DATABASE_CA_CERT_PATH;
+  const certPath = configured ?? packageCertPath;
+
+  if (!fs.existsSync(certPath)) {
+    // An explicitly configured path that isn't there is a deployment fault, not
+    // a reason to continue. Returning undefined here would hand node-postgres a
+    // config with no `ssl` at all, and its default is *no TLS* — so a typo in
+    // this one env var would quietly downgrade a verified connection to
+    // plaintext. Fail loudly instead.
+    if (configured) {
+      throw new Error(
+        `DATABASE_CA_CERT_PATH is set to "${configured}" but no file exists there. ` +
+          `Refusing to connect without TLS.`,
+      );
+    }
+    console.warn(
+      `[db] no CA certificate at ${certPath} — connecting WITHOUT TLS. ` +
+        `Set DATABASE_CA_CERT_PATH for any non-local database.`,
+    );
+    return undefined;
+  }
 
   return {
     ca: [...tls.rootCertificates, fs.readFileSync(certPath, "utf8")],
