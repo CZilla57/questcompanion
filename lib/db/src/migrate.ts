@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import pg from "pg";
+import { databaseSsl } from "./ssl";
 
 /**
  * Applies any pending migrations in `migrationsFolder`, then closes its pool.
@@ -24,7 +25,7 @@ export async function runMigrations(
 ): Promise<void> {
   if (!connectionString) throw new Error("DATABASE_URL must be set to run migrations");
 
-  const pool = new pg.Pool({ connectionString, max: 1 });
+  const pool = new pg.Pool({ connectionString, max: 1, ssl: databaseSsl() });
   try {
     await migrate(drizzle(pool), { migrationsFolder, migrationsSchema });
   } finally {
