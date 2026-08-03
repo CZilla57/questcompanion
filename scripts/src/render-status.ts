@@ -17,8 +17,11 @@
 //   --log-limit <n> log lines to fetch (default 200)
 //
 // Logs DO work on Render's free plan (confirmed 2026-07-19). Health checks are
-// suppressed by default because cron-job.org pings /api/healthz every ~5s and
-// /api/cron/tick every minute, which otherwise buries everything else.
+// suppressed by default because Render's own platform health checker pings
+// /api/healthz every ~5s (healthCheckPath in render.yaml — it only runs while
+// the instance is awake and does NOT keep the free tier from spinning down),
+// and cron-job.org hits /api/cron/tick every minute. Together they otherwise
+// bury everything else.
 //
 // Requires RENDER_API_KEY in .env (see .env.example). Read from the environment
 // and never printed — including on error paths.
