@@ -17,6 +17,7 @@ import { resolveTimeZone, localHour, localDateKey, localDayStartUtc } from "./da
 import { protectedStretch, selectProtectionNudge, type NudgeKind } from "./hyperfocus";
 import { shouldPromptReflection } from "./reflections";
 import { eligibleKinds, selectContextNudge } from "./context-nudges";
+import { dropStaleRecurringInstances } from "./recurring-visibility";
 import { derivePatterns } from "./patterns";
 import { loadPatternInputs } from "../routes/patterns";
 import {
@@ -76,7 +77,7 @@ async function contextNudgeCandidate(user: User, now: Date): Promise<ProducedCan
   const kinds = eligibleKinds(gate);
   if (kinds.length === 0) return null;
 
-  const openQuests = await db
+  const openRows = await db
     .select({
       id: tasksTable.id,
       title: tasksTable.title,
@@ -85,6 +86,7 @@ async function contextNudgeCandidate(user: User, now: Date): Promise<ProducedCan
       estimatedMinutes: tasksTable.estimatedMinutes,
       difficulty: tasksTable.difficulty,
       priority: tasksTable.priority,
+      recurringTaskId: tasksTable.recurringTaskId,
     })
     .from(tasksTable)
     .where(and(
@@ -92,6 +94,20 @@ async function contextNudgeCandidate(user: User, now: Date): Promise<ProducedCan
       eq(tasksTable.completed, false),
       or(isNull(tasksTable.dueDate), lte(tasksTable.dueDate, localToday)),
     ));
+
+  // power_window/quick_win pick by lowest id — without this filter that is the
+  // OLDEST stale open copy of a ritual, nudging about one already done today.
+  // The shadow scan needs every instance of the user's templates, completed
+  // included (see dropStaleRecurringInstances).
+  const recurringRows = await db
+    .select({
+      id: tasksTable.id,
+      recurringTaskId: tasksTable.recurringTaskId,
+      dueDate: tasksTable.dueDate,
+    })
+    .from(tasksTable)
+    .where(and(eq(tasksTable.userId, user.id), isNotNull(tasksTable.recurringTaskId)));
+  const openQuests = dropStaleRecurringInstances(openRows, recurringRows, localToday);
   if (openQuests.length === 0) return null;
 
   const needsPatterns = kinds.includes("power_window") || kinds.includes("quick_win");

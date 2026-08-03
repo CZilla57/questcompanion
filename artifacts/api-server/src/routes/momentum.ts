@@ -3,6 +3,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { db, brainCheckinsTable, tasksTable, taskStepsTable } from "@workspace/db";
 import { deriveBrainState } from "../lib/brain-mode";
 import { rankMomentum, type MomentumTask } from "../lib/momentum";
+import { dropStaleRecurringInstances } from "../lib/recurring-visibility";
 import { localDateKey, localHour } from "../lib/date-buckets";
 import { derivePatterns } from "../lib/patterns";
 import { loadPatternInputs, resolveUserTimeZone } from "./patterns";
@@ -73,7 +74,9 @@ router.get("/tasks/momentum", async (req, res): Promise<void> => {
     stepsByTask.set(s.taskId, list);
   }
 
-  const candidates: MomentumTask[] = open
+  // Completed rows included: today's finished occurrence is what shadows a
+  // stale open copy of the same ritual (see dropStaleRecurringInstances).
+  const candidates: MomentumTask[] = dropStaleRecurringInstances(open, [...open, ...done], todayStr)
     .filter((t) => !excludeIds.includes(t.id))
     .map((t) => {
       const ts = stepsByTask.get(t.id) ?? [];

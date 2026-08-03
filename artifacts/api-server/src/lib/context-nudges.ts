@@ -46,7 +46,8 @@ export interface NudgeGateState {
 
 export interface ContextNudgeInputs extends NudgeGateState {
   patterns: PatternSummary | null;
-  /** completed == false AND (dueDate <= localToday OR dueDate IS NULL) — caller-filtered. */
+  /** completed == false AND (dueDate <= localToday OR dueDate IS NULL), minus
+   * stale recurring copies (dropStaleRecurringInstances) — caller-filtered. */
   openQuests: OpenQuestLite[];
 }
 
