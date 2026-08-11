@@ -62,7 +62,7 @@ export function HeroSummary() {
           style={{ boxShadow: `0 0 20px ${accent}33` }}
         >
           <div className="relative" style={heroSpriteEffect(heroStatus?.stage as HungerStage | undefined)}>
-            <PixelHero look={look} size={128} />
+            <PixelHero look={look} size={128} celebrateOn="questCompleted" />
           </div>
           {heroStatus?.stage === "fainted" && (
             <span className="absolute top-1 right-1 text-lg" aria-hidden>💫</span>
