@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetFocusPresets,
@@ -48,7 +49,7 @@ export default function Focus() {
 
   const presetsQuery = useGetFocusPresets();
   const activeQuery = useGetActiveFocusSession();
-  const tasksQuery = useGetTasks({ completed: false });
+  const tasksQuery = useGetTasks({ completed: false, date: format(new Date(), "yyyy-MM-dd") });
 
   const startMut = useStartFocusSession();
   const intervalMut = useCreditFocusInterval();
