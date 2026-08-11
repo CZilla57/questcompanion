@@ -81,10 +81,26 @@ async function fetchJson(url) { return (await fetch(url)).json(); }
 const hexToRgb = (h) => { h = h.replace("#", ""); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; };
 const key = (r, g, b) => (r << 16) | (g << 8) | b;
 async function loadSheet(url) { try { return PNG.sync.read(await fetchBuf(url)); } catch { return null; } }
-function cropSouth(png) {
-  const out = new PNG({ width: 64, height: 64 });
-  for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) {
-    const si = ((128 + y) * png.width + x) * 4, di = (y * 64 + x) * 4;
+// FRAMES verified empirically (2026-08-11) against 10 representative LPC walk sheets spanning
+// body/head/eyes/hair/beard/glasses/earrings/outfit/weapon/armor — every one is a 576x256
+// (9-frame) walk sheet. Asserted, not assumed: a future upstream asset with a different frame
+// count must fail the build loudly rather than silently desyncing that layer's animation from
+// every other layer's (see cropSouthStrip below).
+const FRAMES = 9;
+
+// Crop the FULL south-facing row (not just its first frame, as the old cropSouth did) so every
+// baked layer becomes an animated strip: width = FRAMES*64, height = 64.
+function cropSouthStrip(png) {
+  const width = png.width;
+  if (width % 64 !== 0) {
+    throw new Error(`malformed sheet: width ${width} is not a multiple of 64`);
+  }
+  if (width / 64 !== FRAMES) {
+    throw new Error(`frame-count mismatch: expected ${FRAMES} frames (${FRAMES * 64}px wide), got ${width / 64} (${width}px wide)`);
+  }
+  const out = new PNG({ width, height: 64 });
+  for (let y = 0; y < 64; y++) for (let x = 0; x < width; x++) {
+    const si = ((128 + y) * png.width + x) * 4, di = (y * width + x) * 4;
     out.data[di] = png.data[si]; out.data[di + 1] = png.data[si + 1]; out.data[di + 2] = png.data[si + 2]; out.data[di + 3] = png.data[si + 3];
   }
   return out;
@@ -106,7 +122,7 @@ function recolor(png, srcRamp, dstRamp) {
   return out;
 }
 function over(base, top) {
-  const out = new PNG({ width: 64, height: 64 }); base.data.copy(out.data);
+  const out = new PNG({ width: base.width, height: base.height }); base.data.copy(out.data);
   for (let i = 0; i < out.data.length; i += 4) { const ta = top.data[i + 3] / 255; if (ta === 0) continue; for (let c = 0; c < 3; c++) out.data[i + c] = Math.round(top.data[i + c] * ta + out.data[i + c] * (1 - ta)); out.data[i + 3] = Math.max(out.data[i + 3], top.data[i + 3]); }
   return out;
 }
@@ -144,7 +160,7 @@ async function loadDefFrame({ def: defPath, variant }, build) {
   const url = variant ? `${RAW}/spritesheets/${prefix}walk/${variant}.png` : `${RAW}/spritesheets/${prefix}walk.png`;
   const sheet = await loadSheet(url);
   if (!sheet) throw new Error(`no sheet at ${url} for def ${defPath} (build ${build}) — check variant/leaf path`);
-  return { frame: cropSouth(sheet), credit: defCredit(def), zPos: layer.zPos };
+  return { frame: cropSouthStrip(sheet), credit: defCredit(def), zPos: layer.zPos };
 }
 
 // Union author/license/url across the parts of a baked sprite.
@@ -164,7 +180,7 @@ const gearCreditRows = [];
 // Composite an ordered list of parts (feet, legs, torso...) into one baked outfit sprite per build.
 async function buildOutfit(cls, tier, parts /* PartRef[] in draw order: feet→legs→torso */) {
   for (const build of BUILDS) {
-    let img = new PNG({ width: 64, height: 64 }); // transparent base
+    let img = new PNG({ width: FRAMES * 64, height: 64 }); // transparent base, one row per frame
     const creds = [];
     for (const part of parts) {
       const { frame, credit } = await loadDefFrame(perBuild(part, build), build);
@@ -199,7 +215,7 @@ async function buildCosmetic(category: "glasses" | "earrings", map: Record<strin
     let sheet = await loadSheet(`${RAW}/spritesheets/${leaf}/walk.png`);
     if (!sheet) sheet = await loadSheet(`${RAW}/spritesheets/${leaf}.png`);
     if (!sheet) throw new Error(`missing ${category} ${style} at ${leaf}`);
-    const frame = cropSouth(sheet);
+    const frame = cropSouthStrip(sheet);
     writePng(category, style, frame);
     const c = cc(CRED.facial);
     entries.push({ id: `${category}:${style}`, category, zIndex: Z[category], file: `/lpc/${category}/${style}.png`, ...c });
@@ -244,7 +260,7 @@ async function main() {
 
   let eyes = await loadSheet(`${RAW}/spritesheets/eyes/human/adult/default/walk.png`);
   if (!eyes) eyes = await loadSheet(`${RAW}/spritesheets/eyes/human/adult/neutral/walk.png`);
-  const eyeLayer = eyes ? cropSouth(eyes) : null;
+  const eyeLayer = eyes ? cropSouthStrip(eyes) : null;
   if (!eyeLayer) throw new Error("eyes layer failed to load");
 
   // BODIES = body + head + eyes, recolored to the same skin tone
@@ -252,7 +268,7 @@ async function main() {
     const bodySheet = await loadSheet(`${RAW}/spritesheets/body/bodies/${build}/walk.png`);
     const headSheet = await loadSheet(`${RAW}/spritesheets/head/heads/human/${build}/walk.png`);
     if (!bodySheet || !headSheet) throw new Error(`missing body/head for ${build}`);
-    const bodyBase = cropSouth(bodySheet), headBase = cropSouth(headSheet);
+    const bodyBase = cropSouthStrip(bodySheet), headBase = cropSouthStrip(headSheet);
     const bodySrc = detectSource(bodyBase, bodyPal), headSrc = detectSource(headBase, bodyPal);
     for (const [ourSkin, variant] of Object.entries(SKIN_MAP)) {
       if (!bodyPal[variant]) throw new Error(`no body palette variant ${variant}`);
@@ -270,7 +286,7 @@ async function main() {
     let sheet = await loadSheet(`${RAW}/spritesheets/hair/${lpcStyle}/adult/walk.png`);
     if (!sheet) sheet = await loadSheet(`${RAW}/spritesheets/hair/${lpcStyle}/adult/fg/walk.png`);
     if (!sheet) throw new Error(`missing hair ${lpcStyle}`);
-    const base = cropSouth(sheet), src = detectSource(base, hairPal);
+    const base = cropSouthStrip(sheet), src = detectSource(base, hairPal);
     for (const [ourColor, variant] of Object.entries(hairColorMap)) {
       if (!variant) throw new Error(`no hair palette variant for ${ourColor}`);
       writePng("hair", `${ourStyle}_${ourColor}`, recolor(base, hairPal[src], hairPal[variant]));
@@ -287,7 +303,7 @@ async function main() {
     let sheet = await loadSheet(`${RAW}/${BEARD_LEAF}/${lpcStyle}/adult/walk.png`);
     if (!sheet) sheet = await loadSheet(`${RAW}/${BEARD_LEAF}/${lpcStyle}/walk.png`);
     if (!sheet) throw new Error(`missing beard ${lpcStyle}`);
-    const base = cropSouth(sheet), src = detectSource(base, hairPal);
+    const base = cropSouthStrip(sheet), src = detectSource(base, hairPal);
     for (const [ourColor, variant] of Object.entries(hairColorMap)) {
       if (!variant) throw new Error(`no hair palette variant for ${ourColor}`);
       writePng("beard", `${ourStyle}_${ourColor}`, recolor(base, hairPal[src], hairPal[variant]));
