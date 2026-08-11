@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import {
-  Application, AnimatedSprite, Container, Texture, Rectangle,
+  Application, AnimatedSprite, Container, Graphics, Texture, Rectangle,
 } from "pixi.js";
 import { resolveLayers } from "@/lib/hero/resolve-layers";
 import { catalogById } from "@/lib/hero/catalog";
@@ -60,21 +60,80 @@ async function buildLayerSprite(layer: ResolvedLayer): Promise<AnimatedSprite | 
   return new AnimatedSprite({ textures: sliceFrames(strip), autoPlay: false, loop: true });
 }
 
+const QUEST_COMPLETED_EVENT = "quest-completed";
+
+type ActiveFlourish = { tick: () => void; burst: Container };
+
+/** A brief scale-pop + sparkle burst layered over the hero on task completion. Pure Pixi
+ *  primitives, no new sprite frames — works identically for every hero regardless of which
+ *  gear/hair/outfit item's source art has animation coverage (some third-party LPC add-on packs
+ *  only ship a single static frame, not a full row — see the design doc). Self-removes when
+ *  finished; `activeRef` lets a re-trigger mid-flourish cancel the old one instead of stacking
+ *  two competing scale tweens on the same stage. */
+function playCompletionFlourish(
+  app: Application,
+  stage: Container,
+  activeRef: { current: ActiveFlourish | null },
+) {
+  const prev = activeRef.current;
+  if (prev) {
+    app.ticker.remove(prev.tick);
+    prev.burst.destroy({ children: true });
+    stage.scale.set(1);
+  }
+
+  const burst = new Container();
+  stage.addChild(burst);
+
+  const sparkleColors = [0xffd76a, 0xffe9a8, 0xffffff];
+  const sparkles = Array.from({ length: 6 }, (_, i) => {
+    const g = new Graphics().circle(0, 0, 2 + (i % 2)).fill(sparkleColors[i % sparkleColors.length]);
+    burst.addChild(g);
+    return { g, angle: (i / 6) * Math.PI * 2 };
+  });
+
+  const DURATION_MS = 550;
+  const start = performance.now();
+  const tick = () => {
+    const t = Math.min(1, (performance.now() - start) / DURATION_MS);
+    const eased = 1 - (1 - t) * (1 - t); // ease-out
+    stage.scale.set(1 + Math.sin(eased * Math.PI) * 0.18);
+    for (const { g, angle } of sparkles) {
+      const dist = eased * 22;
+      g.position.set(Math.cos(angle) * dist, Math.sin(angle) * dist);
+      g.alpha = 1 - eased;
+    }
+    if (t >= 1) {
+      app.ticker.remove(tick);
+      stage.scale.set(1);
+      burst.destroy({ children: true });
+      if (activeRef.current?.tick === tick) activeRef.current = null;
+    }
+  };
+  app.ticker.add(tick);
+  activeRef.current = { tick, burst };
+}
+
 export function PixelHero({
   look,
   size = 160,
   className,
-  celebrateOn: _celebrateOn,
+  celebrateOn,
 }: {
   look: HeroLook;
   size?: number;
   className?: string;
-  /** Wired up in a follow-up change; accepted here so the prop lands once. */
+  /** Opt in to a completion flourish on the existing global "quest-completed" event (see
+   *  dopamine-overlay.tsx). Only pass this on a hero display the user is actually looking at
+   *  right after completing something — e.g. the dashboard hero, not an ally's or a body-double
+   *  room participant's, since the event carries no hero identity and fires for the *viewer's*
+   *  own completions regardless of whose hero is on screen. */
   celebrateOn?: "questCompleted";
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<Application | null>(null);
   const stageRef = useRef<Container | null>(null);
+  const activeFlourishRef = useRef<ActiveFlourish | null>(null);
 
   const lookKey = JSON.stringify(look);
   const layers: ResolvedLayer[] = useMemo(
@@ -128,12 +187,27 @@ export function PixelHero({
     return () => {
       cancelled = true;
       if (!initialized) return; // init() hasn't resolved yet; the async block above tears itself down
+      if (activeFlourishRef.current) {
+        app.ticker.remove(activeFlourishRef.current.tick);
+        activeFlourishRef.current = null;
+      }
       if (tickHandler) app.ticker.remove(tickHandler);
       appRef.current = null;
       stageRef.current = null;
       app.destroy(true, { children: true, texture: true, textureSource: true });
     };
   }, [layers]);
+
+  useEffect(() => {
+    if (!celebrateOn) return;
+    const handler = () => {
+      const app = appRef.current;
+      const stage = stageRef.current;
+      if (app && stage) playCompletionFlourish(app, stage, activeFlourishRef);
+    };
+    window.addEventListener(QUEST_COMPLETED_EVENT, handler);
+    return () => window.removeEventListener(QUEST_COMPLETED_EVENT, handler);
+  }, [celebrateOn]);
 
   return (
     <div
