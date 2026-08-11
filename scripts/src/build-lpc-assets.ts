@@ -143,20 +143,44 @@ const writePng = (dir, name, png) => {
 };
 const csv = (s) => `"${String(s).replace(/"/g, '""')}"`;
 
-// Load the south standing frame for a def's layer_1 for a given build.
+// The ULPC cloth palette (color-name -> hex ramp), fetched once and reused for every recolor-def
+// variant. Loaded lazily so a build that bakes no recolor-def variants never fetches it.
+let _clothPal = null;
+async function clothPalette() {
+  if (!_clothPal) _clothPal = await fetchJson(`${RAW}/tools/palettes/ulpc-cloth-palettes.json`);
+  return _clothPal;
+}
+
+// Load the south walk strip for a def's layer_1 for a given build, applying its color variant.
 //
-// WRINKLE (confirmed empirically against the live repo during the Task 1 spike — this
-// overrides the "{prefix}{variant}/walk.png" leaf assumed in the plan's LPC path model):
-// a def with NO `variants` (recolor/palette-based, e.g. the longsleeve shirt) resolves at the
-// bare `{prefix}walk.png`. A def WITH `variants` (e.g. pants, shoes, tunic, the sword) does NOT
-// have a `{variant}/walk.png` subfolder — instead `walk` itself is a directory and the pre-colored
-// sheet lives at `{prefix}walk/{variant}.png`. Confirmed via the GitHub contents API for
-// legs/pants, feet/shoes/basic, torso/clothes/tunic, and weapon/sword/arming (male + female).
+// Upstream ships colored defs in two shapes, distinguished by the def JSON itself:
+//   - A def WITH a `variants` list (e.g. jacket/frock, sword/arming, hats/caps) ships pre-baked
+//     per-color sheets at `{prefix}walk/{variant}.png`. Fetch that directly.
+//   - A recolor def (a `recolors` block, NO `variants` — e.g. shoes/basic, pants, sandals, boots,
+//     pantaloons; all `material:"cloth"`) ships ONLY a base `{prefix}walk.png`; its color is meant
+//     to be applied from an external palette ramp. Upstream removed the `walk/{variant}.png`
+//     subfolder sheets these were previously (incorrectly) fetched from, so recolor the base here
+//     using the ULPC cloth palette — the identical detectSource+recolor path the body/hair/beard
+//     loops in main() already use. Verified: the cloth base sheets are drawn in the palette's
+//     source ramp, and recoloring yields a distinct, non-blank strip per variant.
+// A def with no requested variant (e.g. plate armor, the longsleeve shirt) resolves at the bare
+// `{prefix}walk.png` unchanged.
 async function loadDefFrame({ def: defPath, variant }, build) {
   const def = await fetchDef(defPath);
   const layer = def.layer_1;
   const prefix = layer[build];
   if (!prefix) throw new Error(`def ${defPath} has no '${build}' layer — supply a per-build override in the manifest`);
+
+  if (variant && !def.variants) {
+    const raw = await loadSheet(`${RAW}/spritesheets/${prefix}walk.png`);
+    if (!raw) throw new Error(`no base sheet at ${prefix}walk.png for recolor def ${defPath} (build ${build})`);
+    const base = cropSouthStrip(raw);
+    const pal = await clothPalette();
+    if (!pal[variant]) throw new Error(`cloth palette has no variant '${variant}' for recolor def ${defPath}`);
+    const src = detectSource(base, pal);
+    return { frame: recolor(base, pal[src], pal[variant]), credit: defCredit(def), zPos: layer.zPos };
+  }
+
   const url = variant ? `${RAW}/spritesheets/${prefix}walk/${variant}.png` : `${RAW}/spritesheets/${prefix}walk.png`;
   const sheet = await loadSheet(url);
   if (!sheet) throw new Error(`no sheet at ${url} for def ${defPath} (build ${build}) — check variant/leaf path`);
