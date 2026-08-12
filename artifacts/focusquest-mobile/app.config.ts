@@ -10,9 +10,11 @@ const config: ExpoConfig = {
     bundleIdentifier: "app.focusquest.mobile",
     supportsTablet: false,
   },
-  plugins: ["expo-router", "expo-secure-store"],
+  plugins: ["expo-router", "expo-secure-store", "expo-web-browser"],
   extra: {
     apiUrl: process.env.EXPO_PUBLIC_API_URL ?? null,
+    auth0Domain: process.env.EXPO_PUBLIC_AUTH0_DOMAIN ?? null,
+    auth0ClientId: process.env.EXPO_PUBLIC_AUTH0_CLIENT_ID ?? null,
   },
 };
 
