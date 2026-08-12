@@ -15,7 +15,13 @@ const config: ExpoConfig = {
     apiUrl: process.env.EXPO_PUBLIC_API_URL ?? null,
     auth0Domain: process.env.EXPO_PUBLIC_AUTH0_DOMAIN ?? null,
     auth0ClientId: process.env.EXPO_PUBLIC_AUTH0_CLIENT_ID ?? null,
-    eas: { projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? undefined },
+    // EAS project id is a public (non-secret) UUID; the EAS CLI resolves this
+    // config statically (no env), so it must be present here. Env can override.
+    eas: {
+      projectId:
+        process.env.EXPO_PUBLIC_EAS_PROJECT_ID ??
+        "55090098-eb9a-4b03-b87c-fcd62c0781cd",
+    },
   },
 };
 
