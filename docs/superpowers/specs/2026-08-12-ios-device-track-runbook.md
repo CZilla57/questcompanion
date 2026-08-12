@@ -87,6 +87,7 @@ Open the installed dev client on the phone; it connects to Metro on your machine
 
 **If the redirect errors:** re-check the exact Allowed Callback URL (step 1b.1) and that you're on the dev client, not Expo Go.
 **If the exchange errors (`invalid_grant`):** the client id (1a) doesn't match the server's Auth0 application, or the redirect URI the server rebuilds differs.
+**If the exchange errors 500 `OAUTH_INVALID_RESPONSE`:** the server synthesizes the callback `iss` for the mobile flow and openid-client validates it against the discovered issuer exactly (RFC 9207). **Auth0's issuer ends in a trailing slash** (`https://<tenant>.us.auth0.com/`). Set `ISSUER_URL` with the trailing slash. (Code fix `030b75f` now derives `iss` from `config.serverMetadata().issuer`, so once deployed the env spelling no longer matters — but the running server must have that build or the slash.)
 
 ## 4. Gate G2 — session persistence
 
