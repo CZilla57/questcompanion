@@ -5,7 +5,7 @@ import * as WebBrowser from "expo-web-browser";
 import Constants from "expo-constants";
 import { deriveChallenge, randomString } from "./pkce";
 import { resolveAuthConfig } from "./auth-config";
-import { exchangeCode } from "./token-exchange";
+import { exchangeCode, serverLogout } from "./token-exchange";
 import { saveToken, getToken, clearToken } from "./token-store";
 import { registerForPush, deregisterPush } from "../push/register-device";
 
@@ -24,6 +24,20 @@ const AuthContext = createContext<AuthValue | null>(null);
 
 const REDIRECT_URI = AuthSession.makeRedirectUri({ scheme: "focusquest", path: "auth" });
 
+// Push registration must never break auth. Used by both login() and the
+// restore-on-launch effect so they can't drift out of sync.
+function startPushRegistration(): Promise<string | null> {
+  return registerForPush()
+    .then((t) => {
+      pushToken = t;
+      return t;
+    })
+    .catch((err) => {
+      console.log("Push registration failed:", err);
+      return null;
+    });
+}
+
 async function sha256Bytes(input: string): Promise<Uint8Array> {
   const hex = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, input, {
     encoding: Crypto.CryptoEncoding.HEX,
@@ -37,7 +51,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Status>("loading");
 
   useEffect(() => {
-    getToken().then((t) => setStatus(t ? "authed" : "anon"));
+    getToken().then((t) => {
+      setStatus(t ? "authed" : "anon");
+      if (t) {
+        registration = startPushRegistration();
+      }
+    });
   }, []);
 
   async function login() {
@@ -77,16 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await saveToken(token);
       setStatus("authed");
 
-      // Push registration must never break a successful login.
-      registration = registerForPush()
-        .then((t) => {
-          pushToken = t;
-          return t;
-        })
-        .catch((err) => {
-          console.log("Push registration failed:", err);
-          return null;
-        });
+      registration = startPushRegistration();
     } catch (err) {
       console.log("Auth0 login failed:", err);
     }
@@ -106,6 +116,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         pushToken = null;
       }
     }
+
+    // Best-effort: end the server-side session while the bearer token is
+    // still in the Keychain so the API client attaches it. A failure here
+    // must not block local sign-out.
+    try {
+      await serverLogout();
+    } catch (err) {
+      console.log("Server logout failed:", err);
+    }
+
     await clearToken();
     setStatus("anon");
   }

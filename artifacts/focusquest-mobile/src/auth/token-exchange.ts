@@ -17,3 +17,9 @@ export async function exchangeCode(params: ExchangeParams): Promise<string> {
   );
   return res.token;
 }
+
+// Best-effort call to invalidate the server-side session. Must be called
+// while the bearer token is still present (i.e. before clearToken()).
+export async function serverLogout(): Promise<void> {
+  await customFetch("/api/mobile-auth/logout", { method: "POST" });
+}
