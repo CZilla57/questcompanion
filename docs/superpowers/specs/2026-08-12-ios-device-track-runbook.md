@@ -114,6 +114,7 @@ Log in, then **force-quit and relaunch**. The app should open directly to **Auth
 8. **Staging migration `0008` not applied** → `POST /api/devices` fails (no `device_tokens` table).
 9. **Notification permission denied** → no token registered.
 10. **Simulator can't do push** — G3 is physical-device only (`registerForPush` early-returns on Simulator).
+11. **React version must match the RN renderer, monorepo-wide** — Expo SDK 53 / RN 0.79.6 bundle the **React 19.0.0** renderer. The shared pnpm `catalog:` react therefore must be `19.0.0` (not 19.1.x). Two failure shapes: a `react` ahead of the renderer → red-screen *"Incompatible React versions"*; pinning **only** the mobile app (while transitive expo/router packages still resolve a different react) splits pnpm into **two `react-native` peer variants** → Metro bundles two copies → `InitializeCore` runs twice → startup crash *"property is not writable"* + *"'main' has not been registered"*. Fix at the source: keep the whole workspace on one react (catalog `react`/`react-dom` = `19.0.0`), then `expo start --dev-client --clear` (JS-only change — no rebuild). Verify a single copy: `node -e "console.log(require.resolve('react-native',{paths:['artifacts/focusquest-mobile/app']}))"` and confirm expo-router/react-native-screens resolve the *same* path.
 
 ---
 
