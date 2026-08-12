@@ -13,7 +13,7 @@ import type { AnyPgColumn, PgTable } from "drizzle-orm/pg-core";
 import {
   activityTable, allyNudgesTable, apiTokensTable, bodyDoubleMembersTable, bodyDoubleRoomsTable,
   bodyDoubleSprintsTable, brainCheckinsTable, campaignsTable, coinTransactionsTable,
-  dopamineRewardsTable, focusSessionsTable, habitStreaksTable, initiationAwardsTable,
+  deviceTokensTable, dopamineRewardsTable, focusSessionsTable, habitStreaksTable, initiationAwardsTable,
   kingdomPointsTable, partnershipsTable, pushSubscriptionsTable, questlinesTable,
   recurringTasksTable, reflectionsTable, rescueEventsTable, rewardStoreItemsTable,
   taskStepsTable, tasksTable, userBadgesTable, userGearTable, weeklyBattlesTable,
@@ -58,6 +58,7 @@ export const USER_DATA_TABLES: readonly UserDataTable[] = [
   { name: "body_double_members", table: bodyDoubleMembersTable, userColumns: [bodyDoubleMembersTable.userId] },
   { name: "body_double_rooms",   table: bodyDoubleRoomsTable,   userColumns: [bodyDoubleRoomsTable.hostId] },
   { name: "push_subscriptions", table: pushSubscriptionsTable, userColumns: [pushSubscriptionsTable.userId] },
+  { name: "device_tokens",      table: deviceTokensTable,     userColumns: [deviceTokensTable.userId] },
   // Pocket Gate shortcut tokens: sha256 digests only — one-way, so exporting
   // them is harmless; deleting them here kills home-screen access with the account.
   { name: "api_tokens",         table: apiTokensTable,        userColumns: [apiTokensTable.userId] },
