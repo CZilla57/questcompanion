@@ -15,10 +15,10 @@ Create `artifacts/focusquest-mobile/.env` (git-ignored — never commit) or set 
 
 | Var | Value | Notes |
 |---|---|---|
-| `EXPO_PUBLIC_API_URL` | staging API base URL | Must be reachable **from the phone** — not `localhost`. Used by token-exchange, `/api/devices`, `/api/users/me`. |
+| `EXPO_PUBLIC_API_URL` | `https://getfocusquest.com` | The deployed API+web origin (Render service `questcompanion`; also reachable at `https://questcompanion.onrender.com`). Must be reachable **from the phone** — not `localhost`. Used by token-exchange, `/api/devices`, `/api/users/me`. Source of truth: the server's own `APP_ORIGIN` default (`notification-scheduler.ts:392`). Verify: `curl https://getfocusquest.com/api/healthz` → 200. Note: Render **free** plan cold-starts, so the first request after idle may be slow — retry once. |
 | `EXPO_PUBLIC_AUTH0_DOMAIN` | bare tenant host, e.g. `your-tenant.auth0.com` | No scheme/trailing slash (the helper strips them). |
 | `EXPO_PUBLIC_AUTH0_CLIENT_ID` | the Auth0 application's client id | **Must be the SAME Auth0 application the server redeems with** (`OAUTH_CLIENT_ID`). A different client → `invalid_grant`. |
-| `EXPO_PUBLIC_EAS_PROJECT_ID` | your EAS project id | From `eas init`. Without it, G3's push-token fetch throws. |
+| `EXPO_PUBLIC_EAS_PROJECT_ID` | your EAS project id (a UUID) | **Created on first link, doesn't exist yet.** Get it via `eas init` (from `artifacts/focusquest-mobile/`, after `eas login`) — it prints and writes the id — or from [expo.dev](https://expo.dev) → project → **Project settings → Project ID** (or `eas project:info`). Not a secret. Without it, G3's push-token fetch throws. `eas init` may also write it to `extra.eas.projectId` directly; don't end up with two different ids. |
 
 ### 1b. Auth0 dashboard (for G1)
 1. **Allowed Callback URLs:** add exactly `focusquest://auth`. On launch, `login()` logs `Auth redirect URI: …` — copy that literal value; it must match here. (Under Expo Go it would be an `exp://…` URI — you must run the **dev-client** build, not Expo Go.)
