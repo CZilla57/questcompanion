@@ -34,13 +34,30 @@ export default function RootLayout() {
   const router = useRouter();
 
   useEffect(() => {
-    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      const url = response.notification.request.content.data?.url;
+    let cancelled = false;
+
+    function routeToResponse(response: Notifications.NotificationResponse | null | undefined) {
+      const url = response?.notification.request.content.data?.url;
       if (typeof url === "string" && url.trim() !== "") {
         router.push(url as never);
       }
+    }
+
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      routeToResponse(response);
     });
-    return () => subscription.remove();
+
+    // Handle the cold-start case: the app was launched by tapping a notification.
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (!cancelled) {
+        routeToResponse(response);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.remove();
+    };
   }, [router]);
 
   return (

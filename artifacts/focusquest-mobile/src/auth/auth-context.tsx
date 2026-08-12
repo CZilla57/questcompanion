@@ -12,6 +12,7 @@ import { registerForPush, deregisterPush } from "../push/register-device";
 WebBrowser.maybeCompleteAuthSession();
 
 let pushToken: string | null = null;
+let registration: Promise<string | null> | null = null;
 
 type Status = "loading" | "authed" | "anon";
 interface AuthValue {
@@ -77,12 +78,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStatus("authed");
 
       // Push registration must never break a successful login.
-      registerForPush()
+      registration = registerForPush()
         .then((t) => {
           pushToken = t;
+          return t;
         })
         .catch((err) => {
           console.log("Push registration failed:", err);
+          return null;
         });
     } catch (err) {
       console.log("Auth0 login failed:", err);
@@ -90,12 +93,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
-    if (pushToken) {
+    if (registration) {
       try {
-        await deregisterPush(pushToken);
+        const token = await registration;
+        if (token) {
+          await deregisterPush(token);
+        }
       } catch (err) {
         console.log("Push deregistration failed:", err);
       } finally {
+        registration = null;
         pushToken = null;
       }
     }
