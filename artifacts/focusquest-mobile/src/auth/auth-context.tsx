@@ -7,8 +7,11 @@ import { deriveChallenge, randomString } from "./pkce";
 import { resolveAuthConfig } from "./auth-config";
 import { exchangeCode } from "./token-exchange";
 import { saveToken, getToken, clearToken } from "./token-store";
+import { registerForPush, deregisterPush } from "../push/register-device";
 
 WebBrowser.maybeCompleteAuthSession();
+
+let pushToken: string | null = null;
 
 type Status = "loading" | "authed" | "anon";
 interface AuthValue {
@@ -72,12 +75,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       await saveToken(token);
       setStatus("authed");
+
+      // Push registration must never break a successful login.
+      registerForPush()
+        .then((t) => {
+          pushToken = t;
+        })
+        .catch((err) => {
+          console.log("Push registration failed:", err);
+        });
     } catch (err) {
       console.log("Auth0 login failed:", err);
     }
   }
 
   async function logout() {
+    if (pushToken) {
+      try {
+        await deregisterPush(pushToken);
+      } catch (err) {
+        console.log("Push deregistration failed:", err);
+      } finally {
+        pushToken = null;
+      }
+    }
     await clearToken();
     setStatus("anon");
   }

@@ -1,9 +1,20 @@
-import { Stack } from "expo-router";
+import { useEffect } from "react";
+import { Stack, useRouter } from "expo-router";
 import Constants from "expo-constants";
+import * as Notifications from "expo-notifications";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { resolveApiUrl, configureApiClient, setBaseUrl } from "../src/api/configure-client";
 import { getToken } from "../src/auth/token-store";
 import { AuthProvider } from "../src/auth/auth-context";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  }),
+});
 
 const extra = Constants.expoConfig?.extra;
 const rawApiUrl =
@@ -20,6 +31,18 @@ configureApiClient(getToken);
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      const url = response.notification.request.content.data?.url;
+      if (typeof url === "string" && url.trim() !== "") {
+        router.push(url as never);
+      }
+    });
+    return () => subscription.remove();
+  }, [router]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
