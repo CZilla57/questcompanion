@@ -83,7 +83,7 @@ function mergeHeaders(...sources: Array<HeadersInit | undefined>): Headers {
 
   for (const source of sources) {
     if (!source) continue;
-    new Headers(source).forEach((value, key) => {
+    new Headers(source).forEach((value: string, key: string) => {
       headers.set(key, value);
     });
   }
