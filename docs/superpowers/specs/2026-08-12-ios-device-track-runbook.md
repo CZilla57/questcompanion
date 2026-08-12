@@ -30,19 +30,35 @@ Create `artifacts/focusquest-mobile/.env` (git-ignored — never commit) or set 
 - **Apply migration `0008_native_device_tokens` to staging** (deferred from the server track). G3's `POST /api/devices` writes to `device_tokens`; the table must exist. Run `pnpm --filter @workspace/db migrate` against the staging `DATABASE_URL`.
 
 ### 1d. EAS + APNs (for G3)
-1. `eas init` to link the project (populates the project id — put it in `EXPO_PUBLIC_EAS_PROJECT_ID`).
-2. Upload an **APNs key** to EAS (`eas credentials`) so Expo Push can deliver to iOS.
-3. The dev-client build must carry the `aps-environment` entitlement. The `expo-notifications` plugin adds it, but you must **regenerate the dev client** after the plugin was added (a Metro reload is not enough) — see step 2.
+1. `eas init` links the project. Its id is committed in `app.config.ts` `extra.eas.projectId` (dynamic config can't be auto-written).
+2. The **APNs key** is set up as part of the EAS iOS build (step 2 below) when you let EAS manage credentials — no separate step needed. (`eas credentials` can inspect/manage it if required.)
+3. The dev-client build carries the `aps-environment` entitlement via the `expo-notifications` plugin. If you add/remove native modules or plugins later, **rebuild the dev client** (a Metro reload is not enough).
 
 ---
 
-## 2. Build the dev client on the device
+## 2. Build the dev client (EAS cloud — required on Windows/Linux)
+
+iOS binaries compile only on macOS, so `expo run:ios` does **not** work on Windows/Linux. Build in the cloud with **EAS Build** instead (the `development` profile in `eas.json` is preconfigured: `developmentClient: true`, internal distribution).
 
 ```bash
-pnpm --filter focusquest-mobile exec expo run:ios --device
+# 1. Register the physical iPhone (adds its UDID to the provisioning profile)
+pnpm --filter focusquest-mobile exec eas device:create
+
+# 2. Cloud-build the dev client — EAS handles Apple signing + the APNs push key interactively
+pnpm --filter focusquest-mobile exec eas build -p ios --profile development
+
+# 3. Install the finished build on the iPhone via the link/QR EAS returns
 ```
 
-Select the connected iPhone; the paid Apple Developer team must be chosen for signing. This is also **Task 1 Step 8** — the app building and running at all is the proof that Metro resolves the pnpm-symlinked `@workspace/api-client-react` at runtime (the deferred de-risking check). A red-screen `Unable to resolve module @workspace/api-client-react` means fall back to a root `.npmrc` `node-linker=hoisted` and rebuild.
+**On macOS** you may instead build locally: `pnpm --filter focusquest-mobile exec expo run:ios --device`.
+
+### Then run the JS and load the app
+```bash
+pnpm --filter focusquest-mobile exec expo start --dev-client
+```
+Open the installed dev client on the phone; it connects to Metro on your machine (same Wi‑Fi; press `s` for a tunnel if they're on different networks). Your local `.env` is read here, and the JS bundles here — so this step (not the cloud build) is what proves **Task 1 Step 8**: Metro resolving the pnpm-symlinked `@workspace/api-client-react`. A red-screen `Unable to resolve module @workspace/api-client-react` means fall back to a root `.npmrc` `node-linker=hoisted` and restart Metro.
+
+> Note: with a dev client, `extra.apiUrl`/`auth0Domain`/`auth0ClientId` come from the **local** `app.config.ts` evaluation when you run `expo start` — so the `.env` on your machine drives runtime config; the cloud build doesn't bake in those values.
 
 ---
 
