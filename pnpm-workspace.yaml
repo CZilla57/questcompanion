@@ -39,6 +39,9 @@ onlyBuiltDependencies:
   - unrs-resolver
   - sharp
 
+# NOTE: Keep in sync with `pnpm.overrides` in the root package.json.
+# pnpm 11 (local/CI) reads overrides from here; older pnpm bundled in the
+# EAS build image reads them from package.json. Both must match the lockfile.
 overrides:
   '@esbuild-kit/esm-loader': npm:tsx@^4.21.0
   '@babel/core': '>=7.29.6'
