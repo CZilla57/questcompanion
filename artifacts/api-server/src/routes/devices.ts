@@ -1,9 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq, and, inArray } from "drizzle-orm";
-import { db, deviceTokensTable, pushSubscriptionsTable } from "@workspace/db";
-import { sendPushNotification, type PushPayload } from "../lib/push-notifications";
-import { buildExpoMessages, sendExpoPush, expoHttpTransport } from "../lib/expo-push";
-import { dispatchToUser, type DispatchDeps } from "../lib/device-dispatch";
+import { eq, and } from "drizzle-orm";
+import { db, deviceTokensTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
@@ -32,46 +29,6 @@ router.delete("/devices/:token", async (req, res): Promise<void> => {
     and(eq(deviceTokensTable.userId, userId), eq(deviceTokensTable.token, req.params.token)),
   );
   res.json({ success: true });
-});
-
-function dispatchDeps(): DispatchDeps {
-  return {
-    async listExpoTokens(userId) {
-      const rows = await db.select().from(deviceTokensTable).where(
-        and(eq(deviceTokensTable.userId, userId), eq(deviceTokensTable.provider, "expo")),
-      );
-      return rows.map((r) => r.token);
-    },
-    async sendExpo(tokens, payload) {
-      return sendExpoPush(buildExpoMessages(tokens, payload), expoHttpTransport);
-    },
-    async pruneTokens(tokens) {
-      if (tokens.length === 0) return;
-      await db.delete(deviceTokensTable).where(inArray(deviceTokensTable.token, tokens));
-    },
-    async sendWeb(userId, payload) {
-      const subs = await db.select().from(pushSubscriptionsTable).where(
-        eq(pushSubscriptionsTable.userId, userId),
-      );
-      let sent = 0;
-      for (const s of subs) {
-        if (await sendPushNotification(s, payload)) sent++;
-      }
-      return sent;
-    },
-  };
-}
-
-// TEMPORARY: G3 verification trigger. Remove before the phase closes (Task 10).
-router.post("/devices/test-send", async (req, res): Promise<void> => {
-  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
-  const payload: PushPayload = {
-    title: "FocusQuest",
-    body: "Test notification from staging ✓",
-    data: { url: "/" },
-  };
-  const result = await dispatchToUser(dispatchDeps(), req.gameUserId, payload);
-  res.json(result);
 });
 
 export default router;
