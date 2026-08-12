@@ -4,7 +4,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { resolveApiUrl, configureApiClient, setBaseUrl } from "../src/api/configure-client";
 import { getToken } from "../src/auth/token-store";
 
-setBaseUrl(resolveApiUrl(Constants.expoConfig?.extra));
+const extra = Constants.expoConfig?.extra;
+const rawApiUrl =
+  extra && typeof extra === "object" ? (extra as Record<string, unknown>).apiUrl : undefined;
+if (typeof rawApiUrl === "string" && rawApiUrl.trim() !== "") {
+  setBaseUrl(resolveApiUrl(extra));
+} else {
+  console.warn(
+    "EXPO_PUBLIC_API_URL is not configured (expo extra.apiUrl) - continuing without an API base URL.",
+  );
+}
 configureApiClient(getToken);
 
 const queryClient = new QueryClient();
