@@ -11,19 +11,19 @@
   },
   "dependencies": {
     "@workspace/api-client-react": "workspace:*",
-    "expo": "^52.0.0",
-    "expo-router": "^4.0.0",
-    "expo-linking": "~7.0.5",
-    "expo-constants": "~17.0.8",
-    "expo-status-bar": "~2.0.1",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "react-native": "0.76.9",
-    "react-native-safe-area-context": "4.12.0",
-    "react-native-screens": "~4.4.0"
+    "expo": "^53.0.0",
+    "expo-router": "~5.1.11",
+    "expo-linking": "~7.1.7",
+    "expo-constants": "~17.1.8",
+    "expo-status-bar": "~2.2.3",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-native": "0.79.6",
+    "react-native-safe-area-context": "5.4.0",
+    "react-native-screens": "~4.11.1"
   },
   "devDependencies": {
-    "@types/react": "~18.3.12",
+    "@types/react": "catalog:",
     "@types/node": "catalog:",
     "typescript": "~5.9.3"
   }
