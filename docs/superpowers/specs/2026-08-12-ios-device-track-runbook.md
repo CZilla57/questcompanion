@@ -52,11 +52,27 @@ pnpm --filter focusquest-mobile exec eas build -p ios --profile development
 
 **On macOS** you may instead build locally: `pnpm --filter focusquest-mobile exec expo run:ios --device`.
 
+> **Build status — first green dev client (2026-08-12):** EAS build `b01a2d69-4a6e-47d9-8f30-0cabf7643b0e` **finished** (commit `e9cc6ad`, SDK 53, dev-client, internal). `.ipa`: `https://expo.dev/artifacts/eas/mNXD209aWq0_qZTAKK_tDWdU2Mg60l2YCsC7mwNDdSw.ipa`.
+>
+> **Getting there took fixing the pnpm-monorepo install on the EAS runner** (three attempts):
+> 1. `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` on `pnpm install --frozen-lockfile` — `overrides` lived only in `pnpm-workspace.yaml`, which the EAS image's older pnpm (~9.x) does not read.
+> 2. Enabling `corepack: true` in `eas.json` pinned pnpm 11.11.0 but the image's **Node 20.19.2 bundles an old corepack that can't launch pnpm 11** (`ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING`). Reverted.
+> 3. **Fix that stuck (`e9cc6ad`):** declare the same `overrides` in **both** `package.json` (`pnpm.overrides`, read by the image's old pnpm) **and** `pnpm-workspace.yaml` (read by pnpm 11). Each pnpm version reads its own source, both match the lockfile, no corepack/image change. Keep the two blocks in sync.
+
 ### Then run the JS and load the app
 ```bash
 pnpm --filter focusquest-mobile exec expo start --dev-client
 ```
 Open the installed dev client on the phone; it connects to Metro on your machine (same Wi‑Fi; press `s` for a tunnel if they're on different networks). Your local `.env` is read here, and the JS bundles here — so this step (not the cloud build) is what proves **Task 1 Step 8**: Metro resolving the pnpm-symlinked `@workspace/api-client-react`. A red-screen `Unable to resolve module @workspace/api-client-react` means fall back to a root `.npmrc` `node-linker=hoisted` and restart Metro.
+
+> ⚠️ **Do NOT use Expo Go or the iOS Camera for this project.** This is a **dev client** (`developmentClient: true`) with native modules (`expo-dev-client`, `expo-notifications`), so:
+> - **Expo Go will never load it** — it only runs pure-JS projects, so it silently does nothing. (If you're used to Expo Go from another project, that habit is the trap here.)
+> - **The iOS Camera scanning the Metro QR shows "No data available"** — the Camera can't act on the `exp://` dev-server URL. That QR is meant to be opened *by the installed dev client*, not the Camera.
+> - **The runtime IS the FocusQuest dev-client app you installed in step 3 above.** Ordered fix:
+>   1. Install the dev client on the phone first — open the EAS **build page in Safari on the iPhone** and tap **Install** (the UDID is already in the provisioning profile). First launch: **Settings → General → VPN & Device Management** → trust the developer cert.
+>   2. Run `expo start --dev-client` on your machine.
+>   3. **Tap the FocusQuest icon** on the phone → its launcher lists your Metro server → tap to connect. To scan instead, use the **"Scan QR code" button inside the FocusQuest app**, never the Camera.
+>   4. Phone can't reach Metro (different/locked-down Wi‑Fi)? Start with `expo start --dev-client --tunnel`.
 
 > Note: with a dev client, `extra.apiUrl`/`auth0Domain`/`auth0ClientId` come from the **local** `app.config.ts` evaluation when you run `expo start` — so the `.env` on your machine drives runtime config; the cloud build doesn't bake in those values.
 
