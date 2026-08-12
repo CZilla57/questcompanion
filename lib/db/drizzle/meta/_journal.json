@@ -57,6 +57,13 @@
       "when": 1784900716216,
       "tag": "0007_monthly_yearly_recurrence",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1786508227996,
+      "tag": "0008_native_device_tokens",
+      "breakpoints": true
     }
   ]
 }

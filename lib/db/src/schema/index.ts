@@ -6,6 +6,7 @@ export * from "./partnerships";
 export * from "./ally-nudges";
 export * from "./activity";
 export * from "./push-subscriptions";
+export * from "./device-tokens";
 export * from "./recurring-tasks";
 export * from "./habit-streaks";
 export * from "./gear";
