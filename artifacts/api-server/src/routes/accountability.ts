@@ -1,15 +1,15 @@
 import { Router, type IRouter } from "express";
 import { eq, or, and, desc, inArray, gte, isNull } from "drizzle-orm";
-import { db, usersTable, partnershipsTable, activityTable, tasksTable, allyNudgesTable, pushSubscriptionsTable } from "@workspace/db";
+import { db, usersTable, partnershipsTable, activityTable, tasksTable, allyNudgesTable } from "@workspace/db";
 import { getLevelInfo } from "../lib/gamification";
 import { resolvePartnerRequest } from "../lib/partnerships";
 import { buildHeroLook } from "./avatar";
 import { getEarnedBadges } from "./badges";
 import { MILESTONE_TYPES, hasFreshMilestone } from "../lib/ally-milestones";
 import { resolveTimeZone, localDateKey, localDayStartUtc } from "../lib/date-buckets";
-import { sendPushNotification } from "../lib/push-notifications";
 import { isValidKind, isValidReaction, reactionLabel, canSendNudge, type NudgeKind } from "../lib/nudges";
 import { awardSocialBadges } from "../lib/badge-awards";
+import { pushToUser } from "../lib/push-dispatch-live";
 
 const router: IRouter = Router();
 
@@ -400,17 +400,7 @@ router.post("/accountability/partners/:id/nudge", async (req, res): Promise<void
   const [sender] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   const label = reactionLabel(kind as NudgeKind, reaction) ?? "";
   const title = `${sender?.username ?? "An ally"} ${kind === "poke" ? "poked" : "cheered"} you`;
-  const subs = await db.select().from(pushSubscriptionsTable)
-    .where(eq(pushSubscriptionsTable.userId, recipientId));
-  for (const sub of subs) {
-    const ok = await sendPushNotification(
-      { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
-      { title, body: label, tag: `nudge-${kind}` },
-    );
-    if (!ok) {
-      await db.delete(pushSubscriptionsTable).where(eq(pushSubscriptionsTable.endpoint, sub.endpoint));
-    }
-  }
+  await pushToUser(recipientId, { title, body: label, tag: `nudge-${kind}` });
 
   res.status(201).json({
     id: nudge.id,
