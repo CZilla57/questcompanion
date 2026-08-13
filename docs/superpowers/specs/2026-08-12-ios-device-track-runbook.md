@@ -125,3 +125,32 @@ Once G3 is verified, close the spike:
 - Remove the temporary `POST /devices/test-send` endpoint (`artifacts/api-server/src/routes/devices.ts`) — it exists only as the G3 trigger.
 - Also carry forward the server-track **m2** hardening (make `expoHttpTransport` check `res.ok` and map failures to per-message error receipts) before `dispatchToUser` is wired into any real batch/cron fan-out.
 - Write a short results doc: which gates passed on which device/iOS version, the resolved Metro strategy, the final Auth0 config that worked.
+
+---
+
+## 8. G3 deep-link routing verification (device-track #4)
+
+Prereq: rebuild and install the dev-client so the new `/focus` and `/reflection`
+routes and the `DeepLinkRouter` are present:
+
+    pnpm --filter focusquest-mobile exec eas build --profile development --platform ios
+    # install the resulting dev-client build on the device, then:
+    pnpm --filter focusquest-mobile start
+
+Run each tap path and confirm the landing screen:
+
+1. **`/focus`** — trigger a body-double ally start (server sends `data.url: "/focus"`).
+   Tap the notification. Expect: native "Focus Session" screen with a header + back
+   button, showing "Active session — status: …" or "No active session right now."
+2. **`/reflection`** — trigger/await the evening reflection prompt (`data.url: "/reflection"`).
+   Tap it. Expect: native "Reflection" screen showing today's prompt (with "(answered ✓)"
+   if already answered) or "No reflection prompt yet today."
+3. **Home / no-url** — trigger a context nudge (`data.url: "/"`) or an accountability
+   nudge (no url). Tap it. Expect: the app opens to the home/index screen; no unmatched-route error.
+4. **Cold-start while logged out** — sign out, fully quit the app, then have a `/focus`
+   or `/reflection` push delivered and tap it from a cold start. Expect: the app opens
+   to the login screen (NOT the target, NOT an error). Log in. Expect: immediately after
+   login completes, the app navigates to the tapped destination (the held deep link replays).
+
+Record pass/fail per path. Any unmatched-route screen, a tap that lands on the wrong
+destination, or a cold-start tap that routes into the anon shell before login is a failure.
