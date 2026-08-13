@@ -278,7 +278,12 @@ router.post(
       const callbackUrl = new URL(redirect_uri);
       callbackUrl.searchParams.set("code", code);
       callbackUrl.searchParams.set("state", state);
-      callbackUrl.searchParams.set("iss", ISSUER_URL);
+      // The mobile client doesn't forward the AS-issued `iss`, so we synthesize
+      // the callback URL server-side. openid-client validates `iss` against the
+      // discovered issuer exactly (RFC 9207), so it must be the issuer from
+      // discovery — not the raw ISSUER_URL env, whose spelling (e.g. a missing
+      // trailing slash for Auth0's `.../`) would fail with OAUTH_INVALID_RESPONSE.
+      callbackUrl.searchParams.set("iss", config.serverMetadata().issuer);
 
       const tokens = await oidc.authorizationCodeGrant(config, callbackUrl, {
         pkceCodeVerifier: code_verifier,

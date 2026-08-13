@@ -21,8 +21,8 @@ catalog:
   drizzle-orm: ^0.45.2
   framer-motion: ^12.23.24
   lucide-react: ^0.545.0
-  react: 19.1.0
-  react-dom: 19.1.0
+  react: 19.0.0
+  react-dom: 19.0.0
   tailwind-merge: ^3.3.1
   tailwindcss: ^4.1.14
   tsx: ^4.21.0
@@ -39,6 +39,9 @@ onlyBuiltDependencies:
   - unrs-resolver
   - sharp
 
+# NOTE: Keep in sync with `pnpm.overrides` in the root package.json.
+# pnpm 11 (local/CI) reads overrides from here; older pnpm bundled in the
+# EAS build image reads them from package.json. Both must match the lockfile.
 overrides:
   '@esbuild-kit/esm-loader': npm:tsx@^4.21.0
   '@babel/core': '>=7.29.6'

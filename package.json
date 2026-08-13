@@ -13,5 +13,15 @@
   "devDependencies": {
     "prettier": "^3.8.3",
     "typescript": "~5.9.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "@esbuild-kit/esm-loader": "npm:tsx@^4.21.0",
+      "@babel/core": ">=7.29.6",
+      "esbuild": "0.28.1",
+      "js-yaml": ">=4.2.0",
+      "markdown-it": ">=14.2.0",
+      "qs": ">=6.15.2"
+    }
   }
 }
