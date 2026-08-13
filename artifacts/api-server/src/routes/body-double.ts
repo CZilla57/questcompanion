@@ -1,13 +1,13 @@
 import { Router, type IRouter } from "express";
 import { eq, and, or, inArray, isNull } from "drizzle-orm";
 import {
-  db, usersTable, partnershipsTable, pushSubscriptionsTable, activityTable,
+  db, usersTable, partnershipsTable, activityTable,
   bodyDoubleRoomsTable, bodyDoubleMembersTable, bodyDoubleSprintsTable,
   type BodyDoubleRoom,
 } from "@workspace/db";
 import { requireAcceptedPartnership, formatUserSummary } from "./accountability";
 import { buildHeroLook } from "./avatar";
-import { sendPushNotification } from "../lib/push-notifications";
+import { pushToUser } from "../lib/push-dispatch-live";
 import { logger } from "../lib/logger";
 import {
   presenceOf, isSprintMinutes, sprintElapsedOk, sprintBonusXp,
@@ -80,17 +80,12 @@ async function sendRoomInvites(hostId: number): Promise<void> {
   const title = `${host.username} opened a body-double room`;
   for (const ally of allies) {
     if (!shouldSendInvitePush(ally, now)) continue; // deep-night/quiet-hours courtesy
-    const subs = await db.select().from(pushSubscriptionsTable)
-      .where(eq(pushSubscriptionsTable.userId, ally.id));
-    for (const sub of subs) {
-      const ok = await sendPushNotification(
-        { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
-        { title, body: "Drop in and work alongside", tag: "bodydouble-invite", data: { url: "/focus" } },
-      );
-      if (!ok) {
-        await db.delete(pushSubscriptionsTable).where(eq(pushSubscriptionsTable.endpoint, sub.endpoint));
-      }
-    }
+    await pushToUser(ally.id, {
+      title,
+      body: "Drop in and work alongside",
+      tag: "bodydouble-invite",
+      data: { url: "/focus" },
+    });
   }
 }
 
