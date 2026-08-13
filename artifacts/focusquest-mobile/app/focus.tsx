@@ -5,6 +5,7 @@ import { useAuth } from "../src/auth/auth-context";
 
 export default function FocusRoute() {
   const { status } = useAuth();
+  // Ungated fetch is safe: this route is only reached post-auth (DeepLinkRouter navigates here only when authed; the Redirect below guards any direct mount).
   const active = useGetActiveFocusSession();
 
   if (status === "loading") return <Centered><Text>Loading…</Text></Centered>;

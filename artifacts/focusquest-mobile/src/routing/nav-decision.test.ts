@@ -21,6 +21,10 @@ describe("nextNav", () => {
     expect(nextNav("anon", "/focus")).toBeNull();
   });
 
+  it("does nothing when anon with no pending url", () => {
+    expect(nextNav("anon", null)).toBeNull();
+  });
+
   it("replays the held destination once anon becomes authed", () => {
     // pendingUrl survives the anon pass...
     expect(nextNav("anon", "/reflection")).toBeNull();
