@@ -1,12 +1,11 @@
 import { eq, and, gt, desc, gte, isNotNull, or, isNull, lte, lt, ne, notExists, sql } from "drizzle-orm";
 import {
-  db, tasksTable, usersTable, activityTable, pushSubscriptionsTable, focusSessionsTable,
+  db, tasksTable, usersTable, activityTable, focusSessionsTable,
   brainCheckinsTable, reflectionsTable, weeklyRecapsTable, coinTransactionsTable,
   initiationAwardsTable, userBadgesTable, badgesTable, questlinesTable,
   worldBossAttacksTable, worldBossWeeksTable, bodyDoubleRoomsTable, bodyDoubleMembersTable,
   type WeekStats,
 } from "@workspace/db";
-import { sendPushNotification } from "./push-notifications";
 import { logger } from "./logger";
 import { spawnRecurringTasksForToday } from "../routes/recurring-tasks";
 import { hungerStage, hungerWarning, shouldSendFlavorPush } from "./hero-care";
@@ -35,27 +34,11 @@ import {
 import { isFeatureUnlocked } from "./feature-gates";
 import { SWEEP_STALE_MIN, SWEEP_MAX_AGE_HOURS } from "./body-double";
 import { pingHeartbeat } from "./heartbeat";
+import { pushToUser } from "./push-dispatch-live";
 import type { User } from "@workspace/db";
 
-async function getSubscriptions(userId: number) {
-  return db.select().from(pushSubscriptionsTable).where(eq(pushSubscriptionsTable.userId, userId));
-}
-
-async function removeSubscription(endpoint: string) {
-  await db.delete(pushSubscriptionsTable).where(eq(pushSubscriptionsTable.endpoint, endpoint));
-}
-
 async function notify(userId: number, title: string, body: string, tag: string, data?: Record<string, unknown>) {
-  const subs = await getSubscriptions(userId);
-  for (const sub of subs) {
-    const ok = await sendPushNotification(
-      { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
-      { title, body, tag, ...(data ? { data } : {}) },
-    );
-    if (!ok) {
-      await removeSubscription(sub.endpoint);
-    }
-  }
+  await pushToUser(userId, { title, body, tag, ...(data ? { data } : {}) });
 }
 
 type ProducedCandidate = PushCandidate & { commit: () => Promise<void> };
