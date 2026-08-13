@@ -1,7 +1,7 @@
 # iOS Device-Track Results (Gates G1 / G2 / G3)
 
 **Date:** 2026-08-12
-**Branch:** `feat/ios-mobile-client` (PR #95); server track merged via #94; cleanup in #96.
+**Branch:** `feat/ios-mobile-client`, landed in `main` via **PR #97** (merge `55969d7`, 2026-08-13). Server track merged via #94; prod push cleanup in #96. (PR #95 is a dead end — it merged into the intermediate `docs/ios-foundation-spike` branch, not `main`, so it never shipped the client; #97 is the real landing.)
 **Outcome:** ✅ All three gates passed on a physical device.
 
 ## Gates
@@ -14,7 +14,7 @@
 
 ## Environment
 
-- **Device:** physical iPhone (UDID `00008140-001A1020269B001C`), iOS `<fill in tested version>`.
+- **Device:** physical iPhone (UDID `00008140-001A1020269B001C`), iOS `26`.
 - **Build:** EAS cloud dev-client, build `b01a2d69-4a6e-47d9-8f30-0cabf7643b0e`, commit `e9cc6ad`, Expo SDK 53 / RN 0.79.6.
 - **Dev client install:** over-the-air from the EAS build page on the phone — **not** Expo Go (Expo Go can't run a dev client with native modules).
 
@@ -41,7 +41,9 @@
 
 ## Follow-ups
 
-- **PR #96** — remove the temporary `POST /devices/test-send` endpoint (was live on prod via #94) and harden `expoHttpTransport` (`res.ok` + per-message error receipts) before real fan-out.
-- Temporary G3 test-send **button** removed from `app/index.tsx`.
-- After #96 merges, **rebase `feat/ios-mobile-client` (#95) onto `main`** so the duplicated server files reconcile (test-send removal + transport hardening flow in without conflict).
-- Fill in the exact iOS version tested above.
+- ✅ **PR #96 (merged)** — removed the temporary `POST /devices/test-send` endpoint (was live on prod via #94) and hardened `expoHttpTransport` (`res.ok` + per-message error receipts).
+- ✅ Temporary G3 test-send **button** removed from `app/index.tsx`.
+- ✅ **Mobile client landed in `main` via PR #97 (merge `55969d7`, 2026-08-13)** — the branch was rebased on the post-#96 `main`, so the duplicated server files reconciled cleanly. (This supersedes the earlier plan to "rebase #95 onto main"; #95 had merged into the wrong base — see the header note.)
+- ✅ **iOS version tested filled in** above — iOS 26.
+- ⬜ **Wire the real push fan-out** — `dispatchToUser` + `expoHttpTransport` are hardened and unit-tested but not yet called by any cron/batch. Connect them to the notification scheduler.
+- ⬜ **G3 deep-link routing** — the tested payload used `data.url="/"` (a no-op); wire real notification-tap route routing.
