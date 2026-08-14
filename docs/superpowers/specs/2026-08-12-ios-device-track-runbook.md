@@ -154,3 +154,38 @@ Run each tap path and confirm the landing screen:
 
 Record pass/fail per path. Any unmatched-route screen, a tap that lands on the wrong
 destination, or a cold-start tap that routes into the anon shell before login is a failure.
+
+---
+
+## 9. G4 native Focus screen verification (device-track #4b)
+
+Prereq: JS-only change — restart Metro (`pnpm --filter focusquest-mobile start`)
+and reload the existing dev-client. No native rebuild needed (no new native modules;
+`AppState` and `expo-router` are already present).
+
+1. **Home → Start Focus** — from the authed home screen, tap **Start Focus**. Expect the
+   native "Focus Session" screen (idle view): a "Choose a rhythm" list and a
+   "Focus on a quest (optional)" list.
+2. **Start a session** — pick a rhythm (optionally a quest), tap **Start Focus**. Expect the
+   active view (phase label + `MM:SS` clock + cycle dots), and a "You started — that's the
+   hard part. +N XP" toast.
+3. **Live tick** — the clock decrements every second; the phase label and filled-dot count
+   match the elapsed time.
+4. **Background self-heal** — background the app for ~1 min, reopen. Expect the clock to jump
+   to the correct current remaining time immediately (not resume from where it left off).
+5. **Pause/Resume** — tap **Pause**: the readout freezes and "Paused" shows. Tap **Resume**:
+   it continues from the frozen time (paused span not counted).
+6. **Interval boundary** — let a focus block fully elapse. Expect a "+N XP" toast and one more
+   filled dot. Completing the last block fires "Session complete!".
+7. **Stop** — mid-focus, tap **Stop**. Expect "Session ended"; returning to the screen shows
+   the idle view (no active session).
+8. **Stale finalize** — start a session, hard-quit the app, wait past one focus+long-break
+   span (classic = 40 min), reopen `/focus`. Expect the abandoned session finalized (idle
+   view), NOT back-credited to the current time.
+9. **ProtectionPause** — in the active view tap **Pause protection**; it flips to
+   "Protection paused · Resume" and the state persists across a refetch.
+10. **Deep-link regression** — trigger a body-double `/focus` push and tap it. Expect it lands
+    on the full Focus screen (no regression to #4's routing).
+
+Record pass/fail per path. Any wrong readout after backgrounding, a mis-credited stale
+session, or a missing toast is a failure.
