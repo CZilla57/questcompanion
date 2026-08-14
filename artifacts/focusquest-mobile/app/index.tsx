@@ -1,10 +1,12 @@
 import { View, Text, Button } from "react-native";
+import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
 import { useAuth } from "../src/auth/auth-context";
 
 export default function Index() {
   const { status, login, logout } = useAuth();
+  const router = useRouter();
 
   const me = useQuery({
     enabled: status === "authed",
@@ -20,6 +22,7 @@ export default function Index() {
     <Centered>
       <Text>Authenticated ✓</Text>
       <Text>me: {me.isLoading ? "…" : JSON.stringify(me.data ?? me.error)}</Text>
+      <Button title="Start Focus" onPress={() => router.push("/focus")} />
       <Button title="Log out" onPress={() => logout()} />
     </Centered>
   );
