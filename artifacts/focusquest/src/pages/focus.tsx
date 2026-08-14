@@ -14,7 +14,7 @@ import {
   type FocusPreset,
   type FocusSession,
 } from "@workspace/api-client-react";
-import { reconstructTimerState, isStaleGap, type TimerConfig } from "@/lib/pomodoro";
+import { reconstructTimerState, isStaleGap, type TimerConfig } from "@workspace/pomodoro";
 import { initiationToast } from "@/lib/initiation-toast";
 import { browserTimeZone } from "@/lib/timezone";
 import { Card, CardContent } from "@/components/ui/card";

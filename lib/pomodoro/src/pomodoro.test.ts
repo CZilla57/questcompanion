@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { reconstructTimerState, isStaleGap, type TimerConfig } from "./pomodoro";
+import { reconstructTimerState, isStaleGap, type TimerConfig } from "./index";
 
 const classic: TimerConfig = { focusMinutes: 25, breakMinutes: 5, longBreakMinutes: 15, longBreakEvery: 4, plannedCycles: 4 };
 const longBreakCfg: TimerConfig = { focusMinutes: 25, breakMinutes: 5, longBreakMinutes: 15, longBreakEvery: 2, plannedCycles: 4 };

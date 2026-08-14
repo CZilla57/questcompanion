@@ -13,6 +13,7 @@
   "dependencies": {
     "@tanstack/react-query": "catalog:",
     "@workspace/api-client-react": "workspace:*",
+    "@workspace/pomodoro": "workspace:*",
     "expo": "^53.0.0",
     "expo-auth-session": "~6.2.1",
     "expo-constants": "~17.1.8",
