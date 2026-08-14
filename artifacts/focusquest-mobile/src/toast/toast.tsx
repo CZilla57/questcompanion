@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { Text, View, StyleSheet } from "react-native";
 import { Card } from "../components/ui";
 
@@ -23,6 +23,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     if (timerRef.current) clearTimeout(timerRef.current);
     setCurrent(input);
     timerRef.current = setTimeout(() => setCurrent(null), DURATION_MS);
+  }, []);
+
+  // Clear any pending dismiss timer if the provider unmounts.
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
   }, []);
 
   return (
