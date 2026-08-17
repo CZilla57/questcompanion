@@ -6,6 +6,7 @@ import { resolveApiUrl, configureApiClient, setBaseUrl } from "../src/api/config
 import { getToken } from "../src/auth/token-store";
 import { AuthProvider } from "../src/auth/auth-context";
 import { DeepLinkRouter } from "../src/routing/deep-link-routing";
+import { ToastProvider } from "../src/toast/toast";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -34,8 +35,10 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <DeepLinkRouter />
-        <Stack screenOptions={{ headerShown: false }} />
+        <ToastProvider>
+          <DeepLinkRouter />
+          <Stack screenOptions={{ headerShown: false }} />
+        </ToastProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

@@ -51,6 +51,7 @@
     "@workspace/api-client-react": "workspace:*",
     "@workspace/auth-web": "workspace:*",
     "@workspace/hero-options": "workspace:*",
+    "@workspace/pomodoro": "workspace:*",
     "@workspace/quick-add": "workspace:*",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
