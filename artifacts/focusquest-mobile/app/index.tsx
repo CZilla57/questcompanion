@@ -23,6 +23,7 @@ export default function Index() {
       <Text>Authenticated ✓</Text>
       <Text>me: {me.isLoading ? "…" : JSON.stringify(me.data ?? me.error)}</Text>
       <Button title="Start Focus" onPress={() => router.push("/focus")} />
+      <Button title="Evening reflection" onPress={() => router.push("/reflection")} />
       <Button title="Log out" onPress={() => logout()} />
     </Centered>
   );
