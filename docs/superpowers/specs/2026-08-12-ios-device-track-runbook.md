@@ -189,3 +189,17 @@ and reload the existing dev-client. No native rebuild needed (no new native modu
 
 Record pass/fail per path. Any wrong readout after backgrounding, a mis-credited stale
 session, or a missing toast is a failure.
+
+---
+
+## 10. G5 native Reflection screen full parity verification (device-track #4c)
+
+Requires a dev-client rebuild on the iPhone (new native screen behavior). Record pass/fail per path.
+
+1. **Home → Evening reflection** launches the native Reflection screen.
+2. **Loading** shows "Setting up tonight's reflection…", then the prompt appears.
+3. **Unanswered**: both chip groups ("What helped?" / "What got in the way?") render with the correct labels; tapping a chip toggles its selected style; **Done** is disabled with nothing selected and no text, and enables once ≥1 chip **or** some non-blank text is present.
+4. **Submit**: select a couple of chips (+ optional text) and tap Done → the screen flips to the answered view showing those chips, the italic free-text, and the ✨ ack; the web dashboard's evening card no longer prompts (both cache keys invalidated).
+5. **Edit**: "Edit tonight's answer" re-opens the form pre-populated with the prior chips and text; re-submitting updates the answer (same-day re-answer).
+6. **Save error** (e.g. airplane mode): Done surfaces a "Couldn't save" toast; the form stays editable.
+7. **Deep link still works**: an evening-reflection `/reflection` push tap lands on the (now full) Reflection screen — no regression to #4's routing.
