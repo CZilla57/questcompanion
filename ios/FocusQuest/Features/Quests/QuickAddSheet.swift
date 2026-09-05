@@ -36,7 +36,7 @@ struct QuickAddSheet: View {
                 }
 
                 if let error {
-                    Section { Text(error).foregroundStyle(Theme.danger).font(.footnote) }
+                    Section { Text(error).foregroundStyle(Theme.danger).font(.outfitFootnote) }
                 }
             }
             .navigationTitle("New Quest")

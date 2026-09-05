@@ -35,24 +35,24 @@ struct BodyDoubleView: View {
 
     var body: some View {
         AsyncContentView(state: model.state, retry: { Task { await model.load() } }) { rooms in
-            List {
+            NeonList {
                 Section {
                     Text("Work alongside others in a shared focus room. Silent company, gentle accountability.")
-                        .font(.subheadline).foregroundStyle(.secondary)
+                        .font(.outfitSubheadline).foregroundStyle(.secondary)
                     Button { Task { await model.open() } } label: {
                         Label("Open a room", systemImage: "plus.circle.fill")
                     }.disabled(model.busy)
                 }
                 Section("Open rooms") {
                     if rooms.isEmpty {
-                        Text("No open rooms right now.").font(.subheadline).foregroundStyle(.secondary)
+                        Text("No open rooms right now.").font(.outfitSubheadline).foregroundStyle(.secondary)
                     }
                     ForEach(rooms) { room in
                         HStack {
                             AvatarBadge(name: room.host.name, colorHex: room.host.avatarColor, size: 32)
                             VStack(alignment: .leading) {
-                                Text("\(room.host.name)'s room").font(.subheadline)
-                                Text("\(room.memberCount) here").font(.caption).foregroundStyle(.secondary)
+                                Text("\(room.host.name)'s room").font(.outfitSubheadline)
+                                Text("\(room.memberCount) here").font(.outfitCaption).foregroundStyle(.secondary)
                             }
                             Spacer()
                             Button(room.amMember ? "Open" : "Join") { Task { await model.join(room) } }
@@ -77,16 +77,16 @@ struct BodyDoubleRoomView: View {
 
     var body: some View {
         AsyncContentView(state: state, retry: { Task { await load() } }) { room in
-            List {
+            NeonList {
                 Section("In the room") {
                     ForEach(room.members) { member in
                         HStack {
                             AvatarBadge(name: member.name, colorHex: member.avatarColor, size: 32)
-                            Text(member.name).font(.subheadline)
-                            if member.isHost { Text("host").font(.caption2).foregroundStyle(.secondary) }
+                            Text(member.name).font(.outfitSubheadline)
+                            if member.isHost { Text("host").font(.outfitCaption2).foregroundStyle(.secondary) }
                             Spacer()
                             Text(member.presence == "headsDown" ? "🎧 heads down" : "👋 here")
-                                .font(.caption).foregroundStyle(.secondary)
+                                .font(.outfitCaption).foregroundStyle(.secondary)
                         }
                     }
                 }

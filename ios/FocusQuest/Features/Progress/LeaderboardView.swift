@@ -30,7 +30,7 @@ struct LeaderboardView: View {
             .padding(Theme.Space.md)
 
             AsyncContentView(state: model.state, retry: { Task { await model.load() } }) { entries in
-                List {
+                NeonList {
                     if let week = model.myWeek {
                         Section("My week vs last week") {
                             MyWeekRow(label: "Quests", metric: week.quests)
@@ -41,14 +41,14 @@ struct LeaderboardView: View {
                     Section {
                         ForEach(entries) { entry in
                             HStack(spacing: Theme.Space.md) {
-                                Text("\(entry.rank)").font(.headline).frame(width: 28)
+                                Text("\(entry.rank)").font(.outfitHeadline).frame(width: 28)
                                 AvatarBadge(name: entry.user.name, colorHex: entry.user.avatarColor, size: 32)
                                 VStack(alignment: .leading) {
-                                    Text(entry.user.name).font(.subheadline)
-                                    Text("Lvl \(entry.user.currentLevel)").font(.caption).foregroundStyle(.secondary)
+                                    Text(entry.user.name).font(.outfitSubheadline)
+                                    Text("Lvl \(entry.user.currentLevel)").font(.outfitCaption).foregroundStyle(.secondary)
                                 }
                                 Spacer()
-                                Text("\(entry.points) XP").font(.subheadline.bold()).foregroundStyle(Theme.accent)
+                                Text("\(entry.points) XP").font(.outfitSubheadlineBold).foregroundStyle(Theme.accent)
                             }
                         }
                     }
@@ -69,10 +69,10 @@ private struct MyWeekRow: View {
         HStack {
             Text(label)
             Spacer()
-            Text("\(metric.current)").font(.headline)
+            Text("\(metric.current)").font(.outfitHeadline)
             let delta = metric.current - metric.samePointLastWeek
             Text(delta >= 0 ? "▲ \(delta)" : "▼ \(-delta)")
-                .font(.caption)
+                .font(.outfitCaption)
                 .foregroundStyle(delta >= 0 ? Theme.success : Theme.danger)
         }
     }

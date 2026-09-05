@@ -25,13 +25,13 @@ struct BadgesView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Theme.Space.lg) {
                     Text("\(bundle.earned.count) of \(bundle.all.count) earned")
-                        .font(.subheadline).foregroundStyle(.secondary)
+                        .font(.outfitSubheadline).foregroundStyle(.secondary)
                     LazyVGrid(columns: columns, spacing: Theme.Space.lg) {
                         ForEach(bundle.all) { badge in
                             let earned = bundle.earned.contains(badge.id)
                             VStack(spacing: 4) {
                                 Text(badge.icon).font(.system(size: 36)).grayscale(earned ? 0 : 1).opacity(earned ? 1 : 0.4)
-                                Text(badge.name).font(.caption2).multilineTextAlignment(.center).lineLimit(2)
+                                Text(badge.name).font(.outfitCaption2).multilineTextAlignment(.center).lineLimit(2)
                             }
                         }
                     }

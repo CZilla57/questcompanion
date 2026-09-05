@@ -42,7 +42,7 @@ struct ProgressDashboardView: View {
     private func xpChart(_ insights: InsightsResponse) -> some View {
         Card {
             VStack(alignment: .leading, spacing: Theme.Space.md) {
-                Text("XP over \(insights.days) days").font(.headline)
+                Text("XP over \(insights.days) days").font(.outfitHeadline)
                 Chart(insights.xpHistory) { point in
                     BarMark(x: .value("Day", point.date), y: .value("XP", point.xp))
                         .foregroundStyle(Theme.accent)
@@ -56,13 +56,13 @@ struct ProgressDashboardView: View {
     private func categoryCard(_ insights: InsightsResponse) -> some View {
         Card {
             VStack(alignment: .leading, spacing: Theme.Space.sm) {
-                Text("By category").font(.headline)
+                Text("By category").font(.outfitHeadline)
                 ForEach(insights.categoryBreakdown) { cat in
                     HStack {
-                        Text(cat.label).font(.subheadline)
+                        Text(cat.label).font(.outfitSubheadline)
                         Spacer()
-                        Text("\(cat.completed)/\(cat.total)").font(.caption).foregroundStyle(.secondary)
-                        Text("\(cat.xpEarned) XP").font(.caption).foregroundStyle(Theme.accent)
+                        Text("\(cat.completed)/\(cat.total)").font(.outfitCaption).foregroundStyle(.secondary)
+                        Text("\(cat.xpEarned) XP").font(.outfitCaption).foregroundStyle(Theme.accent)
                     }
                 }
             }
@@ -73,7 +73,7 @@ struct ProgressDashboardView: View {
         Card {
             VStack(alignment: .leading, spacing: Theme.Space.sm) {
                 SectionHeader("Your rhythms") {
-                    Text(patterns.confidence.capitalized).font(.caption).foregroundStyle(.secondary)
+                    Text(patterns.confidence.capitalized).font(.outfitCaption).foregroundStyle(.secondary)
                 }
                 if let best = patterns.bestDay {
                     let days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
@@ -91,7 +91,7 @@ struct ProgressDashboardView: View {
                           systemImage: "hand.thumbsup")
                 }
             }
-            .font(.subheadline)
+            .font(.outfitSubheadline)
         }
     }
 }
@@ -104,7 +104,7 @@ struct HeatmapCard: View {
     var body: some View {
         Card {
             VStack(alignment: .leading, spacing: Theme.Space.md) {
-                Text("Activity").font(.headline)
+                Text("Activity").font(.outfitHeadline)
                 LazyVGrid(columns: columns, spacing: 3) {
                     ForEach(days) { day in
                         RoundedRectangle(cornerRadius: 3)

@@ -60,7 +60,7 @@ struct QuestsView: View {
                     if quests.isEmpty {
                         EmptyStateView(symbol: "checklist", title: "Nothing here", message: "Add a quest to get started.")
                     } else {
-                        List {
+                        NeonList {
                             ForEach(quests) { quest in
                                 QuestRow(quest: quest) { Task { await model.toggle(quest) } }
                                     .swipeActions(edge: .trailing) {

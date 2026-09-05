@@ -17,7 +17,7 @@ struct QuestlinesView: View {
 
     var body: some View {
         AsyncContentView(state: model.state, retry: { Task { await model.load() } }) { lines in
-            List {
+            NeonList {
                 if lines.isEmpty {
                     EmptyStateView(symbol: "list.bullet.rectangle", title: "No questlines", message: "Group related quests toward a goal.")
                 }
@@ -49,12 +49,12 @@ struct QuestlineRow: View {
         VStack(alignment: .leading, spacing: Theme.Space.sm) {
             HStack {
                 Circle().fill(Color(hex: line.color)).frame(width: 10, height: 10)
-                Text(line.title).font(.headline)
+                Text(line.title).font(.outfitHeadline)
                 Spacer()
-                if line.ready { Text("Ready 🎁").font(.caption.bold()).foregroundStyle(Theme.gold) }
+                if line.ready { Text("Ready 🎁").font(.outfitCaptionBold).foregroundStyle(Theme.gold) }
             }
             ProgressBar(value: line.progress, tint: Color(hex: line.color))
-            Text("\(line.done)/\(line.total) quests").font(.caption).foregroundStyle(.secondary)
+            Text("\(line.done)/\(line.total) quests").font(.outfitCaption).foregroundStyle(.secondary)
         }
         .padding(.vertical, 4)
     }
@@ -68,13 +68,13 @@ struct QuestlineDetailView: View {
 
     var body: some View {
         AsyncContentView(state: state, retry: { Task { await load() } }) { detail in
-            List {
+            NeonList {
                 Section {
                     if let desc = detail.questline.description, !desc.isEmpty {
-                        Text(desc).font(.subheadline).foregroundStyle(.secondary)
+                        Text(desc).font(.outfitSubheadline).foregroundStyle(.secondary)
                     }
                     ProgressBar(value: detail.questline.progress, tint: Color(hex: detail.questline.color))
-                    Text("\(detail.questline.done)/\(detail.questline.total) complete").font(.caption).foregroundStyle(.secondary)
+                    Text("\(detail.questline.done)/\(detail.questline.total) complete").font(.outfitCaption).foregroundStyle(.secondary)
                     if detail.questline.ready {
                         PrimaryButton(title: "Claim reward", systemImage: "gift.fill", tint: Theme.gold, isLoading: claiming) {
                             Task { await claim() }
@@ -135,7 +135,7 @@ struct CreateQuestlineSheet: View {
             Form {
                 Section { TextField("Title", text: $title) }
                 Section { TextField("Description (optional)", text: $description, axis: .vertical).lineLimit(1...4) }
-                if let error { Text(error).foregroundStyle(Theme.danger).font(.footnote) }
+                if let error { Text(error).foregroundStyle(Theme.danger).font(.outfitFootnote) }
             }
             .navigationTitle("New Questline")
             .navigationBarTitleDisplayMode(.inline)

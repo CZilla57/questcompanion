@@ -28,18 +28,18 @@ struct AlliesView: View {
 
     var body: some View {
         AsyncContentView(state: model.state, retry: { Task { await model.load() } }) { partners in
-            List {
+            NeonList {
                 if !model.inbox.isEmpty {
                     Section("Recent nudges") {
                         ForEach(model.inbox) { nudge in
                             HStack {
                                 Text(nudge.kind == "cheer" ? "🎉" : "👉")
                                 VStack(alignment: .leading) {
-                                    Text(nudge.sender?.name ?? "Ally").font(.subheadline)
-                                    Text(nudge.reactionLabel ?? nudge.reaction).font(.caption).foregroundStyle(.secondary)
+                                    Text(nudge.sender?.name ?? "Ally").font(.outfitSubheadline)
+                                    Text(nudge.reactionLabel ?? nudge.reaction).font(.outfitCaption).foregroundStyle(.secondary)
                                 }
                                 Spacer()
-                                Text(DateUtils.relative(nudge.createdAt)).font(.caption2).foregroundStyle(.secondary)
+                                Text(DateUtils.relative(nudge.createdAt)).font(.outfitCaption2).foregroundStyle(.secondary)
                             }
                         }
                     }
@@ -50,7 +50,7 @@ struct AlliesView: View {
                     Section("Requests") {
                         ForEach(pending) { p in
                             HStack {
-                                Text(p.partner?.name ?? "Someone").font(.subheadline)
+                                Text(p.partner?.name ?? "Someone").font(.outfitSubheadline)
                                 Spacer()
                                 Button("Accept") { Task { await model.accept(p) } }.buttonStyle(.borderedProminent).tint(Theme.success)
                                 Button("Decline") { Task { await model.decline(p) } }.buttonStyle(.bordered)
@@ -86,10 +86,10 @@ private struct AllyRow: View {
         HStack {
             AvatarBadge(name: p.partner?.name ?? "?", colorHex: p.partner?.avatarColor, size: 36)
             VStack(alignment: .leading) {
-                Text(p.partner?.name ?? "Ally").font(.subheadline)
+                Text(p.partner?.name ?? "Ally").font(.outfitSubheadline)
                 if let prog = p.progress {
                     Text("\(prog.questsCompletedToday)/\(prog.questsDueToday) today" + (prog.allDoneToday ? " ✅" : ""))
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(.outfitCaption).foregroundStyle(.secondary)
                 }
             }
             Spacer()
@@ -110,17 +110,17 @@ struct AllyDetailView: View {
 
     var body: some View {
         AsyncContentView(state: state, retry: { Task { await load() } }) { detail in
-            List {
+            NeonList {
                 Section {
                     HStack {
                         AvatarBadge(name: detail.partner.name, colorHex: detail.partner.avatarColor, size: 48)
                         VStack(alignment: .leading) {
-                            Text(detail.partner.name).font(.headline)
-                            Text("Level \(detail.partner.currentLevel)").font(.caption).foregroundStyle(.secondary)
+                            Text(detail.partner.name).font(.outfitHeadline)
+                            Text("Level \(detail.partner.currentLevel)").font(.outfitCaption).foregroundStyle(.secondary)
                         }
                     }
                     Text("\(detail.progress.questsCompletedToday)/\(detail.progress.questsDueToday) quests today")
-                        .font(.subheadline)
+                        .font(.outfitSubheadline)
                 }
                 if !detail.badges.isEmpty {
                     Section("Badges") {
@@ -133,8 +133,8 @@ struct AllyDetailView: View {
                     Section("Milestones") {
                         ForEach(detail.milestones) { item in
                             VStack(alignment: .leading) {
-                                Text(item.description).font(.subheadline)
-                                Text(DateUtils.relative(item.createdAt)).font(.caption).foregroundStyle(.secondary)
+                                Text(item.description).font(.outfitSubheadline)
+                                Text(DateUtils.relative(item.createdAt)).font(.outfitCaption).foregroundStyle(.secondary)
                             }
                         }
                     }

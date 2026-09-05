@@ -25,14 +25,14 @@ struct SettingsView: View {
     @State private var confirmSignOut = false
 
     var body: some View {
-        List {
+        NeonList {
             Section("Account") {
                 if let user = auth.authUser {
                     HStack {
                         AvatarBadge(name: user.displayName.isEmpty ? (user.email ?? "?") : user.displayName, colorHex: nil, size: 44)
                         VStack(alignment: .leading) {
-                            Text(user.displayName.isEmpty ? "FocusQuest Hero" : user.displayName).font(.headline)
-                            if let email = user.email { Text(email).font(.caption).foregroundStyle(.secondary) }
+                            Text(user.displayName.isEmpty ? "FocusQuest Hero" : user.displayName).font(.outfitHeadline)
+                            if let email = user.email { Text(email).font(.outfitCaption).foregroundStyle(.secondary) }
                         }
                     }
                 }

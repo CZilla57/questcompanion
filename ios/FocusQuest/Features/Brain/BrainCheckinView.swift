@@ -39,13 +39,13 @@ struct BrainCheckinView: View {
                 VStack(spacing: Theme.Space.lg) {
                     Card {
                         VStack(spacing: Theme.Space.sm) {
-                            Text("Right now I feel…").font(.headline)
+                            Text("Right now I feel…").font(.outfitHeadline)
                             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: Theme.Space.md) {
                                 ForEach(modes, id: \.self) { mode in
                                     Button { Task { await model.checkin(mode) } } label: {
                                         VStack(spacing: 4) {
                                             Text(mode.emoji).font(.system(size: 30))
-                                            Text(mode.label).font(.caption)
+                                            Text(mode.label).font(.outfitCaption)
                                         }
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, Theme.Space.md)
@@ -61,8 +61,8 @@ struct BrainCheckinView: View {
                     if brain.mode == .hyperfocus {
                         Card {
                             VStack(alignment: .leading, spacing: Theme.Space.sm) {
-                                Text("🔥 In hyperfocus").font(.headline)
-                                Text("Protection nudges are on. Pause them if you're in a good flow.").font(.caption).foregroundStyle(.secondary)
+                                Text("🔥 In hyperfocus").font(.outfitHeadline)
+                                Text("Protection nudges are on. Pause them if you're in a good flow.").font(.outfitCaption).foregroundStyle(.secondary)
                                 HStack {
                                     ForEach([30, 60, 90], id: \.self) { m in
                                         Button("\(m)m") { Task { await model.pause(minutes: m) } }.buttonStyle(.bordered)
@@ -78,11 +78,11 @@ struct BrainCheckinView: View {
                     if !model.momentum.isEmpty {
                         Card {
                             VStack(alignment: .leading, spacing: Theme.Space.md) {
-                                Text("A gentle next step").font(.headline)
+                                Text("A gentle next step").font(.outfitHeadline)
                                 ForEach(model.momentum) { suggestion in
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text("\(suggestion.task.category.emoji) \(suggestion.task.title)").font(.subheadline)
-                                        Text(suggestion.reason).font(.caption).foregroundStyle(.secondary)
+                                        Text("\(suggestion.task.category.emoji) \(suggestion.task.title)").font(.outfitSubheadline)
+                                        Text(suggestion.reason).font(.outfitCaption).foregroundStyle(.secondary)
                                     }
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(Theme.Space.sm)

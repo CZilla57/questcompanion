@@ -13,22 +13,22 @@ struct CompletionSheet: View {
             Spacer()
             Text(result.leveledUp ? "🎉" : "⭐️").font(.system(size: 72))
             Text(result.leveledUp ? "Level \(result.newLevel)!" : "Quest complete!")
-                .font(.largeTitle.bold())
+                .font(.outfitLargeTitleBold)
             Text("+\(result.pointsAwarded) XP")
-                .font(.title2.bold())
+                .font(.outfitTitle2Bold)
                 .foregroundStyle(Theme.accent)
 
             if result.xpMultiplier > 1 {
                 Text("🔥 \(String(format: "%.2f", result.xpMultiplier))× streak bonus")
-                    .font(.subheadline).foregroundStyle(Theme.gold)
+                    .font(.outfitSubheadline).foregroundStyle(Theme.gold)
             }
             if let reaction = result.companionReaction {
-                Text("“\(reaction)”").font(.callout).italic().foregroundStyle(.secondary)
+                Text("“\(reaction)”").font(.outfitCallout).italic().foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
             if !result.newBadges.isEmpty {
                 VStack(spacing: Theme.Space.sm) {
-                    Text("New badges").font(.headline)
+                    Text("New badges").font(.outfitHeadline)
                     ForEach(result.newBadges) { badge in
                         Label(badge.name, systemImage: "rosette").foregroundStyle(Theme.gold)
                     }
@@ -38,7 +38,7 @@ struct CompletionSheet: View {
                 Text(surprise.type == "gear"
                      ? "🎁 Surprise gear: \(surprise.gear?.name ?? "?")"
                      : "🎁 Surprise +\(surprise.xpAmount ?? 0) XP")
-                    .font(.subheadline).foregroundStyle(Theme.success)
+                    .font(.outfitSubheadline).foregroundStyle(Theme.success)
             }
             Spacer()
             PrimaryButton(title: "Onward", systemImage: "arrow.right") { dismiss() }

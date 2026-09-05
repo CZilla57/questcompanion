@@ -8,9 +8,9 @@ struct LoginView: View {
             Spacer()
             VStack(spacing: Theme.Space.md) {
                 Text("⚔️").font(.system(size: 72))
-                Text("FocusQuest").font(.largeTitle.bold())
+                Text("FocusQuest").font(.outfitLargeTitleBold)
                 Text("Turn your to-do list into an adventure. Complete quests, level up your hero, and build momentum.")
-                    .font(.body)
+                    .font(.outfitBody)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, Theme.Space.xl)
@@ -21,10 +21,10 @@ struct LoginView: View {
                     Task { await auth.login() }
                 }
                 if let error = auth.loginError {
-                    Text(error).font(.footnote).foregroundStyle(Theme.danger).multilineTextAlignment(.center)
+                    Text(error).font(.outfitFootnote).foregroundStyle(Theme.danger).multilineTextAlignment(.center)
                 }
                 Text("You'll sign in securely through your browser.")
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.outfitCaption).foregroundStyle(.secondary)
             }
             .padding(.horizontal, Theme.Space.xl)
             .padding(.bottom, Theme.Space.xl)

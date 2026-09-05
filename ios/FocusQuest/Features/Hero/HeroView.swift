@@ -51,16 +51,16 @@ struct HeroView: View {
         Card {
             VStack(spacing: Theme.Space.md) {
                 Text(hero.stageEmoji).font(.system(size: 64))
-                Text(hero.mood).font(.headline).multilineTextAlignment(.center)
-                Text(hero.activity.text).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                Text(hero.mood).font(.outfitHeadline).multilineTextAlignment(.center)
+                Text(hero.activity.text).font(.outfitSubheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 if let avatar {
                     HStack(spacing: Theme.Space.lg) {
                         Label("Level \(avatar.level)", systemImage: "star.fill")
                         Label("\(avatar.battlePower) power", systemImage: "bolt.fill")
                     }
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.outfitCaption).foregroundStyle(.secondary)
                 }
-                Text("Last fed \(DateUtils.relative(hero.lastFedAt))").font(.caption2).foregroundStyle(.secondary)
+                Text("Last fed \(DateUtils.relative(hero.lastFedAt))").font(.outfitCaption2).foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity)
         }
@@ -70,14 +70,14 @@ struct HeroView: View {
         Card {
             VStack(alignment: .leading, spacing: Theme.Space.sm) {
                 HStack {
-                    Text("🐾 Companion").font(.subheadline.bold())
+                    Text("🐾 Companion").font(.outfitSubheadlineBold)
                     Spacer()
-                    Text("\(companion.bondTierName) · Tier \(companion.bondTier)").font(.caption).foregroundStyle(.secondary)
+                    Text("\(companion.bondTierName) · Tier \(companion.bondTier)").font(.outfitCaption).foregroundStyle(.secondary)
                 }
                 if !companion.line.isEmpty {
-                    Text("“\(companion.line)”").font(.callout).italic()
+                    Text("“\(companion.line)”").font(.outfitCallout).italic()
                 }
-                Text("\(companion.bondQuestsCompleted) quests together").font(.caption).foregroundStyle(.secondary)
+                Text("\(companion.bondQuestsCompleted) quests together").font(.outfitCaption).foregroundStyle(.secondary)
             }
         }
     }
@@ -89,19 +89,19 @@ struct HeroView: View {
                 HStack(spacing: Theme.Space.md) {
                     AvatarBadge(name: avatar.avatarClass, colorHex: avatar.avatarColor, size: 56)
                     VStack(alignment: .leading) {
-                        Text(avatar.avatarClass.capitalized).font(.headline)
-                        Text(avatar.avatarSkin.capitalized).font(.caption).foregroundStyle(.secondary)
+                        Text(avatar.avatarClass.capitalized).font(.outfitHeadline)
+                        Text(avatar.avatarSkin.capitalized).font(.outfitCaption).foregroundStyle(.secondary)
                     }
                 }
                 if avatar.equippedGear.isEmpty {
-                    Text("No gear equipped yet.").font(.caption).foregroundStyle(.secondary)
+                    Text("No gear equipped yet.").font(.outfitCaption).foregroundStyle(.secondary)
                 } else {
                     ForEach(avatar.equippedGear) { gear in
                         HStack {
                             Text(gear.icon)
-                            Text(gear.name).font(.subheadline)
+                            Text(gear.name).font(.outfitSubheadline)
                             Spacer()
-                            Text("\(gear.slot.capitalized) · +\(gear.statPower)").font(.caption).foregroundStyle(.secondary)
+                            Text("\(gear.slot.capitalized) · +\(gear.statPower)").font(.outfitCaption).foregroundStyle(.secondary)
                         }
                     }
                 }
@@ -113,14 +113,14 @@ struct HeroView: View {
         Card {
             VStack(alignment: .leading, spacing: Theme.Space.md) {
                 SectionHeader("Life Kingdoms") {
-                    if response.worldResting { Text("Resting 😴").font(.caption).foregroundStyle(.secondary) }
+                    if response.worldResting { Text("Resting 😴").font(.outfitCaption).foregroundStyle(.secondary) }
                 }
                 ForEach(response.kingdoms) { kingdom in
                     HStack {
-                        Text(kingdom.name).font(.subheadline)
+                        Text(kingdom.name).font(.outfitSubheadline)
                         Spacer()
-                        Text(kingdom.tierName).font(.caption).foregroundStyle(.secondary)
-                        Text("\(kingdom.lifetimePoints) pts").font(.caption).foregroundStyle(Theme.accent)
+                        Text(kingdom.tierName).font(.outfitCaption).foregroundStyle(.secondary)
+                        Text("\(kingdom.lifetimePoints) pts").font(.outfitCaption).foregroundStyle(Theme.accent)
                     }
                 }
             }

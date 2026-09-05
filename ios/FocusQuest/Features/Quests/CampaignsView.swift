@@ -15,7 +15,7 @@ struct CampaignsView: View {
 
     var body: some View {
         AsyncContentView(state: model.state, retry: { Task { await model.load() } }) { campaigns in
-            List {
+            NeonList {
                 if campaigns.isEmpty {
                     EmptyStateView(symbol: "books.vertical", title: "No campaigns", message: "Campaigns tell a longer story across several questlines.")
                 }
@@ -23,15 +23,15 @@ struct CampaignsView: View {
                     NavigationLink { CampaignDetailView(campaignId: campaign.id) } label: {
                         VStack(alignment: .leading, spacing: Theme.Space.sm) {
                             HStack {
-                                Text(campaign.title).font(.headline)
+                                Text(campaign.title).font(.outfitHeadline)
                                 Spacer()
-                                Text(campaign.status.capitalized).font(.caption).foregroundStyle(.secondary)
+                                Text(campaign.status.capitalized).font(.outfitCaption).foregroundStyle(.secondary)
                             }
                             if let premise = campaign.arcPremise, !premise.isEmpty {
-                                Text(premise).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                                Text(premise).font(.outfitCaption).foregroundStyle(.secondary).lineLimit(2)
                             }
                             ProgressBar(value: campaign.progress)
-                            Text("\(campaign.done)/\(campaign.total) chapters").font(.caption).foregroundStyle(.secondary)
+                            Text("\(campaign.done)/\(campaign.total) chapters").font(.outfitCaption).foregroundStyle(.secondary)
                         }
                         .padding(.vertical, 4)
                     }
@@ -52,13 +52,13 @@ struct CampaignDetailView: View {
 
     var body: some View {
         AsyncContentView(state: state, retry: { Task { await load() } }) { detail in
-            List {
+            NeonList {
                 Section {
                     if let premise = detail.campaign.arcPremise, !premise.isEmpty {
-                        Text(premise).font(.subheadline)
+                        Text(premise).font(.outfitSubheadline)
                     }
                     ProgressBar(value: detail.campaign.progress)
-                    Text("\(detail.campaign.done)/\(detail.campaign.total) chapters").font(.caption).foregroundStyle(.secondary)
+                    Text("\(detail.campaign.done)/\(detail.campaign.total) chapters").font(.outfitCaption).foregroundStyle(.secondary)
                     if detail.campaign.ready {
                         PrimaryButton(title: "Claim ending", systemImage: "flag.checkered", tint: Theme.gold, isLoading: claiming) {
                             Task { await claim() }
@@ -71,13 +71,13 @@ struct CampaignDetailView: View {
                             Image(systemName: chapter.status == "completed" ? "checkmark.seal.fill" : "\(index + 1).circle")
                                 .foregroundStyle(chapter.status == "completed" ? Theme.success : .secondary)
                             VStack(alignment: .leading) {
-                                Text(chapter.title).font(.subheadline)
+                                Text(chapter.title).font(.outfitSubheadline)
                                 if let beat = chapter.chapterBeat, !beat.isEmpty {
-                                    Text(beat).font(.caption).foregroundStyle(.secondary)
+                                    Text(beat).font(.outfitCaption).foregroundStyle(.secondary)
                                 }
                             }
                             Spacer()
-                            Text("\(chapter.done)/\(chapter.total)").font(.caption).foregroundStyle(.secondary)
+                            Text("\(chapter.done)/\(chapter.total)").font(.outfitCaption).foregroundStyle(.secondary)
                         }
                     }
                 }

@@ -10,14 +10,14 @@ struct QuestRow: View {
         HStack(alignment: .top, spacing: Theme.Space.md) {
             Button(action: onToggle) {
                 Image(systemName: quest.completed ? "checkmark.circle.fill" : "circle")
-                    .font(.title2)
+                    .font(.outfitTitle2)
                     .foregroundStyle(quest.completed ? Theme.success : .secondary)
             }
             .buttonStyle(.plain)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(quest.title)
-                    .font(.body)
+                    .font(.outfitBody)
                     .strikethrough(quest.completed, color: .secondary)
                     .foregroundStyle(quest.completed ? .secondary : .primary)
 
@@ -30,13 +30,13 @@ struct QuestRow: View {
                         Text("· ⚡️ Big swing").foregroundStyle(Theme.gold)
                     }
                 }
-                .font(.caption)
+                .font(.outfitCaption)
                 .foregroundStyle(.secondary)
 
                 if !quest.steps.isEmpty {
                     let done = quest.steps.filter(\.done).count
                     Text("Steps \(done)/\(quest.steps.count)")
-                        .font(.caption2)
+                        .font(.outfitCaption2)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -45,7 +45,7 @@ struct QuestRow: View {
 
             VStack(alignment: .trailing, spacing: 4) {
                 Text("+\(quest.points)")
-                    .font(.caption.bold())
+                    .font(.outfitCaptionBold)
                     .foregroundStyle(Theme.accent)
                 Circle().fill(quest.priority.color).frame(width: 8, height: 8)
             }

@@ -31,9 +31,9 @@ struct FocusView: View {
     private var setup: some View {
         VStack(spacing: Theme.Space.lg) {
             Text("🎯").font(.system(size: 56))
-            Text("Start a focus session").font(.title3.bold())
+            Text("Start a focus session").font(.outfitTitle3Bold)
             Text("Pick a rhythm and, optionally, the quest you're working on.")
-                .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                .font(.outfitSubheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
 
             VStack(spacing: Theme.Space.md) {
                 ForEach(model.presets) { preset in
@@ -46,7 +46,7 @@ struct FocusView: View {
             if !model.quests.isEmpty {
                 Card {
                     VStack(alignment: .leading, spacing: Theme.Space.sm) {
-                        Text("Focus on a quest (optional)").font(.subheadline.bold())
+                        Text("Focus on a quest (optional)").font(.outfitSubheadlineBold)
                         Picker("Quest", selection: $model.selectedTaskId) {
                             Text("None").tag(Int?.none)
                             ForEach(model.quests) { quest in
@@ -70,7 +70,7 @@ struct FocusView: View {
         VStack(spacing: Theme.Space.xl) {
             Spacer()
             Text(model.phaseLabel.uppercased())
-                .font(.subheadline.bold())
+                .font(.outfitSubheadlineBold)
                 .foregroundStyle(model.phase == .focus ? Theme.accent : Theme.success)
                 .tracking(2)
 
@@ -88,7 +88,7 @@ struct FocusView: View {
 
             if let session = model.session, let preset = model.preset {
                 Text("Interval \(min(session.completedIntervals + 1, preset.plannedCycles)) of \(preset.plannedCycles)")
-                    .font(.subheadline).foregroundStyle(.secondary)
+                    .font(.outfitSubheadline).foregroundStyle(.secondary)
             }
 
             Spacer()
@@ -113,9 +113,9 @@ private struct PresetCard: View {
         Button(action: action) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(preset.label).font(.headline)
+                    Text(preset.label).font(.outfitHeadline)
                     Text("\(preset.focusMinutes)m focus · \(preset.breakMinutes)m break · \(preset.plannedCycles) cycles")
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(.outfitCaption).foregroundStyle(.secondary)
                 }
                 Spacer()
                 Image(systemName: selected ? "largecircle.fill.circle" : "circle")
@@ -136,10 +136,10 @@ private struct FocusResultSheet: View {
         VStack(spacing: Theme.Space.lg) {
             Spacer()
             Text("🌟").font(.system(size: 64))
-            Text("Session complete").font(.title2.bold())
-            Text("+\(result.xpDelta) XP").font(.title3.bold()).foregroundStyle(Theme.accent)
+            Text("Session complete").font(.outfitTitle2Bold)
+            Text("+\(result.xpDelta) XP").font(.outfitTitle3Bold).foregroundStyle(Theme.accent)
             Text("\(result.session.completedIntervals) focus interval\(result.session.completedIntervals == 1 ? "" : "s") · \(result.session.focusedSeconds / 60) min")
-                .font(.subheadline).foregroundStyle(.secondary)
+                .font(.outfitSubheadline).foregroundStyle(.secondary)
             Spacer()
             PrimaryButton(title: "Done") { dismiss() }.padding(.horizontal, Theme.Space.xl).padding(.bottom, Theme.Space.xl)
         }

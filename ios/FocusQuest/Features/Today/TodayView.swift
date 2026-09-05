@@ -84,7 +84,7 @@ struct TodayView: View {
         VStack(alignment: .leading, spacing: Theme.Space.md) {
             SectionHeader("Today's Quests") {
                 Text("\(model.quests.filter(\.completed).count)/\(model.quests.count)")
-                    .font(.subheadline).foregroundStyle(.secondary)
+                    .font(.outfitSubheadline).foregroundStyle(.secondary)
             }
             if model.quests.isEmpty {
                 Card { EmptyStateView(symbol: "sparkles", title: "No quests yet", message: "Tap + to add your first quest for today.") }
@@ -110,18 +110,18 @@ private struct StatsHeader: View {
             VStack(alignment: .leading, spacing: Theme.Space.md) {
                 HStack {
                     VStack(alignment: .leading) {
-                        Text("Level \(stats.currentLevel)").font(.title2.bold())
-                        Text(stats.levelName).font(.subheadline).foregroundStyle(.secondary)
+                        Text("Level \(stats.currentLevel)").font(.outfitTitle2Bold)
+                        Text(stats.levelName).font(.outfitSubheadline).foregroundStyle(.secondary)
                     }
                     Spacer()
                     VStack(alignment: .trailing) {
-                        Text("🔥 \(stats.streakDays)").font(.title3.bold())
-                        Text("day streak").font(.caption).foregroundStyle(.secondary)
+                        Text("🔥 \(stats.streakDays)").font(.outfitTitle3Bold)
+                        Text("day streak").font(.outfitCaption).foregroundStyle(.secondary)
                     }
                 }
                 VStack(alignment: .leading, spacing: 4) {
                     ProgressBar(value: stats.levelProgress)
-                    Text("\(stats.pointsToNextLevel) XP to next level").font(.caption).foregroundStyle(.secondary)
+                    Text("\(stats.pointsToNextLevel) XP to next level").font(.outfitCaption).foregroundStyle(.secondary)
                 }
                 HStack(spacing: Theme.Space.md) {
                     StatPill(value: "\(stats.todayPoints)", label: "Today XP")
@@ -138,10 +138,10 @@ private struct BrainCheckinPrompt: View {
         NavigationLink { BrainCheckinView() } label: {
             Card {
                 HStack {
-                    Image(systemName: "brain.head.profile").font(.title2).foregroundStyle(Theme.accent)
+                    Image(systemName: "brain.head.profile").font(.outfitTitle2).foregroundStyle(Theme.accent)
                     VStack(alignment: .leading) {
-                        Text("How's your brain today?").font(.subheadline.bold())
-                        Text("A quick check-in tunes your suggestions.").font(.caption).foregroundStyle(.secondary)
+                        Text("How's your brain today?").font(.outfitSubheadlineBold)
+                        Text("A quick check-in tunes your suggestions.").font(.outfitCaption).foregroundStyle(.secondary)
                     }
                     Spacer()
                     Image(systemName: "chevron.right").foregroundStyle(.secondary)
