@@ -46,8 +46,8 @@ struct ReflectionView: View {
                 VStack(alignment: .leading, spacing: Theme.Space.lg) {
                     Card {
                         VStack(alignment: .leading, spacing: Theme.Space.sm) {
-                            Text("🌙 Evening reflection").font(.headline)
-                            Text(reflection?.prompt ?? "How did today go?").font(.subheadline).foregroundStyle(.secondary)
+                            Text("🌙 Evening reflection").font(.outfitHeadline)
+                            Text(reflection?.prompt ?? "How did today go?").font(.outfitSubheadline).foregroundStyle(.secondary)
                         }
                     }
 
@@ -56,7 +56,7 @@ struct ReflectionView: View {
 
                     Card {
                         VStack(alignment: .leading, spacing: Theme.Space.sm) {
-                            Text("Anything else? (optional)").font(.subheadline.bold())
+                            Text("Anything else? (optional)").font(.outfitSubheadlineBold)
                             TextField("A sentence for future you…", text: $model.freeText, axis: .vertical)
                                 .lineLimit(2...5)
                                 .textFieldStyle(.roundedBorder)
@@ -64,7 +64,7 @@ struct ReflectionView: View {
                     }
 
                     if let xp = model.awardedXp {
-                        Text("Saved · +\(xp) XP").font(.subheadline).foregroundStyle(Theme.success)
+                        Text("Saved · +\(xp) XP").font(.outfitSubheadline).foregroundStyle(Theme.success)
                     }
 
                     PrimaryButton(title: reflection?.answeredAt == nil ? "Save reflection" : "Update", isLoading: model.busy) {
@@ -82,7 +82,7 @@ struct ReflectionView: View {
     private func chipGroup(_ title: String, chips: [(key: String, label: String)]) -> some View {
         Card {
             VStack(alignment: .leading, spacing: Theme.Space.sm) {
-                Text(title).font(.subheadline.bold())
+                Text(title).font(.outfitSubheadlineBold)
                 FlowLayout(spacing: Theme.Space.sm) {
                     ForEach(chips, id: \.key) { chip in
                         SelectableChip(label: chip.label, isSelected: model.selectedChips.contains(chip.key)) {

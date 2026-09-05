@@ -21,22 +21,22 @@ struct GearStoreView: View {
 
     var body: some View {
         AsyncContentView(state: model.state, retry: { Task { await model.load() } }) { store in
-            List {
+            NeonList {
                 Section {
                     HStack {
                         Text("🪙 \(store.coinBalance) coins")
                         Spacer()
                         Text("Level \(store.userLevel)").foregroundStyle(.secondary)
-                    }.font(.subheadline)
+                    }.font(.outfitSubheadline)
                 }
                 ForEach(store.items) { item in
                     HStack(spacing: Theme.Space.md) {
-                        Text(item.icon).font(.title2)
+                        Text(item.icon).font(.outfitTitle2)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(item.name).font(.subheadline)
+                            Text(item.name).font(.outfitSubheadline)
                             Text("\(item.slot.capitalized) · \(item.rarity.capitalized) · +\(item.statPower)")
-                                .font(.caption).foregroundStyle(.secondary)
-                            if !item.meetsLevel { Text("Needs level \(item.levelRequired)").font(.caption2).foregroundStyle(Theme.danger) }
+                                .font(.outfitCaption).foregroundStyle(.secondary)
+                            if !item.meetsLevel { Text("Needs level \(item.levelRequired)").font(.outfitCaption2).foregroundStyle(Theme.danger) }
                         }
                         Spacer()
                         if item.owned {

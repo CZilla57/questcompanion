@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Rounded card container.
+/// Rounded card container: dark elevated surface with a hairline neon border
+/// and a soft cyan glow, mirroring the web app's card treatment.
 struct Card<Content: View>: View {
     @ViewBuilder var content: Content
     var body: some View {
@@ -9,6 +10,24 @@ struct Card<Content: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Theme.cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous)
+                    .strokeBorder(Theme.cardBorder, lineWidth: 1)
+            )
+            .shadow(color: Theme.glow, radius: 12, x: 0, y: 0)
+    }
+}
+
+/// A `List` that shows the deep-space navy ground instead of the default
+/// system background, so List screens match the ScrollView screens. Drop-in
+/// for `List { … }`; `.listStyle`/`.refreshable` applied afterward still reach
+/// the underlying list through the environment.
+struct NeonList<Content: View>: View {
+    @ViewBuilder var content: Content
+    var body: some View {
+        List { content }
+            .scrollContentBackground(.hidden)
+            .background(Theme.screenBackground)
     }
 }
 
@@ -22,7 +41,7 @@ struct SectionHeader<Accessory: View>: View {
     }
     var body: some View {
         HStack {
-            Text(title).font(.headline)
+            Text(title).font(.outfitHeadline)
             Spacer()
             accessory
         }
@@ -36,8 +55,8 @@ struct StatPill: View {
     var tint: Color = Theme.accent
     var body: some View {
         VStack(spacing: 2) {
-            Text(value).font(.title2.bold()).foregroundStyle(tint)
-            Text(label).font(.caption).foregroundStyle(.secondary)
+            Text(value).font(.outfitTitle2Bold).foregroundStyle(tint)
+            Text(label).font(.outfitCaption).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, Theme.Space.md)
@@ -77,9 +96,9 @@ struct EmptyStateView: View {
     var body: some View {
         VStack(spacing: Theme.Space.md) {
             Image(systemName: symbol).font(.system(size: 40)).foregroundStyle(.secondary)
-            Text(title).font(.headline).multilineTextAlignment(.center)
+            Text(title).font(.outfitHeadline).multilineTextAlignment(.center)
             if let message {
-                Text(message).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                Text(message).font(.outfitSubheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
             }
         }
         .frame(maxWidth: .infinity)
@@ -94,7 +113,7 @@ struct ErrorRetryView: View {
     var body: some View {
         VStack(spacing: Theme.Space.md) {
             Image(systemName: "exclamationmark.triangle").font(.system(size: 34)).foregroundStyle(Theme.danger)
-            Text(message).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
+            Text(message).font(.outfitSubheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
             Button("Try again", action: retry).buttonStyle(.borderedProminent).tint(Theme.accent)
         }
         .frame(maxWidth: .infinity)
@@ -134,7 +153,7 @@ struct SelectableChip: View {
     var body: some View {
         Button(action: action) {
             Text(label)
-                .font(.subheadline)
+                .font(.outfitSubheadline)
                 .padding(.horizontal, Theme.Space.md)
                 .padding(.vertical, Theme.Space.sm)
                 .background(isSelected ? Theme.accent : Theme.accentSoft)

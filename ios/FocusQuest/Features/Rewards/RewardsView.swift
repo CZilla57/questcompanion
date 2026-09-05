@@ -44,12 +44,12 @@ struct RewardsView: View {
 
     var body: some View {
         AsyncContentView(state: model.state, retry: { Task { await model.load() } }) { bundle in
-            List {
+            NeonList {
                 Section {
                     HStack {
-                        Text("🪙 Coins").font(.headline)
+                        Text("🪙 Coins").font(.outfitHeadline)
                         Spacer()
-                        Text("\(bundle.coins)").font(.title3.bold()).foregroundStyle(Theme.gold)
+                        Text("\(bundle.coins)").font(.outfitTitle3Bold).foregroundStyle(Theme.gold)
                     }
                 }
 
@@ -57,8 +57,8 @@ struct RewardsView: View {
                     Section("Mystery box") {
                         HStack {
                             VStack(alignment: .leading) {
-                                Text("Open for \(mystery.cost) coins").font(.subheadline)
-                                Text("\(mystery.rewardCount) rewards in the pool").font(.caption).foregroundStyle(.secondary)
+                                Text("Open for \(mystery.cost) coins").font(.outfitSubheadline)
+                                Text("\(mystery.rewardCount) rewards in the pool").font(.outfitCaption).foregroundStyle(.secondary)
                             }
                             Spacer()
                             Button("Open 🎁") { Task { await model.openMystery() } }
@@ -72,8 +72,8 @@ struct RewardsView: View {
                     ForEach(bundle.rewards) { reward in
                         HStack {
                             VStack(alignment: .leading) {
-                                Text(reward.label).font(.subheadline)
-                                Text("\(reward.tier.capitalized) · \(reward.coinCost) coins").font(.caption).foregroundStyle(.secondary)
+                                Text(reward.label).font(.outfitSubheadline)
+                                Text("\(reward.tier.capitalized) · \(reward.coinCost) coins").font(.outfitCaption).foregroundStyle(.secondary)
                             }
                             Spacer()
                             Button("Redeem") { Task { await model.redeem(reward) } }
@@ -88,7 +88,7 @@ struct RewardsView: View {
                     HStack {
                         Text("Real-life rewards")
                         Spacer()
-                        Button("Add") { model.showAddReward = true }.font(.caption)
+                        Button("Add") { model.showAddReward = true }.font(.outfitCaption)
                     }
                 }
 
@@ -98,8 +98,8 @@ struct RewardsView: View {
                             HStack {
                                 Text(perk.emoji)
                                 VStack(alignment: .leading) {
-                                    Text(perk.label).font(.subheadline)
-                                    Text(perk.description).font(.caption).foregroundStyle(.secondary)
+                                    Text(perk.label).font(.outfitSubheadline)
+                                    Text(perk.description).font(.outfitCaption).foregroundStyle(.secondary)
                                 }
                                 Spacer()
                                 Button("\(perk.coinCost)") { Task { await model.buyPerk(perk) } }
@@ -111,7 +111,7 @@ struct RewardsView: View {
 
                 if !bundle.dopamine.isEmpty {
                     Section("Dopamine menu") {
-                        ForEach(bundle.dopamine) { item in Text(item.rewardText).font(.subheadline) }
+                        ForEach(bundle.dopamine) { item in Text(item.rewardText).font(.outfitSubheadline) }
                     }
                 }
             }

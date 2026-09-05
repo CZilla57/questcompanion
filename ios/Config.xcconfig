@@ -19,3 +19,7 @@ FQ_API_BASE_URL = $(FQ_API_SCHEME):/$()/$(FQ_API_HOST)
 
 FQ_AUTH0_DOMAIN = your-tenant.us.auth0.com
 FQ_AUTH0_CLIENT_ID = your_auth0_native_client_id
+
+// Local, gitignored overrides win over the defaults above (last assignment
+// wins in xcconfig). Optional include: no error when the file is absent.
+#include? "Config.local.xcconfig"

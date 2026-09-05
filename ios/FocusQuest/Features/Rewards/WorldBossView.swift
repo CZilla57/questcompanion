@@ -29,11 +29,11 @@ struct WorldBossView: View {
                     Card {
                         VStack(spacing: Theme.Space.md) {
                             Text(boss.defeated ? "💀" : "🐉").font(.system(size: 64))
-                            Text(boss.defeated ? "Boss defeated!" : "World Boss").font(.title2.bold())
+                            Text(boss.defeated ? "Boss defeated!" : "World Boss").font(.outfitTitle2Bold)
                             ProgressBar(value: boss.hp > 0 ? Double(boss.totalDamage) / Double(boss.totalDamage + boss.hp) : 1, tint: Theme.danger)
-                            Text("HP \(boss.hp)").font(.caption).foregroundStyle(.secondary)
+                            Text("HP \(boss.hp)").font(.outfitCaption).foregroundStyle(.secondary)
                             Text("Your damage: \(boss.yourContribution) · Power \(boss.yourPower)")
-                                .font(.subheadline).foregroundStyle(.secondary)
+                                .font(.outfitSubheadline).foregroundStyle(.secondary)
                             if !boss.defeated {
                                 PrimaryButton(title: boss.attackedToday ? "Attacked today ✓" : "Attack (+\(boss.attackXp) XP)",
                                               systemImage: "bolt.fill", tint: Theme.danger, isLoading: model.busy) {
@@ -47,14 +47,14 @@ struct WorldBossView: View {
 
                     Card {
                         VStack(alignment: .leading, spacing: Theme.Space.sm) {
-                            Text("Contributors").font(.headline)
+                            Text("Contributors").font(.outfitHeadline)
                             ForEach(boss.contributors) { c in
                                 HStack {
                                     Circle().fill(Color(hex: c.avatarColor)).frame(width: 10, height: 10)
-                                    Text(c.displayName).font(.subheadline)
-                                    if c.isAlly { Text("ally").font(.caption2).foregroundStyle(Theme.accent) }
+                                    Text(c.displayName).font(.outfitSubheadline)
+                                    if c.isAlly { Text("ally").font(.outfitCaption2).foregroundStyle(Theme.accent) }
                                     Spacer()
-                                    Text("\(c.damage)").font(.caption).foregroundStyle(.secondary)
+                                    Text("\(c.damage)").font(.outfitCaption).foregroundStyle(.secondary)
                                 }
                             }
                         }

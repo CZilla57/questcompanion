@@ -19,23 +19,23 @@ struct RecurringTasksView: View {
 
     var body: some View {
         AsyncContentView(state: model.state, retry: { Task { await model.load() } }) { tasks in
-            List {
+            NeonList {
                 if tasks.isEmpty {
                     EmptyStateView(symbol: "repeat", title: "No recurring quests", message: "Habits and routines show up here.")
                 }
                 ForEach(tasks) { task in
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("\(task.category.emoji) \(task.title)").font(.subheadline)
-                            Text(task.scheduleLabel).font(.caption).foregroundStyle(.secondary)
+                            Text("\(task.category.emoji) \(task.title)").font(.outfitSubheadline)
+                            Text(task.scheduleLabel).font(.outfitCaption).foregroundStyle(.secondary)
                             if task.currentStreak > 0 {
-                                Text("🔥 \(task.currentStreak) \(task.streakUnit) streak").font(.caption2).foregroundStyle(Theme.gold)
+                                Text("🔥 \(task.currentStreak) \(task.streakUnit) streak").font(.outfitCaption2).foregroundStyle(Theme.gold)
                             }
                         }
                         Spacer()
                         Button { Task { await model.toggle(task) } } label: {
                             Image(systemName: task.isActive ? "pause.circle.fill" : "play.circle")
-                                .font(.title2)
+                                .font(.outfitTitle2)
                                 .foregroundStyle(task.isActive ? Theme.accent : .secondary)
                         }
                         .buttonStyle(.plain)

@@ -25,7 +25,7 @@ struct MainTabView: View {
 struct MoreView: View {
     var body: some View {
         NavigationStack {
-            List {
+            NeonList {
                 Section {
                     NavigationLink { ProgressDashboardView() } label: { Label("Progress & Insights", systemImage: "chart.line.uptrend.xyaxis") }
                     NavigationLink { BadgesView() } label: { Label("Badges", systemImage: "rosette") }
