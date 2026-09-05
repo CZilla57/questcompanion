@@ -1,22 +1,28 @@
 import SwiftUI
 
 struct MainTabView: View {
+    @EnvironmentObject private var router: AppRouter
     var body: some View {
-        TabView {
+        TabView(selection: $router.tab) {
             TodayView()
                 .tabItem { Label("Today", systemImage: "sun.max.fill") }
+                .tag(AppRouter.Tab.today)
 
             QuestsView()
                 .tabItem { Label("Quests", systemImage: "checklist") }
+                .tag(AppRouter.Tab.quests)
 
             FocusView()
                 .tabItem { Label("Focus", systemImage: "timer") }
+                .tag(AppRouter.Tab.focus)
 
             HeroView()
                 .tabItem { Label("Hero", systemImage: "figure.walk") }
+                .tag(AppRouter.Tab.hero)
 
             MoreView()
                 .tabItem { Label("More", systemImage: "ellipsis.circle") }
+                .tag(AppRouter.Tab.more)
         }
     }
 }
