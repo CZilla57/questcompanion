@@ -49,17 +49,23 @@ final class TodayViewModel: ObservableObject {
 
 struct TodayView: View {
     @StateObject private var model = TodayViewModel()
+    @EnvironmentObject private var router: AppRouter
+
+    private var pending: [Quest] { model.quests.filter { !$0.completed } }
+    private var completed: [Quest] { model.quests.filter(\.completed) }
 
     var body: some View {
         NavigationStack {
             AsyncContentView(state: model.stats, retry: { Task { await model.load() } }) { stats in
                 ScrollView {
-                    VStack(spacing: Theme.Space.lg) {
-                        StatsHeader(stats: stats)
-                        if let brain = model.brain, !brain.checkedInToday {
-                            BrainCheckinPrompt()
-                        }
+                    // Web "Now" order: prompt chips → quick add → quests →
+                    // quiet status line. Stats are demoted from a big card to a
+                    // single line (StatusLine), matching artifacts/focusquest.
+                    VStack(alignment: .leading, spacing: Theme.Space.lg) {
+                        promptChips
+                        quickAddBar
                         todaysQuests
+                        StatusLine(stats: stats).padding(.top, Theme.Space.xs)
                     }
                     .padding(Theme.Space.lg)
                 }
@@ -67,11 +73,6 @@ struct TodayView: View {
                 .refreshable { await model.load() }
             }
             .navigationTitle("Today")
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button { model.showQuickAdd = true } label: { Image(systemName: "plus.circle.fill") }
-                }
-            }
             .sheet(isPresented: $model.showQuickAdd) {
                 QuickAddSheet { quest in model.quests.insert(quest, at: 0); Task { await model.load() } }
             }
@@ -80,73 +81,137 @@ struct TodayView: View {
         }
     }
 
+    @ViewBuilder private var promptChips: some View {
+        let showBrain = model.brain.map { !$0.checkedInToday } ?? false
+        if showBrain {
+            HStack(spacing: Theme.Space.sm) {
+                PromptChip(icon: "brain.head.profile", label: "Brain check-in") { BrainCheckinView() }
+                PromptChip(icon: "moon.stars.fill", label: "Reflect") { ReflectionView() }
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
+    private var quickAddBar: some View {
+        Button { model.showQuickAdd = true } label: {
+            HStack(spacing: Theme.Space.sm) {
+                Image(systemName: "plus.circle.fill").foregroundStyle(Theme.accent)
+                Text("Add a quest…").foregroundStyle(.secondary)
+                Spacer()
+            }
+            .font(.outfitBody)
+            .padding(Theme.Space.md)
+            .background(Theme.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous)
+                    .strokeBorder(Theme.cardBorder, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
     private var todaysQuests: some View {
         VStack(alignment: .leading, spacing: Theme.Space.md) {
-            SectionHeader("Today's Quests") {
-                Text("\(model.quests.filter(\.completed).count)/\(model.quests.count)")
-                    .font(.outfitSubheadline).foregroundStyle(.secondary)
+            HStack {
+                Label {
+                    Text("Today's Quests").font(.outfitTitle3Bold)
+                } icon: {
+                    Image(systemName: "target").foregroundStyle(Theme.accent)
+                }
+                Spacer()
+                Button { router.tab = .quests } label: {
+                    Text("View All")
+                        .font(.outfitSubheadline)
+                        .foregroundStyle(Theme.accent)
+                        .padding(.vertical, Theme.Space.xs)
+                        .padding(.leading, Theme.Space.md)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
+
             if model.quests.isEmpty {
-                Card { EmptyStateView(symbol: "sparkles", title: "No quests yet", message: "Tap + to add your first quest for today.") }
+                Card { EmptyStateView(symbol: "target", title: "Nothing queued today", message: "Capture one above — text or voice.") }
             } else {
-                Card {
-                    VStack(spacing: 0) {
-                        ForEach(model.quests) { quest in
-                            QuestRow(quest: quest) { Task { await model.toggle(quest) } }
-                            if quest.id != model.quests.last?.id { Divider().padding(.vertical, 2) }
-                        }
+                VStack(spacing: Theme.Space.sm) {
+                    ForEach(pending) { quest in questItem(quest) }
+                }
+                if !completed.isEmpty {
+                    HStack(spacing: 6) {
+                        Image(systemName: "checkmark").font(.outfitCaption2)
+                        Text("COMPLETED (\(completed.count))")
+                            .font(.outfitCaption2).textCase(.uppercase).kerning(0.8)
                     }
+                    .foregroundStyle(.secondary)
+                    .padding(.top, Theme.Space.sm)
+
+                    VStack(spacing: Theme.Space.sm) {
+                        ForEach(completed) { quest in questItem(quest) }
+                    }
+                    .opacity(0.6)
                 }
             }
         }
     }
+
+    /// A single quest as its own bordered surface (web renders separated cards).
+    private func questItem(_ quest: Quest) -> some View {
+        QuestRow(quest: quest) { Task { await model.toggle(quest) } }
+            .padding(.horizontal, Theme.Space.md)
+            .padding(.vertical, Theme.Space.sm)
+            .background(Theme.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous)
+                    .strokeBorder(Theme.cardBorder, lineWidth: 1)
+            )
+    }
 }
 
-/// The level/streak/today summary card.
-private struct StatsHeader: View {
+/// One quiet line where the big stats card used to be — tap through to
+/// Progress. Mirrors the web `StatusRow`: streak (omitted at 0), level, XP today.
+private struct StatusLine: View {
     let stats: UserStats
     var body: some View {
-        Card {
-            VStack(alignment: .leading, spacing: Theme.Space.md) {
-                HStack {
-                    VStack(alignment: .leading) {
-                        Text("Level \(stats.currentLevel)").font(.outfitTitle2Bold)
-                        Text(stats.levelName).font(.outfitSubheadline).foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    VStack(alignment: .trailing) {
-                        Text("🔥 \(stats.streakDays)").font(.outfitTitle3Bold)
-                        Text("day streak").font(.outfitCaption).foregroundStyle(.secondary)
-                    }
-                }
-                VStack(alignment: .leading, spacing: 4) {
-                    ProgressBar(value: stats.levelProgress)
-                    Text("\(stats.pointsToNextLevel) XP to next level").font(.outfitCaption).foregroundStyle(.secondary)
-                }
-                HStack(spacing: Theme.Space.md) {
-                    StatPill(value: "\(stats.todayPoints)", label: "Today XP")
-                    StatPill(value: "\(stats.todayTasksCompleted)/\(stats.todayTasksTotal)", label: "Quests", tint: Theme.success)
-                    StatPill(value: "\(stats.weeklyPoints)", label: "This week", tint: Theme.gold)
-                }
+        NavigationLink { ProgressDashboardView() } label: {
+            HStack(spacing: 6) {
+                if stats.streakDays > 0 { Text("🔥") }
+                Text(parts.joined(separator: " · "))
+                Image(systemName: "chevron.right").font(.outfitCaption2)
             }
+            .font(.outfitSubheadline)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .buttonStyle(.plain)
+    }
+    private var parts: [String] {
+        var p: [String] = []
+        if stats.streakDays > 0 { p.append("\(stats.streakDays)-day streak") }
+        p.append("Lv \(stats.currentLevel)")
+        p.append("\(stats.todayPoints) XP today")
+        return p
     }
 }
 
-private struct BrainCheckinPrompt: View {
+/// A compact tappable pill for the brain/reflection prompts.
+private struct PromptChip<Destination: View>: View {
+    let icon: String
+    let label: String
+    @ViewBuilder var destination: Destination
     var body: some View {
-        NavigationLink { BrainCheckinView() } label: {
-            Card {
-                HStack {
-                    Image(systemName: "brain.head.profile").font(.outfitTitle2).foregroundStyle(Theme.accent)
-                    VStack(alignment: .leading) {
-                        Text("How's your brain today?").font(.outfitSubheadlineBold)
-                        Text("A quick check-in tunes your suggestions.").font(.outfitCaption).foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right").foregroundStyle(.secondary)
-                }
+        NavigationLink { destination } label: {
+            HStack(spacing: 6) {
+                Image(systemName: icon).font(.outfitCaption)
+                Text(label).font(.outfitSubheadline)
             }
+            .padding(.horizontal, Theme.Space.md)
+            .padding(.vertical, Theme.Space.sm)
+            .foregroundStyle(Theme.accent)
+            .background(Theme.accentSoft)
+            .clipShape(Capsule())
+            .overlay(Capsule().strokeBorder(Theme.accent.opacity(0.35), lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
