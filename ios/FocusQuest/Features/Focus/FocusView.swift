@@ -1,0 +1,151 @@
+import SwiftUI
+
+extension FocusSessionResult: Identifiable { var id: Int { session.id } }
+
+struct FocusView: View {
+    @StateObject private var model = FocusViewModel()
+
+    var body: some View {
+        NavigationStack {
+            AsyncContentView(state: model.setup, retry: { Task { await model.load() } }) { _ in
+                Group {
+                    if model.isActive { activeSession } else { setup }
+                }
+                .padding(Theme.Space.lg)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .background(Theme.screenBackground)
+            }
+            .navigationTitle("Focus")
+            .alert("Focus", isPresented: .constant(model.error != nil)) {
+                Button("OK") { model.error = nil }
+            } message: { Text(model.error ?? "") }
+            .sheet(item: $model.lastResult) { result in
+                FocusResultSheet(result: result)
+            }
+            .task { if model.setup.value == nil { await model.load() } }
+        }
+    }
+
+    // MARK: - Idle setup
+
+    private var setup: some View {
+        VStack(spacing: Theme.Space.lg) {
+            Text("🎯").font(.system(size: 56))
+            Text("Start a focus session").font(.title3.bold())
+            Text("Pick a rhythm and, optionally, the quest you're working on.")
+                .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
+
+            VStack(spacing: Theme.Space.md) {
+                ForEach(model.presets) { preset in
+                    PresetCard(preset: preset, selected: model.selectedPreset == preset.key) {
+                        model.selectedPreset = preset.key
+                    }
+                }
+            }
+
+            if !model.quests.isEmpty {
+                Card {
+                    VStack(alignment: .leading, spacing: Theme.Space.sm) {
+                        Text("Focus on a quest (optional)").font(.subheadline.bold())
+                        Picker("Quest", selection: $model.selectedTaskId) {
+                            Text("None").tag(Int?.none)
+                            ForEach(model.quests) { quest in
+                                Text(quest.title).tag(Int?.some(quest.id))
+                            }
+                        }
+                        .pickerStyle(.menu)
+                    }
+                }
+            }
+
+            PrimaryButton(title: "Start focus", systemImage: "play.fill", isLoading: model.isBusy) {
+                Task { await model.start() }
+            }
+        }
+    }
+
+    // MARK: - Active
+
+    private var activeSession: some View {
+        VStack(spacing: Theme.Space.xl) {
+            Spacer()
+            Text(model.phaseLabel.uppercased())
+                .font(.subheadline.bold())
+                .foregroundStyle(model.phase == .focus ? Theme.accent : Theme.success)
+                .tracking(2)
+
+            ZStack {
+                Circle().stroke(Theme.accent.opacity(0.15), lineWidth: 14)
+                Circle()
+                    .trim(from: 0, to: model.progress)
+                    .stroke(model.phase == .focus ? Theme.accent : Theme.success,
+                            style: StrokeStyle(lineWidth: 14, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .animation(.linear(duration: 1), value: model.progress)
+                Text(model.timeString).font(.system(size: 56, weight: .bold, design: .rounded)).monospacedDigit()
+            }
+            .frame(width: 260, height: 260)
+
+            if let session = model.session, let preset = model.preset {
+                Text("Interval \(min(session.completedIntervals + 1, preset.plannedCycles)) of \(preset.plannedCycles)")
+                    .font(.subheadline).foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            VStack(spacing: Theme.Space.md) {
+                if model.phase != .focus {
+                    Button("Skip break") { model.skipBreak() }.buttonStyle(.bordered)
+                }
+                PrimaryButton(title: "End session", systemImage: "stop.fill", tint: Theme.danger, isLoading: model.isBusy) {
+                    Task { await model.stop() }
+                }
+            }
+        }
+    }
+}
+
+private struct PresetCard: View {
+    let preset: FocusPreset
+    let selected: Bool
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(preset.label).font(.headline)
+                    Text("\(preset.focusMinutes)m focus · \(preset.breakMinutes)m break · \(preset.plannedCycles) cycles")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: selected ? "largecircle.fill.circle" : "circle")
+                    .foregroundStyle(selected ? Theme.accent : .secondary)
+            }
+            .padding(Theme.Space.lg)
+            .background(selected ? Theme.accentSoft : Theme.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct FocusResultSheet: View {
+    let result: FocusSessionResult
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        VStack(spacing: Theme.Space.lg) {
+            Spacer()
+            Text("🌟").font(.system(size: 64))
+            Text("Session complete").font(.title2.bold())
+            Text("+\(result.xpDelta) XP").font(.title3.bold()).foregroundStyle(Theme.accent)
+            Text("\(result.session.completedIntervals) focus interval\(result.session.completedIntervals == 1 ? "" : "s") · \(result.session.focusedSeconds / 60) min")
+                .font(.subheadline).foregroundStyle(.secondary)
+            Spacer()
+            PrimaryButton(title: "Done") { dismiss() }.padding(.horizontal, Theme.Space.xl).padding(.bottom, Theme.Space.xl)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .multilineTextAlignment(.center)
+        .background(Theme.screenBackground)
+        .presentationDetents([.medium])
+    }
+}

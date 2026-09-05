@@ -1,0 +1,21 @@
+// FocusQuest iOS build configuration.
+//
+// Fill these in before building. They are injected into Info.plist and read at
+// runtime by AppConfig. Keep real secrets out of version control if this repo
+// is public — you can override them locally or via a CI-provided xcconfig.
+//
+// FQ_API_BASE_URL   Base URL of the FocusQuest API server, WITHOUT the trailing
+//                   /api (the client appends it). e.g. https://api.focusquest.app
+// FQ_AUTH0_DOMAIN   Auth0 tenant domain, no scheme. e.g. your-tenant.us.auth0.com
+// FQ_AUTH0_CLIENT_ID  Auth0 Native application client id.
+//
+// The `//` in https:// would be read as a comment by xcconfig, so the scheme is
+// split out into FQ_API_SCHEME and recombined. Leave FQ_API_SCHEME as https for
+// real servers; use http only for a local dev server.
+
+FQ_API_SCHEME = https
+FQ_API_HOST = api.example.com
+FQ_API_BASE_URL = $(FQ_API_SCHEME):/$()/$(FQ_API_HOST)
+
+FQ_AUTH0_DOMAIN = your-tenant.us.auth0.com
+FQ_AUTH0_CLIENT_ID = your_auth0_native_client_id
