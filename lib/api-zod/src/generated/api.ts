@@ -2635,6 +2635,26 @@ export const GetEncounterCurrentResponse = zod.object({
 
 
 /**
+ * A short, grounded beat in a tabletop-DM voice — either the morning quest board or the evening make-camp. Generated once per (day, kind) and cached; the model never blocks the screen and falls back to a templated beat on failure. Every specific is grounded in the user's real quests — the DM never fabricates. Returns { beat: null } when the day has nothing real to narrate.
+ * @summary The Dungeon Master's narrated beat for today (the campaign layer)
+ */
+export const GetDmBeatQueryParams = zod.object({
+  "kind": zod.enum(['morning', 'camp']).describe('Which beat to fetch.'),
+  "tz": zod.coerce.string().optional().describe('IANA timezone (e.g. \"America\/New_York\") used to resolve the user\'s local day. Defaults to UTC when omitted or invalid.')
+})
+
+export const GetDmBeatResponse = zod.object({
+  "beat": zod.object({
+  "kind": zod.enum(['morning', 'camp']).describe('The morning quest board or the evening make-camp.'),
+  "localDate": zod.string().describe('The user\'s local day this beat narrates (YYYY-MM-DD).'),
+  "narrative": zod.string().describe('The DM\'s short, grounded prose — always anti-shame, never fabricated.'),
+  "source": zod.enum(['ai', 'fallback']).describe('Whether the model wrote it or the templated fallback did.'),
+  "createdAt": zod.coerce.date()
+}).nullable().describe('Null when the day has nothing real to narrate (the DM stays quiet).')
+})
+
+
+/**
  * @summary Get this week's shared World Boss status
  */
 export const GetWorldBossCurrentResponse = zod.object({

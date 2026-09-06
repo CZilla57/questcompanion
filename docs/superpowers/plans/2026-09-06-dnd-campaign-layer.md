@@ -121,11 +121,11 @@ The roll is **seeded** from `userId + taskId + completionDay` so it is stable, f
 
 ### The DM
 **Files:** create `artifacts/api-server/src/lib/dungeon-master.ts` (+ `ai/` prompt), a narration cache table, routes, clients.
-- [ ] **Campaign thread:** map the user's active questline/campaign arc to a chapter; the DM writes short, grounded narration that references **real** completed quests and kingdom growth ("the Forge's east tunnel is clear; the Athenaeum's lanterns relit"). Never invents work the user didn't do.
-- [ ] **Daily beats:** a **morning quest board** (today's quests framed as the day's adventure) and an **evening make-camp** that hooks the existing reflection feature (a short rest for the party + the hero-vitality "long rest" restore).
+- [~] **Campaign thread:** map the user's active questline/campaign arc to a chapter; the DM writes short, grounded narration that references **real** completed quests and kingdom growth ("the Forge's east tunnel is clear; the Athenaeum's lanterns relit"). Never invents work the user didn't do. *(Server done: the beat grounds on real completed/planned quest titles + the running campaign's current chapter beat. Kingdom-growth grounding is stubbed — the fact-builder + tests support it, but the route leaves it empty until a per-day per-kingdom points ledger exists, rather than risk claiming an advance that didn't happen.)*
+- [x] **Daily beats (server):** `GET /dm/beat?kind=morning|camp` — a **morning quest board** (today's planned quests framed as the day ahead) and an **evening make-camp** (the day's wins). Cached per (user, day, kind); returns `{ beat: null }` when the day has nothing real to narrate. *(Client render on web + iOS pending; the reflection "long rest" hook is deferred.)*
 - [ ] **Session recap:** fold into the existing `weekly-recap.ts` — the week as a "session summary" in DM voice.
-- [ ] **Cost/latency:** cache narration (one generation per beat), degrade gracefully to a templated non-AI line if generation fails (the app must never block on the DM). Anti-shame + no-fabrication constraints in the system prompt; validate output against the user's real completions before showing.
-- [ ] **Gate:** a day of real quests produces a coherent morning board and evening camp that reference only quests actually completed; a generation failure falls back silently to a templated beat.
+- [x] **Cost/latency:** cache narration (one row per beat; a lost race re-reads the winner), degrade to a deterministic templated beat on any model failure (never blocks). Anti-shame + no-fabrication constraints in the prompt; **`parseBeat` validates output** — length, guilt-language, and rejects any **quoted title the user doesn't actually have** (a hallucinated quest → silent fallback). The fallback obeys the same no-fabrication rule.
+- [x] **Gate (server):** exhaustive unit tests — `dungeon-master.test.ts` (strengths-only fact-builder, tier-crossing growth, substance gate) + `ai/dungeon-master.test.ts` (no-fabrication rejection, guilt rejection, deterministic grounded fallback, model-vs-fallback routing). Clients (web + iOS) pending. Recap fold pending.
 
 ---
 
