@@ -270,6 +270,21 @@ paths:
         "401":
           description: Unauthorized
 
+  /users/me/character-sheet:
+    get:
+      operationId: getCharacterSheet
+      summary: Derived D&D character sheet — six ability scores, proficiency, class, level, power
+      tags: [users]
+      responses:
+        "200":
+          description: Character sheet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CharacterSheet"
+        "401":
+          description: Unauthorized
+
   /users/me/xp-history:
     get:
       operationId: getMyXpHistory
@@ -3048,6 +3063,48 @@ components:
           type: string
         kingdomName:
           type: string
+
+    AbilityScore:
+      type: object
+      required: [id, name, abbreviation, score, modifier, kingdomId]
+      properties:
+        id:
+          type: string
+          enum: [might, intellect, attunement, presence, vigor, finesse]
+        name:
+          type: string
+        abbreviation:
+          type: string
+        score:
+          type: integer
+          description: Ability score in [8, 20], derived from the source signal.
+        modifier:
+          type: integer
+          description: Classic floor((score - 10) / 2) modifier, the "+N" shown next to the ability.
+        kingdomId:
+          type: string
+          nullable: true
+          description: >-
+            Source kingdom on the Life Kingdoms map, or null for Finesse, which
+            reads focus discipline rather than a kingdom.
+
+    CharacterSheet:
+      type: object
+      required: [abilities, proficiencyBonus, heroClass, level, battlePower]
+      properties:
+        abilities:
+          type: array
+          items:
+            $ref: "#/components/schemas/AbilityScore"
+        proficiencyBonus:
+          type: integer
+          description: Added to every skill check; derived from the capital tier (+2…+6).
+        heroClass:
+          type: string
+        level:
+          type: integer
+        battlePower:
+          type: integer
 
     Task:
       type: object
