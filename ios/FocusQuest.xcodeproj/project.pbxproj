@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		FQ000000000000000000B003 /* FocusActivityAttributes.swift in Sources (app) */ = {isa = PBXBuildFile; fileRef = FQ000000000000000000B002 /* FocusActivityAttributes.swift */; };
 		FQ000000000000000000B004 /* FocusActivityAttributes.swift in Sources (widget) */ = {isa = PBXBuildFile; fileRef = FQ000000000000000000B002 /* FocusActivityAttributes.swift */; };
+		FQ000000000000000000B007 /* WidgetSharedStore.swift in Sources (app) */ = {isa = PBXBuildFile; fileRef = FQ000000000000000000B006 /* WidgetSharedStore.swift */; };
+		FQ000000000000000000B008 /* WidgetSharedStore.swift in Sources (widget) */ = {isa = PBXBuildFile; fileRef = FQ000000000000000000B006 /* WidgetSharedStore.swift */; };
 		FQ000000000000000000B041 /* FocusQuestWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FQ000000000000000000B001 /* FocusQuestWidgetsExtension.appex */; };
 /* End PBXBuildFile section */
 
@@ -31,6 +33,7 @@
 		FQ00000000000000000000F1 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 		FQ000000000000000000B001 /* FocusQuestWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FocusQuestWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		FQ000000000000000000B002 /* FocusActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusActivityAttributes.swift; sourceTree = "<group>"; };
+		FQ000000000000000000B006 /* WidgetSharedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSharedStore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -102,6 +105,7 @@
 			isa = PBXGroup;
 			children = (
 				FQ000000000000000000B002 /* FocusActivityAttributes.swift */,
+				FQ000000000000000000B006 /* WidgetSharedStore.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -222,6 +226,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FQ000000000000000000B003 /* FocusActivityAttributes.swift in Sources (app) */,
+				FQ000000000000000000B007 /* WidgetSharedStore.swift in Sources (app) */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -230,6 +235,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FQ000000000000000000B004 /* FocusActivityAttributes.swift in Sources (widget) */,
+				FQ000000000000000000B008 /* WidgetSharedStore.swift in Sources (widget) */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -400,6 +406,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
+				CODE_SIGN_ENTITLEMENTS = FocusQuestWidgets/FocusQuestWidgets.entitlements;
 				INFOPLIST_FILE = FocusQuestWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FocusQuest;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -431,6 +438,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
+				CODE_SIGN_ENTITLEMENTS = FocusQuestWidgets/FocusQuestWidgets.entitlements;
 				INFOPLIST_FILE = FocusQuestWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FocusQuest;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
