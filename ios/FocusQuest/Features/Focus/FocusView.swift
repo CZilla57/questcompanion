@@ -4,6 +4,7 @@ extension FocusSessionResult: Identifiable { var id: Int { session.id } }
 
 struct FocusView: View {
     @StateObject private var model = FocusViewModel()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         NavigationStack {
@@ -23,6 +24,13 @@ struct FocusView: View {
                 FocusResultSheet(result: result)
             }
             .task { if model.setup.value == nil { await model.load() } }
+            .onChange(of: scenePhase) { _, newPhase in
+                switch newPhase {
+                case .active:     Task { await model.onForeground() }
+                case .background: model.onBackground()
+                default:          break
+                }
+            }
         }
     }
 

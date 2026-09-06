@@ -27,6 +27,11 @@ final class FocusViewModel: ObservableObject {
     private var phaseStartDate: Date?
     private var pausedAt: Date?
     private var ticker: AnyCancellable?
+    /// True while `reconcile()` walks past-due phases. The catch-up advances phases
+    /// through `setPhaseWindow`, which restarts the ticker on windows whose end is
+    /// already in the past; without this guard that `tick()` would enqueue a second,
+    /// concurrent `handlePhaseEnd()` and risk double-crediting an interval.
+    private var isReconciling = false
 
     var preset: FocusPreset? { presets.first { $0.key == (session?.preset ?? selectedPreset) } }
     var isActive: Bool { session != nil }
@@ -136,7 +141,9 @@ final class FocusViewModel: ObservableObject {
         guard let end = phaseEndDate else { return }
         let secs = Int(end.timeIntervalSinceNow.rounded(.up))
         remaining = max(0, secs)
-        if secs <= 0 { Task { await handlePhaseEnd() } }
+        // While reconciling, the loop owns phase advancement — don't let a past-due
+        // tick spawn a second, concurrent handlePhaseEnd.
+        if secs <= 0 && !isReconciling { Task { await handlePhaseEnd() } }
     }
 
     private func handlePhaseEnd() async {
@@ -148,7 +155,7 @@ final class FocusViewModel: ObservableObject {
         }
     }
 
-    private func recordFocusInterval() async {
+    private func recordFocusInterval(boundary: Date = Date()) async {
         guard let session else { return }
         stopTicker()
         let nextIndex = session.completedIntervals + 1
@@ -158,34 +165,72 @@ final class FocusViewModel: ObservableObject {
             if updated.completedIntervals >= updated.plannedCycles {
                 await stop() // all planned cycles done — finalize
             } else {
-                beginBreak(after: updated.completedIntervals)
+                beginBreak(after: updated.completedIntervals, from: boundary)
             }
         } catch {
             self.error = error.userMessage
-            beginBreak(after: session.completedIntervals + 1)
+            beginBreak(after: session.completedIntervals + 1, from: boundary)
         }
     }
 
-    private func beginFocus() {
+    private func beginFocus(from: Date = Date()) {
         guard let preset else { return }
         phase = .focus
-        setPhaseWindow(minutes: preset.focusMinutes)
+        setPhaseWindow(minutes: preset.focusMinutes, from: from)
     }
 
-    private func beginBreak(after completedIntervals: Int) {
+    private func beginBreak(after completedIntervals: Int, from: Date = Date()) {
         guard let preset else { return }
         let isLong = preset.longBreakEvery > 0 && completedIntervals % preset.longBreakEvery == 0
         phase = isLong ? .longBreak : .shortBreak
-        setPhaseWindow(minutes: isLong ? preset.longBreakMinutes : preset.breakMinutes)
+        setPhaseWindow(minutes: isLong ? preset.longBreakMinutes : preset.breakMinutes, from: from)
     }
 
-    private func setPhaseWindow(minutes: Int) {
-        let now = Date()
-        phaseStartDate = now
-        phaseEndDate = now.addingTimeInterval(TimeInterval(minutes * 60))
+    private func setPhaseWindow(minutes: Int, from: Date = Date()) {
+        phaseStartDate = from
+        phaseEndDate = from.addingTimeInterval(TimeInterval(minutes * 60))
         startTicker()
         scheduleCurrentPhaseAlert()
     }
+
+    // MARK: - Reconcile (foreground catch-up)
+
+    /// Catch up any focus/break phases that elapsed while the app was suspended
+    /// (the ticker is paused in the background). Credits each completed focus
+    /// interval server-side and advances phase windows from their true historical
+    /// boundaries — not `now` — so elapsed breaks don't restart. No-op while paused.
+    func reconcile() async {
+        guard !isPaused, !isReconciling else { return }
+        isReconciling = true
+        defer { isReconciling = false }
+        while let end = phaseEndDate, session != nil, Date() >= end {
+            let boundary = end
+            switch phase {
+            case .focus:
+                // Credits the interval that ended at `boundary`; either finalizes the
+                // session (session becomes nil) or opens the break window from `boundary`.
+                await recordFocusInterval(boundary: boundary)
+            case .shortBreak, .longBreak:
+                beginFocus(from: boundary)
+            }
+            // Safety: every branch must push phaseEndDate strictly past `boundary`
+            // (or finalize). If it didn't, stop rather than spin.
+            if let newEnd = phaseEndDate, newEnd <= boundary { break }
+        }
+    }
+
+    // MARK: - Foreground / background lifecycle
+
+    /// Call when the app returns to the foreground: catch up elapsed phases, then
+    /// resume ticking the current (future) phase. Safe when idle or paused.
+    func onForeground() async {
+        guard isActive else { return }
+        await reconcile()
+        if isActive && !isPaused { startTicker() }
+    }
+
+    /// Call when the app is backgrounded: the ticker can't fire while suspended.
+    func onBackground() { stopTicker() }
 
     // MARK: - Phase-end alerts
 
