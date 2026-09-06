@@ -24,7 +24,7 @@ final class AuthManager: ObservableObject {
     @Published var loginError: String?
     @Published private(set) var isWorking = false
 
-    private let tokenAccount = "session-token"
+    private let tokenAccount = Keychain.sessionTokenAccount
     private var token: String?
 
     init() {
