@@ -11,7 +11,6 @@ final class RewardsViewModel: ObservableObject {
     }
     @Published var state: Loadable<Bundle> = .idle
     @Published var mysteryResult: MysteryResult?
-    @Published var showAddReward = false
 
     func load() async {
         state = .loading
@@ -37,90 +36,68 @@ final class RewardsViewModel: ObservableObject {
     func buyPerk(_ perk: StatPerk) async { _ = try? await RewardsService.buyPerk(id: perk.id); await load() }
     func addReward(label: String, tier: String) async { _ = try? await RewardsService.addReward(label: label, tier: tier); await load() }
     func deleteReward(_ item: RewardStoreItem) async { try? await RewardsService.deleteReward(id: item.id); await load() }
+    func addDopamine(_ text: String) async { _ = try? await RewardsService.addDopamineReward(text: text); await load() }
+    func deleteDopamine(_ item: DopamineReward) async { try? await RewardsService.deleteDopamineReward(id: item.id); await load() }
+}
+
+enum RewardTab: String, CaseIterable, Identifiable {
+    case store = "Store", treats = "Treats", powerUps = "Power-Ups"
+    var id: String { rawValue }
+}
+
+/// Reward tier hints, mirroring the web store's TIERS. The real coin cost is
+/// set server-side; these are the display hint + reference cost.
+enum RewardTier: String, CaseIterable, Identifiable {
+    case small, medium, large, treat
+    var id: String { rawValue }
+    var label: String { rawValue.capitalized }
+    var hint: String {
+        switch self {
+        case .small: return "☕ quick"
+        case .medium: return "🍿 episode"
+        case .large: return "🍕 takeout"
+        case .treat: return "🚗 splurge"
+        }
+    }
+    var cost: Int {
+        switch self {
+        case .small: return 20
+        case .medium: return 60
+        case .large: return 150
+        case .treat: return 400
+        }
+    }
 }
 
 struct RewardsView: View {
     @StateObject private var model = RewardsViewModel()
+    @State private var tab: RewardTab = .store
+    @State private var newRewardLabel = ""
+    @State private var newRewardTier: RewardTier = .small
+    @State private var newTreat = ""
 
     var body: some View {
         AsyncContentView(state: model.state, retry: { Task { await model.load() } }) { bundle in
-            NeonList {
-                Section {
-                    HStack {
-                        Text("🪙 Coins").font(.outfitHeadline)
-                        Spacer()
-                        Text("\(bundle.coins)").font(.outfitTitle3Bold).foregroundStyle(Theme.gold)
+            ScrollView {
+                VStack(alignment: .leading, spacing: Theme.Space.lg) {
+                    coinsPill(bundle.coins)
+                    Picker("Rewards section", selection: $tab) {
+                        ForEach(RewardTab.allCases) { Text($0.rawValue).tag($0) }
                     }
-                }
+                    .pickerStyle(.segmented)
 
-                if let mystery = bundle.mystery {
-                    Section("Mystery box") {
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text("Open for \(mystery.cost) coins").font(.outfitSubheadline)
-                                Text("\(mystery.rewardCount) rewards in the pool").font(.outfitCaption).foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            Button("Open 🎁") { Task { await model.openMystery() } }
-                                .buttonStyle(.borderedProminent).tint(Theme.gold)
-                                .disabled(!mystery.canOpen)
-                        }
+                    switch tab {
+                    case .store: storeTab(bundle)
+                    case .treats: treatsTab(bundle)
+                    case .powerUps: powerUpsTab(bundle)
                     }
                 }
-
-                Section {
-                    ForEach(bundle.rewards) { reward in
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text(reward.label).font(.outfitSubheadline)
-                                Text("\(reward.tier.capitalized) · \(reward.coinCost) coins").font(.outfitCaption).foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            Button("Redeem") { Task { await model.redeem(reward) } }
-                                .buttonStyle(.bordered)
-                                .disabled(!reward.affordable)
-                        }
-                    }
-                    .onDelete { indexSet in
-                        for i in indexSet { Task { await model.deleteReward(bundle.rewards[i]) } }
-                    }
-                } header: {
-                    HStack {
-                        Text("Real-life rewards")
-                        Spacer()
-                        Button("Add") { model.showAddReward = true }.font(.outfitCaption)
-                    }
-                }
-
-                if !bundle.perks.isEmpty {
-                    Section("Stat perks") {
-                        ForEach(bundle.perks) { perk in
-                            HStack {
-                                Text(perk.emoji)
-                                VStack(alignment: .leading) {
-                                    Text(perk.label).font(.outfitSubheadline)
-                                    Text(perk.description).font(.outfitCaption).foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                Button("\(perk.coinCost)") { Task { await model.buyPerk(perk) } }
-                                    .buttonStyle(.bordered).disabled(!perk.affordable)
-                            }
-                        }
-                    }
-                }
-
-                if !bundle.dopamine.isEmpty {
-                    Section("Dopamine menu") {
-                        ForEach(bundle.dopamine) { item in Text(item.rewardText).font(.outfitSubheadline) }
-                    }
-                }
+                .padding(Theme.Space.lg)
             }
+            .background(Theme.screenBackground)
             .refreshable { await model.load() }
         }
         .navigationTitle("Rewards")
-        .sheet(isPresented: $model.showAddReward) {
-            AddRewardSheet { label, tier in Task { await model.addReward(label: label, tier: tier) } }
-        }
         .alert("Mystery Box", isPresented: .constant(model.mysteryResult != nil)) {
             Button("Nice!") { model.mysteryResult = nil }
         } message: {
@@ -130,29 +107,195 @@ struct RewardsView: View {
         }
         .task { if model.state.value == nil { await model.load() } }
     }
-}
 
-struct AddRewardSheet: View {
-    var onAdd: (String, String) -> Void
-    @Environment(\.dismiss) private var dismiss
-    @State private var label = ""
-    @State private var tier = "small"
+    // MARK: - Coins pill (web header balance)
 
-    var body: some View {
-        NavigationStack {
-            Form {
-                TextField("Reward (e.g. 30 min of a show)", text: $label)
-                Picker("Tier", selection: $tier) {
-                    ForEach(["small", "medium", "large", "treat"], id: \.self) { Text($0.capitalized).tag($0) }
+    private func coinsPill(_ coins: Int) -> some View {
+        HStack(spacing: 6) {
+            Text("🪙")
+            Text("\(coins)").font(.outfitHeadline).foregroundStyle(Theme.gold)
+            Text("coins").font(.outfitSubheadline).foregroundStyle(Theme.gold.opacity(0.8))
+        }
+        .padding(.horizontal, Theme.Space.md)
+        .padding(.vertical, Theme.Space.sm)
+        .background(Theme.gold.opacity(0.12))
+        .clipShape(Capsule())
+        .overlay(Capsule().strokeBorder(Theme.gold.opacity(0.3), lineWidth: 1))
+    }
+
+    // MARK: - Store tab
+
+    private func storeTab(_ bundle: RewardsViewModel.Bundle) -> some View {
+        VStack(alignment: .leading, spacing: Theme.Space.lg) {
+            Card {
+                VStack(alignment: .leading, spacing: Theme.Space.md) {
+                    Label("Add a reward", systemImage: "plus").font(.outfitSubheadlineBold)
+                    TextField("e.g. Order takeout", text: $newRewardLabel)
+                        .textFieldStyle(.plain)
+                        .padding(Theme.Space.md)
+                        .background(Theme.screenBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: Theme.Space.sm) {
+                        ForEach(RewardTier.allCases) { t in
+                            tierCard(t)
+                        }
+                    }
+                    Button {
+                        let label = newRewardLabel.trimmingCharacters(in: .whitespaces)
+                        guard !label.isEmpty else { return }
+                        Task { await model.addReward(label: label, tier: newRewardTier.rawValue) }
+                        newRewardLabel = ""
+                    } label: {
+                        Text("Add reward").frame(maxWidth: .infinity).padding(.vertical, 4)
+                    }
+                    .buttonStyle(.borderedProminent).tint(Theme.accent)
+                    .disabled(newRewardLabel.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
-            .navigationTitle("New Reward")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") { onAdd(label, tier); dismiss() }
-                        .disabled(label.trimmingCharacters(in: .whitespaces).isEmpty)
+
+            Text("Your rewards (\(bundle.rewards.count))").font(.outfitHeadline)
+            if bundle.rewards.isEmpty {
+                Card { EmptyStateView(symbol: "gift", title: "No rewards yet", message: "Add something worth saving up for.") }
+            } else {
+                ForEach(bundle.rewards) { reward in rewardRow(reward) }
+            }
+        }
+    }
+
+    private func tierCard(_ t: RewardTier) -> some View {
+        let selected = newRewardTier == t
+        return Button { newRewardTier = t } label: {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(t.label).font(.outfitSubheadline).foregroundStyle(.primary)
+                Text(t.hint).font(.outfitCaption).foregroundStyle(.secondary)
+                Text("🪙 \(t.cost)").font(.outfitCaption).foregroundStyle(Theme.gold)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(Theme.Space.md)
+            .background(selected ? Theme.gold.opacity(0.12) : Theme.screenBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(selected ? Theme.gold.opacity(0.5) : Theme.cardBorder, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func rewardRow(_ reward: RewardStoreItem) -> some View {
+        Card {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(reward.label).font(.outfitSubheadline)
+                    Text("🪙 \(reward.coinCost)").font(.outfitCaption).foregroundStyle(Theme.gold)
+                }
+                Spacer()
+                if reward.affordable {
+                    Button("Redeem") { Task { await model.redeem(reward) } }
+                        .buttonStyle(.borderedProminent).tint(Theme.gold).foregroundStyle(.black)
+                } else {
+                    Text("\(reward.remaining) more to go").font(.outfitCaption).foregroundStyle(.secondary)
+                }
+                Button { Task { await model.deleteReward(reward) } } label: {
+                    Image(systemName: "trash").font(.outfitCaption)
+                }
+                .buttonStyle(.plain).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    // MARK: - Treats tab (mystery box + dopamine menu)
+
+    private func treatsTab(_ bundle: RewardsViewModel.Bundle) -> some View {
+        VStack(alignment: .leading, spacing: Theme.Space.lg) {
+            if let mystery = bundle.mystery {
+                Card {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("🎁 Mystery box").font(.outfitSubheadlineBold)
+                            Text("Open for \(mystery.cost) coins · \(mystery.rewardCount) in the pool")
+                                .font(.outfitCaption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button("Open") { Task { await model.openMystery() } }
+                            .buttonStyle(.borderedProminent).tint(Theme.gold).foregroundStyle(.black)
+                            .disabled(!mystery.canOpen)
+                    }
+                }
+            }
+
+            Card {
+                VStack(alignment: .leading, spacing: Theme.Space.md) {
+                    Label("Add a treat", systemImage: "plus").font(.outfitSubheadlineBold)
+                    HStack(spacing: Theme.Space.sm) {
+                        TextField("e.g. 5 minutes of YouTube", text: $newTreat)
+                            .textFieldStyle(.plain)
+                            .padding(Theme.Space.md)
+                            .background(Theme.screenBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        Button("Add") {
+                            let t = newTreat.trimmingCharacters(in: .whitespaces)
+                            guard !t.isEmpty else { return }
+                            Task { await model.addDopamine(t) }
+                            newTreat = ""
+                        }
+                        .buttonStyle(.borderedProminent).tint(Theme.accent)
+                        .disabled(newTreat.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                }
+            }
+
+            Text("Dopamine menu").font(.outfitHeadline)
+            if bundle.dopamine.isEmpty {
+                Card { EmptyStateView(symbol: "cup.and.saucer", title: "Nothing here yet", message: "Add something small that makes you smile.") }
+            } else {
+                ForEach(bundle.dopamine) { item in
+                    Card {
+                        HStack {
+                            Text(item.rewardText).font(.outfitSubheadline)
+                            Spacer()
+                            Button { Task { await model.deleteDopamine(item) } } label: {
+                                Image(systemName: "trash").font(.outfitCaption)
+                            }
+                            .buttonStyle(.plain).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Power-Ups tab (stat perks)
+
+    private func powerUpsTab(_ bundle: RewardsViewModel.Bundle) -> some View {
+        VStack(alignment: .leading, spacing: Theme.Space.lg) {
+            Text("Spend coins to play stronger. Nothing here costs XP or a streak.")
+                .font(.outfitSubheadline).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if bundle.perks.isEmpty {
+                Card { EmptyStateView(symbol: "bolt", title: "No power-ups available", message: nil) }
+            } else {
+                ForEach(bundle.perks) { perk in
+                    Card {
+                        HStack(spacing: Theme.Space.md) {
+                            Text(perk.emoji).font(.system(size: 24))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(perk.label).font(.outfitSubheadline)
+                                Text(perk.description).font(.outfitCaption).foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            Spacer(minLength: Theme.Space.sm)
+                            if perk.active == true {
+                                Text("Active").font(.outfitCaption).foregroundStyle(Theme.success)
+                            } else if perk.atMax == true {
+                                Text("Max").font(.outfitCaption).foregroundStyle(.secondary)
+                            } else {
+                                Button("🪙 \(perk.coinCost)") { Task { await model.buyPerk(perk) } }
+                                    .buttonStyle(.bordered).tint(Theme.gold)
+                                    .disabled(!perk.affordable)
+                            }
+                        }
+                    }
                 }
             }
         }
