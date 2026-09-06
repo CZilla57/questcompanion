@@ -105,7 +105,7 @@ The roll is **seeded** from `userId + taskId + completionDay` so it is stable, f
 ### Encounters (reframe bosses)
 **Files:** `world-boss.ts` / `solo-boss.ts` consumers, `battles.ts` schema, routes, clients.
 - [ ] Model a boss as an **encounter**: an HP bar chipped by quest completions, where each completion's Phase-1 check is the "attack roll" (crit = extra damage). Add **initiative/turn** flavor and phase transitions. Persist only the genuinely new encounter state; damage derives from existing completions where possible.
-- [ ] Anti-shame: an unbeaten encounter **retreats/rests**, it does not "defeat" the player; no lost progress.
+- [x] Anti-shame: an unbeaten encounter **retreats/rests**, it does not "defeat" the player; no lost progress. *(Shipped: `encounter.ts` lib + tests; the World Boss now exposes a derived `EncounterView` — HP phases + "resting" state — rendered on web. `damageForCheck` is built and tested, ready for the completion→damage wiring below.)*
 - [ ] **Gate:** a solo encounter shows an HP bar that drops as you complete quests, crits hit harder, and finishing it grants loot — on web and iOS.
 
 ### Party (reframe allies / body-double)
