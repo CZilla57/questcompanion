@@ -12,16 +12,35 @@ struct QuickAddSheet: View {
     @State private var parsed: ParsedQuickAdd?
     @State private var isWorking = false
     @State private var error: String?
+    @StateObject private var speech = SpeechRecognizer()
     @FocusState private var fieldFocused: Bool
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("e.g. Email Dr. Lee tomorrow 9am #health", text: $text, axis: .vertical)
-                        .focused($fieldFocused)
-                        .lineLimit(1...3)
-                        .submitLabel(.done)
+                    HStack(alignment: .top, spacing: Theme.Space.sm) {
+                        TextField("e.g. Email Dr. Lee tomorrow 9am #health", text: $text, axis: .vertical)
+                            .focused($fieldFocused)
+                            .lineLimit(1...3)
+                            .submitLabel(.done)
+
+                        Button {
+                            if speech.isRecording {
+                                speech.stop()
+                            } else {
+                                Task { await speech.start() }
+                            }
+                        } label: {
+                            Image(systemName: speech.isRecording ? "mic.fill" : "mic")
+                                .foregroundStyle(speech.isRecording ? Theme.danger : Theme.accent)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Dictate quest")
+                    }
+                    .onChange(of: speech.transcript) { _, newValue in
+                        if !newValue.isEmpty { text = newValue }
+                    }
                 } footer: {
                     Text("Add a due date and category naturally — FocusQuest figures out the rest.")
                 }
@@ -38,6 +57,10 @@ struct QuickAddSheet: View {
                 if let error {
                     Section { Text(error).foregroundStyle(Theme.danger).font(.outfitFootnote) }
                 }
+
+                if let speechError = speech.error {
+                    Section { Text(speechError).foregroundStyle(Theme.danger).font(.outfitFootnote) }
+                }
             }
             .navigationTitle("New Quest")
             .navigationBarTitleDisplayMode(.inline)
@@ -53,6 +76,7 @@ struct QuickAddSheet: View {
                 }
             }
             .onAppear { fieldFocused = true }
+            .onDisappear { speech.stop() }
         }
     }
 
