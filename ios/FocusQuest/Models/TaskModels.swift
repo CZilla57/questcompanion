@@ -117,6 +117,10 @@ struct TaskCompletionResult: Codable {
     let heroRevived: Bool?
     let companionReaction: String?
     let newlyUnlocked: [String]
+    // The Campaign — optional so the app decodes fine before the server deploys.
+    let skillCheck: SkillCheck?
+    let skillCheckNarration: String?
+    let encounterHit: EncounterHit?
 }
 
 struct SurpriseReward: Codable {
