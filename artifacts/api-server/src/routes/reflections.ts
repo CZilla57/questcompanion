@@ -146,6 +146,13 @@ router.post("/reflections/today", async (req, res): Promise<void> => {
           totalPoints: newTotal,
           weeklyPoints: user.weeklyPoints + REFLECTION_XP,
           currentLevel: getLevelInfo(newTotal).level,
+          // The Campaign — Phase 3: making camp is the hero's "long rest".
+          // The evening reflection restores vitality exactly as feeding does
+          // (lastFedAt := now), so a reflective end to the day leaves the hero
+          // rested. First-answer-only (inside the XP claim), so re-opening the
+          // reflection never re-feeds; anti-shame, upside-only.
+          lastFedAt: now,
+          hungerNotifiedStage: null,
         }).where(eq(usersTable.id, userId));
       }
       xpAwarded = REFLECTION_XP;
