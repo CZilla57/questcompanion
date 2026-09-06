@@ -8,8 +8,16 @@ final class TodayViewModel: ObservableObject {
     @Published var completion: TaskCompletionResult?
     @Published var showQuickAdd = false
     @Published var momentum: MomentumResponse?
+    /// The Campaign — Phase 3: the Dungeon Master's beat for today, or nil when
+    /// there's nothing to narrate (or the endpoint isn't live yet).
+    @Published var dmBeat: DmBeat?
     /// Suggestions the user waved off this session ("Not this one").
     @Published var skippedFocusIds: Set<Int> = []
+
+    /// Morning shows the quest board; from late afternoon the DM calls make-camp.
+    static var beatKind: DmBeatKind {
+        Calendar.current.component(.hour, from: Date()) < 17 ? .morning : .camp
+    }
 
     /// The single quest the momentum board is nudging next — the first suggestion
     /// that's still pending and hasn't been skipped.
@@ -25,12 +33,17 @@ final class TodayViewModel: ObservableObject {
         async let questResult = QuestService.list(date: TZ.today)
         async let brainResult = try? BrainService.state()
         async let momentumResult = try? QuestService.momentum()
+        async let dmResult = UserService.dmBeat(kind: Self.beatKind)
         do {
             let (s, q) = try await (statsResult, questResult)
             stats = .loaded(s)
             quests = q
             brain = await brainResult
             momentum = await momentumResult
+            // Campaign feature gate (parity with web's DmBeatCard): the DM beat
+            // belongs to the campaign layer, so it stays invisible until the
+            // `campaigns` feature is unlocked, per the anti-shame law.
+            dmBeat = s.features.contains(.campaigns) ? await dmResult : nil
             publishWidgetSnapshot()
         } catch {
             if stats.value == nil { stats = .failed(error.userMessage) }
@@ -108,6 +121,7 @@ struct TodayView: View {
                         // re-selection, so "Today" would vanish intermittently.
                         Text("Today").font(.outfitLargeTitleBold)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                        if let beat = model.dmBeat { dmBeatCard(beat) }
                         promptChips
                         todaysFocus
                         quickAddBar
@@ -127,6 +141,32 @@ struct TodayView: View {
             .sheet(item: $model.completion) { result in CompletionSheet(result: result) }
             .task { await model.load() }
         }
+    }
+
+    /// The Campaign — Phase 3: the Dungeon Master's beat. A quiet, story-voiced
+    /// card at the head of the day — the morning quest board or the evening
+    /// make-camp. Grounded server-side in real quests; never shames, never invents.
+    private func dmBeatCard(_ beat: DmBeat) -> some View {
+        let isCamp = beat.kind == DmBeatKind.camp.rawValue
+        return Card {
+            VStack(alignment: .leading, spacing: Theme.Space.sm) {
+                HStack {
+                    Label("Dungeon Master", systemImage: "hexagon.fill")
+                        .font(.outfitSubheadlineBold).labelStyle(TealIconLabelStyle())
+                    Spacer()
+                    Label(isCamp ? "Make camp" : "Quest board",
+                          systemImage: isCamp ? "moon.stars.fill" : "sun.max.fill")
+                        .font(.outfitCaption2).foregroundStyle(.secondary)
+                        .labelStyle(TealIconLabelStyle(spacing: 3))
+                }
+                Text(beat.narrative)
+                    .font(.outfitCallout).italic()
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Dungeon Master, \(isCamp ? "make camp" : "quest board"). \(beat.narrative)")
     }
 
     @ViewBuilder private var promptChips: some View {

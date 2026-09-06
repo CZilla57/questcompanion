@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 // The Campaign — D&D layer. Mirrors the server's additive schemas
 // (CharacterSheet / SkillCheck / EncounterView / EncounterHit). All optional at
@@ -72,6 +73,18 @@ struct EncounterView: Codable {
     }
 }
 
+extension EncounterView {
+    /// The remaining-HP bar warms as the foe weakens, so a shrinking bar reads as
+    /// the player's progress rather than the foe's health per se.
+    var hpBarColor: Color {
+        switch phase {
+        case "wounded": return Theme.danger
+        case "bloodied": return Theme.gold
+        default: return Theme.accent // fresh / resting
+        }
+    }
+}
+
 /// The blow a quest completion landed on the player's personal encounter.
 struct EncounterHit: Codable {
     let name: String
@@ -88,4 +101,27 @@ struct PersonalEncounterStatus: Codable {
     let name: String
     let tier: Int
     let encounter: EncounterView
+}
+
+// The Campaign — Phase 3: the Dungeon Master's narrated beat for today.
+
+/// Which beat to fetch. "morning" is the quest board; "camp" is the evening
+/// make-camp. Chosen client-side from the local hour.
+enum DmBeatKind: String {
+    case morning, camp
+}
+
+/// A single grounded beat in the DM's voice (GET /dm/beat?kind=…). `source`
+/// distinguishes the model's prose from the templated fallback; the app renders
+/// them identically — the DM never fabricates in either path.
+struct DmBeat: Codable {
+    let kind: String
+    let narrative: String
+    let source: String
+}
+
+/// The envelope: `beat` is null when the day has nothing real to narrate, so
+/// the card simply doesn't appear.
+struct DmBeatResponse: Codable {
+    let beat: DmBeat?
 }
