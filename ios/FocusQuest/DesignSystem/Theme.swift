@@ -62,6 +62,11 @@ enum Theme {
         UINavigationBar.appearance().compactAppearance = nav
         UINavigationBar.appearance().tintColor = cyan
 
+        // SwiftUI's root `.tint` doesn't always reach controls inside a pushed
+        // List/Form on every iOS version, so switches (and other UIKit-backed
+        // controls) can fall back to the system blue. Pin them to teal here.
+        UISwitch.appearance().onTintColor = cyan
+
         let tab = UITabBarAppearance()
         tab.configureWithOpaqueBackground()
         tab.backgroundColor = elevated
