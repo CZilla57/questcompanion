@@ -776,6 +776,16 @@ export const CompleteTaskResponse = zod.object({
   "bigSwing": zod.boolean().describe('True when this quest is a \"big swing\" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows')
 }),
   "pointsAwarded": zod.number().describe('Total XP awarded (base + streak bonus + all-day bonus)'),
+  "skillCheck": zod.union([zod.object({
+  "d20": zod.number().describe('The raw die face, 1–20.'),
+  "modifier": zod.number().describe('The rolled ability\'s modifier.'),
+  "proficiency": zod.number(),
+  "total": zod.number().describe('d20 + modifier + proficiency.'),
+  "dc": zod.number().describe('Difficulty class from the task\'s difficulty rung.'),
+  "band": zod.enum(['crit', 'success', 'glancing']).describe('Outcome band. There is no failure band — the quest completes in full regardless; only a crit adds a bonus.'),
+  "ability": zod.enum(['might', 'intellect', 'attunement', 'presence', 'vigor', 'finesse'])
+}),zod.null()]).optional().describe('The d20 skill check resolved for this completion. Null when the roll could not be computed (completion still succeeds).'),
+  "skillCheckNarration": zod.string().nullish().describe('Anti-shame narration for the check\'s outcome band; quotes the quest title, never blames.'),
   "bonusAwarded": zod.boolean(),
   "bonusPoints": zod.number().describe('All-day completion bonus XP'),
   "streakBonus": zod.number().describe('Extra XP from the streak difficulty multiplier'),

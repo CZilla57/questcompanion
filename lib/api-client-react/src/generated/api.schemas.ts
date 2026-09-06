@@ -284,6 +284,45 @@ export interface AbilityScore {
   kingdomId: string | null;
 }
 
+/**
+ * Outcome band. There is no failure band — the quest completes in full regardless; only a crit adds a bonus.
+ */
+export type SkillCheckBand = typeof SkillCheckBand[keyof typeof SkillCheckBand];
+
+
+export const SkillCheckBand = {
+  crit: 'crit',
+  success: 'success',
+  glancing: 'glancing',
+} as const;
+
+export type SkillCheckAbility = typeof SkillCheckAbility[keyof typeof SkillCheckAbility];
+
+
+export const SkillCheckAbility = {
+  might: 'might',
+  intellect: 'intellect',
+  attunement: 'attunement',
+  presence: 'presence',
+  vigor: 'vigor',
+  finesse: 'finesse',
+} as const;
+
+export interface SkillCheck {
+  /** The raw die face, 1–20. */
+  d20: number;
+  /** The rolled ability's modifier. */
+  modifier: number;
+  proficiency: number;
+  /** d20 + modifier + proficiency. */
+  total: number;
+  /** Difficulty class from the task's difficulty rung. */
+  dc: number;
+  /** Outcome band. There is no failure band — the quest completes in full regardless; only a crit adds a bonus. */
+  band: SkillCheckBand;
+  ability: SkillCheckAbility;
+}
+
 export interface CharacterSheet {
   abilities: AbilityScore[];
   /** Added to every skill check; derived from the capital tier (+2…+6). */
@@ -688,6 +727,10 @@ export interface TaskCompletionResult {
   task: Task;
   /** Total XP awarded (base + streak bonus + all-day bonus) */
   pointsAwarded: number;
+  /** The d20 skill check resolved for this completion. Null when the roll could not be computed (completion still succeeds). */
+  skillCheck?: SkillCheck | null;
+  /** Anti-shame narration for the check's outcome band; quotes the quest title, never blames. */
+  skillCheckNarration?: string | null;
   bonusAwarded: boolean;
   /** All-day completion bonus XP */
   bonusPoints: number;

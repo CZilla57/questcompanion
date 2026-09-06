@@ -3088,6 +3088,32 @@ components:
             Source kingdom on the Life Kingdoms map, or null for Finesse, which
             reads focus discipline rather than a kingdom.
 
+    SkillCheck:
+      type: object
+      required: [d20, modifier, proficiency, total, dc, band, ability]
+      properties:
+        d20:
+          type: integer
+          description: The raw die face, 1–20.
+        modifier:
+          type: integer
+          description: The rolled ability's modifier.
+        proficiency:
+          type: integer
+        total:
+          type: integer
+          description: d20 + modifier + proficiency.
+        dc:
+          type: integer
+          description: Difficulty class from the task's difficulty rung.
+        band:
+          type: string
+          enum: [crit, success, glancing]
+          description: Outcome band. There is no failure band — the quest completes in full regardless; only a crit adds a bonus.
+        ability:
+          type: string
+          enum: [might, intellect, attunement, presence, vigor, finesse]
+
     CharacterSheet:
       type: object
       required: [abilities, proficiencyBonus, heroClass, level, battlePower]
@@ -3349,6 +3375,15 @@ components:
         pointsAwarded:
           type: integer
           description: Total XP awarded (base + streak bonus + all-day bonus)
+        skillCheck:
+          description: The d20 skill check resolved for this completion. Null when the roll could not be computed (completion still succeeds).
+          oneOf:
+            - $ref: "#/components/schemas/SkillCheck"
+            - type: "null"
+        skillCheckNarration:
+          type: string
+          nullable: true
+          description: Anti-shame narration for the check's outcome band; quotes the quest title, never blames.
         bonusAwarded:
           type: boolean
         bonusPoints:
