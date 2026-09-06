@@ -64,6 +64,13 @@
       "when": 1786508227996,
       "tag": "0008_native_device_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788705707490,
+      "tag": "0009_powerful_cloak",
+      "breakpoints": true
     }
   ]
 }
