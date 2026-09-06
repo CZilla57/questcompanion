@@ -52,18 +52,18 @@ Five Life Kingdoms → five abilities; focus discipline → the sixth; the Capit
 
 ### Task 1: `character-sheet.ts` + tests
 **Files:** create `artifacts/api-server/src/lib/character-sheet.ts`, `character-sheet.test.ts`.
-- [ ] Pure functions: `abilityScores(kingdomPoints, focusStats) -> {ability, score, modifier, kingdomId}[]`, `proficiencyBonus(capitalTier)`, and a `CharacterSheet` assembler that also surfaces class (existing `avatarClass`), level, and battle power. Reuse `kingdomTier`/`CATEGORY_TO_KINGDOM` from `kingdoms.ts`; **do not** re-derive the point totals.
-- [ ] Tests: monotonicity (adding points never lowers a score), band boundaries, clamp at 8/20, proficiency at capital tiers 0/1/11.
+- [x] Pure functions: `abilityScores(kingdomPoints, focusStats) -> {ability, score, modifier, kingdomId}[]`, `proficiencyBonus(capitalTier)`, and a `CharacterSheet` assembler that also surfaces class (existing `avatarClass`), level, and battle power. Reuse `kingdomTier`/`CATEGORY_TO_KINGDOM` from `kingdoms.ts`; **do not** re-derive the point totals.
+- [x] Tests: monotonicity (adding points never lowers a score), band boundaries, clamp at 8/20, proficiency at capital tiers 0/1/11.
 
 ### Task 2: API surface
 **Files:** modify the users/hero route (`artifacts/api-server/src/routes/users.ts`), the OpenAPI spec, then regenerate `api-client` + `api-zod`.
-- [ ] Add the character sheet to the existing hero/kingdoms response (or a new `GET /character-sheet`). Additive; the web client keeps working unchanged.
-- [ ] Regenerate clients; add the generated `CharacterSheet` type. **Never** hand-edit generated output.
+- [x] Add the character sheet to the existing hero/kingdoms response (or a new `GET /character-sheet`). Additive; the web client keeps working unchanged.
+- [x] Regenerate clients; add the generated `CharacterSheet` type. **Never** hand-edit generated output.
 
 ### Task 3: Render it — web + iOS
 **Files:** `artifacts/focusquest` hero/insights; `ios/FocusQuest/Features/Hero/`.
-- [ ] Web: a character-sheet panel above the Kingdom map — six ability blocks (name, score, `+mod`), proficiency, class, level. The kingdoms map becomes the *visual* of the same stats it now scores.
-- [ ] iOS: a `CharacterSheetCard` on the Hero page, sitting above the existing `KingdomSceneImage` map, styled with the neon tokens + `TealIconLabelStyle`. Reuse the loaded `KingdomsResponse`; add the sheet to `HeroViewModel.Bundle`.
+- [x] Web: a character-sheet panel above the Kingdom map — six ability blocks (name, score, `+mod`), proficiency, class, level. The kingdoms map becomes the *visual* of the same stats it now scores.
+- [ ] iOS (on the `claude/swift-mobile-app-a70k2k` branch, after this endpoint deploys): a `CharacterSheetCard` on the Hero page, sitting above the existing `KingdomSceneImage` map, styled with the neon tokens + `TealIconLabelStyle`. Reuse the loaded `KingdomsResponse`; add the sheet to `HeroViewModel.Bundle`.
 - [ ] **Gate:** the six scores render on web and iOS from real data, move when you complete quests in that life area, and never decrease.
 
 ---
