@@ -8,6 +8,7 @@ import { BrainCheckinPrompt } from "@/components/brain-checkin-prompt";
 import { EveningReflectionCard } from "@/components/evening-reflection-card";
 import { TodaysFocus } from "@/components/todays-focus";
 import { CampaignNowLine } from "@/components/campaign-now-line";
+import { DmBeatCard } from "@/components/dm-beat-card";
 import { StatusRow } from "@/components/status-row";
 import { QuickAddBar } from "@/components/quick-add-bar";
 import { OutboxBlock } from "@/components/outbox-block";
@@ -111,6 +112,9 @@ export default function NowScreen() {
 
   return (
     <div className="space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+      {/* ── The Dungeon Master's beat (Campaign Phase 3) ───── */}
+      <DmBeatCard />
 
       {/* ── Prompt chips ───────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-2 empty:hidden">
