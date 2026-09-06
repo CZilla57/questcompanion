@@ -2,7 +2,14 @@ import SwiftUI
 
 @MainActor
 final class HeroViewModel: ObservableObject {
-    struct Bundle { let hero: HeroStatus; let avatar: AvatarProfile?; let kingdoms: KingdomsResponse?; let me: User? }
+    struct Bundle {
+        let hero: HeroStatus
+        let avatar: AvatarProfile?
+        let kingdoms: KingdomsResponse?
+        let me: User?
+        let sheet: CharacterSheet?
+        let encounter: PersonalEncounterStatus?
+    }
     @Published var state: Loadable<Bundle> = .idle
 
     func load() async {
@@ -12,7 +19,11 @@ final class HeroViewModel: ObservableObject {
             async let avatar = try? HeroService.avatar()
             async let kingdoms = try? UserService.kingdoms()
             async let me = try? UserService.me()
-            let bundle = Bundle(hero: try await hero, avatar: await avatar, kingdoms: await kingdoms, me: await me)
+            async let sheet = try? UserService.characterSheet()
+            async let encounter = try? UserService.currentEncounter()
+            let bundle = Bundle(
+                hero: try await hero, avatar: await avatar, kingdoms: await kingdoms,
+                me: await me, sheet: await sheet, encounter: await encounter)
             state = .loaded(bundle)
         } catch {
             state = .failed(error.userMessage)
@@ -30,8 +41,10 @@ struct HeroView: View {
                     VStack(alignment: .leading, spacing: Theme.Space.lg) {
                         if let name = bundle.me?.username { heroName(name, avatar: bundle.avatar) }
                         characterCard(bundle.hero, avatar: bundle.avatar)
+                        if let sheet = bundle.sheet { characterSheetCard(sheet) }
                         if let avatar = bundle.avatar { equipmentCard(avatar) }
                         companionCard(bundle.hero.companion)
+                        if let encounter = bundle.encounter { encounterCard(encounter) }
                         if let kingdoms = bundle.kingdoms { kingdomsCard(kingdoms) }
                     }
                     .padding(Theme.Space.lg)
@@ -126,6 +139,67 @@ struct HeroView: View {
                     Text("“\(companion.line)”").font(.outfitCallout).italic()
                 }
                 Text("\(companion.bondQuestsCompleted) quests together").font(.outfitCaption).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    // MARK: - Character sheet (The Campaign — Phase 0)
+
+    private func characterSheetCard(_ sheet: CharacterSheet) -> some View {
+        let columns = Array(repeating: GridItem(.flexible(), spacing: Theme.Space.sm), count: 3)
+        return Card {
+            VStack(alignment: .leading, spacing: Theme.Space.md) {
+                SectionHeader("Character Sheet") {
+                    Text("Lvl \(sheet.level) \(sheet.heroClass.capitalized) · Prof \(sheet.proficiencyText)")
+                        .font(.outfitCaption).foregroundStyle(.secondary)
+                }
+                LazyVGrid(columns: columns, spacing: Theme.Space.sm) {
+                    ForEach(sheet.abilities) { ability in
+                        VStack(spacing: 2) {
+                            Text(ability.name.uppercased())
+                                .font(.outfitCaption2).kerning(0.5).foregroundStyle(.secondary)
+                                .lineLimit(1).minimumScaleFactor(0.8)
+                            Text("\(ability.score)").font(.outfitTitle2Bold)
+                            Text(ability.modifierText).font(.outfitCaption).foregroundStyle(Theme.accent)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, Theme.Space.sm)
+                        .background(Theme.screenBackground.opacity(0.5))
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .strokeBorder(Color.white.opacity(0.10)))
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Personal encounter (The Campaign — Phase 2)
+
+    private func encounterCard(_ status: PersonalEncounterStatus) -> some View {
+        let enc = status.encounter
+        let pct = max(0, min(1, enc.percentRemaining))
+        return Card {
+            VStack(alignment: .leading, spacing: Theme.Space.sm) {
+                HStack {
+                    Label("Encounter", systemImage: "shield.lefthalf.filled")
+                        .font(.outfitSubheadlineBold).labelStyle(TealIconLabelStyle())
+                    Spacer()
+                    Text(enc.phaseLabel).font(.outfitCaption).foregroundStyle(.secondary)
+                }
+                Text(status.name).font(.outfitHeadline)
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Color.white.opacity(0.12))
+                        Capsule().fill(Theme.danger).frame(width: geo.size.width * pct)
+                    }
+                }
+                .frame(height: 10)
+                HStack {
+                    Text("\(enc.hpRemaining) / \(enc.hp) HP").font(.outfitCaption2).foregroundStyle(.secondary)
+                    Spacer()
+                    Text("Every quest lands a blow").font(.outfitCaption2).foregroundStyle(.secondary)
+                }
             }
         }
     }
