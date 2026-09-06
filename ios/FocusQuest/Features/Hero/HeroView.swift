@@ -131,7 +131,13 @@ struct HeroView: View {
     }
 
     private func kingdomsCard(_ response: KingdomsResponse) -> some View {
-        Card {
+        let capital = response.kingdoms.first { $0.isCapital }
+        let others = response.kingdoms.filter { !$0.isCapital }
+        // Two per row (5 areas → 2/2/1), all tiles the same size on purpose: sizing
+        // by activity would rank a user's life areas against each other.
+        let columns = [GridItem(.flexible(), spacing: Theme.Space.sm),
+                       GridItem(.flexible(), spacing: Theme.Space.sm)]
+        return Card {
             VStack(alignment: .leading, spacing: Theme.Space.md) {
                 SectionHeader("Life Kingdoms") {
                     if response.worldResting {
@@ -140,16 +146,83 @@ struct HeroView: View {
                             .labelStyle(TealIconLabelStyle())
                     }
                 }
-                ForEach(response.kingdoms) { kingdom in
-                    HStack {
-                        Text(kingdom.name).font(.outfitSubheadline)
-                        Spacer()
-                        Text(kingdom.tierName).font(.outfitCaption).foregroundStyle(.secondary)
-                        Text("\(kingdom.lifetimePoints) pts").font(.outfitCaption).foregroundStyle(Theme.accent)
+                Text(response.worldResting
+                     ? "Your world is resting. Every place you've built is still standing."
+                     : "Each life area grows as you work in it. Quiet places are just sleeping.")
+                    .font(.outfitCaption).foregroundStyle(.secondary)
+
+                LazyVGrid(columns: columns, spacing: Theme.Space.sm) {
+                    ForEach(others) { kingdom in
+                        kingdomTile(kingdom, worldResting: response.worldResting)
                     }
+                }
+
+                if let capital { capitalBand(capital) }
+
+                if !response.worldResting, let invitation = response.invitation {
+                    Text("\(invitation.kingdomName) has been quiet lately — it's still there whenever you want to head back.")
+                        .font(.outfitCaption).foregroundStyle(Theme.accent)
                 }
             }
         }
+    }
+
+    /// One life-area tile: its scene image with the name + tier caption beneath.
+    private func kingdomTile(_ kingdom: KingdomState, worldResting: Bool) -> some View {
+        VStack(spacing: 0) {
+            KingdomSceneImage(
+                kingdomId: kingdom.id,
+                tier: kingdom.tier,
+                liveliness: worldResting ? "stirring" : kingdom.liveliness)
+                .frame(maxWidth: .infinity)
+            HStack(spacing: Theme.Space.sm) {
+                Text(kingdom.name).font(.outfitCaptionBold).lineLimit(1)
+                Spacer(minLength: 4)
+                Text(kingdom.tierName.uppercased())
+                    .font(.outfitCaption2).foregroundStyle(.secondary).lineLimit(1)
+            }
+            .padding(.horizontal, Theme.Space.sm)
+            .padding(.vertical, 6)
+        }
+        .background(Theme.screenBackground.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .strokeBorder(Color.white.opacity(0.10)))
+    }
+
+    /// The capital: a full-width band cropped to its centre composition, with a
+    /// bottom gradient carrying the label — the seat of the realm. The scene is an
+    /// overlay on a fixed-size container so its wide (1024×192) art crops to the
+    /// column width instead of stretching the card past the screen.
+    private func capitalBand(_ capital: KingdomState) -> some View {
+        Color.clear
+            .frame(maxWidth: .infinity)
+            .frame(height: 104)
+            .overlay {
+                KingdomSceneImage(kingdomId: capital.id, tier: capital.tier, liveliness: nil, fill: true)
+            }
+            .overlay(alignment: .bottom) {
+                LinearGradient(colors: [.clear, Theme.screenBackground.opacity(0.92)],
+                               startPoint: .top, endPoint: .bottom)
+                    .frame(height: 56)
+            }
+            .overlay(alignment: .bottom) {
+                HStack(alignment: .bottom) {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("SEAT OF THE REALM")
+                            .font(.outfitCaption2).kerning(1.5).foregroundStyle(.secondary)
+                        Text("The Capital").font(.outfitSubheadline)
+                    }
+                    Spacer()
+                    Text(capital.tier > 0 ? capital.tierName.uppercased() : "UNFOUNDED")
+                        .font(.outfitCaption2).foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, Theme.Space.sm)
+                .padding(.vertical, 8)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.10)))
     }
 }
 
