@@ -94,6 +94,17 @@ enum BrainMode: String, Codable {
         case .neutral: return "face.smiling"
         }
     }
+
+    /// Line under the momentum board heading (web MODE_META.flavor); nil renders nothing.
+    var flavor: String? {
+        switch self {
+        case .focused: return "Focused? Good — here's one that moves the needle."
+        case .distracted: return "Distracted? Tiny wins below."
+        case .frozen: return "Frozen is a state, not a verdict. One small step below."
+        case .hyperfocus: return "Flow protected — ride the thread you're on."
+        case .neutral: return nil
+        }
+    }
 }
 
 enum FocusPresetKey: String, Codable {

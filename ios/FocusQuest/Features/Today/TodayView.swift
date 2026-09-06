@@ -7,19 +7,41 @@ final class TodayViewModel: ObservableObject {
     @Published var brain: BrainState?
     @Published var completion: TaskCompletionResult?
     @Published var showQuickAdd = false
+    @Published var momentum: MomentumResponse?
+    /// Suggestions the user waved off this session ("Not this one").
+    @Published var skippedFocusIds: Set<Int> = []
+
+    /// The single quest the momentum board is nudging next — the first suggestion
+    /// that's still pending and hasn't been skipped.
+    var focusSuggestion: MomentumSuggestion? {
+        momentum?.suggestions.first {
+            !skippedFocusIds.contains($0.task.id) && !$0.task.completed
+        }
+    }
 
     func load() async {
         if stats.value == nil { stats = .loading }
         async let statsResult = UserService.stats()
         async let questResult = QuestService.list(date: TZ.today)
         async let brainResult = try? BrainService.state()
+        async let momentumResult = try? QuestService.momentum()
         do {
             let (s, q) = try await (statsResult, questResult)
             stats = .loaded(s)
             quests = q
             brain = await brainResult
+            momentum = await momentumResult
         } catch {
             if stats.value == nil { stats = .failed(error.userMessage) }
+        }
+    }
+
+    func skipFocus(_ suggestion: MomentumSuggestion) async {
+        skippedFocusIds.insert(suggestion.task.id)
+        // Exhausted the batch — pull a fresh set and start over.
+        if focusSuggestion == nil {
+            momentum = try? await QuestService.momentum()
+            skippedFocusIds = []
         }
     }
 
@@ -63,6 +85,7 @@ struct TodayView: View {
                     // single line (StatusLine), matching artifacts/focusquest.
                     VStack(alignment: .leading, spacing: Theme.Space.lg) {
                         promptChips
+                        todaysFocus
                         quickAddBar
                         todaysQuests
                         StatusLine(stats: stats).padding(.top, Theme.Space.xs)
@@ -90,6 +113,77 @@ struct TodayView: View {
                 Spacer(minLength: 0)
             }
         }
+    }
+
+    /// Web "Today's Focus" momentum block — the top suggestion the board is
+    /// nudging next, with the brain-mode flavor line. Fills the head of the
+    /// screen with the single most useful next action.
+    @ViewBuilder private var todaysFocus: some View {
+        if let suggestion = model.focusSuggestion {
+            VStack(alignment: .leading, spacing: Theme.Space.sm) {
+                Label {
+                    Text("Today's Focus").font(.outfitCaptionBold).textCase(.uppercase).kerning(1)
+                } icon: {
+                    Image(systemName: "target").foregroundStyle(Theme.accent)
+                }
+                .foregroundStyle(Theme.accent)
+
+                if let flavor = model.momentum?.mode.flavor {
+                    Text(flavor).font(.outfitCaption).foregroundStyle(.secondary)
+                }
+
+                momentumCard(suggestion)
+            }
+        }
+    }
+
+    private func momentumCard(_ suggestion: MomentumSuggestion) -> some View {
+        let task = suggestion.task
+        return VStack(alignment: .leading, spacing: Theme.Space.sm) {
+            Label {
+                Text("Next tiny win").font(.outfitCaption2).textCase(.uppercase).kerning(1.2)
+            } icon: {
+                Image(systemName: "sparkles").font(.outfitCaption2).foregroundStyle(Theme.accent)
+            }
+            .foregroundStyle(Theme.accent)
+
+            Text(task.title).font(.outfitTitle3Bold)
+
+            HStack(spacing: Theme.Space.sm) {
+                Label(task.categoryLabel, systemImage: task.category.symbol)
+                    .labelStyle(TealIconLabelStyle(spacing: 4))
+                if let est = task.estimatedMinutes, est > 0 {
+                    Label("\(est)m", systemImage: "clock").labelStyle(TealIconLabelStyle(spacing: 3))
+                }
+            }
+            .font(.outfitCaption).foregroundStyle(.secondary)
+
+            Text("“\(suggestion.reason)”")
+                .font(.outfitCaption).italic().foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: Theme.Space.sm) {
+                Button { Task { await model.toggle(task) } } label: {
+                    Label("Did it", systemImage: "checkmark").font(.outfitSubheadline)
+                }
+                .buttonStyle(.borderedProminent).tint(Theme.accent)
+
+                Button { Task { await model.skipFocus(suggestion) } } label: {
+                    Label("Not this one", systemImage: "arrow.triangle.2.circlepath")
+                        .font(.outfitSubheadline).labelStyle(TealIconLabelStyle(spacing: 4))
+                }
+                .buttonStyle(.plain).foregroundStyle(.secondary)
+            }
+            .padding(.top, 2)
+        }
+        .padding(Theme.Space.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.accentSoft)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous)
+                .strokeBorder(Theme.accent.opacity(0.5), lineWidth: 1)
+        )
     }
 
     private var quickAddBar: some View {
