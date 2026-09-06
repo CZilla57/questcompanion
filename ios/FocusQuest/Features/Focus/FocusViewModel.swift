@@ -165,6 +165,9 @@ final class FocusViewModel: ObservableObject {
         do {
             let updated = try await FocusService.recordInterval(sessionId: session.id, intervalIndex: nextIndex)
             self.session = updated
+            // Buzz once at the live interval boundary — not during reconcile catch-up,
+            // which would fire repeatedly for each past-due phase.
+            if !isReconciling { Haptics.timerDone() }
             if updated.completedIntervals >= updated.plannedCycles {
                 await stop() // all planned cycles done — finalize
             } else {
