@@ -86,6 +86,18 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
         }
     }
 
+    /// Cancels specific pending Focus alerts for a session by exact identifier
+    /// (`focus.<sessionId>.<phase>`). Unlike the prefix variant above, this is a
+    /// single synchronous `remove` with no async fetch — so it is safe to call
+    /// immediately before scheduling a *different* phase's alert in the same scope
+    /// (the removed identifiers are disjoint from the one being added, so no race
+    /// can delete the freshly-scheduled request).
+    func cancelFocusPhaseAlerts(sessionId: Int, phases: [String]) {
+        guard !phases.isEmpty else { return }
+        let ids = phases.map { "focus.\(sessionId).\($0)" }
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
+    }
+
     // MARK: - UNUserNotificationCenterDelegate
 
     /// Keep alerting even when the app is foregrounded at phase end, so the user isn't
