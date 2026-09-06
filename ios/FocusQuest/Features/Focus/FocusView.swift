@@ -33,7 +33,10 @@ struct FocusView: View {
             Text("🎯").font(.system(size: 56))
             Text("Start a focus session").font(.outfitTitle3Bold)
             Text("Pick a rhythm and, optionally, the quest you're working on.")
-                .font(.outfitSubheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                .font(.outfitSubheadline).foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity)
 
             VStack(spacing: Theme.Space.md) {
                 ForEach(model.presets) { preset in
