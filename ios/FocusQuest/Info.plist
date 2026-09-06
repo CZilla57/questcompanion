@@ -48,6 +48,8 @@
 	</array>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>FocusQuest uses the microphone to let you capture quests by voice.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>FocusQuest transcribes your voice so you can capture a quest by speaking.</string>
 	<!-- OAuth (Auth0) callback URL scheme. Must match the redirect URI registered
 	     in Auth0 and the RN app: focusquest://auth -->
 	<key>CFBundleURLTypes</key>
