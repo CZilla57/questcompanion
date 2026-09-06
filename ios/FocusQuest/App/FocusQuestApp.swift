@@ -1,10 +1,25 @@
 import SwiftUI
 import UIKit
+import UserNotifications
+
+/// Installs the on-device local-notification delegate before launch completes, so a
+/// cold launch from a notification tap is delivered to `NotificationManager`.
+@MainActor
+final class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        UNUserNotificationCenter.current().delegate = NotificationManager.shared
+        return true
+    }
+}
 
 @main
 struct FocusQuestApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var auth = AuthManager()
-    @StateObject private var router = AppRouter()
+    @StateObject private var router = AppRouter.shared
 
     init() { Theme.configureUIKitAppearance() }
 
