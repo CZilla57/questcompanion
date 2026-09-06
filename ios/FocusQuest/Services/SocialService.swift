@@ -9,6 +9,10 @@ enum SocialService {
         try await APIClient.shared.post("accountability/partners", body: PartnerRequestInput(recipientId: recipientId))
     }
 
+    static func searchUsers(q: String) async throws -> [UserSummary] {
+        try await APIClient.shared.get("users/search", query: ["q": q])
+    }
+
     static func acceptPartner(id: Int) async throws -> Partnership {
         try await APIClient.shared.post("accountability/partners/\(id)/accept")
     }
