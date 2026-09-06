@@ -58,6 +58,8 @@ final class FocusViewModel: ObservableObject {
         do {
             let created = try await FocusService.start(preset: selectedPreset, taskId: selectedTaskId)
             adopt(created.session)
+            // Ask once (idempotent); the timer still runs if denied — scheduling no-ops.
+            _ = await NotificationManager.shared.requestAuthorizationIfNeeded()
         } catch {
             self.error = error.userMessage
         }
@@ -75,6 +77,7 @@ final class FocusViewModel: ObservableObject {
         } catch {
             self.error = error.userMessage
         }
+        NotificationManager.shared.cancelFocusPhaseAlerts(sessionId: session.id)
         reset()
     }
 
@@ -97,10 +100,18 @@ final class FocusViewModel: ObservableObject {
             pausedAt = nil
             isPaused = false
             startTicker()
+            // Window moved forward — reschedule against the new end.
+            scheduleCurrentPhaseAlert()
         } else {
             pausedAt = Date()
             isPaused = true
             stopTicker()
+            // No fixed end while paused — drop the pending alert. Cancel by exact
+            // id (not the async prefix fetch) so a quick pause→resume can't have an
+            // in-flight cancel clobber the alert resume re-schedules for this session.
+            if let session {
+                NotificationManager.shared.cancelFocusPhaseAlerts(sessionId: session.id, phases: Self.allPhaseKeys)
+            }
         }
     }
 
@@ -173,6 +184,41 @@ final class FocusViewModel: ObservableObject {
         phaseStartDate = now
         phaseEndDate = now.addingTimeInterval(TimeInterval(minutes * 60))
         startTicker()
+        scheduleCurrentPhaseAlert()
+    }
+
+    // MARK: - Phase-end alerts
+
+    /// Every phase key an alert can be filed under. Used to clear the *other*
+    /// phases' pending alerts when scheduling the current one.
+    private static let allPhaseKeys = ["focus", "shortBreak", "longBreak"]
+
+    /// Schedules the single pending local notification for the end of the current
+    /// phase, so exactly one stays queued for the session. Stale alerts for the
+    /// other phases are cleared by exact identifier (a synchronous, disjoint
+    /// remove — never the id we're about to add); the new request then replaces
+    /// any pending one filed under its own identifier.
+    private func scheduleCurrentPhaseAlert() {
+        guard let session, let end = phaseEndDate else { return }
+        let content = phaseAlertContent()
+        let staleKeys = Self.allPhaseKeys.filter { $0 != content.key }
+        NotificationManager.shared.cancelFocusPhaseAlerts(sessionId: session.id, phases: staleKeys)
+        NotificationManager.shared.scheduleFocusPhaseEnd(
+            sessionId: session.id, phase: content.key, fireDate: end,
+            title: content.title, body: content.body)
+    }
+
+    /// Copy for the alert that fires when the *current* phase ends — it names what
+    /// is finishing and points gently at what's next (no guilt, no pressure).
+    private func phaseAlertContent() -> (title: String, body: String, key: String) {
+        switch phase {
+        case .focus:
+            return ("Focus complete", "Focus interval done. Take a breath.", "focus")
+        case .shortBreak:
+            return ("Break's over", "Ready for the next round?", "shortBreak")
+        case .longBreak:
+            return ("Break's over", "Ready for the next round?", "longBreak")
+        }
     }
 
     private func elapsedInPhase() -> Int {
