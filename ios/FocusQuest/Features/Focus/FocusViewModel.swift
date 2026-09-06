@@ -248,6 +248,11 @@ final class FocusViewModel: ObservableObject {
         let content = phaseAlertContent()
         let staleKeys = Self.allPhaseKeys.filter { $0 != content.key }
         NotificationManager.shared.cancelFocusPhaseAlerts(sessionId: session.id, phases: staleKeys)
+        guard LocalNotificationPrefs.focusAlerts else {
+            // Category disabled — also drop any alert already pending for this phase.
+            NotificationManager.shared.cancelFocusPhaseAlerts(sessionId: session.id, phases: [content.key])
+            return
+        }
         NotificationManager.shared.scheduleFocusPhaseEnd(
             sessionId: session.id, phase: content.key, fireDate: end,
             title: content.title, body: content.body)
