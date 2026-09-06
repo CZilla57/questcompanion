@@ -66,9 +66,13 @@ struct HeroView: View {
     private func characterCard(_ hero: HeroStatus, avatar: AvatarProfile?) -> some View {
         Card {
             VStack(spacing: Theme.Space.md) {
-                Image(systemName: hero.stageSymbol)
-                    .font(.system(size: 64))
-                    .foregroundStyle(Theme.accent)
+                if let avatar {
+                    PixelHeroView(look: avatar.heroLook, size: 140)
+                } else {
+                    Image(systemName: hero.stageSymbol)
+                        .font(.system(size: 64))
+                        .foregroundStyle(Theme.accent)
+                }
 
                 VitalityMeter(hero: hero)
 
