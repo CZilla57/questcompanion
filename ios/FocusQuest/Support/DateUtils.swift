@@ -58,4 +58,17 @@ enum DateUtils {
         if let time, !time.isEmpty { label += " · \(time)" }
         return label
     }
+
+    /// Combine a `yyyy-MM-dd` due date and an `HH:mm` (24-hour) due time into a
+    /// concrete instant in the device's current time zone. Returns nil if either
+    /// string is malformed.
+    static func dueFireDate(date: String, time: String) -> Date? {
+        let d = date.split(separator: "-"), t = time.split(separator: ":")
+        guard d.count == 3, t.count == 2,
+              let y = Int(d[0]), let mo = Int(d[1]), let day = Int(d[2]),
+              let h = Int(t[0]), let mi = Int(t[1]) else { return nil }
+        var c = DateComponents()
+        c.year = y; c.month = mo; c.day = day; c.hour = h; c.minute = mi
+        return Calendar.current.date(from: c)  // Calendar.current == local tz
+    }
 }

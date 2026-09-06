@@ -98,6 +98,49 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
     }
 
+    // MARK: - Quest due-time nudges
+
+    /// A quest due-time nudge to keep scheduled. Value type so it can cross the
+    /// getPendingNotificationRequests completion (off-main) safely.
+    struct QuestDueAlert: Sendable {
+        let questId: Int
+        let fireDate: Date
+        let title: String
+    }
+
+    // Build the local request for a quest nudge. `nonisolated` so it can run inside
+    // the off-main getPending completion — a plain `static` on this @MainActor class
+    // would itself be MainActor-isolated and illegal to call from there.
+    private nonisolated static func questRequest(_ alert: QuestDueAlert) -> UNNotificationRequest {
+        let content = UNMutableNotificationContent()
+        content.title = "Quest time"
+        content.body = "\"\(alert.title)\" is scheduled for now."
+        content.sound = .default
+        content.interruptionLevel = .timeSensitive
+        let comps = Calendar.current.dateComponents([.year,.month,.day,.hour,.minute], from: alert.fireDate)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
+        return UNNotificationRequest(identifier: "quest.\(alert.questId)", content: content, trigger: trigger)
+    }
+
+    /// Cancel one quest's pending nudge immediately (exact id, synchronous).
+    nonisolated func cancelQuestDue(questId: Int) {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["quest.\(questId)"])
+    }
+
+    /// Reconcile all pending quest nudges to exactly `desired`: remove pending
+    /// quest.* not in the set (disjoint from adds — no add/remove race), (re)add the
+    /// desired (add replaces a same-id pending, so re-adding is harmless).
+    nonisolated func syncQuestDueAlerts(_ desired: [QuestDueAlert]) {
+        let center = UNUserNotificationCenter.current()
+        let desiredIds = Set(desired.map { "quest.\($0.questId)" })
+        center.getPendingNotificationRequests { requests in
+            let existing = Set(requests.map(\.identifier).filter { $0.hasPrefix("quest.") })
+            let stale = existing.subtracting(desiredIds)
+            if !stale.isEmpty { center.removePendingNotificationRequests(withIdentifiers: Array(stale)) }
+            for alert in desired { center.add(Self.questRequest(alert)) }
+        }
+    }
+
     // MARK: - UNUserNotificationCenterDelegate
 
     /// Keep alerting even when the app is foregrounded at phase end, so the user isn't
@@ -117,7 +160,8 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
         let identifier = response.notification.request.identifier
         if identifier.hasPrefix("focus.") {
             AppRouter.shared.tab = .focus
+        } else if identifier.hasPrefix("quest.") {
+            AppRouter.shared.tab = .quests
         }
-        // TODO(Phase1 Task4): route quest.<id> nudges
     }
 }

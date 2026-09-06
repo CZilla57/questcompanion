@@ -65,15 +65,20 @@ final class QuestsViewModel: ObservableObject {
             if quest.completed { _ = try await QuestService.uncomplete(id: quest.id) }
             else {
                 let result = try await QuestService.complete(id: quest.id)
+                // Drop this quest's nudge promptly on complete; the refresh below
+                // still reconciles the uncomplete→re-add case.
+                QuestNudgeScheduler.cancel(questId: quest.id)
                 if result.leveledUp || !result.newBadges.isEmpty { completion = result }
             }
             await load()
+            await QuestNudgeScheduler.refresh()
         } catch { await load() }
     }
 
     func delete(_ quest: Quest) async {
         try? await QuestService.delete(id: quest.id)
         await load()
+        QuestNudgeScheduler.cancel(questId: quest.id)
     }
 }
 
@@ -117,7 +122,7 @@ struct QuestsView: View {
                 }
             }
             .sheet(isPresented: $model.showQuickAdd) {
-                QuickAddSheet { _ in Task { await model.load() } }
+                QuickAddSheet { _ in Task { await model.load(); await QuestNudgeScheduler.refresh() } }
             }
             .sheet(item: $model.completion) { CompletionSheet(result: $0) }
             .task {
