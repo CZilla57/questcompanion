@@ -161,6 +161,16 @@ struct AvatarProfile: Codable {
     let avatarColor: String
     let avatarClass: String
     let avatarSkin: String
+    // Full LPC look — optional so an older server response still decodes; the
+    // sprite renderer falls back to sensible defaults (see `heroLook`).
+    let avatarHairStyle: String?
+    let avatarHairColor: String?
+    let avatarBodyBuild: String?
+    let avatarFace: String?
+    let avatarBeardStyle: String?
+    let avatarBeardColor: String?
+    let avatarGlasses: String?
+    let avatarEarrings: String?
     let level: Int
     let battlePower: Int
     let equippedGear: [EquippedGearItem]
