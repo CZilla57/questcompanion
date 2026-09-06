@@ -7,6 +7,7 @@ final class ReflectionViewModel: ObservableObject {
     @Published var freeText = ""
     @Published var busy = false
     @Published var awardedXp: Int?
+    @Published var editing = false
 
     func load() async {
         state = .loading
@@ -32,8 +33,15 @@ final class ReflectionViewModel: ObservableObject {
                 freeText: freeText.isEmpty ? nil : freeText
             )
             awardedXp = response.xpAwarded
+            editing = false
             state = .loaded(response.reflection)
         } catch {}
+    }
+
+    func beginEdit(_ reflection: Reflection) {
+        selectedChips = Set(reflection.chips)
+        freeText = reflection.freeText ?? ""
+        editing = true
     }
 }
 
@@ -52,24 +60,29 @@ struct ReflectionView: View {
                         }
                     }
 
-                    chipGroup("What helped?", chips: ReflectionChip.helped)
-                    chipGroup("What got in the way?", chips: ReflectionChip.hindered)
+                    if let reflection, reflection.answeredAt != nil, !model.editing {
+                        answeredCard(reflection)
+                    } else {
+                        chipGroup("What helped?", chips: ReflectionChip.helped)
+                        chipGroup("What got in the way?", chips: ReflectionChip.hindered)
 
-                    Card {
-                        VStack(alignment: .leading, spacing: Theme.Space.sm) {
-                            Text("Anything else? (optional)").font(.outfitSubheadlineBold)
-                            TextField("A sentence for future you…", text: $model.freeText, axis: .vertical)
-                                .lineLimit(2...5)
-                                .textFieldStyle(.roundedBorder)
+                        Card {
+                            VStack(alignment: .leading, spacing: Theme.Space.sm) {
+                                Text("Anything else? (optional)").font(.outfitSubheadlineBold)
+                                TextField("A sentence for future you…", text: $model.freeText, axis: .vertical)
+                                    .lineLimit(2...5)
+                                    .textFieldStyle(.roundedBorder)
+                            }
                         }
-                    }
 
-                    if let xp = model.awardedXp {
-                        Text("Saved · +\(xp) XP").font(.outfitSubheadline).foregroundStyle(Theme.success)
-                    }
+                        if let xp = model.awardedXp {
+                            Text("Saved · +\(xp) XP").font(.outfitSubheadline).foregroundStyle(Theme.success)
+                        }
 
-                    PrimaryButton(title: reflection?.answeredAt == nil ? "Save reflection" : "Update", isLoading: model.busy) {
-                        Task { await model.submit() }
+                        PrimaryButton(title: "Save reflection", isLoading: model.busy) {
+                            Task { await model.submit() }
+                        }
+                        .disabled(model.selectedChips.isEmpty && model.freeText.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                 }
                 .padding(Theme.Space.lg)
@@ -78,6 +91,35 @@ struct ReflectionView: View {
         }
         .navigationTitle("Reflection")
         .task { if model.state.value == nil { await model.load() } }
+    }
+
+    private func answeredCard(_ reflection: Reflection) -> some View {
+        Card {
+            VStack(alignment: .leading, spacing: Theme.Space.md) {
+                if !reflection.chips.isEmpty {
+                    FlowLayout(spacing: Theme.Space.sm) {
+                        ForEach(reflection.chips, id: \.self) { chip in
+                            Text(ReflectionChip.label(for: chip))
+                                .font(.outfitCaption).foregroundStyle(Theme.accent)
+                                .padding(.horizontal, Theme.Space.md).padding(.vertical, 6)
+                                .background(Theme.accentSoft).clipShape(Capsule())
+                                .overlay(Capsule().strokeBorder(Theme.accent.opacity(0.4), lineWidth: 1))
+                        }
+                    }
+                }
+                if let text = reflection.freeText, !text.isEmpty {
+                    Text("“\(text)”").font(.outfitSubheadline).italic().foregroundStyle(.secondary)
+                }
+                if let ack = reflection.ack, !ack.isEmpty {
+                    Label(ack, systemImage: "sparkles")
+                        .font(.outfitSubheadline).foregroundStyle(Theme.accent)
+                        .labelStyle(TealIconLabelStyle())
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Button("Edit tonight's answer") { model.beginEdit(reflection) }
+                    .font(.outfitSubheadline).foregroundStyle(.secondary)
+            }
+        }
     }
 
     private func chipGroup(_ title: String, chips: [(key: String, label: String)]) -> some View {
