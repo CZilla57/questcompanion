@@ -2515,6 +2515,45 @@ paths:
         "401":
           description: Unauthorized
 
+  /dm/beat:
+    get:
+      operationId: getDmBeat
+      summary: The Dungeon Master's narrated beat for today (the campaign layer)
+      description: >-
+        A short, grounded beat in a tabletop-DM voice — either the morning quest
+        board or the evening make-camp. Generated once per (day, kind) and cached;
+        the model never blocks the screen and falls back to a templated beat on
+        failure. Every specific is grounded in the user's real quests — the DM
+        never fabricates. Returns { beat: null } when the day has nothing real to
+        narrate.
+      tags: [users]
+      parameters:
+        - name: kind
+          in: query
+          required: true
+          description: Which beat to fetch.
+          schema:
+            type: string
+            enum: [morning, camp]
+        - name: tz
+          in: query
+          description: >-
+            IANA timezone (e.g. "America/New_York") used to resolve the user's
+            local day. Defaults to UTC when omitted or invalid.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Today's beat, or null when there is nothing to narrate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DmBeatResponse"
+        "400":
+          description: Missing or invalid kind
+        "401":
+          description: Unauthorized
+
   /world-boss/current:
     get:
       operationId: getWorldBossCurrent
@@ -4959,6 +4998,37 @@ components:
           type: integer
         encounter:
           $ref: "#/components/schemas/EncounterView"
+
+    DmBeat:
+      type: object
+      required: [kind, localDate, narrative, source, createdAt]
+      properties:
+        kind:
+          type: string
+          enum: [morning, camp]
+          description: The morning quest board or the evening make-camp.
+        localDate:
+          type: string
+          description: The user's local day this beat narrates (YYYY-MM-DD).
+        narrative:
+          type: string
+          description: The DM's short, grounded prose — always anti-shame, never fabricated.
+        source:
+          type: string
+          enum: [ai, fallback]
+          description: Whether the model wrote it or the templated fallback did.
+        createdAt:
+          type: string
+          format: date-time
+    DmBeatResponse:
+      type: object
+      required: [beat]
+      properties:
+        beat:
+          nullable: true
+          description: Null when the day has nothing real to narrate (the DM stays quiet).
+          allOf:
+            - $ref: "#/components/schemas/DmBeat"
 
     WorldBossAttackResult:
       type: object

@@ -47,6 +47,7 @@ import type {
   Coins,
   CreateRescueEvent201,
   DeleteAccountRequest,
+  DmBeatResponse,
   DopamineReward,
   DopamineRewardInput,
   ErrorEnvelope,
@@ -61,6 +62,7 @@ import type {
   GearStoreResponse,
   GetBrainStateParams,
   GetCalendarHeatmapParams,
+  GetDmBeatParams,
   GetLeaderboardParams,
   GetMyInsightsParams,
   GetMyPatternsParams,
@@ -8394,6 +8396,91 @@ export function useGetEncounterCurrent<TData = Awaited<ReturnType<typeof getEnco
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetEncounterCurrentQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetDmBeatUrl = (params: GetDmBeatParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/dm/beat?${stringifiedParams}` : `/api/dm/beat`
+}
+
+/**
+ * A short, grounded beat in a tabletop-DM voice — either the morning quest board or the evening make-camp. Generated once per (day, kind) and cached; the model never blocks the screen and falls back to a templated beat on failure. Every specific is grounded in the user's real quests — the DM never fabricates. Returns { beat: null } when the day has nothing real to narrate.
+ * @summary The Dungeon Master's narrated beat for today (the campaign layer)
+ */
+export const getDmBeat = async (params: GetDmBeatParams, options?: RequestInit): Promise<DmBeatResponse> => {
+
+  return customFetch<DmBeatResponse>(getGetDmBeatUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDmBeatQueryKey = (params?: GetDmBeatParams,) => {
+    return [
+    `/api/dm/beat`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetDmBeatQueryOptions = <TData = Awaited<ReturnType<typeof getDmBeat>>, TError = ErrorType<void>>(params: GetDmBeatParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDmBeat>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDmBeatQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDmBeat>>> = ({ signal }) => getDmBeat(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDmBeat>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDmBeatQueryResult = NonNullable<Awaited<ReturnType<typeof getDmBeat>>>
+export type GetDmBeatQueryError = ErrorType<void>
+
+
+/**
+ * @summary The Dungeon Master's narrated beat for today (the campaign layer)
+ */
+
+export function useGetDmBeat<TData = Awaited<ReturnType<typeof getDmBeat>>, TError = ErrorType<void>>(
+ params: GetDmBeatParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDmBeat>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDmBeatQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

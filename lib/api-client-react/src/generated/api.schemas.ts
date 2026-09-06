@@ -2107,6 +2107,45 @@ export interface PersonalEncounterStatus {
 }
 
 /**
+ * The morning quest board or the evening make-camp.
+ */
+export type DmBeatKind = typeof DmBeatKind[keyof typeof DmBeatKind];
+
+
+export const DmBeatKind = {
+  morning: 'morning',
+  camp: 'camp',
+} as const;
+
+/**
+ * Whether the model wrote it or the templated fallback did.
+ */
+export type DmBeatSource = typeof DmBeatSource[keyof typeof DmBeatSource];
+
+
+export const DmBeatSource = {
+  ai: 'ai',
+  fallback: 'fallback',
+} as const;
+
+export interface DmBeat {
+  /** The morning quest board or the evening make-camp. */
+  kind: DmBeatKind;
+  /** The user's local day this beat narrates (YYYY-MM-DD). */
+  localDate: string;
+  /** The DM's short, grounded prose — always anti-shame, never fabricated. */
+  narrative: string;
+  /** Whether the model wrote it or the templated fallback did. */
+  source: DmBeatSource;
+  createdAt: string;
+}
+
+export interface DmBeatResponse {
+  /** Null when the day has nothing real to narrate (the DM stays quiet). */
+  beat: DmBeat | null;
+}
+
+/**
  * @nullable
  */
 export type WorldBossAttackResultReason = typeof WorldBossAttackResultReason[keyof typeof WorldBossAttackResultReason] | null;
@@ -2825,6 +2864,25 @@ export const GetLeaderboardPeriod = {
 export type SearchUsersParams = {
 q: string;
 };
+
+export type GetDmBeatParams = {
+/**
+ * Which beat to fetch.
+ */
+kind: GetDmBeatKind;
+/**
+ * IANA timezone (e.g. "America/New_York") used to resolve the user's local day. Defaults to UTC when omitted or invalid.
+ */
+tz?: string;
+};
+
+export type GetDmBeatKind = typeof GetDmBeatKind[keyof typeof GetDmBeatKind];
+
+
+export const GetDmBeatKind = {
+  morning: 'morning',
+  camp: 'camp',
+} as const;
 
 export type GetCalendarHeatmapParams = {
 /**
