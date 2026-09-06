@@ -78,12 +78,20 @@ struct TodayView: View {
 
     var body: some View {
         NavigationStack {
-            AsyncContentView(state: model.stats, retry: { Task { await model.load() } }) { stats in
-                ScrollView {
-                    // Web "Now" order: prompt chips → quick add → quests →
-                    // quiet status line. Stats are demoted from a big card to a
-                    // single line (StatusLine), matching artifacts/focusquest.
+            // ScrollView is the STABLE title host — the large "Today" title fails
+            // to render intermittently when navigationTitle sits on AsyncContentView,
+            // whose root view swaps (LoadingView ↔ ScrollView) as state loads.
+            ScrollView {
+                // Web "Now" order: prompt chips → quick add → quests →
+                // quiet status line. Stats are demoted from a big card to a
+                // single line (StatusLine), matching artifacts/focusquest.
+                AsyncContentView(state: model.stats, retry: { Task { await model.load() } }) { stats in
                     VStack(alignment: .leading, spacing: Theme.Space.lg) {
+                        // Rendered as content, not a system large title: a
+                        // NavigationStack-in-TabView drops the large title on tab
+                        // re-selection, so "Today" would vanish intermittently.
+                        Text("Today").font(.outfitLargeTitleBold)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         promptChips
                         todaysFocus
                         quickAddBar
@@ -92,10 +100,11 @@ struct TodayView: View {
                     }
                     .padding(Theme.Space.lg)
                 }
-                .background(Theme.screenBackground)
-                .refreshable { await model.load() }
+                .frame(maxWidth: .infinity, minHeight: 300)
             }
-            .navigationTitle("Today")
+            .background(Theme.screenBackground)
+            .refreshable { await model.load() }
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $model.showQuickAdd) {
                 QuickAddSheet { quest in model.quests.insert(quest, at: 0); Task { await model.load() } }
             }
