@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 // The Campaign — D&D layer. Mirrors the server's additive schemas
 // (CharacterSheet / SkillCheck / EncounterView / EncounterHit). All optional at
@@ -68,6 +69,18 @@ struct EncounterView: Codable {
         case "wounded": return "Barely standing"
         case "resting": return "At rest"
         default: return ""
+        }
+    }
+}
+
+extension EncounterView {
+    /// The remaining-HP bar warms as the foe weakens, so a shrinking bar reads as
+    /// the player's progress rather than the foe's health per se.
+    var hpBarColor: Color {
+        switch phase {
+        case "wounded": return Theme.danger
+        case "bloodied": return Theme.gold
+        default: return Theme.accent // fresh / resting
         }
     }
 }
