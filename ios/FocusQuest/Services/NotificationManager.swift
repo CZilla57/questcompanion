@@ -131,9 +131,12 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
     /// quest.* not in the set (disjoint from adds — no add/remove race), (re)add the
     /// desired (add replaces a same-id pending, so re-adding is harmless).
     nonisolated func syncQuestDueAlerts(_ desired: [QuestDueAlert]) {
-        let center = UNUserNotificationCenter.current()
         let desiredIds = Set(desired.map { "quest.\($0.questId)" })
-        center.getPendingNotificationRequests { requests in
+        // Resolve the (non-Sendable) center inside the completion rather than
+        // capturing it across the @Sendable boundary; `.current()` is the same
+        // singleton. Only Sendable values (desired, desiredIds) are captured.
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            let center = UNUserNotificationCenter.current()
             let existing = Set(requests.map(\.identifier).filter { $0.hasPrefix("quest.") })
             let stale = existing.subtracting(desiredIds)
             if !stale.isEmpty { center.removePendingNotificationRequests(withIdentifiers: Array(stale)) }
