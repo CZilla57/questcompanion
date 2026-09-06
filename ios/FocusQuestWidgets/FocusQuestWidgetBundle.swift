@@ -8,6 +8,7 @@ import SwiftUI
 struct FocusQuestWidgetBundle: WidgetBundle {
     var body: some Widget {
         FocusQuestPlaceholderWidget()
+        FocusActivityLiveActivity()
     }
 }
 
