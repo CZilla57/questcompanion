@@ -148,6 +148,31 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
             className: "border-primary bg-primary text-primary-foreground",
           });
 
+          // The Campaign — Phase 1: the d20 skill check. Reveal the roll before
+          // the reward toasts. Band styling never uses red — a glancing hit is a
+          // calm, muted reframe, never a failure.
+          if (res.skillCheck) {
+            const sc = res.skillCheck;
+            const ability = sc.ability.charAt(0).toUpperCase() + sc.ability.slice(1);
+            const sign = (n: number) => (n >= 0 ? `+${n}` : `${n}`);
+            const bandStyle: Record<string, string> = {
+              crit: "border-amber-400 text-amber-300",
+              success: "border-primary text-primary",
+              glancing: "border-border text-muted-foreground",
+            };
+            const bandTitle: Record<string, string> = {
+              crit: `🎲 Critical! ${ability} check`,
+              success: `🎲 ${ability} check`,
+              glancing: `🎲 ${ability} check`,
+            };
+            const math = `d20 ${sc.d20} ${sign(sc.modifier)} ${sign(sc.proficiency)} = ${sc.total} vs DC ${sc.dc}`;
+            toast({
+              title: bandTitle[sc.band] ?? bandTitle.success,
+              description: res.skillCheckNarration ? `${math} · ${res.skillCheckNarration}` : math,
+              className: `border ${bandStyle[sc.band] ?? bandStyle.success}`,
+            });
+          }
+
           if (res.heroRevived) {
             toast({
               title: "⚔️ Your hero rises, renewed!",
