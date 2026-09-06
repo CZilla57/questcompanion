@@ -46,6 +46,15 @@ enum UserService {
         try await APIClient.shared.get("encounter/current")
     }
 
+    // The Campaign — Phase 3: the Dungeon Master's beat for today. Returns nil
+    // when there is nothing to narrate (or the endpoint isn't deployed yet); the
+    // caller hides the card rather than surfacing an error.
+    static func dmBeat(kind: DmBeatKind) async -> DmBeat? {
+        let response: DmBeatResponse? = try? await APIClient.shared.get(
+            "dm/beat", query: ["kind": kind.rawValue, "tz": TZ.identifier])
+        return response?.beat
+    }
+
     static func me() async throws -> User {
         try await APIClient.shared.get("users/me")
     }
