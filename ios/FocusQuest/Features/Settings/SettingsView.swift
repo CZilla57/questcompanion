@@ -56,6 +56,7 @@ struct SettingsView: View {
             Section("Weekly recap") {
                 Label(model.recapEmail ? "Email recaps on" : "Email recaps off", systemImage: "envelope")
                     .foregroundStyle(.secondary)
+                    .labelStyle(TealIconLabelStyle())
             }
 
             Section {
@@ -67,6 +68,7 @@ struct SettingsView: View {
                 Button("Sign out", role: .destructive) { confirmSignOut = true }
             }
         }
+        .tint(Theme.accent)
         .navigationTitle("Settings")
         .task { await model.load() }
         .confirmationDialog("Sign out of FocusQuest?", isPresented: $confirmSignOut, titleVisibility: .visible) {
