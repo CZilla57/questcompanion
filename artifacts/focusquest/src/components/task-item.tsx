@@ -18,6 +18,7 @@ import { Calendar } from "./ui/calendar";
 import { parseDueDate, toDueDateString, todayDueDate, tomorrowDueDate, nextWeekDueDate } from "@/lib/reschedule";
 import { showSteeringChip, nextPowerWindowSlot, type PowerWindowSlot } from "@/lib/steering";
 import { apiErrorMessage } from "@/lib/api-error";
+import { encounterPhaseLabel } from "@/lib/encounter";
 import { isUnlocked } from "@/lib/feature-gates";
 import { RescueSheet } from "./rescue-sheet";
 
@@ -171,6 +172,24 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
               description: res.skillCheckNarration ? `${math} · ${res.skillCheckNarration}` : math,
               className: `border ${bandStyle[sc.band] ?? bandStyle.success}`,
             });
+          }
+
+          // The Campaign — Phase 2: the blow landed on your personal encounter.
+          if (res.encounterHit) {
+            const h = res.encounterHit;
+            if (h.felled) {
+              toast({
+                title: `⚔️ ${h.name} felled!`,
+                description: `+${h.coins} coins — a new foe stirs.`,
+                className: "border-amber-400 text-amber-300",
+              });
+            } else {
+              toast({
+                title: `You struck ${h.name} for ${h.damage}`,
+                description: `${encounterPhaseLabel(h.encounter.phase)} · ${h.encounter.hpRemaining.toLocaleString()} / ${h.encounter.hp.toLocaleString()} HP`,
+                className: "border-primary",
+              });
+            }
           }
 
           if (res.heroRevived) {

@@ -12,18 +12,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-
-/** The Campaign — Phase 2: label the encounter's health phase. Anti-shame: the
- *  felled state reads "at rest", never "dead"/"defeated by the boss". */
-function encounterPhaseLabel(phase: string): string {
-  switch (phase) {
-    case "fresh": return "Standing strong";
-    case "bloodied": return "Bloodied";
-    case "wounded": return "Barely standing";
-    case "resting": return "At rest";
-    default: return "";
-  }
-}
+import { encounterPhaseLabel } from "@/lib/encounter";
 
 /** Shared co-op raid card: everyone in the game chips away at one weekly World
  *  Boss. Mirrors BattlePanel's conventions (Card / useToast / useQueryClient /
