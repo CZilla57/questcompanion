@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FQ000000000000000000B003 /* FocusActivityAttributes.swift in Sources (app) */ = {isa = PBXBuildFile; fileRef = FQ000000000000000000B002 /* FocusActivityAttributes.swift */; };
+		FQ000000000000000000B004 /* FocusActivityAttributes.swift in Sources (widget) */ = {isa = PBXBuildFile; fileRef = FQ000000000000000000B002 /* FocusActivityAttributes.swift */; };
 		FQ000000000000000000B041 /* FocusQuestWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FQ000000000000000000B001 /* FocusQuestWidgetsExtension.appex */; };
 /* End PBXBuildFile section */
 
@@ -28,6 +30,7 @@
 		FQ0000000000000000000001 /* FocusQuest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FocusQuest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FQ00000000000000000000F1 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 		FQ000000000000000000B001 /* FocusQuestWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FocusQuestWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		FQ000000000000000000B002 /* FocusActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusActivityAttributes.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -90,8 +93,17 @@
 				FQ00000000000000000000F1 /* Config.xcconfig */,
 				FQ0000000000000000000010 /* FocusQuest */,
 				FQ000000000000000000B010 /* FocusQuestWidgets */,
+				FQ000000000000000000B005 /* Shared */,
 				FQ0000000000000000000002 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		FQ000000000000000000B005 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				FQ000000000000000000B002 /* FocusActivityAttributes.swift */,
+			);
+			path = Shared;
 			sourceTree = "<group>";
 		};
 		FQ0000000000000000000002 /* Products */ = {
@@ -209,6 +221,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FQ000000000000000000B003 /* FocusActivityAttributes.swift in Sources (app) */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -216,6 +229,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FQ000000000000000000B004 /* FocusActivityAttributes.swift in Sources (widget) */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -38,6 +38,9 @@
 	</dict>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<!-- Enables the Focus session Live Activity (ActivityKit). -->
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<!-- Bundled web-matching typeface (variable font, see DesignSystem/Font+Outfit.swift) -->
 	<key>UIAppFonts</key>
 	<array>

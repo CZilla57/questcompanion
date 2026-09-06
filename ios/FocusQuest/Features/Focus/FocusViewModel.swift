@@ -107,6 +107,7 @@ final class FocusViewModel: ObservableObject {
             startTicker()
             // Window moved forward — reschedule against the new end.
             scheduleCurrentPhaseAlert()
+            updateLiveActivity()
         } else {
             pausedAt = Date()
             isPaused = true
@@ -117,6 +118,7 @@ final class FocusViewModel: ObservableObject {
             if let session {
                 NotificationManager.shared.cancelFocusPhaseAlerts(sessionId: session.id, phases: Self.allPhaseKeys)
             }
+            updateLiveActivity()
         }
     }
 
@@ -126,6 +128,7 @@ final class FocusViewModel: ObservableObject {
         self.session = session
         // A restored session resumes into a focus interval.
         beginFocus()
+        startLiveActivity()
     }
 
     private func startTicker() {
@@ -191,6 +194,7 @@ final class FocusViewModel: ObservableObject {
         phaseEndDate = from.addingTimeInterval(TimeInterval(minutes * 60))
         startTicker()
         scheduleCurrentPhaseAlert()
+        updateLiveActivity()
     }
 
     // MARK: - Reconcile (foreground catch-up)
@@ -279,6 +283,7 @@ final class FocusViewModel: ObservableObject {
     }
 
     private func reset() {
+        FocusActivityController.shared.end()
         session = nil
         phaseEndDate = nil
         phaseStartDate = nil
@@ -286,6 +291,28 @@ final class FocusViewModel: ObservableObject {
         isPaused = false
         remaining = 0
         phase = .focus
+    }
+
+    // MARK: - Live Activity
+
+    private func liveActivityQuestTitle() -> String? {
+        guard let taskId = session?.taskId else { return nil }
+        return quests.first { $0.id == taskId }?.title
+    }
+
+    private func startLiveActivity() {
+        guard let end = phaseEndDate, let preset else { return }
+        FocusActivityController.shared.start(
+            questTitle: liveActivityQuestTitle(),
+            presetLabel: preset.label,
+            phase: phase.activityPhase,
+            phaseEndDate: end)
+    }
+
+    private func updateLiveActivity() {
+        guard let end = phaseEndDate else { return }
+        FocusActivityController.shared.update(
+            phase: phase.activityPhase, phaseEndDate: end, isPaused: isPaused)
     }
 
     // MARK: - Display helpers
@@ -312,5 +339,16 @@ final class FocusViewModel: ObservableObject {
         }
         guard total > 0 else { return 0 }
         return 1 - Double(remaining) / Double(total)
+    }
+}
+
+private extension FocusViewModel.Phase {
+    /// Maps the view model's phase to the Live Activity's shared phase enum.
+    var activityPhase: FocusActivityAttributes.Phase {
+        switch self {
+        case .focus: return .focus
+        case .shortBreak: return .shortBreak
+        case .longBreak: return .longBreak
+        }
     }
 }
