@@ -3242,6 +3242,9 @@ components:
         questlineId:
           type: ["integer", "null"]
           description: The questline this quest belongs to, or null
+        recurringTaskId:
+          type: ["integer", "null"]
+          description: The recurring template this quest was spawned from, or null for a one-off
         difficulty:
           type: string
           enum: [easy, medium, hard]

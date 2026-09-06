@@ -1,0 +1,11 @@
+// FocusQuest iOS — LOCAL dev overrides. GITIGNORED (see ios/.gitignore).
+// Included by Config.xcconfig via `#include?`. Points the app at the local
+// API server and the Auth0 tenant. The `//` in a full URL would be read as an
+// xcconfig comment, so the scheme/host are split and recombined by the base
+// file's FQ_API_BASE_URL.
+
+FQ_API_SCHEME = https
+FQ_API_HOST = questcompanion.onrender.com
+
+FQ_AUTH0_DOMAIN = dev-l8qcb6yfss8tt7oj.us.auth0.com
+FQ_AUTH0_CLIENT_ID = 7GTA7dSVOVvd0xYmOhfJ7WwUyypabW9f

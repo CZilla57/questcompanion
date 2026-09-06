@@ -1,0 +1,13 @@
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+
+# Local secrets — copy Config.xcconfig to Config.local.xcconfig and gitignore that
+Config.local.xcconfig
+
+# macOS
+.DS_Store
