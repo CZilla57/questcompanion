@@ -19,11 +19,13 @@ final class FocusViewModel: ObservableObject {
     @Published private(set) var phase: Phase = .focus
     @Published private(set) var remaining: Int = 0
     @Published private(set) var isBusy = false
+    @Published private(set) var isPaused = false
     @Published var lastResult: FocusSessionResult?
     @Published var error: String?
 
     private var phaseEndDate: Date?
     private var phaseStartDate: Date?
+    private var pausedAt: Date?
     private var ticker: AnyCancellable?
 
     var preset: FocusPreset? { presets.first { $0.key == (session?.preset ?? selectedPreset) } }
@@ -80,6 +82,26 @@ final class FocusViewModel: ObservableObject {
     func skipBreak() {
         guard phase != .focus else { return }
         beginFocus()
+    }
+
+    /// Pause/resume the countdown (client-only, like the web). Resuming shifts
+    /// the wall-clock phase window forward by the paused duration.
+    func togglePause() {
+        guard isActive else { return }
+        if isPaused {
+            if let pausedAt {
+                let delta = Date().timeIntervalSince(pausedAt)
+                phaseEndDate = phaseEndDate?.addingTimeInterval(delta)
+                phaseStartDate = phaseStartDate?.addingTimeInterval(delta)
+            }
+            pausedAt = nil
+            isPaused = false
+            startTicker()
+        } else {
+            pausedAt = Date()
+            isPaused = true
+            stopTicker()
+        }
     }
 
     // MARK: - Ticking
@@ -155,13 +177,17 @@ final class FocusViewModel: ObservableObject {
 
     private func elapsedInPhase() -> Int {
         guard let start = phaseStartDate else { return 0 }
-        return max(0, Int(Date().timeIntervalSince(start)))
+        // While paused the clock is frozen at pausedAt, so count only up to then.
+        let reference = pausedAt ?? Date()
+        return max(0, Int(reference.timeIntervalSince(start)))
     }
 
     private func reset() {
         session = nil
         phaseEndDate = nil
         phaseStartDate = nil
+        pausedAt = nil
+        isPaused = false
         remaining = 0
         phase = .focus
     }
