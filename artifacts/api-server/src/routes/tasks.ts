@@ -35,6 +35,8 @@ import { growKingdom } from "../lib/kingdom-growth";
 import { capitalLifetime, capitalTier, type KingdomId } from "../lib/kingdoms";
 import { abilityScores, proficiencyBonus } from "../lib/character-sheet";
 import { resolveTaskCheck, taskCheckSeed, bandEffect, bandNarration, type SkillCheck } from "../lib/roll-engine";
+import { chipPersonalEncounter, type EncounterHit } from "./encounter";
+import { getUserPower } from "./battle";
 import { grantInitiationAwards } from "../lib/initiation-grant";
 import type { InitiationXp } from "../lib/initiation";
 import { awardCoins, reverseCoins } from "../lib/award-coins";
@@ -960,6 +962,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
   // never fail a completion, so it degrades to no check rather than throwing.
   let skillCheck: SkillCheck | null = null;
   let skillCheckNarration: string | null = null;
+  let encounterHit: EncounterHit | null = null;
   try {
     skillCheck = await rollCompletionCheck(userId, id, task.category, task.difficulty, today!);
     skillCheckNarration = bandNarration(skillCheck.band, task.title);
@@ -967,8 +970,12 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     if (effect.bonusCoins > 0) {
       await db.transaction((tx) => awardCoins(tx, userId, effect.bonusCoins, "quest_complete"));
     }
+    // The same blow lands on the player's personal encounter — the quest chips
+    // its HP, scaled by the roll's band. Best-effort; felling grants upside loot.
+    const power = await getUserPower(userId);
+    encounterHit = await chipPersonalEncounter(userId, power, skillCheck.band);
   } catch (err) {
-    logger.error({ err, taskId: id }, "skill check failed; completing without a roll");
+    logger.error({ err, taskId: id }, "skill check / encounter failed; completing without them");
   }
 
   res.json({
@@ -978,6 +985,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     bonusPoints: bonusAwarded ? DAILY_BONUS_POINTS : 0,
     skillCheck,
     skillCheckNarration,
+    encounterHit,
     streakBonus,
     xpMultiplier: multiplierValue,
     newTotalPoints: finalTotalPoints,

@@ -17,7 +17,7 @@ import {
   kingdomPointsTable, partnershipsTable, pushSubscriptionsTable, questlinesTable,
   recurringTasksTable, reflectionsTable, rescueEventsTable, rewardStoreItemsTable,
   taskStepsTable, tasksTable, userBadgesTable, userGearTable, weeklyBattlesTable,
-  weeklyRecapsTable, worldBossAttacksTable,
+  weeklyRecapsTable, worldBossAttacksTable, personalEncountersTable,
 } from "@workspace/db/schema";
 
 export interface UserDataTable {
@@ -52,6 +52,7 @@ export const USER_DATA_TABLES: readonly UserDataTable[] = [
   { name: "user_gear",          table: userGearTable,         userColumns: [userGearTable.userId] },
   { name: "weekly_battles",     table: weeklyBattlesTable,    userColumns: [weeklyBattlesTable.userId] },
   { name: "world_boss_attacks", table: worldBossAttacksTable, userColumns: [worldBossAttacksTable.userId] },
+  { name: "personal_encounters", table: personalEncountersTable, userColumns: [personalEncountersTable.userId] },
   // Body-double children before rooms; my hosted rooms cascade their other
   // members'/sprints' rows at the DB level (all room FKs cascade).
   { name: "body_double_sprints", table: bodyDoubleSprintsTable, userColumns: [bodyDoubleSprintsTable.startedBy] },

@@ -103,6 +103,7 @@ import type {
   PatchTaskStepParams,
   PatternSummary,
   PauseHyperfocus200,
+  PersonalEncounterStatus,
   PutMyTimezone200,
   Questline,
   QuestlineClaimResult,
@@ -8327,6 +8328,83 @@ export const useEnterBattle = <TError = ErrorType<ErrorEnvelope>,
       > => {
       return useMutation(getEnterBattleMutationOptions(options));
     }
+
+export const getGetEncounterCurrentUrl = () => {
+
+
+
+
+  return `/api/encounter/current`
+}
+
+/**
+ * @summary The player's current personal encounter (spawns a tier-1 foe on first view)
+ */
+export const getEncounterCurrent = async ( options?: RequestInit): Promise<PersonalEncounterStatus> => {
+
+  return customFetch<PersonalEncounterStatus>(getGetEncounterCurrentUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEncounterCurrentQueryKey = () => {
+    return [
+    `/api/encounter/current`
+    ] as const;
+    }
+
+
+export const getGetEncounterCurrentQueryOptions = <TData = Awaited<ReturnType<typeof getEncounterCurrent>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEncounterCurrent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEncounterCurrentQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEncounterCurrent>>> = ({ signal }) => getEncounterCurrent({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEncounterCurrent>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetEncounterCurrentQueryResult = NonNullable<Awaited<ReturnType<typeof getEncounterCurrent>>>
+export type GetEncounterCurrentQueryError = ErrorType<void>
+
+
+/**
+ * @summary The player's current personal encounter (spawns a tier-1 foe on first view)
+ */
+
+export function useGetEncounterCurrent<TData = Awaited<ReturnType<typeof getEncounterCurrent>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEncounterCurrent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetEncounterCurrentQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetWorldBossCurrentUrl = () => {
 

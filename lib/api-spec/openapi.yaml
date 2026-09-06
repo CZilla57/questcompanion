@@ -2500,6 +2500,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
 
+  /encounter/current:
+    get:
+      operationId: getEncounterCurrent
+      summary: The player's current personal encounter (spawns a tier-1 foe on first view)
+      tags: [users]
+      responses:
+        "200":
+          description: Current personal encounter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonalEncounterStatus"
+        "401":
+          description: Unauthorized
+
   /world-boss/current:
     get:
       operationId: getWorldBossCurrent
@@ -3384,6 +3399,11 @@ components:
           type: string
           nullable: true
           description: Anti-shame narration for the check's outcome band; quotes the quest title, never blames.
+        encounterHit:
+          description: The blow this completion landed on the player's personal encounter. Null when the encounter couldn't be updated (completion still succeeds).
+          oneOf:
+            - $ref: "#/components/schemas/EncounterHit"
+            - type: "null"
         bonusAwarded:
           type: boolean
         bonusPoints:
@@ -4907,6 +4927,38 @@ components:
         felled:
           type: boolean
           description: True once fully chipped down; the encounter now rests (never "you lost").
+
+    EncounterHit:
+      type: object
+      required: [name, tier, damage, felled, coins, encounter]
+      properties:
+        name:
+          type: string
+          description: The foe's name.
+        tier:
+          type: integer
+        damage:
+          type: integer
+          description: Damage this completion dealt (band-scaled; always ≥ 1).
+        felled:
+          type: boolean
+          description: Whether this blow felled the foe (which then rests; a fresh foe spawns).
+        coins:
+          type: integer
+          description: Upside-only loot coins granted on felling (0 otherwise).
+        encounter:
+          $ref: "#/components/schemas/EncounterView"
+
+    PersonalEncounterStatus:
+      type: object
+      required: [name, tier, encounter]
+      properties:
+        name:
+          type: string
+        tier:
+          type: integer
+        encounter:
+          $ref: "#/components/schemas/EncounterView"
 
     WorldBossAttackResult:
       type: object

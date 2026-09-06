@@ -22,6 +22,7 @@ export * from "./rescue-events";
 export * from "./reward-store-items";
 export * from "./coin-transactions";
 export * from "./world-boss";
+export * from "./personal-encounters";
 export * from "./reflections";
 export * from "./weekly-recaps";
 export * from "./kingdom-points";

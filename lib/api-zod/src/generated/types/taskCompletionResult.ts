@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Badge } from './badge';
+import type { EncounterHit } from './encounterHit';
 import type { FeatureKey } from './featureKey';
 import type { GearRewardInfo } from './gearRewardInfo';
 import type { SkillCheck } from './skillCheck';
@@ -20,6 +21,8 @@ export interface TaskCompletionResult {
   skillCheck?: SkillCheck | null;
   /** Anti-shame narration for the check's outcome band; quotes the quest title, never blames. */
   skillCheckNarration?: string | null;
+  /** The blow this completion landed on the player's personal encounter. Null when the encounter couldn't be updated (completion still succeeds). */
+  encounterHit?: EncounterHit | null;
   bonusAwarded: boolean;
   /** All-day completion bonus XP */
   bonusPoints: number;
