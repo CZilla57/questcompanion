@@ -12,20 +12,22 @@ enum TaskCategory: String, Codable, CaseIterable {
         self = TaskCategory(rawValue: raw) ?? .default
     }
 
-    var emoji: String {
+    /// SF Symbol used in place of the emoji where we want a tintable vector icon
+    /// (rendered in the app's electric teal). Mirrors `emoji` one-to-one.
+    var symbol: String {
         switch self {
-        case .health: return "❤️"
-        case .deepWork: return "🧠"
-        case .learning: return "📚"
-        case .finance: return "💰"
-        case .admin: return "🗂️"
-        case .household: return "🏠"
-        case .social: return "👥"
-        case .creative: return "🎨"
-        case .selfCare: return "🧘"
-        case .errands: return "🧾"
-        case .travel: return "✈️"
-        case .default: return "⭐️"
+        case .health: return "heart.fill"
+        case .deepWork: return "brain.head.profile"
+        case .learning: return "book.fill"
+        case .finance: return "dollarsign.circle.fill"
+        case .admin: return "folder.fill"
+        case .household: return "house.fill"
+        case .social: return "person.2.fill"
+        case .creative: return "paintpalette.fill"
+        case .selfCare: return "figure.mind.and.body"
+        case .errands: return "checklist"
+        case .travel: return "airplane"
+        case .default: return "star.fill"
         }
     }
 }
@@ -82,13 +84,14 @@ enum BrainMode: String, Codable {
         }
     }
 
-    var emoji: String {
+    /// SF Symbol counterpart, rendered in electric teal (see `TaskCategory.symbol`).
+    var symbol: String {
         switch self {
-        case .focused: return "🎯"
-        case .distracted: return "🌀"
-        case .frozen: return "🧊"
-        case .hyperfocus: return "🔥"
-        case .neutral: return "😌"
+        case .focused: return "target"
+        case .distracted: return "tornado"
+        case .frozen: return "snowflake"
+        case .hyperfocus: return "flame.fill"
+        case .neutral: return "face.smiling"
         }
     }
 }

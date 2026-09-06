@@ -51,7 +51,11 @@ struct QuestlineRow: View {
                 Circle().fill(Color(hex: line.color)).frame(width: 10, height: 10)
                 Text(line.title).font(.outfitHeadline)
                 Spacer()
-                if line.ready { Text("Ready 🎁").font(.outfitCaptionBold).foregroundStyle(Theme.gold) }
+                if line.ready {
+                    Label("Ready", systemImage: "gift.fill")
+                        .font(.outfitCaptionBold).foregroundStyle(Theme.gold)
+                        .labelStyle(TealIconLabelStyle(spacing: 3))
+                }
             }
             ProgressBar(value: line.progress, tint: Color(hex: line.color))
             Text("\(line.done)/\(line.total) quests").font(.outfitCaption).foregroundStyle(.secondary)

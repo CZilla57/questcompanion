@@ -127,6 +127,7 @@ export function formatTask(
     focusDate: task.focusDate ?? null,
     isAnchored: task.isAnchored,
     questlineId: task.questlineId ?? null,
+    recurringTaskId: task.recurringTaskId ?? null,
     difficulty: task.difficulty,
     difficultyOfferable: opts.difficultyOfferable ?? false,
     bigSwing: isBigSwing(task),

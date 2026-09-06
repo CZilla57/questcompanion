@@ -30,7 +30,7 @@ struct FocusView: View {
 
     private var setup: some View {
         VStack(spacing: Theme.Space.lg) {
-            Text("🎯").font(.system(size: 56))
+            Image(systemName: "target").font(.system(size: 52)).foregroundStyle(Theme.accent)
             Text("Start a focus session").font(.outfitTitle3Bold)
             Text("Pick a rhythm and, optionally, the quest you're working on.")
                 .font(.outfitSubheadline).foregroundStyle(.secondary)
@@ -162,7 +162,7 @@ private struct FocusResultSheet: View {
     var body: some View {
         VStack(spacing: Theme.Space.lg) {
             Spacer()
-            Text("🌟").font(.system(size: 64))
+            Image(systemName: "star.fill").font(.system(size: 60)).foregroundStyle(Theme.accent)
             Text("Session complete").font(.outfitTitle2Bold)
             Text("+\(result.xpDelta) XP").font(.outfitTitle3Bold).foregroundStyle(Theme.accent)
             Text("\(result.session.completedIntervals) focus interval\(result.session.completedIntervals == 1 ? "" : "s") · \(result.session.focusedSeconds / 60) min")

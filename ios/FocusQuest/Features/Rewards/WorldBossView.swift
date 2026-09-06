@@ -28,14 +28,15 @@ struct WorldBossView: View {
                 VStack(spacing: Theme.Space.lg) {
                     Card {
                         VStack(spacing: Theme.Space.md) {
-                            Text(boss.defeated ? "💀" : "🐉").font(.system(size: 64))
+                            Image(systemName: boss.defeated ? "trophy.fill" : "flame.fill")
+                                .font(.system(size: 60)).foregroundStyle(Theme.accent)
                             Text(boss.defeated ? "Boss defeated!" : "World Boss").font(.outfitTitle2Bold)
                             ProgressBar(value: boss.hp > 0 ? Double(boss.totalDamage) / Double(boss.totalDamage + boss.hp) : 1, tint: Theme.danger)
                             Text("HP \(boss.hp)").font(.outfitCaption).foregroundStyle(.secondary)
                             Text("Your damage: \(boss.yourContribution) · Power \(boss.yourPower)")
                                 .font(.outfitSubheadline).foregroundStyle(.secondary)
                             if !boss.defeated {
-                                PrimaryButton(title: boss.attackedToday ? "Attacked today ✓" : "Attack (+\(boss.attackXp) XP)",
+                                PrimaryButton(title: boss.attackedToday ? "Attacked today" : "Attack (+\(boss.attackXp) XP)",
                                               systemImage: "bolt.fill", tint: Theme.danger, isLoading: model.busy) {
                                     Task { await model.attack() }
                                 }

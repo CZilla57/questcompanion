@@ -176,7 +176,7 @@ private struct StatusLine: View {
     var body: some View {
         NavigationLink { ProgressDashboardView() } label: {
             HStack(spacing: 6) {
-                if stats.streakDays > 0 { Text("🔥") }
+                if stats.streakDays > 0 { Image(systemName: "flame.fill").foregroundStyle(Theme.accent) }
                 Text(parts.joined(separator: " · "))
                 Image(systemName: "chevron.right").font(.outfitCaption2)
             }

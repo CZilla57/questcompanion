@@ -116,14 +116,15 @@ struct HeroStatus: Codable {
         let bondQuestsCompleted: Int
     }
 
-    var stageEmoji: String {
+    /// SF Symbol counterpart of the hero mood, rendered in electric teal.
+    var stageSymbol: String {
         switch stage {
-        case "well_fed": return "😊"
-        case "peckish": return "🙂"
-        case "hungry": return "😕"
-        case "starving": return "😣"
-        case "fainted": return "😵"
-        default: return "🦸"
+        case "well_fed": return "face.smiling.fill"
+        case "peckish": return "face.smiling"
+        case "hungry": return "face.dashed"
+        case "starving": return "face.dashed.fill"
+        case "fainted": return "moon.zzz.fill"
+        default: return "person.fill"
         }
     }
 }

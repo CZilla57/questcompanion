@@ -7,7 +7,7 @@ struct LoginView: View {
         VStack(spacing: Theme.Space.xl) {
             Spacer()
             VStack(spacing: Theme.Space.md) {
-                Text("⚔️").font(.system(size: 72))
+                Image(systemName: "shield.lefthalf.filled").font(.system(size: 68)).foregroundStyle(Theme.accent)
                 Text("FocusQuest").font(.outfitLargeTitleBold)
                 Text("Turn your to-do list into an adventure. Complete quests, level up your hero, and build momentum.")
                     .font(.outfitBody)

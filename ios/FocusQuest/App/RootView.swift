@@ -20,7 +20,7 @@ struct RootView: View {
 struct SplashView: View {
     var body: some View {
         VStack(spacing: Theme.Space.lg) {
-            Text("⚔️").font(.system(size: 60))
+            Image(systemName: "shield.lefthalf.filled").font(.system(size: 56)).foregroundStyle(Theme.accent)
             ProgressView()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

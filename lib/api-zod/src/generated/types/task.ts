@@ -57,6 +57,11 @@ export interface Task {
      * @nullable
      */
   questlineId?: number | null;
+  /**
+     * The recurring template this quest was spawned from, or null for a one-off
+     * @nullable
+     */
+  recurringTaskId?: number | null;
   /** Current difficulty rung of the quest */
   difficulty: TaskDifficulty;
   /** True when the app is gently offering a smaller version (never a shame signal; never a count) */

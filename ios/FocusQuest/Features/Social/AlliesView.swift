@@ -33,7 +33,8 @@ struct AlliesView: View {
                     Section("Recent nudges") {
                         ForEach(model.inbox) { nudge in
                             HStack {
-                                Text(nudge.kind == "cheer" ? "🎉" : "👉")
+                                Image(systemName: nudge.kind == "cheer" ? "hands.clap.fill" : "hand.point.right.fill")
+                                    .foregroundStyle(Theme.accent)
                                 VStack(alignment: .leading) {
                                     Text(nudge.sender?.name ?? "Ally").font(.outfitSubheadline)
                                     Text(nudge.reactionLabel ?? nudge.reaction).font(.outfitCaption).foregroundStyle(.secondary)
@@ -88,16 +89,25 @@ private struct AllyRow: View {
             VStack(alignment: .leading) {
                 Text(p.partner?.name ?? "Ally").font(.outfitSubheadline)
                 if let prog = p.progress {
-                    Text("\(prog.questsCompletedToday)/\(prog.questsDueToday) today" + (prog.allDoneToday ? " ✅" : ""))
-                        .font(.outfitCaption).foregroundStyle(.secondary)
+                    HStack(spacing: 3) {
+                        Text("\(prog.questsCompletedToday)/\(prog.questsDueToday) today")
+                        if prog.allDoneToday {
+                            Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.accent)
+                        }
+                    }
+                    .font(.outfitCaption).foregroundStyle(.secondary)
                 }
             }
             Spacer()
             if !(p.sentTodayCheer ?? false) {
-                Button { onNudge("cheer", "nice_work") } label: { Text("🎉") }.buttonStyle(.plain)
+                Button { onNudge("cheer", "nice_work") } label: {
+                    Image(systemName: "hands.clap.fill").foregroundStyle(Theme.accent)
+                }.buttonStyle(.plain)
             }
             if !(p.sentTodayPoke ?? false) {
-                Button { onNudge("poke", "you_got_this") } label: { Text("👉") }.buttonStyle(.plain)
+                Button { onNudge("poke", "you_got_this") } label: {
+                    Image(systemName: "hand.point.right.fill").foregroundStyle(Theme.accent)
+                }.buttonStyle(.plain)
             }
         }
     }

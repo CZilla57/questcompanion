@@ -24,14 +24,16 @@ struct GearStoreView: View {
             NeonList {
                 Section {
                     HStack {
-                        Text("🪙 \(store.coinBalance) coins")
+                        Label("\(store.coinBalance) coins", systemImage: "dollarsign.circle.fill")
+                            .labelStyle(TealIconLabelStyle(spacing: 3))
                         Spacer()
                         Text("Level \(store.userLevel)").foregroundStyle(.secondary)
                     }.font(.outfitSubheadline)
                 }
                 ForEach(store.items) { item in
                     HStack(spacing: Theme.Space.md) {
-                        Text(item.icon).font(.outfitTitle2)
+                        Image(systemName: gearSlotSymbol(item.slot)).font(.outfitTitle2)
+                            .foregroundStyle(Theme.accent).frame(width: 28)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.name).font(.outfitSubheadline)
                             Text("\(item.slot.capitalized) · \(item.rarity.capitalized) · +\(item.statPower)")
@@ -43,9 +45,11 @@ struct GearStoreView: View {
                             Button(item.equipped ? "Unequip" : "Equip") { Task { await model.equip(item) } }
                                 .buttonStyle(.bordered)
                         } else {
-                            Button("\(item.costCoins) 🪙") { Task { await model.buy(item) } }
-                                .buttonStyle(.borderedProminent).tint(Theme.gold)
-                                .disabled(!item.canAfford || !item.meetsLevel)
+                            Button { Task { await model.buy(item) } } label: {
+                                Label("\(item.costCoins)", systemImage: "dollarsign.circle.fill")
+                            }
+                            .buttonStyle(.borderedProminent).tint(Theme.gold)
+                            .disabled(!item.canAfford || !item.meetsLevel)
                         }
                     }
                 }
@@ -54,5 +58,17 @@ struct GearStoreView: View {
         }
         .navigationTitle("Gear Store")
         .task { if model.state.value == nil { await model.load() } }
+    }
+}
+
+/// Slot-keyed teal glyph for a gear item (the web keys the icon off the slot).
+func gearSlotSymbol(_ slot: String) -> String {
+    switch slot.lowercased() {
+    case "weapon": return "bolt.fill"
+    case "helmet": return "shield.lefthalf.filled"
+    case "armor": return "shield.fill"
+    case "boots": return "figure.walk"
+    case "accessory": return "sparkles"
+    default: return "shield.fill"
     }
 }

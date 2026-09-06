@@ -26,10 +26,16 @@ struct RecurringTasksView: View {
                 ForEach(tasks) { task in
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("\(task.category.emoji) \(task.title)").font(.outfitSubheadline)
+                            HStack(spacing: 4) {
+                                Image(systemName: task.category.symbol).foregroundStyle(Theme.accent)
+                                Text(task.title)
+                            }
+                            .font(.outfitSubheadline)
                             Text(task.scheduleLabel).font(.outfitCaption).foregroundStyle(.secondary)
                             if task.currentStreak > 0 {
-                                Text("🔥 \(task.currentStreak) \(task.streakUnit) streak").font(.outfitCaption2).foregroundStyle(Theme.gold)
+                                Label("\(task.currentStreak) \(task.streakUnit) streak", systemImage: "flame.fill")
+                                    .font(.outfitCaption2).foregroundStyle(Theme.gold)
+                                    .labelStyle(TealIconLabelStyle(spacing: 3))
                             }
                         }
                         Spacer()

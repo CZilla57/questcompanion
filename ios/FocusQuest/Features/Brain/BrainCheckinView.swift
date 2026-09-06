@@ -43,8 +43,9 @@ struct BrainCheckinView: View {
                             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: Theme.Space.md) {
                                 ForEach(modes, id: \.self) { mode in
                                     Button { Task { await model.checkin(mode) } } label: {
-                                        VStack(spacing: 4) {
-                                            Text(mode.emoji).font(.system(size: 30))
+                                        VStack(spacing: 6) {
+                                            Image(systemName: mode.symbol).font(.system(size: 26))
+                                                .foregroundStyle(Theme.accent)
                                             Text(mode.label).font(.outfitCaption)
                                         }
                                         .frame(maxWidth: .infinity)
@@ -61,7 +62,8 @@ struct BrainCheckinView: View {
                     if brain.mode == .hyperfocus {
                         Card {
                             VStack(alignment: .leading, spacing: Theme.Space.sm) {
-                                Text("🔥 In hyperfocus").font(.outfitHeadline)
+                                Label("In hyperfocus", systemImage: "flame.fill")
+                                    .font(.outfitHeadline).labelStyle(TealIconLabelStyle())
                                 Text("Protection nudges are on. Pause them if you're in a good flow.").font(.outfitCaption).foregroundStyle(.secondary)
                                 HStack {
                                     ForEach([30, 60, 90], id: \.self) { m in
@@ -81,7 +83,8 @@ struct BrainCheckinView: View {
                                 Text("A gentle next step").font(.outfitHeadline)
                                 ForEach(model.momentum) { suggestion in
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text("\(suggestion.task.category.emoji) \(suggestion.task.title)").font(.outfitSubheadline)
+                                        Label(suggestion.task.title, systemImage: suggestion.task.category.symbol)
+                                            .font(.outfitSubheadline).labelStyle(TealIconLabelStyle())
                                         Text(suggestion.reason).font(.outfitCaption).foregroundStyle(.secondary)
                                     }
                                     .frame(maxWidth: .infinity, alignment: .leading)

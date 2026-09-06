@@ -46,7 +46,8 @@ struct ReflectionView: View {
                 VStack(alignment: .leading, spacing: Theme.Space.lg) {
                     Card {
                         VStack(alignment: .leading, spacing: Theme.Space.sm) {
-                            Text("🌙 Evening reflection").font(.outfitHeadline)
+                            Label("Evening reflection", systemImage: "moon.stars.fill")
+                                .font(.outfitHeadline).labelStyle(TealIconLabelStyle())
                             Text(reflection?.prompt ?? "How did today go?").font(.outfitSubheadline).foregroundStyle(.secondary)
                         }
                     }

@@ -11,7 +11,8 @@ struct CompletionSheet: View {
     var body: some View {
         VStack(spacing: Theme.Space.lg) {
             Spacer()
-            Text(result.leveledUp ? "🎉" : "⭐️").font(.system(size: 72))
+            Image(systemName: result.leveledUp ? "sparkles" : "star.fill")
+                .font(.system(size: 68)).foregroundStyle(Theme.accent)
             Text(result.leveledUp ? "Level \(result.newLevel)!" : "Quest complete!")
                 .font(.outfitLargeTitleBold)
             Text("+\(result.pointsAwarded) XP")
@@ -19,8 +20,9 @@ struct CompletionSheet: View {
                 .foregroundStyle(Theme.accent)
 
             if result.xpMultiplier > 1 {
-                Text("🔥 \(String(format: "%.2f", result.xpMultiplier))× streak bonus")
+                Label("\(String(format: "%.2f", result.xpMultiplier))× streak bonus", systemImage: "flame.fill")
                     .font(.outfitSubheadline).foregroundStyle(Theme.gold)
+                    .labelStyle(TealIconLabelStyle(spacing: 3))
             }
             if let reaction = result.companionReaction {
                 Text("“\(reaction)”").font(.outfitCallout).italic().foregroundStyle(.secondary)
@@ -35,10 +37,12 @@ struct CompletionSheet: View {
                 }
             }
             if let surprise = result.surpriseReward {
-                Text(surprise.type == "gear"
-                     ? "🎁 Surprise gear: \(surprise.gear?.name ?? "?")"
-                     : "🎁 Surprise +\(surprise.xpAmount ?? 0) XP")
+                Label(surprise.type == "gear"
+                      ? "Surprise gear: \(surprise.gear?.name ?? "?")"
+                      : "Surprise +\(surprise.xpAmount ?? 0) XP",
+                      systemImage: "gift.fill")
                     .font(.outfitSubheadline).foregroundStyle(Theme.success)
+                    .labelStyle(TealIconLabelStyle())
             }
             Spacer()
             PrimaryButton(title: "Onward", systemImage: "arrow.right") { dismiss() }
