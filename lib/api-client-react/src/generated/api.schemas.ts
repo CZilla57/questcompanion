@@ -2037,6 +2037,36 @@ export interface WorldBossContributor {
   isAlly: boolean;
 }
 
+export type EncounterViewPhase = typeof EncounterViewPhase[keyof typeof EncounterViewPhase];
+
+
+export const EncounterViewPhase = {
+  fresh: 'fresh',
+  bloodied: 'bloodied',
+  wounded: 'wounded',
+  resting: 'resting',
+} as const;
+
+export type EncounterViewStatus = typeof EncounterViewStatus[keyof typeof EncounterViewStatus];
+
+
+export const EncounterViewStatus = {
+  active: 'active',
+  resting: 'resting',
+} as const;
+
+export interface EncounterView {
+  hp: number;
+  totalDamage: number;
+  hpRemaining: number;
+  /** Fraction of HP still standing, 0..1. */
+  percentRemaining: number;
+  phase: EncounterViewPhase;
+  status: EncounterViewStatus;
+  /** True once fully chipped down; the encounter now rests (never "you lost"). */
+  felled: boolean;
+}
+
 export interface WorldBossStatus {
   weekKey: string;
   hp: number;
@@ -2051,6 +2081,8 @@ export interface WorldBossStatus {
   defeatCoins: number;
   defeatXp: number;
   contributors: WorldBossContributor[];
+  /** The boss reframed as a D&D encounter — HP phases and an anti-shame "resting" state. Derived from hp + totalDamage; additive. */
+  encounter?: EncounterView;
 }
 
 /**

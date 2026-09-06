@@ -2621,7 +2621,16 @@ export const GetWorldBossCurrentResponse = zod.object({
   "avatarColor": zod.string(),
   "damage": zod.number(),
   "isAlly": zod.boolean()
-}))
+})),
+  "encounter": zod.object({
+  "hp": zod.number(),
+  "totalDamage": zod.number(),
+  "hpRemaining": zod.number(),
+  "percentRemaining": zod.number().describe('Fraction of HP still standing, 0..1.'),
+  "phase": zod.enum(['fresh', 'bloodied', 'wounded', 'resting']),
+  "status": zod.enum(['active', 'resting']),
+  "felled": zod.boolean().describe('True once fully chipped down; the encounter now rests (never \"you lost\").')
+}).optional().describe('The boss reframed as a D&D encounter — HP phases and an anti-shame \"resting\" state. Derived from hp + totalDamage; additive.')
 })
 
 

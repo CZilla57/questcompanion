@@ -8,6 +8,7 @@ import { getLevelInfo } from "../lib/gamification";
 import { getWeekKey, priorWeekKey } from "../lib/week-key";
 import { getUserPower } from "./battle";
 import { WORLD_BOSS, worldBossHp, dayKey, rollDamage, crossedThreshold } from "../lib/world-boss";
+import { encounterView } from "../lib/encounter";
 import { awardSocialBadges } from "../lib/badge-awards";
 import { awardCoins } from "../lib/award-coins";
 
@@ -106,6 +107,9 @@ router.get("/world-boss/current", async (req, res): Promise<void> => {
     defeatCoins: WORLD_BOSS.DEFEAT_COINS,
     defeatXp: WORLD_BOSS.DEFEAT_XP,
     contributors,
+    // The Campaign — Phase 2: the boss as a D&D encounter (HP phases + anti-shame
+    // "resting" state). Derived from the same hp/totalDamage; no mechanic change.
+    encounter: encounterView(boss.hp, boss.totalDamage),
   });
 });
 

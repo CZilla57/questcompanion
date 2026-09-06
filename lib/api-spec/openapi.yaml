@@ -4884,6 +4884,29 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/WorldBossContributor"
+        encounter:
+          description: The boss reframed as a D&D encounter — HP phases and an anti-shame "resting" state. Derived from hp + totalDamage; additive.
+          $ref: "#/components/schemas/EncounterView"
+
+    EncounterView:
+      type: object
+      required: [hp, totalDamage, hpRemaining, percentRemaining, phase, status, felled]
+      properties:
+        hp: { type: integer }
+        totalDamage: { type: integer }
+        hpRemaining: { type: integer }
+        percentRemaining:
+          type: number
+          description: Fraction of HP still standing, 0..1.
+        phase:
+          type: string
+          enum: [fresh, bloodied, wounded, resting]
+        status:
+          type: string
+          enum: [active, resting]
+        felled:
+          type: boolean
+          description: True once fully chipped down; the encounter now rests (never "you lost").
 
     WorldBossAttackResult:
       type: object

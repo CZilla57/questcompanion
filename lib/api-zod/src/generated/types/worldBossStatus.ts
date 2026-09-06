@@ -5,6 +5,7 @@
  * FocusQuest API - ADHD gamified task tracker
  * OpenAPI spec version: 0.1.0
  */
+import type { EncounterView } from './encounterView';
 import type { WorldBossContributor } from './worldBossContributor';
 
 export interface WorldBossStatus {
@@ -21,4 +22,6 @@ export interface WorldBossStatus {
   defeatCoins: number;
   defeatXp: number;
   contributors: WorldBossContributor[];
+  /** The boss reframed as a D&D encounter — HP phases and an anti-shame "resting" state. Derived from hp + totalDamage; additive. */
+  encounter?: EncounterView;
 }
