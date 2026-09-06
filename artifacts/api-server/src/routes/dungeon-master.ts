@@ -2,9 +2,10 @@ import { Router, type IRouter } from "express";
 import { and, eq, gte, asc } from "drizzle-orm";
 import {
   db, tasksTable, focusSessionsTable, usersTable, campaignsTable, questlinesTable,
-  dmBeatsTable, type DmBeat, type DmBeatKind,
+  kingdomPointsTable, dmBeatsTable, type DmBeat, type DmBeatKind,
 } from "@workspace/db";
 import { localDateKey, localDayStartUtc } from "../lib/date-buckets";
+import { kingdomForCategory, type KingdomId } from "../lib/kingdoms";
 import { resolveUserTimeZone } from "./patterns";
 import { buildBeatFacts, beatHasSubstance } from "../lib/dungeon-master";
 import { draftBeat } from "../lib/ai/dungeon-master";
@@ -56,7 +57,7 @@ async function assembleFacts(
   const dayStart = localDayStartUtc(localDate, timeZone);
 
   const completedToday = await db
-    .select({ title: tasksTable.title, category: tasksTable.category })
+    .select({ title: tasksTable.title, category: tasksTable.category, points: tasksTable.points })
     .from(tasksTable)
     .where(and(eq(tasksTable.userId, userId), eq(tasksTable.completed, true), gte(tasksTable.completedAt, dayStart)));
 
@@ -72,15 +73,34 @@ async function assembleFacts(
 
   const [user] = await db.select({ streakDays: usersTable.streakDays }).from(usersTable).where(eq(usersTable.id, userId));
 
-  // Kingdom-growth grounding needs a per-day per-kingdom points ledger we don't
-  // keep yet, so it is left empty here rather than risk claiming a tier advance
-  // that didn't happen (no-fabrication law). The fact-builder supports it for
-  // when that ledger lands; the beat still grounds on real quests + focus + streak.
+  // Kingdom-growth grounding, derived exactly (no fabrication): a kingdom's
+  // lifetime grows on completion by the task's base `points` (growKingdom(...,
+  // task.points) in routes/tasks.ts), monotonic. So today's per-kingdom delta is
+  // the sum of today's completed tasks' points by kingdom, and the lifetime
+  // BEFORE today is (current lifetime − that delta). buildBeatFacts reports a
+  // kingdom only when today's delta actually pushed it across a tier boundary.
+  const pointsToday: Partial<Record<KingdomId, number>> = {};
+  for (const t of completedToday) {
+    const id = kingdomForCategory(t.category);
+    pointsToday[id] = (pointsToday[id] ?? 0) + t.points;
+  }
+  const lifetimeBeforeToday: Partial<Record<KingdomId, number>> = {};
+  if (Object.keys(pointsToday).length > 0) {
+    const kingdomRows = await db
+      .select({ kingdomId: kingdomPointsTable.kingdomId, lifetimePoints: kingdomPointsTable.lifetimePoints })
+      .from(kingdomPointsTable)
+      .where(eq(kingdomPointsTable.userId, userId));
+    for (const r of kingdomRows) {
+      const id = r.kingdomId as KingdomId;
+      lifetimeBeforeToday[id] = r.lifetimePoints - (pointsToday[id] ?? 0);
+    }
+  }
+
   return buildBeatFacts({
     completedToday,
     plannedToday,
-    lifetimeBeforeToday: {},
-    pointsToday: {},
+    lifetimeBeforeToday,
+    pointsToday,
     focusMinutes: Math.round(focusToday.reduce((s, f) => s + f.focusedSeconds, 0) / 60),
     streakDays: user?.streakDays ?? 0,
     chapterBeat: await currentChapterBeat(userId),
