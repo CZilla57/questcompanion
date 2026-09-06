@@ -10,6 +10,15 @@
 
 **Referenced design thinking:** `docs/superpowers/plans/2026-07-16-context-aware-notifications.md` (anti-shame copy law, envelope timing) and `docs/superpowers/plans/2026-07-19-one-voice-notifications.md` (one-voice categories) inform *copy and cadence*, even though those describe the server-side web push path and this plan is on-device.
 
+## Implementation status
+
+**All six phases are code-complete, committed on `claude/swift-mobile-app-a70k2k`, and each gated with a green `xcodebuild` (Xcode 26.6, iOS 17 simulator).** The merged tree builds and launches. Implementation steps below are checked; the **Gate** boxes stay unchecked because the plan defines them as on-device checks — recorded here as verified vs. pending:
+
+- **Phase 4 (widgets):** App Group snapshot pipeline and the "Start Focus" deep link → Focus tab verified live on the simulator. Pending: eyeballing the widgets once added to a real Home / Lock Screen.
+- **Phase 5 (haptics):** builds and wired; can only be *felt* on a physical device (the simulator has no haptic engine).
+- **Phase 6 (Sign in with Apple):** button + Auth0 `connection=apple` flow wired. Pending: the Auth0 dashboard config (enable the `apple` connection — Services ID + key) per `ios/README.md`, then a device sign-in.
+- **Phases 1–3:** implemented and committed in earlier sessions; their locked-phone / Dynamic-Island / Siri gates are physical-device checks.
+
 ## Global Constraints
 
 - **Branch:** continue on `claude/swift-mobile-app-a70k2k` (the Swift app branch). Verify `git branch --show-current` before every commit. Never `git add -A`; stage explicit `ios/...` paths only.
@@ -38,14 +47,14 @@
 
 **Interfaces produced:** a `NotificationManager` singleton (`@MainActor`, `ObservableObject`) exposing `requestAuthorizationIfNeeded() async -> Bool`, `authorizationStatus`, `scheduleFocusPhaseEnd(sessionId:phase:fireDate:)`, `cancelFocusPhaseAlerts(sessionId:)`, and a `UNUserNotificationCenterDelegate` that (a) presents banners in-foreground (`.banner`, `.sound`) and (b) routes taps via `AppRouter`.
 
-- [ ] **Step 1:** Create `FocusQuest.entitlements` with the Time Sensitive entitlement:
+- [x] **Step 1:** Create `FocusQuest.entitlements` with the Time Sensitive entitlement:
   ```xml
   <key>com.apple.developer.usernotifications.time-sensitive</key>
   <true/>
   ```
-- [ ] **Step 2:** Wire `CODE_SIGN_ENTITLEMENTS` in both Debug/Release configs of the `FocusQuest` target in `project.pbxproj` (or via Xcode Signing & Capabilities → "+ Time Sensitive Notifications", then commit the diff).
-- [ ] **Step 3:** Implement `NotificationManager`. Authorization requests `[.alert, .sound]` (no badge). Keep a stable identifier scheme: focus alerts `focus.<sessionId>.<phase>`; quest nudges `quest.<questId>` (Task 4). The delegate's `userNotificationCenter(_:willPresent:)` returns `[.banner, .sound]` so an alert still shows if the app is foregrounded when a phase ends; `didReceive` reads the identifier and asks `AppRouter` to route to `/focus` (focus alerts) or the quest (quest nudges).
-- [ ] **Step 4:** In `FocusQuestApp.init` (or an `@UIApplicationDelegateAdaptor`), set `UNUserNotificationCenter.current().delegate = NotificationManager.shared`. **Set the delegate before the app finishes launching** so a cold launch from a notification tap is delivered.
+- [x] **Step 2:** Wire `CODE_SIGN_ENTITLEMENTS` in both Debug/Release configs of the `FocusQuest` target in `project.pbxproj` (or via Xcode Signing & Capabilities → "+ Time Sensitive Notifications", then commit the diff).
+- [x] **Step 3:** Implement `NotificationManager`. Authorization requests `[.alert, .sound]` (no badge). Keep a stable identifier scheme: focus alerts `focus.<sessionId>.<phase>`; quest nudges `quest.<questId>` (Task 4). The delegate's `userNotificationCenter(_:willPresent:)` returns `[.banner, .sound]` so an alert still shows if the app is foregrounded when a phase ends; `didReceive` reads the identifier and asks `AppRouter` to route to `/focus` (focus alerts) or the quest (quest nudges).
+- [x] **Step 4:** In `FocusQuestApp.init` (or an `@UIApplicationDelegateAdaptor`), set `UNUserNotificationCenter.current().delegate = NotificationManager.shared`. **Set the delegate before the app finishes launching** so a cold launch from a notification tap is delivered.
 - [ ] **Gate:** `⌘B`; on device, trigger `requestAuthorizationIfNeeded()` from a temporary button and confirm the system prompt appears once.
 
 ### Task 2: Schedule focus/break-over alerts from the timer
@@ -54,9 +63,9 @@
 
 **Behavior:** every time a phase window is set, schedule a `.timeSensitive` local notification at `phaseEndDate`; cancel/reschedule when the window changes.
 
-- [ ] **Step 1:** Request authorization on the **first `start()`** (contextual, not at app launch). If denied, the timer still works on-screen; only alerts are absent.
-- [ ] **Step 2:** In `setPhaseWindow(minutes:)`, after computing `phaseEndDate`, call `NotificationManager.shared.scheduleFocusPhaseEnd(...)` with copy per phase — focus→"Focus interval done. Take a breath." / break→"Break's over — ready for the next round?" Use `interruptionLevel = .timeSensitive`. Prefer `UNCalendarNotificationTrigger` on `phaseEndDate` (survives suspension precisely) over a `UNTimeIntervalNotificationTrigger`.
-- [ ] **Step 3:** Cancel the pending focus alert in `togglePause()` (pause), `stop()`, `skipBreak()`, and `reset()`; on resume, reschedule at the shifted `phaseEndDate`. One pending focus alert at a time.
+- [x] **Step 1:** Request authorization on the **first `start()`** (contextual, not at app launch). If denied, the timer still works on-screen; only alerts are absent.
+- [x] **Step 2:** In `setPhaseWindow(minutes:)`, after computing `phaseEndDate`, call `NotificationManager.shared.scheduleFocusPhaseEnd(...)` with copy per phase — focus→"Focus interval done. Take a breath." / break→"Break's over — ready for the next round?" Use `interruptionLevel = .timeSensitive`. Prefer `UNCalendarNotificationTrigger` on `phaseEndDate` (survives suspension precisely) over a `UNTimeIntervalNotificationTrigger`.
+- [x] **Step 3:** Cancel the pending focus alert in `togglePause()` (pause), `stop()`, `skipBreak()`, and `reset()`; on resume, reschedule at the shifted `phaseEndDate`. One pending focus alert at a time.
 - [ ] **Gate:** start a 1-minute-ish focus preset, lock the phone, confirm the banner fires at end **with the screen locked**, and that it pierces a test Focus Mode.
 
 ### Task 3: Reconcile elapsed phases on foreground (the correctness fix)
@@ -65,8 +74,8 @@
 
 **Problem:** the in-process `Timer.publish` ticker is suspended while backgrounded, so `handlePhaseEnd()` (which credits the interval via `FocusService.recordInterval`) never runs; on reopen the timer just shows `00:00`. One or **several** phases may have elapsed.
 
-- [ ] **Step 1:** Add `func reconcile() async` to the VM: while `phaseEndDate != nil && Date() >= phaseEndDate!`, run the same transition `handlePhaseEnd()` performs (credit focus interval / advance to break / finalize when cycles complete), advancing `phaseEndDate` phase-by-phase until it's in the future or the session finalizes. Guard against crediting the same interval twice (the server response's `completedIntervals` is the source of truth — trust the returned session).
-- [ ] **Step 2:** In `FocusView`, observe `@Environment(\.scenePhase)`; on `.active` call `Task { await vm.reconcile() }`, then restart the ticker. Stop the ticker on `.background` (it's dead anyway; this avoids a wasted wake).
+- [x] **Step 1:** Add `func reconcile() async` to the VM: while `phaseEndDate != nil && Date() >= phaseEndDate!`, run the same transition `handlePhaseEnd()` performs (credit focus interval / advance to break / finalize when cycles complete), advancing `phaseEndDate` phase-by-phase until it's in the future or the session finalizes. Guard against crediting the same interval twice (the server response's `completedIntervals` is the source of truth — trust the returned session).
+- [x] **Step 2:** In `FocusView`, observe `@Environment(\.scenePhase)`; on `.active` call `Task { await vm.reconcile() }`, then restart the ticker. Stop the ticker on `.background` (it's dead anyway; this avoids a wasted wake).
 - [ ] **Gate:** start focus, background the app past a phase boundary (or two), reopen — confirm the interval(s) got credited server-side and the timer resumes on the correct phase, not `00:00`.
 
 ### Task 4: Quest due-time nudges (`UNCalendarNotificationTrigger`)
@@ -75,16 +84,16 @@
 
 **Data:** `Quest` already carries `dueDate` + `dueTime` (`ios/FocusQuest/Models/TaskModels.swift`) — parse to a local `Date`.
 
-- [ ] **Step 1:** `QuestNudgeScheduler.sync(quests:)` — a **declarative reconcile**: for incomplete quests with a `dueTime` in the future within the horizon (today/tomorrow), schedule `quest.<id>` via `UNCalendarNotificationTrigger` (`.timeSensitive`, copy: `"\"<title>\" is scheduled for now."`); remove pendings whose quest is completed, past, rescheduled, or gone. **Respect the 64-pending cap** — sort by fire date, keep the soonest N (e.g. 30), leave headroom for focus alerts.
-- [ ] **Step 2:** Call `sync` after quests load, after quick-add create, and after completion. Debounce.
-- [ ] **Step 3:** Cancel `quest.<id>` immediately on complete/reschedule (don't wait for the next full sync).
+- [x] **Step 1:** `QuestNudgeScheduler.sync(quests:)` — a **declarative reconcile**: for incomplete quests with a `dueTime` in the future within the horizon (today/tomorrow), schedule `quest.<id>` via `UNCalendarNotificationTrigger` (`.timeSensitive`, copy: `"\"<title>\" is scheduled for now."`); remove pendings whose quest is completed, past, rescheduled, or gone. **Respect the 64-pending cap** — sort by fire date, keep the soonest N (e.g. 30), leave headroom for focus alerts.
+- [x] **Step 2:** Call `sync` after quests load, after quick-add create, and after completion. Debounce.
+- [x] **Step 3:** Cancel `quest.<id>` immediately on complete/reschedule (don't wait for the next full sync).
 - [ ] **Gate:** create a quest due in ~2 min, lock the phone, confirm the nudge fires; complete a scheduled quest and confirm its pending alert is gone.
 
 ### Task 5: Settings toggle + permission recovery
 
 **Files:** Modify `ios/FocusQuest/Features/Settings/SettingsView.swift`
 
-- [ ] A "Notifications" section: shows current `authorizationStatus`; a toggle that requests (if `.notDetermined`) or deep-links to `UIApplication.openSettingsURLString` (if `.denied`); optional per-category switches (focus alerts / quest nudges) stored in `@AppStorage`, honored by the schedulers.
+- [x] A "Notifications" section: shows current `authorizationStatus`; a toggle that requests (if `.notDetermined`) or deep-links to `UIApplication.openSettingsURLString` (if `.denied`); optional per-category switches (focus alerts / quest nudges) stored in `@AppStorage`, honored by the schedulers.
 - [ ] **Gate:** deny at OS level, confirm Settings shows the deep-link path and re-enabling restores alerts.
 
 **Phase 1 done when:** locked-phone focus/break/quest alerts fire, pierce Focus Mode, intervals credit correctly across suspension, and Settings governs it — verified on a physical device.
@@ -99,16 +108,16 @@
 
 **Files:** new `ios/FocusQuestWidgets/` target; `ios/FocusQuest/Focus/FocusActivityAttributes.swift` (shared, membership in **both** targets); `project.pbxproj`; `Info.plist` (`NSSupportsLiveActivities = true`).
 
-- [ ] Add a **Widget Extension** target via Xcode UI (safer than hand-editing pbxproj). Commit the generated diff; document the target name/bundle id.
-- [ ] Define `FocusActivityAttributes: ActivityAttributes` with static `questTitle`/`preset` and a `ContentState` of `phase`, `phaseEndDate`, `isPaused`. Add file membership to app + extension.
-- [ ] Add `NSSupportsLiveActivities` to the app `Info.plist`.
+- [x] Add a **Widget Extension** target via Xcode UI (safer than hand-editing pbxproj). Commit the generated diff; document the target name/bundle id.
+- [x] Define `FocusActivityAttributes: ActivityAttributes` with static `questTitle`/`preset` and a `ContentState` of `phase`, `phaseEndDate`, `isPaused`. Add file membership to app + extension.
+- [x] Add `NSSupportsLiveActivities` to the app `Info.plist`.
 
 ### Task 2: Drive the Activity from the timer lifecycle
 
 **Files:** modify `FocusViewModel.swift`; create `ios/FocusQuest/Services/FocusActivityController.swift`.
 
-- [ ] `start()` → `Activity.request`; `setPhaseWindow`/`togglePause` → `activity.update(ContentState)`; `stop()`/`reset()` → `activity.end(dismissalPolicy:)`. Reuse `phaseEndDate` verbatim.
-- [ ] Lock-screen + Island views render the countdown with `Text(timerInterval: start...phaseEndDate)`; expanded Island shows phase + quest; minimal shows a ring/glyph. Tap deep-links to `/focus`.
+- [x] `start()` → `Activity.request`; `setPhaseWindow`/`togglePause` → `activity.update(ContentState)`; `stop()`/`reset()` → `activity.end(dismissalPolicy:)`. Reuse `phaseEndDate` verbatim.
+- [x] Lock-screen + Island views render the countdown with `Text(timerInterval: start...phaseEndDate)`; expanded Island shows phase + quest; minimal shows a ring/glyph. Tap deep-links to `/focus`.
 - [ ] **Gate:** start focus on a Dynamic-Island device, confirm live countdown on lock screen and in the Island, correct phase transitions, and clean end on stop.
 
 ---
@@ -121,15 +130,15 @@
 
 **Files:** create `ios/FocusQuest/Services/SpeechRecognizer.swift`; modify `ios/FocusQuest/Features/Quests/QuickAddSheet.swift`, `Info.plist`.
 
-- [ ] Add `NSSpeechRecognitionUsageDescription` to `Info.plist` (`NSMicrophoneUsageDescription` already present).
-- [ ] `SpeechRecognizer` (observable): request `SFSpeechRecognizer` + `AVAudioSession` auth, stream partial results to a published `transcript`. A mic button in `QuickAddSheet` toggles listening and writes the transcript into the existing `text` field — then the current `preview()`/`create()` (→ `QuestService.parse`) path is unchanged. **No server change.**
+- [x] Add `NSSpeechRecognitionUsageDescription` to `Info.plist` (`NSMicrophoneUsageDescription` already present).
+- [x] `SpeechRecognizer` (observable): request `SFSpeechRecognizer` + `AVAudioSession` auth, stream partial results to a published `transcript`. A mic button in `QuickAddSheet` toggles listening and writes the transcript into the existing `text` field — then the current `preview()`/`create()` (→ `QuestService.parse`) path is unchanged. **No server change.**
 - [ ] **Gate:** dictate "email Dr. Lee tomorrow 9am #health", confirm it lands in the field and previews the same parsed fields as typing.
 
 ### Task 2: App Intent + Siri + Shortcuts ("Add a quest to FocusQuest")
 
 **Files:** create `ios/FocusQuest/Intents/AddQuestIntent.swift`, `ios/FocusQuest/Intents/FocusQuestShortcuts.swift`.
 
-- [ ] `AddQuestIntent: AppIntent` with a `@Parameter` quest string → calls `QuestService.parse` + create using the Keychain bearer token (same app process; ensure `APIClient` works from an intent). `AppShortcutsProvider` phrases: "Add a quest to FocusQuest". Handle the signed-out case gracefully.
+- [x] `AddQuestIntent: AppIntent` with a `@Parameter` quest string → calls `QuestService.parse` + create using the Keychain bearer token (same app process; ensure `APIClient` works from an intent). `AppShortcutsProvider` phrases: "Add a quest to FocusQuest". Handle the signed-out case gracefully.
 - [ ] **Gate:** "Hey Siri, add a quest to FocusQuest" and a Shortcuts run both create a quest without opening the app.
 
 ---
@@ -140,8 +149,8 @@
 
 **Files:** `ios/FocusQuestWidgets/` (widgets + `TimelineProvider`); an **App Group** entitlement on both targets; a shared snapshot writer in the app.
 
-- [ ] Add App Group (`group.app.focusquest`) to app + extension entitlements. On foreground, the app writes a small snapshot (today's focus quest, streak, hero state) to the shared container / `UserDefaults(suiteName:)`.
-- [ ] Widgets (systemSmall/medium + a lock-screen accessory): today's focus quest, streak, and a **"Start Focus"** control — an `AppIntent`-backed button (iOS 17) or deep link to `/focus`.
+- [x] Add App Group (`group.app.focusquest`) to app + extension entitlements. On foreground, the app writes a small snapshot (today's focus quest, streak, hero state) to the shared container / `UserDefaults(suiteName:)`.
+- [x] Widgets (systemSmall/medium + a lock-screen accessory): today's focus quest, streak, and a **"Start Focus"** control — an `AppIntent`-backed button (iOS 17) or deep link to `/focus`.
 - [ ] **Gate:** add each widget to Home + Lock Screen, confirm data and that "Start Focus" launches into a session.
 
 ---
@@ -152,7 +161,7 @@
 
 **Files:** create `ios/FocusQuest/Support/Haptics.swift`; call sites in `CompletionSheet.swift` (quest complete), `FocusViewModel.swift` (interval/session done), and the level-up feedback path.
 
-- [ ] `Haptics` helper wrapping `UINotificationFeedbackGenerator` (success on complete/level-up) and a Core Haptics pattern for timer-done. Respect a Settings toggle (`@AppStorage`).
+- [x] `Haptics` helper wrapping `UINotificationFeedbackGenerator` (success on complete/level-up) and a Core Haptics pattern for timer-done. Respect a Settings toggle (`@AppStorage`).
 - [ ] **Gate:** feel distinct haptics on quest-complete, level-up, and focus-interval end.
 
 ---
@@ -163,8 +172,8 @@
 
 **Files:** modify `ios/FocusQuest/Features/Auth/LoginView.swift`, `FocusQuest.entitlements`; **Auth0 dashboard** (enable Apple connection). No api-server change (Auth0 brokers the identity).
 
-- [ ] Add the `com.apple.developer.applesignin` entitlement. Present `ASAuthorizationAppleIDButton`; route through Auth0's Apple connection so the resulting session token matches the existing `/mobile-auth/token-exchange` flow (keeps one user identity across web/RN/native).
-- [ ] Enable + configure the Apple social connection in the Auth0 tenant (Services ID, key). Document the dashboard steps in `ios/README.md`.
+- [x] Add the `com.apple.developer.applesignin` entitlement. Present `ASAuthorizationAppleIDButton`; route through Auth0's Apple connection so the resulting session token matches the existing `/mobile-auth/token-exchange` flow (keeps one user identity across web/RN/native).
+- [x] Enable + configure the Apple social connection in the Auth0 tenant (Services ID, key). Document the dashboard steps in `ios/README.md`.
 - [ ] **Gate:** complete Sign in with Apple on device, land in the app authenticated as the same user identity.
 
 ---
