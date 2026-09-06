@@ -87,8 +87,18 @@ struct FocusView: View {
             .frame(width: 260, height: 260)
 
             if let session = model.session, let preset = model.preset {
-                Text("Interval \(min(session.completedIntervals + 1, preset.plannedCycles)) of \(preset.plannedCycles)")
-                    .font(.outfitSubheadline).foregroundStyle(.secondary)
+                // Cycle progress dots (web parity): filled = completed intervals.
+                HStack(spacing: Theme.Space.sm) {
+                    ForEach(0..<preset.plannedCycles, id: \.self) { i in
+                        Circle()
+                            .fill(i < session.completedIntervals ? Theme.accent : Color.white.opacity(0.15))
+                            .frame(width: 10, height: 10)
+                    }
+                }
+            }
+
+            if model.isPaused {
+                Text("Paused").font(.outfitCaption).foregroundStyle(.secondary)
             }
 
             Spacer()
@@ -97,8 +107,22 @@ struct FocusView: View {
                 if model.phase != .focus {
                     Button("Skip break") { model.skipBreak() }.buttonStyle(.bordered)
                 }
-                PrimaryButton(title: "End session", systemImage: "stop.fill", tint: Theme.danger, isLoading: model.isBusy) {
-                    Task { await model.stop() }
+                HStack(spacing: Theme.Space.md) {
+                    Button {
+                        model.togglePause()
+                    } label: {
+                        Label(model.isPaused ? "Resume" : "Pause",
+                              systemImage: model.isPaused ? "play.fill" : "pause.fill")
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 6)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                    .tint(Theme.accent)
+
+                    PrimaryButton(title: "End", systemImage: "stop.fill", tint: Theme.danger, isLoading: model.isBusy) {
+                        Task { await model.stop() }
+                    }
                 }
             }
         }
