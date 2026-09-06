@@ -27,6 +27,7 @@ struct SettingsView: View {
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage(LocalNotificationPrefs.focusAlertsKey) private var focusAlerts = true
     @AppStorage(LocalNotificationPrefs.questNudgesKey) private var questNudges = true
+    @AppStorage(Haptics.enabledKey) private var hapticsEnabled = true
     @State private var confirmSignOut = false
 
     var body: some View {
@@ -77,6 +78,10 @@ struct SettingsView: View {
                 @unknown default:
                     EmptyView()
                 }
+            }
+
+            Section("Haptics") {
+                Toggle("Haptics", isOn: $hapticsEnabled)
             }
 
             Section("Weekly recap") {

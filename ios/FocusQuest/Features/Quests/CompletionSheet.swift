@@ -53,5 +53,7 @@ struct CompletionSheet: View {
         .multilineTextAlignment(.center)
         .background(Theme.screenBackground)
         .presentationDetents([.medium, .large])
+        // Celebrate once as the sheet appears — richer buzz on a level-up.
+        .onAppear { result.leveledUp ? Haptics.levelUp() : Haptics.success() }
     }
 }
