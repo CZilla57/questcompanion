@@ -40,7 +40,10 @@ final class TodayViewModel: ObservableObject {
             quests = q
             brain = await brainResult
             momentum = await momentumResult
-            dmBeat = await dmResult
+            // Campaign feature gate (parity with web's DmBeatCard): the DM beat
+            // belongs to the campaign layer, so it stays invisible until the
+            // `campaigns` feature is unlocked, per the anti-shame law.
+            dmBeat = s.features.contains(.campaigns) ? await dmResult : nil
             publishWidgetSnapshot()
         } catch {
             if stats.value == nil { stats = .failed(error.userMessage) }
