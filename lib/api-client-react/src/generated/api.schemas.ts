@@ -260,6 +260,39 @@ export interface KingdomsResponse {
   invitation: KingdomInvitation | null;
 }
 
+export type AbilityScoreId = typeof AbilityScoreId[keyof typeof AbilityScoreId];
+
+
+export const AbilityScoreId = {
+  might: 'might',
+  intellect: 'intellect',
+  attunement: 'attunement',
+  presence: 'presence',
+  vigor: 'vigor',
+  finesse: 'finesse',
+} as const;
+
+export interface AbilityScore {
+  id: AbilityScoreId;
+  name: string;
+  abbreviation: string;
+  /** Ability score in [8, 20], derived from the source signal. */
+  score: number;
+  /** Classic floor((score - 10) / 2) modifier, the "+N" shown next to the ability. */
+  modifier: number;
+  /** Source kingdom on the Life Kingdoms map, or null for Finesse, which reads focus discipline rather than a kingdom. */
+  kingdomId: string | null;
+}
+
+export interface CharacterSheet {
+  abilities: AbilityScore[];
+  /** Added to every skill check; derived from the capital tier (+2…+6). */
+  proficiencyBonus: number;
+  heroClass: string;
+  level: number;
+  battlePower: number;
+}
+
 export type TaskPriority = typeof TaskPriority[keyof typeof TaskPriority];
 
 

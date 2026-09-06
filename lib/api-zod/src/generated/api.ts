@@ -219,6 +219,25 @@ export const GetKingdomsResponse = zod.object({
 
 
 /**
+ * @summary Derived D&D character sheet — six ability scores, proficiency, class, level, power
+ */
+export const GetCharacterSheetResponse = zod.object({
+  "abilities": zod.array(zod.object({
+  "id": zod.enum(['might', 'intellect', 'attunement', 'presence', 'vigor', 'finesse']),
+  "name": zod.string(),
+  "abbreviation": zod.string(),
+  "score": zod.number().describe('Ability score in [8, 20], derived from the source signal.'),
+  "modifier": zod.number().describe('Classic floor((score - 10) \/ 2) modifier, the \"+N\" shown next to the ability.'),
+  "kingdomId": zod.string().nullable().describe('Source kingdom on the Life Kingdoms map, or null for Finesse, which reads focus discipline rather than a kingdom.')
+})),
+  "proficiencyBonus": zod.number().describe('Added to every skill check; derived from the capital tier (+2…+6).'),
+  "heroClass": zod.string(),
+  "level": zod.number(),
+  "battlePower": zod.number()
+})
+
+
+/**
  * @summary Get daily XP earned for the past N days
  */
 export const getMyXpHistoryQueryDaysDefault = 7;

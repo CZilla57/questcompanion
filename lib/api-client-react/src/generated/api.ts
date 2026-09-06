@@ -43,6 +43,7 @@ import type {
   CampaignDetail,
   CampaignInput,
   CampaignUpdate,
+  CharacterSheet,
   Coins,
   CreateRescueEvent201,
   DeleteAccountRequest,
@@ -1080,6 +1081,83 @@ export function useGetKingdoms<TData = Awaited<ReturnType<typeof getKingdoms>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetKingdomsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetCharacterSheetUrl = () => {
+
+
+
+
+  return `/api/users/me/character-sheet`
+}
+
+/**
+ * @summary Derived D&D character sheet — six ability scores, proficiency, class, level, power
+ */
+export const getCharacterSheet = async ( options?: RequestInit): Promise<CharacterSheet> => {
+
+  return customFetch<CharacterSheet>(getGetCharacterSheetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCharacterSheetQueryKey = () => {
+    return [
+    `/api/users/me/character-sheet`
+    ] as const;
+    }
+
+
+export const getGetCharacterSheetQueryOptions = <TData = Awaited<ReturnType<typeof getCharacterSheet>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCharacterSheet>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCharacterSheetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCharacterSheet>>> = ({ signal }) => getCharacterSheet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCharacterSheet>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCharacterSheetQueryResult = NonNullable<Awaited<ReturnType<typeof getCharacterSheet>>>
+export type GetCharacterSheetQueryError = ErrorType<void>
+
+
+/**
+ * @summary Derived D&D character sheet — six ability scores, proficiency, class, level, power
+ */
+
+export function useGetCharacterSheet<TData = Awaited<ReturnType<typeof getCharacterSheet>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCharacterSheet>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCharacterSheetQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
