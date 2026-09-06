@@ -16,10 +16,13 @@ struct AuthorizationResult {
 final class OAuthWebSession: NSObject, ASWebAuthenticationPresentationContextProviding {
     private var session: ASWebAuthenticationSession?
 
-    func authorize() async throws -> AuthorizationResult {
+    /// - Parameter connection: when set (e.g. `"apple"`), pins the Auth0 connection
+    ///   so the browser goes straight to that identity provider instead of the
+    ///   Universal Login picker. `nil` keeps the default hosted login.
+    func authorize(connection: String? = nil) async throws -> AuthorizationResult {
         let pkce = PKCEChallenge()
         let authEndpoint = try await discoverAuthorizationEndpoint()
-        let authURL = buildAuthorizationURL(endpoint: authEndpoint, pkce: pkce)
+        let authURL = buildAuthorizationURL(endpoint: authEndpoint, pkce: pkce, connection: connection)
 
         let callbackURL: URL = try await withCheckedThrowingContinuation { continuation in
             let session = ASWebAuthenticationSession(
@@ -60,9 +63,9 @@ final class OAuthWebSession: NSObject, ASWebAuthenticationPresentationContextPro
         return endpoint
     }
 
-    private func buildAuthorizationURL(endpoint: URL, pkce: PKCEChallenge) -> URL {
+    private func buildAuthorizationURL(endpoint: URL, pkce: PKCEChallenge, connection: String?) -> URL {
         var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)!
-        components.queryItems = [
+        var items = [
             URLQueryItem(name: "response_type", value: "code"),
             URLQueryItem(name: "client_id", value: AppConfig.auth0ClientID),
             URLQueryItem(name: "redirect_uri", value: AppConfig.redirectURI),
@@ -72,6 +75,9 @@ final class OAuthWebSession: NSObject, ASWebAuthenticationPresentationContextPro
             URLQueryItem(name: "code_challenge", value: pkce.challenge),
             URLQueryItem(name: "code_challenge_method", value: "S256"),
         ]
+        // Pin a specific IdP (e.g. Apple) so the browser skips the login picker.
+        if let connection { items.append(URLQueryItem(name: "connection", value: connection)) }
+        components.queryItems = items
         return components.url!
     }
 

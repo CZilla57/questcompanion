@@ -50,14 +50,18 @@ final class AuthManager: ObservableObject {
         }
     }
 
-    func login() async {
+    /// Start Sign in with Apple, brokered through Auth0's `apple` connection so the
+    /// resulting session token is the same identity as web/RN/native email login.
+    func loginWithApple() async { await login(connection: "apple") }
+
+    func login(connection: String? = nil) async {
         guard !isWorking else { return }
         isWorking = true
         loginError = nil
         defer { isWorking = false }
         do {
             let web = OAuthWebSession()
-            let authorization = try await web.authorize()
+            let authorization = try await web.authorize(connection: connection)
             let token = try await AuthService.exchangeCode(
                 code: authorization.code,
                 verifier: authorization.pkce.verifier,
