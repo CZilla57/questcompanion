@@ -1,4 +1,32 @@
 import SwiftUI
+import AuthenticationServices
+
+/// The system Sign in with Apple button. Its tap runs our Auth0 `apple`-connection
+/// web flow (see `AuthManager.loginWithApple`) rather than the native
+/// ASAuthorizationController, so the resulting session is one identity across
+/// web / RN / native.
+private struct AppleSignInButton: UIViewRepresentable {
+    let action: () -> Void
+
+    func makeUIView(context: Context) -> ASAuthorizationAppleIDButton {
+        let button = ASAuthorizationAppleIDButton(type: .signIn, style: .white)
+        button.cornerRadius = 12
+        button.addTarget(context.coordinator, action: #selector(Coordinator.tapped), for: .touchUpInside)
+        return button
+    }
+
+    func updateUIView(_ uiView: ASAuthorizationAppleIDButton, context: Context) {
+        context.coordinator.action = action
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(action: action) }
+
+    final class Coordinator: NSObject {
+        var action: () -> Void
+        init(action: @escaping () -> Void) { self.action = action }
+        @objc func tapped() { action() }
+    }
+}
 
 struct LoginView: View {
     @EnvironmentObject private var auth: AuthManager
@@ -20,6 +48,10 @@ struct LoginView: View {
                 PrimaryButton(title: "Sign in", systemImage: "person.crop.circle", isLoading: auth.isWorking) {
                     Task { await auth.login() }
                 }
+                AppleSignInButton { Task { await auth.loginWithApple() } }
+                    .frame(height: 50)
+                    .disabled(auth.isWorking)
+                    .opacity(auth.isWorking ? 0.5 : 1)
                 if let error = auth.loginError {
                     Text(error).font(.outfitFootnote).foregroundStyle(Theme.danger).multilineTextAlignment(.center)
                 }

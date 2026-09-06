@@ -41,6 +41,31 @@ focusquest://auth
 To keep real values out of git, copy `Config.xcconfig` to `Config.local.xcconfig`
 (gitignored) and point the target's base configuration at it.
 
+### Sign in with Apple (Auth0 dashboard)
+
+The **Sign in with Apple** button routes through Auth0's `apple` connection — the
+app just passes `connection=apple` to the same PKCE `/authorize` flow, so there is
+**no api-server change** and the resulting session is the same user identity as
+email login. Auth0 brokers the Apple identity, so the only setup is in the
+dashboard:
+
+1. **Apple Developer** → create a **Services ID** (this is the Auth0 "Client ID"
+   for the connection), and a **Sign in with Apple key** (`.p8`, note its Key ID
+   and your Team ID). Add the Auth0 callback
+   `https://<your-tenant>.auth0.com/login/callback` as the Services ID's Return URL.
+2. **Auth0 Dashboard** → **Authentication → Social → Apple**: enable the
+   connection and fill in the Services ID (Client ID), Team ID, Key ID, and the
+   `.p8` private key. Set the connection name to **`apple`** (the value the app
+   sends).
+3. **Auth0 → Applications → (the Native app)** → **Connections**: toggle the
+   Apple connection **on** for this application.
+4. No changes to **Allowed Callback URLs** are needed for the native app — it
+   still returns to `focusquest://auth`; the Apple ↔ Auth0 leg uses the tenant
+   callback from step 1.
+
+The app-side entitlement `com.apple.developer.applesignin` is already in
+`FocusQuest/FocusQuest.entitlements`; the button appears on the login screen.
+
 ## Run
 
 ```
