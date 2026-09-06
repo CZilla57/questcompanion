@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MainTabView: View {
     @EnvironmentObject private var router: AppRouter
+    @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         TabView(selection: $router.tab) {
             TodayView()
@@ -23,6 +24,10 @@ struct MainTabView: View {
             MoreView()
                 .tabItem { Label("More", systemImage: "ellipsis.circle") }
                 .tag(AppRouter.Tab.more)
+        }
+        .task { await QuestNudgeScheduler.refresh() }
+        .onChange(of: scenePhase) { _, p in
+            if p == .active { Task { await QuestNudgeScheduler.refresh() } }
         }
     }
 }

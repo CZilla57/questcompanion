@@ -11,6 +11,17 @@ enum TZ {
         f.dateFormat = "yyyy-MM-dd"
         return f.string(from: Date())
     }
+
+    /// A `yyyy-MM-dd` string for `days` from today in the current tz (days may be 0).
+    static func dateString(daysFromToday days: Int) -> String {
+        let base = Calendar.current.date(byAdding: .day, value: days, to: Date()) ?? Date()
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = .current
+        f.dateFormat = "yyyy-MM-dd"
+        return f.string(from: base)
+    }
 }
 
 enum UserService {
