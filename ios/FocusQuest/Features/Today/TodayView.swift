@@ -31,9 +31,25 @@ final class TodayViewModel: ObservableObject {
             quests = q
             brain = await brainResult
             momentum = await momentumResult
+            publishWidgetSnapshot()
         } catch {
             if stats.value == nil { stats = .failed(error.userMessage) }
         }
+    }
+
+    /// Mirror today's headline data into the App Group so the Home / Lock Screen
+    /// widgets render it without a network call.
+    private func publishWidgetSnapshot() {
+        guard let s = stats.value else { return }
+        let title = focusSuggestion?.task.title ?? quests.first { !$0.completed }?.title
+        WidgetSharedStore.write(WidgetSnapshot(
+            focusQuestTitle: title,
+            streakDays: s.streakDays,
+            level: s.currentLevel,
+            levelName: s.levelName,
+            todayCompleted: s.todayTasksCompleted,
+            todayTotal: s.todayTasksTotal,
+            updatedAt: .now))
     }
 
     func skipFocus(_ suggestion: MomentumSuggestion) async {

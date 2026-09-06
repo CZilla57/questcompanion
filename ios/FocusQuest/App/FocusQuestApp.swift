@@ -31,6 +31,12 @@ struct FocusQuestApp: App {
                 .tint(Theme.accent)
                 .font(.outfitBody) // default typeface for text without an explicit style
                 .preferredColorScheme(.dark) // dark-only, matching the web app
+                .onOpenURL { url in
+                    // Widget / Live Activity "Start Focus" deep link → Focus tab.
+                    // (The Auth0 callback `focusquest://auth` is consumed by
+                    // ASWebAuthenticationSession and never reaches here.)
+                    if url.host == "focus" { router.tab = .focus }
+                }
         }
     }
 }
