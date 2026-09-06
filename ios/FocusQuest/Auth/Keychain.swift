@@ -9,6 +9,9 @@ import Security
 enum Keychain {
     private static let service = "app.focusquest.ios"
 
+    /// Keychain account under which the opaque session token is stored.
+    static let sessionTokenAccount = "session-token"
+
     static func set(_ value: String, account: String) {
         let data = Data(value.utf8)
         let query: [String: Any] = [
