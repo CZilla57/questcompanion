@@ -168,6 +168,8 @@ struct HeroView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
                             .strokeBorder(Color.white.opacity(0.10)))
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("\(ability.name) \(ability.score), modifier \(ability.modifierText)")
                     }
                 }
             }
@@ -187,20 +189,32 @@ struct HeroView: View {
                     Spacer()
                     Text(enc.phaseLabel).font(.outfitCaption).foregroundStyle(.secondary)
                 }
-                Text(status.name).font(.outfitHeadline)
+                HStack(alignment: .firstTextBaseline) {
+                    Text(status.name).font(.outfitHeadline)
+                    Spacer(minLength: Theme.Space.sm)
+                    Text("Tier \(status.tier)").font(.outfitCaption2).fontWeight(.bold).kerning(0.5)
+                        .foregroundStyle(.secondary)
+                }
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
                         Capsule().fill(Color.white.opacity(0.12))
-                        Capsule().fill(Theme.danger).frame(width: geo.size.width * pct)
+                        // The foe's HP drains as you complete quests; the color warms
+                        // from teal → gold → red as it weakens, reading as progress.
+                        Capsule().fill(enc.hpBarColor).frame(width: geo.size.width * pct)
+                            .animation(.spring(response: 0.5, dampingFraction: 0.8), value: pct)
                     }
                 }
                 .frame(height: 10)
                 HStack {
                     Text("\(enc.hpRemaining) / \(enc.hp) HP").font(.outfitCaption2).foregroundStyle(.secondary)
                     Spacer()
-                    Text("Every quest lands a blow").font(.outfitCaption2).foregroundStyle(.secondary)
+                    Text(enc.status == "resting" ? "Recovering — it'll return" : "Every quest lands a blow")
+                        .font(.outfitCaption2).foregroundStyle(.secondary)
                 }
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(
+                "Encounter: \(status.name), tier \(status.tier). \(enc.hpRemaining) of \(enc.hp) hit points. \(enc.phaseLabel).")
         }
     }
 

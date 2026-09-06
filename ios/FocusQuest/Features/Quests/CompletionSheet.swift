@@ -117,6 +117,10 @@ private struct DiceRollView: View {
             Text(check.mathText).font(.outfitCaption).foregroundStyle(.secondary)
         }
         .onAppear(perform: roll)
+        // Read the settled result, never the flickering faces.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(
+            "\(check.abilityName) check\(check.isCrit ? ", critical" : ""). \(check.mathText), \(check.band).")
     }
 
     private func roll() {
