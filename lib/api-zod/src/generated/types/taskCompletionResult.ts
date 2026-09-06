@@ -6,8 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Badge } from './badge';
+import type { EncounterHit } from './encounterHit';
 import type { FeatureKey } from './featureKey';
 import type { GearRewardInfo } from './gearRewardInfo';
+import type { SkillCheck } from './skillCheck';
 import type { SurpriseReward } from './surpriseReward';
 import type { Task } from './task';
 
@@ -15,6 +17,12 @@ export interface TaskCompletionResult {
   task: Task;
   /** Total XP awarded (base + streak bonus + all-day bonus) */
   pointsAwarded: number;
+  /** The d20 skill check resolved for this completion. Null when the roll could not be computed (completion still succeeds). */
+  skillCheck?: SkillCheck | null;
+  /** Anti-shame narration for the check's outcome band; quotes the quest title, never blames. */
+  skillCheckNarration?: string | null;
+  /** The blow this completion landed on the player's personal encounter. Null when the encounter couldn't be updated (completion still succeeds). */
+  encounterHit?: EncounterHit | null;
   bonusAwarded: boolean;
   /** All-day completion bonus XP */
   bonusPoints: number;

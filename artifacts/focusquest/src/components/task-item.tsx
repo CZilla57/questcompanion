@@ -18,6 +18,7 @@ import { Calendar } from "./ui/calendar";
 import { parseDueDate, toDueDateString, todayDueDate, tomorrowDueDate, nextWeekDueDate } from "@/lib/reschedule";
 import { showSteeringChip, nextPowerWindowSlot, type PowerWindowSlot } from "@/lib/steering";
 import { apiErrorMessage } from "@/lib/api-error";
+import { encounterPhaseLabel } from "@/lib/encounter";
 import { isUnlocked } from "@/lib/feature-gates";
 import { RescueSheet } from "./rescue-sheet";
 
@@ -147,6 +148,49 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
             description,
             className: "border-primary bg-primary text-primary-foreground",
           });
+
+          // The Campaign — Phase 1: the d20 skill check. Reveal the roll before
+          // the reward toasts. Band styling never uses red — a glancing hit is a
+          // calm, muted reframe, never a failure.
+          if (res.skillCheck) {
+            const sc = res.skillCheck;
+            const ability = sc.ability.charAt(0).toUpperCase() + sc.ability.slice(1);
+            const sign = (n: number) => (n >= 0 ? `+${n}` : `${n}`);
+            const bandStyle: Record<string, string> = {
+              crit: "border-amber-400 text-amber-300",
+              success: "border-primary text-primary",
+              glancing: "border-border text-muted-foreground",
+            };
+            const bandTitle: Record<string, string> = {
+              crit: `🎲 Critical! ${ability} check`,
+              success: `🎲 ${ability} check`,
+              glancing: `🎲 ${ability} check`,
+            };
+            const math = `d20 ${sc.d20} ${sign(sc.modifier)} ${sign(sc.proficiency)} = ${sc.total} vs DC ${sc.dc}`;
+            toast({
+              title: bandTitle[sc.band] ?? bandTitle.success,
+              description: res.skillCheckNarration ? `${math} · ${res.skillCheckNarration}` : math,
+              className: `border ${bandStyle[sc.band] ?? bandStyle.success}`,
+            });
+          }
+
+          // The Campaign — Phase 2: the blow landed on your personal encounter.
+          if (res.encounterHit) {
+            const h = res.encounterHit;
+            if (h.felled) {
+              toast({
+                title: `⚔️ ${h.name} felled!`,
+                description: `+${h.coins} coins — a new foe stirs.`,
+                className: "border-amber-400 text-amber-300",
+              });
+            } else {
+              toast({
+                title: `You struck ${h.name} for ${h.damage}`,
+                description: `${encounterPhaseLabel(h.encounter.phase)} · ${h.encounter.hpRemaining.toLocaleString()} / ${h.encounter.hp.toLocaleString()} HP`,
+                className: "border-primary",
+              });
+            }
+          }
 
           if (res.heroRevived) {
             toast({

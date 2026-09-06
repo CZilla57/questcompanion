@@ -776,6 +776,32 @@ export const CompleteTaskResponse = zod.object({
   "bigSwing": zod.boolean().describe('True when this quest is a \"big swing\" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows')
 }),
   "pointsAwarded": zod.number().describe('Total XP awarded (base + streak bonus + all-day bonus)'),
+  "skillCheck": zod.union([zod.object({
+  "d20": zod.number().describe('The raw die face, 1–20.'),
+  "modifier": zod.number().describe('The rolled ability\'s modifier.'),
+  "proficiency": zod.number(),
+  "total": zod.number().describe('d20 + modifier + proficiency.'),
+  "dc": zod.number().describe('Difficulty class from the task\'s difficulty rung.'),
+  "band": zod.enum(['crit', 'success', 'glancing']).describe('Outcome band. There is no failure band — the quest completes in full regardless; only a crit adds a bonus.'),
+  "ability": zod.enum(['might', 'intellect', 'attunement', 'presence', 'vigor', 'finesse'])
+}),zod.null()]).optional().describe('The d20 skill check resolved for this completion. Null when the roll could not be computed (completion still succeeds).'),
+  "skillCheckNarration": zod.string().nullish().describe('Anti-shame narration for the check\'s outcome band; quotes the quest title, never blames.'),
+  "encounterHit": zod.union([zod.object({
+  "name": zod.string().describe('The foe\'s name.'),
+  "tier": zod.number(),
+  "damage": zod.number().describe('Damage this completion dealt (band-scaled; always ≥ 1).'),
+  "felled": zod.boolean().describe('Whether this blow felled the foe (which then rests; a fresh foe spawns).'),
+  "coins": zod.number().describe('Upside-only loot coins granted on felling (0 otherwise).'),
+  "encounter": zod.object({
+  "hp": zod.number(),
+  "totalDamage": zod.number(),
+  "hpRemaining": zod.number(),
+  "percentRemaining": zod.number().describe('Fraction of HP still standing, 0..1.'),
+  "phase": zod.enum(['fresh', 'bloodied', 'wounded', 'resting']),
+  "status": zod.enum(['active', 'resting']),
+  "felled": zod.boolean().describe('True once fully chipped down; the encounter now rests (never \"you lost\").')
+})
+}),zod.null()]).optional().describe('The blow this completion landed on the player\'s personal encounter. Null when the encounter couldn\'t be updated (completion still succeeds).'),
   "bonusAwarded": zod.boolean(),
   "bonusPoints": zod.number().describe('All-day completion bonus XP'),
   "streakBonus": zod.number().describe('Extra XP from the streak difficulty multiplier'),
@@ -2591,6 +2617,24 @@ export const EnterBattleResponse = zod.object({
 
 
 /**
+ * @summary The player's current personal encounter (spawns a tier-1 foe on first view)
+ */
+export const GetEncounterCurrentResponse = zod.object({
+  "name": zod.string(),
+  "tier": zod.number(),
+  "encounter": zod.object({
+  "hp": zod.number(),
+  "totalDamage": zod.number(),
+  "hpRemaining": zod.number(),
+  "percentRemaining": zod.number().describe('Fraction of HP still standing, 0..1.'),
+  "phase": zod.enum(['fresh', 'bloodied', 'wounded', 'resting']),
+  "status": zod.enum(['active', 'resting']),
+  "felled": zod.boolean().describe('True once fully chipped down; the encounter now rests (never \"you lost\").')
+})
+})
+
+
+/**
  * @summary Get this week's shared World Boss status
  */
 export const GetWorldBossCurrentResponse = zod.object({
@@ -2611,7 +2655,16 @@ export const GetWorldBossCurrentResponse = zod.object({
   "avatarColor": zod.string(),
   "damage": zod.number(),
   "isAlly": zod.boolean()
-}))
+})),
+  "encounter": zod.object({
+  "hp": zod.number(),
+  "totalDamage": zod.number(),
+  "hpRemaining": zod.number(),
+  "percentRemaining": zod.number().describe('Fraction of HP still standing, 0..1.'),
+  "phase": zod.enum(['fresh', 'bloodied', 'wounded', 'resting']),
+  "status": zod.enum(['active', 'resting']),
+  "felled": zod.boolean().describe('True once fully chipped down; the encounter now rests (never \"you lost\").')
+}).optional().describe('The boss reframed as a D&D encounter — HP phases and an anti-shame \"resting\" state. Derived from hp + totalDamage; additive.')
 })
 
 

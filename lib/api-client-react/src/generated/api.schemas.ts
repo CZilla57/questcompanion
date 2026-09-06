@@ -284,6 +284,45 @@ export interface AbilityScore {
   kingdomId: string | null;
 }
 
+/**
+ * Outcome band. There is no failure band — the quest completes in full regardless; only a crit adds a bonus.
+ */
+export type SkillCheckBand = typeof SkillCheckBand[keyof typeof SkillCheckBand];
+
+
+export const SkillCheckBand = {
+  crit: 'crit',
+  success: 'success',
+  glancing: 'glancing',
+} as const;
+
+export type SkillCheckAbility = typeof SkillCheckAbility[keyof typeof SkillCheckAbility];
+
+
+export const SkillCheckAbility = {
+  might: 'might',
+  intellect: 'intellect',
+  attunement: 'attunement',
+  presence: 'presence',
+  vigor: 'vigor',
+  finesse: 'finesse',
+} as const;
+
+export interface SkillCheck {
+  /** The raw die face, 1–20. */
+  d20: number;
+  /** The rolled ability's modifier. */
+  modifier: number;
+  proficiency: number;
+  /** d20 + modifier + proficiency. */
+  total: number;
+  /** Difficulty class from the task's difficulty rung. */
+  dc: number;
+  /** Outcome band. There is no failure band — the quest completes in full regardless; only a crit adds a bonus. */
+  band: SkillCheckBand;
+  ability: SkillCheckAbility;
+}
+
 export interface CharacterSheet {
   abilities: AbilityScore[];
   /** Added to every skill check; derived from the capital tier (+2…+6). */
@@ -613,6 +652,49 @@ export interface TaskUpdate {
   viaSteering?: boolean;
 }
 
+export type EncounterViewPhase = typeof EncounterViewPhase[keyof typeof EncounterViewPhase];
+
+
+export const EncounterViewPhase = {
+  fresh: 'fresh',
+  bloodied: 'bloodied',
+  wounded: 'wounded',
+  resting: 'resting',
+} as const;
+
+export type EncounterViewStatus = typeof EncounterViewStatus[keyof typeof EncounterViewStatus];
+
+
+export const EncounterViewStatus = {
+  active: 'active',
+  resting: 'resting',
+} as const;
+
+export interface EncounterView {
+  hp: number;
+  totalDamage: number;
+  hpRemaining: number;
+  /** Fraction of HP still standing, 0..1. */
+  percentRemaining: number;
+  phase: EncounterViewPhase;
+  status: EncounterViewStatus;
+  /** True once fully chipped down; the encounter now rests (never "you lost"). */
+  felled: boolean;
+}
+
+export interface EncounterHit {
+  /** The foe's name. */
+  name: string;
+  tier: number;
+  /** Damage this completion dealt (band-scaled; always ≥ 1). */
+  damage: number;
+  /** Whether this blow felled the foe (which then rests; a fresh foe spawns). */
+  felled: boolean;
+  /** Upside-only loot coins granted on felling (0 otherwise). */
+  coins: number;
+  encounter: EncounterView;
+}
+
 export type BadgeCategory = typeof BadgeCategory[keyof typeof BadgeCategory];
 
 
@@ -688,6 +770,12 @@ export interface TaskCompletionResult {
   task: Task;
   /** Total XP awarded (base + streak bonus + all-day bonus) */
   pointsAwarded: number;
+  /** The d20 skill check resolved for this completion. Null when the roll could not be computed (completion still succeeds). */
+  skillCheck?: SkillCheck | null;
+  /** Anti-shame narration for the check's outcome band; quotes the quest title, never blames. */
+  skillCheckNarration?: string | null;
+  /** The blow this completion landed on the player's personal encounter. Null when the encounter couldn't be updated (completion still succeeds). */
+  encounterHit?: EncounterHit | null;
   bonusAwarded: boolean;
   /** All-day completion bonus XP */
   bonusPoints: number;
@@ -2008,6 +2096,14 @@ export interface WorldBossStatus {
   defeatCoins: number;
   defeatXp: number;
   contributors: WorldBossContributor[];
+  /** The boss reframed as a D&D encounter — HP phases and an anti-shame "resting" state. Derived from hp + totalDamage; additive. */
+  encounter?: EncounterView;
+}
+
+export interface PersonalEncounterStatus {
+  name: string;
+  tier: number;
+  encounter: EncounterView;
 }
 
 /**

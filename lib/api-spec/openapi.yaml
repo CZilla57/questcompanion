@@ -2500,6 +2500,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
 
+  /encounter/current:
+    get:
+      operationId: getEncounterCurrent
+      summary: The player's current personal encounter (spawns a tier-1 foe on first view)
+      tags: [users]
+      responses:
+        "200":
+          description: Current personal encounter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonalEncounterStatus"
+        "401":
+          description: Unauthorized
+
   /world-boss/current:
     get:
       operationId: getWorldBossCurrent
@@ -3088,6 +3103,32 @@ components:
             Source kingdom on the Life Kingdoms map, or null for Finesse, which
             reads focus discipline rather than a kingdom.
 
+    SkillCheck:
+      type: object
+      required: [d20, modifier, proficiency, total, dc, band, ability]
+      properties:
+        d20:
+          type: integer
+          description: The raw die face, 1–20.
+        modifier:
+          type: integer
+          description: The rolled ability's modifier.
+        proficiency:
+          type: integer
+        total:
+          type: integer
+          description: d20 + modifier + proficiency.
+        dc:
+          type: integer
+          description: Difficulty class from the task's difficulty rung.
+        band:
+          type: string
+          enum: [crit, success, glancing]
+          description: Outcome band. There is no failure band — the quest completes in full regardless; only a crit adds a bonus.
+        ability:
+          type: string
+          enum: [might, intellect, attunement, presence, vigor, finesse]
+
     CharacterSheet:
       type: object
       required: [abilities, proficiencyBonus, heroClass, level, battlePower]
@@ -3349,6 +3390,20 @@ components:
         pointsAwarded:
           type: integer
           description: Total XP awarded (base + streak bonus + all-day bonus)
+        skillCheck:
+          description: The d20 skill check resolved for this completion. Null when the roll could not be computed (completion still succeeds).
+          oneOf:
+            - $ref: "#/components/schemas/SkillCheck"
+            - type: "null"
+        skillCheckNarration:
+          type: string
+          nullable: true
+          description: Anti-shame narration for the check's outcome band; quotes the quest title, never blames.
+        encounterHit:
+          description: The blow this completion landed on the player's personal encounter. Null when the encounter couldn't be updated (completion still succeeds).
+          oneOf:
+            - $ref: "#/components/schemas/EncounterHit"
+            - type: "null"
         bonusAwarded:
           type: boolean
         bonusPoints:
@@ -4849,6 +4904,61 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/WorldBossContributor"
+        encounter:
+          description: The boss reframed as a D&D encounter — HP phases and an anti-shame "resting" state. Derived from hp + totalDamage; additive.
+          $ref: "#/components/schemas/EncounterView"
+
+    EncounterView:
+      type: object
+      required: [hp, totalDamage, hpRemaining, percentRemaining, phase, status, felled]
+      properties:
+        hp: { type: integer }
+        totalDamage: { type: integer }
+        hpRemaining: { type: integer }
+        percentRemaining:
+          type: number
+          description: Fraction of HP still standing, 0..1.
+        phase:
+          type: string
+          enum: [fresh, bloodied, wounded, resting]
+        status:
+          type: string
+          enum: [active, resting]
+        felled:
+          type: boolean
+          description: True once fully chipped down; the encounter now rests (never "you lost").
+
+    EncounterHit:
+      type: object
+      required: [name, tier, damage, felled, coins, encounter]
+      properties:
+        name:
+          type: string
+          description: The foe's name.
+        tier:
+          type: integer
+        damage:
+          type: integer
+          description: Damage this completion dealt (band-scaled; always ≥ 1).
+        felled:
+          type: boolean
+          description: Whether this blow felled the foe (which then rests; a fresh foe spawns).
+        coins:
+          type: integer
+          description: Upside-only loot coins granted on felling (0 otherwise).
+        encounter:
+          $ref: "#/components/schemas/EncounterView"
+
+    PersonalEncounterStatus:
+      type: object
+      required: [name, tier, encounter]
+      properties:
+        name:
+          type: string
+        tier:
+          type: integer
+        encounter:
+          $ref: "#/components/schemas/EncounterView"
 
     WorldBossAttackResult:
       type: object

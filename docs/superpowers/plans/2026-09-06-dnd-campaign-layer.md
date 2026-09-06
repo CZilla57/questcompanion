@@ -81,19 +81,19 @@ The roll is **seeded** from `userId + taskId + completionDay` so it is stable, f
 
 ### Task 1: `roll-engine.ts` + tests
 **Files:** create `artifacts/api-server/src/lib/roll-engine.ts`, `roll-engine.test.ts`.
-- [ ] Pure `resolveCheck({seed, modifier, proficiency, dc}) -> {d20, total, dc, band: "crit"|"success"|"glancing"}`. Seeded PRNG (stable, documented). DC helper from difficulty tier.
-- [ ] Tests: band boundaries, nat-20 always crit / nat-1 never worse than "glancing", determinism for a fixed seed, and the **invariant that no band reduces base reward** (assert glancing ≥ base).
+- [x] Pure `resolveCheck({seed, modifier, proficiency, dc}) -> {d20, total, dc, band: "crit"|"success"|"glancing"}`. Seeded PRNG (stable, documented). DC helper from difficulty tier.
+- [x] Tests: band boundaries, nat-20 always crit / nat-1 never worse than "glancing", determinism for a fixed seed, and the **invariant that no band reduces base reward** (assert glancing ≥ base).
 
 ### Task 2: Wire into completion
 **Files:** the task-completion path (`routes/tasks.ts` + `gamification.ts`), OpenAPI, regenerate clients.
 - [ ] On complete, compute the check and return a `SkillCheck { d20, total, dc, band, ability }` on the existing completion result alongside `pointsAwarded`/`leveledUp`. Crit path routes through the existing surprise/gear reward with an up-bias only.
-- [ ] Anti-shame copy per band (quote the quest title; never "failed").
+- [x] Anti-shame copy per band (quote the quest title; never "failed").
 - [ ] **Gate (server):** completing easy/medium/hard quests returns correctly-banded, deterministic checks; property test confirms no reward regression.
 
 ### Task 3: The dice, on screen
 **Files:** iOS `CompletionSheet.swift` (+ a `DiceRollView`); web completion toast/modal.
-- [ ] iOS: an animated d20 settling on the rolled value in `CompletionSheet`, colored by band (crit = gold, success = teal, glancing = calm/no-red), with the `+mod`/DC shown as `d20 + N vs DC`. Fire the Phase-5 `Haptics.levelUp()` on a crit. Respect a reduce-motion setting.
-- [ ] Web: an equivalent roll reveal in the completion UI.
+- [ ] iOS (on the `claude/swift-mobile-app-a70k2k` branch, after this deploys): an animated d20 settling on the rolled value in `CompletionSheet`, colored by band (crit = gold, success = teal, glancing = calm/no-red), with the `+mod`/DC shown as `d20 + N vs DC`. Fire the Phase-5 `Haptics.levelUp()` on a crit. Respect a reduce-motion setting.
+- [x] Web: an equivalent roll reveal in the completion UI (band-styled toast).
 - [ ] **Gate:** completing a quest shows the die rolling to the server's value; a crit shows bonus loot; a glancing result reads encouraging, never punishing.
 
 ---
@@ -104,9 +104,9 @@ The roll is **seeded** from `userId + taskId + completionDay` so it is stable, f
 
 ### Encounters (reframe bosses)
 **Files:** `world-boss.ts` / `solo-boss.ts` consumers, `battles.ts` schema, routes, clients.
-- [ ] Model a boss as an **encounter**: an HP bar chipped by quest completions, where each completion's Phase-1 check is the "attack roll" (crit = extra damage). Add **initiative/turn** flavor and phase transitions. Persist only the genuinely new encounter state; damage derives from existing completions where possible.
-- [ ] Anti-shame: an unbeaten encounter **retreats/rests**, it does not "defeat" the player; no lost progress.
-- [ ] **Gate:** a solo encounter shows an HP bar that drops as you complete quests, crits hit harder, and finishing it grants loot — on web and iOS.
+- [x] Model a boss as an **encounter**: an HP bar chipped by quest completions, where each completion's Phase-1 check is the "attack roll" (crit = extra damage). Phase transitions (fresh→bloodied→wounded→resting). *(Built as a **personal encounter** — new `personal_encounters` table, one active foe per user, chipped by `damageForCheck`; felling grants loot + spawns the next tier. Initiative/turn flavor deferred as cosmetic.)*
+- [x] Anti-shame: an unbeaten encounter **retreats/rests**, it does not "defeat" the player; no lost progress. *(Shipped: `encounter.ts` lib + tests; the World Boss also exposes a derived `EncounterView` — HP phases + "resting" state — on web.)*
+- [~] **Gate:** a solo encounter shows an HP bar that drops as you complete quests, crits hit harder, and finishing it grants loot — **web done** (encounter card + strike/fell toasts); **iOS pending** (on `claude/swift-mobile-app-a70k2k`, after deploy).
 
 ### Party (reframe allies / body-double)
 **Files:** `partnerships.ts` / `body-double.ts`, `ally-milestones.ts`, routes, clients.
