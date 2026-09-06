@@ -20,6 +20,10 @@ enum QuestNudgeScheduler {
     /// Pure reconcile against a quest set (deduped by id): schedule the soonest
     /// `maxPending` incomplete quests whose dueDate+dueTime is still in the future.
     static func sync(quests: [Quest]) {
+        guard LocalNotificationPrefs.questNudges else {
+            NotificationManager.shared.syncQuestDueAlerts([]) // clears all pending quest.* nudges
+            return
+        }
         let now = Date()
         var byId: [Int: NotificationManager.QuestDueAlert] = [:]
         for q in quests where !q.completed {

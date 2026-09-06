@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 @MainActor
 final class SettingsViewModel: ObservableObject {
@@ -22,6 +23,10 @@ final class SettingsViewModel: ObservableObject {
 struct SettingsView: View {
     @EnvironmentObject private var auth: AuthManager
     @StateObject private var model = SettingsViewModel()
+    @ObservedObject private var notifications = NotificationManager.shared
+    @Environment(\.scenePhase) private var scenePhase
+    @AppStorage(LocalNotificationPrefs.focusAlertsKey) private var focusAlerts = true
+    @AppStorage(LocalNotificationPrefs.questNudgesKey) private var questNudges = true
     @State private var confirmSignOut = false
 
     var body: some View {
@@ -53,6 +58,27 @@ struct SettingsView: View {
                 Section { HStack { ProgressView(); Text("Loading…").foregroundStyle(.secondary) } }
             }
 
+            Section("Timer & quest alerts") {
+                switch notifications.authorizationStatus {
+                case .authorized, .provisional, .ephemeral:
+                    Toggle("Focus timer alerts", isOn: $focusAlerts)
+                    Toggle("Quest reminders", isOn: $questNudges)
+                        .onChange(of: questNudges) { _, _ in Task { await QuestNudgeScheduler.refresh() } }
+                case .denied:
+                    Text("Notifications are off for FocusQuest. Turn them on in Settings to get focus, break, and quest-time reminders on this device.")
+                        .font(.outfitFootnote).foregroundStyle(.secondary)
+                    Button("Open Settings") {
+                        if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+                    }
+                case .notDetermined:
+                    Button("Turn on notifications") {
+                        Task { _ = await NotificationManager.shared.requestAuthorizationIfNeeded() }
+                    }
+                @unknown default:
+                    EmptyView()
+                }
+            }
+
             Section("Weekly recap") {
                 Label(model.recapEmail ? "Email recaps on" : "Email recaps off", systemImage: "envelope")
                     .foregroundStyle(.secondary)
@@ -71,6 +97,10 @@ struct SettingsView: View {
         .tint(Theme.accent)
         .navigationTitle("Settings")
         .task { await model.load() }
+        .task { await NotificationManager.shared.refreshAuthorizationStatus() }
+        .onChange(of: scenePhase) { _, p in
+            if p == .active { Task { await NotificationManager.shared.refreshAuthorizationStatus() } }
+        }
         .confirmationDialog("Sign out of FocusQuest?", isPresented: $confirmSignOut, titleVisibility: .visible) {
             Button("Sign out", role: .destructive) { Task { await auth.logout() } }
             Button("Cancel", role: .cancel) {}
