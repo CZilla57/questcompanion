@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 extension TaskCompletionResult: Identifiable { var id: Int { task.id } }
 
@@ -18,6 +19,28 @@ struct CompletionSheet: View {
             Text("+\(result.pointsAwarded) XP")
                 .font(.outfitTitle2Bold)
                 .foregroundStyle(Theme.accent)
+
+            // The Campaign — Phase 1: the d20 skill check.
+            if let check = result.skillCheck {
+                DiceRollView(check: check)
+                if let narration = result.skillCheckNarration {
+                    Text(narration).font(.outfitCaption).italic().foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
+
+            // The Campaign — Phase 2: the blow on your personal encounter.
+            if let hit = result.encounterHit {
+                if hit.felled {
+                    Label("\(hit.name) felled! +\(hit.coins) coins", systemImage: "burst.fill")
+                        .font(.outfitSubheadline).foregroundStyle(Theme.gold)
+                        .labelStyle(TealIconLabelStyle())
+                } else {
+                    Label("Struck \(hit.name) for \(hit.damage) · \(hit.encounter.phaseLabel)", systemImage: "shield.lefthalf.filled")
+                        .font(.outfitSubheadline).foregroundStyle(Theme.accent)
+                        .labelStyle(TealIconLabelStyle())
+                }
+            }
 
             if result.xpMultiplier > 1 {
                 Label("\(String(format: "%.2f", result.xpMultiplier))× streak bonus", systemImage: "flame.fill")
@@ -53,7 +76,63 @@ struct CompletionSheet: View {
         .multilineTextAlignment(.center)
         .background(Theme.screenBackground)
         .presentationDetents([.medium, .large])
-        // Celebrate once as the sheet appears — richer buzz on a level-up.
-        .onAppear { result.leveledUp ? Haptics.levelUp() : Haptics.success() }
+        // Celebrate once as the sheet appears — richer buzz on a level-up or crit.
+        .onAppear {
+            (result.leveledUp || result.skillCheck?.isCrit == true) ? Haptics.levelUp() : Haptics.success()
+        }
+    }
+}
+
+/// The Campaign — Phase 1: an animated d20 that flickers through faces and
+/// settles on the rolled value, colored by outcome band (gold crit, teal
+/// success, muted glancing — never red). Honors Reduce Motion.
+private struct DiceRollView: View {
+    let check: SkillCheck
+    @State private var shown = 1
+    @State private var settled = false
+
+    private var bandColor: Color {
+        switch check.band {
+        case "crit": return Theme.gold
+        case "glancing": return .secondary
+        default: return Theme.accent
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: Theme.Space.sm) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(bandColor.opacity(0.15))
+                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(bandColor, lineWidth: 2))
+                    .frame(width: 76, height: 76)
+                Text("\(shown)")
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(bandColor)
+            }
+            .scaleEffect(settled ? 1 : 0.7)
+            Text("\(check.abilityName) check\(check.isCrit ? " — Critical!" : "")")
+                .font(.outfitSubheadlineBold).foregroundStyle(bandColor)
+            Text(check.mathText).font(.outfitCaption).foregroundStyle(.secondary)
+        }
+        .onAppear(perform: roll)
+    }
+
+    private func roll() {
+        guard !UIAccessibility.isReduceMotionEnabled else {
+            shown = check.d20; settled = true; return
+        }
+        var ticks = 0
+        Timer.scheduledTimer(withTimeInterval: 0.06, repeats: true) { timer in
+            ticks += 1
+            if ticks >= 12 {
+                timer.invalidate()
+                shown = check.d20
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) { settled = true }
+            } else {
+                shown = Int.random(in: 1...20)
+            }
+        }
     }
 }

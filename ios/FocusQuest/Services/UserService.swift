@@ -37,6 +37,15 @@ enum UserService {
         try await APIClient.shared.get("users/me/kingdoms")
     }
 
+    // The Campaign — Phase 0 / Phase 2.
+    static func characterSheet() async throws -> CharacterSheet {
+        try await APIClient.shared.get("users/me/character-sheet")
+    }
+
+    static func currentEncounter() async throws -> PersonalEncounterStatus {
+        try await APIClient.shared.get("encounter/current")
+    }
+
     static func me() async throws -> User {
         try await APIClient.shared.get("users/me")
     }
