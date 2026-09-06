@@ -66,7 +66,9 @@ struct HeroView: View {
     private func characterCard(_ hero: HeroStatus, avatar: AvatarProfile?) -> some View {
         Card {
             VStack(spacing: Theme.Space.md) {
-                Text(hero.stageEmoji).font(.system(size: 72))
+                Image(systemName: hero.stageSymbol)
+                    .font(.system(size: 64))
+                    .foregroundStyle(Theme.accent)
 
                 VitalityMeter(hero: hero)
 
@@ -111,7 +113,8 @@ struct HeroView: View {
         Card {
             VStack(alignment: .leading, spacing: Theme.Space.sm) {
                 HStack {
-                    Text("🐾 Companion").font(.outfitSubheadlineBold)
+                    Label("Companion", systemImage: "pawprint.fill")
+                        .font(.outfitSubheadlineBold).labelStyle(TealIconLabelStyle())
                     Spacer()
                     Text("\(companion.bondTierName) · Tier \(companion.bondTier)").font(.outfitCaption).foregroundStyle(.secondary)
                 }
@@ -127,7 +130,11 @@ struct HeroView: View {
         Card {
             VStack(alignment: .leading, spacing: Theme.Space.md) {
                 SectionHeader("Life Kingdoms") {
-                    if response.worldResting { Text("Resting 😴").font(.outfitCaption).foregroundStyle(.secondary) }
+                    if response.worldResting {
+                        Label("Resting", systemImage: "moon.zzz.fill")
+                            .font(.outfitCaption).foregroundStyle(.secondary)
+                            .labelStyle(TealIconLabelStyle())
+                    }
                 }
                 ForEach(response.kingdoms) { kingdom in
                     HStack {
@@ -172,13 +179,14 @@ private enum GearSlot: String {
     static let order: [GearSlot] = [.weapon, .helmet, .armor, .boots, .accessory]
     var label: String { rawValue.capitalized }
     /// Slot-based glyph (the web keys the icon off the slot, not the item).
-    var emoji: String {
+    /// SF Symbol rendered in electric teal.
+    var symbol: String {
         switch self {
-        case .weapon: return "⚔️"
-        case .helmet: return "⛑️"
-        case .armor: return "🛡️"
-        case .boots: return "🥾"
-        case .accessory: return "💍"
+        case .weapon: return "bolt.fill"
+        case .helmet: return "shield.lefthalf.filled"
+        case .armor: return "shield.fill"
+        case .boots: return "figure.walk"
+        case .accessory: return "sparkles"
         }
     }
 }
@@ -192,8 +200,9 @@ private struct EquipmentSlotRow: View {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill((item.map { $0.rarityColor } ?? .secondary).opacity(0.15))
                     .frame(width: 34, height: 34)
-                Text(slot.emoji)
-                    .font(.system(size: 18))
+                Image(systemName: slot.symbol)
+                    .font(.system(size: 16))
+                    .foregroundStyle(Theme.accent)
                     .opacity(item == nil ? 0.3 : 1)
             }
             if let item {

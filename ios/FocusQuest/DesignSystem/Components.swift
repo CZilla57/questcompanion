@@ -31,6 +31,46 @@ struct NeonList<Content: View>: View {
     }
 }
 
+/// Label style that tints just the icon electric teal while leaving the title
+/// in its inherited color — the app-wide replacement for "emoji + text" labels.
+struct TealIconLabelStyle: LabelStyle {
+    var spacing: CGFloat = 4
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: spacing) {
+            configuration.icon.foregroundStyle(Theme.accent)
+            configuration.title
+        }
+    }
+}
+
+/// A row of text tabs colored like the bottom tab bar: unselected white,
+/// selected electric teal. Replaces `.pickerStyle(.segmented)` where we want the
+/// app's neon scheme instead of the system gray. Items spread evenly full-width.
+struct NeonTabs<T: Hashable & Identifiable>: View {
+    let items: [T]
+    @Binding var selection: T
+    var title: (T) -> String
+
+    var body: some View {
+        HStack(spacing: Theme.Space.xs) {
+            ForEach(items) { item in
+                let selected = item == selection
+                Button { selection = item } label: {
+                    Text(title(item))
+                        .font(.outfitSubheadline)
+                        .fontWeight(selected ? .semibold : .regular)
+                        .foregroundStyle(selected ? Theme.accent : Theme.foreground)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, Theme.Space.sm)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .animation(.easeInOut(duration: 0.15), value: selection)
+    }
+}
+
 /// Section heading with optional trailing accessory.
 struct SectionHeader<Accessory: View>: View {
     let title: String

@@ -85,8 +85,10 @@ struct BodyDoubleRoomView: View {
                             Text(member.name).font(.outfitSubheadline)
                             if member.isHost { Text("host").font(.outfitCaption2).foregroundStyle(.secondary) }
                             Spacer()
-                            Text(member.presence == "headsDown" ? "🎧 heads down" : "👋 here")
+                            Label(member.presence == "headsDown" ? "heads down" : "here",
+                                  systemImage: member.presence == "headsDown" ? "headphones" : "hand.wave.fill")
                                 .font(.outfitCaption).foregroundStyle(.secondary)
+                                .labelStyle(TealIconLabelStyle(spacing: 3))
                         }
                     }
                 }
@@ -94,7 +96,9 @@ struct BodyDoubleRoomView: View {
                     ForEach([15, 25, 50], id: \.self) { mins in
                         Button("Start \(mins)-minute sprint") { Task { await sprint(mins) } }
                     }
-                    Button("Wave 👋") { Task { try? await SocialService.wave(roomId: roomId); await load() } }
+                    Button { Task { try? await SocialService.wave(roomId: roomId); await load() } } label: {
+                        Label("Wave", systemImage: "hand.wave.fill").labelStyle(TealIconLabelStyle())
+                    }
                     Button("Leave room", role: .destructive) {
                         Task { try? await SocialService.leaveRoom(id: roomId); dismiss() }
                     }

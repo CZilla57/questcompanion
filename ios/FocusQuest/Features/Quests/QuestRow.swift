@@ -22,12 +22,20 @@ struct QuestRow: View {
                     .foregroundStyle(quest.completed ? .secondary : .primary)
 
                 HStack(spacing: Theme.Space.sm) {
-                    Text("\(quest.category.emoji) \(quest.categoryLabel)")
+                    HStack(spacing: 4) {
+                        Image(systemName: quest.category.symbol).foregroundStyle(Theme.accent)
+                        Text(quest.categoryLabel)
+                    }
                     if let due = DateUtils.dueLabel(quest.dueDate, time: quest.dueTime) {
                         Text("· \(due)")
                     }
                     if quest.bigSwing {
-                        Text("· ⚡️ Big swing").foregroundStyle(Theme.gold)
+                        HStack(spacing: 3) {
+                            Text("·")
+                            Image(systemName: "bolt.fill").foregroundStyle(Theme.accent)
+                            Text("Big swing")
+                        }
+                        .foregroundStyle(Theme.gold)
                     }
                 }
                 .font(.outfitCaption)

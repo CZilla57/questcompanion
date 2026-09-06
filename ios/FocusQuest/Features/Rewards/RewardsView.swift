@@ -53,10 +53,19 @@ enum RewardTier: String, CaseIterable, Identifiable {
     var label: String { rawValue.capitalized }
     var hint: String {
         switch self {
-        case .small: return "☕ quick"
-        case .medium: return "🍿 episode"
-        case .large: return "🍕 takeout"
-        case .treat: return "🚗 splurge"
+        case .small: return "quick"
+        case .medium: return "episode"
+        case .large: return "takeout"
+        case .treat: return "splurge"
+        }
+    }
+    /// Teal glyph shown beside the tier hint.
+    var symbol: String {
+        switch self {
+        case .small: return "cup.and.saucer.fill"
+        case .medium: return "tv.fill"
+        case .large: return "fork.knife"
+        case .treat: return "car.fill"
         }
     }
     var cost: Int {
@@ -112,7 +121,7 @@ struct RewardsView: View {
 
     private func coinsPill(_ coins: Int) -> some View {
         HStack(spacing: 6) {
-            Text("🪙")
+            Image(systemName: "dollarsign.circle.fill").foregroundStyle(Theme.accent)
             Text("\(coins)").font(.outfitHeadline).foregroundStyle(Theme.gold)
             Text("coins").font(.outfitSubheadline).foregroundStyle(Theme.gold.opacity(0.8))
         }
@@ -167,8 +176,10 @@ struct RewardsView: View {
         return Button { newRewardTier = t } label: {
             VStack(alignment: .leading, spacing: 2) {
                 Text(t.label).font(.outfitSubheadline).foregroundStyle(.primary)
-                Text(t.hint).font(.outfitCaption).foregroundStyle(.secondary)
-                Text("🪙 \(t.cost)").font(.outfitCaption).foregroundStyle(Theme.gold)
+                Label(t.hint, systemImage: t.symbol).font(.outfitCaption).foregroundStyle(.secondary)
+                    .labelStyle(TealIconLabelStyle(spacing: 3))
+                Label("\(t.cost)", systemImage: "dollarsign.circle.fill").font(.outfitCaption).foregroundStyle(Theme.gold)
+                    .labelStyle(TealIconLabelStyle(spacing: 3))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(Theme.Space.md)
@@ -187,7 +198,8 @@ struct RewardsView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(reward.label).font(.outfitSubheadline)
-                    Text("🪙 \(reward.coinCost)").font(.outfitCaption).foregroundStyle(Theme.gold)
+                    Label("\(reward.coinCost)", systemImage: "dollarsign.circle.fill").font(.outfitCaption).foregroundStyle(Theme.gold)
+                        .labelStyle(TealIconLabelStyle(spacing: 3))
                 }
                 Spacer()
                 if reward.affordable {
@@ -212,7 +224,8 @@ struct RewardsView: View {
                 Card {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("🎁 Mystery box").font(.outfitSubheadlineBold)
+                            Label("Mystery box", systemImage: "gift.fill").font(.outfitSubheadlineBold)
+                                .labelStyle(TealIconLabelStyle())
                             Text("Open for \(mystery.cost) coins · \(mystery.rewardCount) in the pool")
                                 .font(.outfitCaption).foregroundStyle(.secondary)
                         }
@@ -278,7 +291,8 @@ struct RewardsView: View {
                 ForEach(bundle.perks) { perk in
                     Card {
                         HStack(spacing: Theme.Space.md) {
-                            Text(perk.emoji).font(.system(size: 24))
+                            Image(systemName: "bolt.circle.fill").font(.system(size: 26))
+                                .foregroundStyle(Theme.accent)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(perk.label).font(.outfitSubheadline)
                                 Text(perk.description).font(.outfitCaption).foregroundStyle(.secondary)
@@ -290,9 +304,12 @@ struct RewardsView: View {
                             } else if perk.atMax == true {
                                 Text("Max").font(.outfitCaption).foregroundStyle(.secondary)
                             } else {
-                                Button("🪙 \(perk.coinCost)") { Task { await model.buyPerk(perk) } }
-                                    .buttonStyle(.bordered).tint(Theme.gold)
-                                    .disabled(!perk.affordable)
+                                Button { Task { await model.buyPerk(perk) } } label: {
+                                    Label("\(perk.coinCost)", systemImage: "dollarsign.circle.fill")
+                                        .labelStyle(TealIconLabelStyle(spacing: 3))
+                                }
+                                .buttonStyle(.bordered).tint(Theme.gold)
+                                .disabled(!perk.affordable)
                             }
                         }
                     }

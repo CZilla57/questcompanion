@@ -527,6 +527,7 @@ export const GetTasksResponseItem = zod.object({
   "done": zod.boolean()
 })).describe('AI-generated first-step checklist attached to this quest'),
   "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
+  "recurringTaskId": zod.number().nullish().describe('The recurring template this quest was spawned from, or null for a one-off'),
   "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
   "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)'),
   "bigSwing": zod.boolean().describe('True when this quest is a \"big swing\" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows')
@@ -591,6 +592,7 @@ export const CreateTaskResponse = zod.object({
   "done": zod.boolean()
 })).describe('AI-generated first-step checklist attached to this quest'),
   "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
+  "recurringTaskId": zod.number().nullish().describe('The recurring template this quest was spawned from, or null for a one-off'),
   "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
   "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)'),
   "bigSwing": zod.boolean().describe('True when this quest is a \"big swing\" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows')
@@ -656,6 +658,7 @@ export const GetTaskResponse = zod.object({
   "done": zod.boolean()
 })).describe('AI-generated first-step checklist attached to this quest'),
   "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
+  "recurringTaskId": zod.number().nullish().describe('The recurring template this quest was spawned from, or null for a one-off'),
   "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
   "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)'),
   "bigSwing": zod.boolean().describe('True when this quest is a \"big swing\" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows')
@@ -716,6 +719,7 @@ export const UpdateTaskResponse = zod.object({
   "done": zod.boolean()
 })).describe('AI-generated first-step checklist attached to this quest'),
   "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
+  "recurringTaskId": zod.number().nullish().describe('The recurring template this quest was spawned from, or null for a one-off'),
   "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
   "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)'),
   "bigSwing": zod.boolean().describe('True when this quest is a \"big swing\" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows')
@@ -752,6 +756,7 @@ export const CompleteTaskResponse = zod.object({
   "done": zod.boolean()
 })).describe('AI-generated first-step checklist attached to this quest'),
   "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
+  "recurringTaskId": zod.number().nullish().describe('The recurring template this quest was spawned from, or null for a one-off'),
   "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
   "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)'),
   "bigSwing": zod.boolean().describe('True when this quest is a \"big swing\" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows')
@@ -1024,6 +1029,7 @@ export const UncompleteTaskResponse = zod.object({
   "done": zod.boolean()
 })).describe('AI-generated first-step checklist attached to this quest'),
   "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
+  "recurringTaskId": zod.number().nullish().describe('The recurring template this quest was spawned from, or null for a one-off'),
   "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
   "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)'),
   "bigSwing": zod.boolean().describe('True when this quest is a \"big swing\" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows')
@@ -1063,6 +1069,7 @@ export const PatchTaskFocusResponse = zod.object({
   "done": zod.boolean()
 })).describe('AI-generated first-step checklist attached to this quest'),
   "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
+  "recurringTaskId": zod.number().nullish().describe('The recurring template this quest was spawned from, or null for a one-off'),
   "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
   "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)'),
   "bigSwing": zod.boolean().describe('True when this quest is a \"big swing\" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows')
@@ -1107,6 +1114,7 @@ export const GetTasksMomentumResponse = zod.object({
   "done": zod.boolean()
 })).describe('AI-generated first-step checklist attached to this quest'),
   "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
+  "recurringTaskId": zod.number().nullish().describe('The recurring template this quest was spawned from, or null for a one-off'),
   "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
   "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)'),
   "bigSwing": zod.boolean().describe('True when this quest is a \"big swing\" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows')
@@ -1210,6 +1218,7 @@ export const ApplyDifficultyResponse = zod.object({
   "done": zod.boolean()
 })).describe('AI-generated first-step checklist attached to this quest'),
   "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
+  "recurringTaskId": zod.number().nullish().describe('The recurring template this quest was spawned from, or null for a one-off'),
   "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
   "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)'),
   "bigSwing": zod.boolean().describe('True when this quest is a \"big swing\" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows')
@@ -1344,6 +1353,7 @@ export const GetQuestlineResponse = zod.object({
   "done": zod.boolean()
 })).describe('AI-generated first-step checklist attached to this quest'),
   "questlineId": zod.number().nullish().describe('The questline this quest belongs to, or null'),
+  "recurringTaskId": zod.number().nullish().describe('The recurring template this quest was spawned from, or null for a one-off'),
   "difficulty": zod.enum(['easy', 'medium', 'hard']).describe('Current difficulty rung of the quest'),
   "difficultyOfferable": zod.boolean().describe('True when the app is gently offering a smaller version (never a shame signal; never a count)'),
   "bigSwing": zod.boolean().describe('True when this quest is a \"big swing\" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows')

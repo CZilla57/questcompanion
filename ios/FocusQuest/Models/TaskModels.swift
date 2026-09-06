@@ -21,6 +21,7 @@ struct Quest: Codable, Identifiable, Equatable {
     let dueTime: String?
     let steps: [TaskStep]
     let questlineId: Int?
+    let recurringTaskId: Int?
     let difficulty: Difficulty
     let difficultyOfferable: Bool
     let bigSwing: Bool
