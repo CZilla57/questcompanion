@@ -192,6 +192,25 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
             }
           }
 
+          // Party & Shared Encounters: co-op strikes landed on any shared foe.
+          // Worded as teamwork — the blow is "together", a fell is shared upside,
+          // never a ranking and never a red-alarm loss.
+          for (const hit of res.partyHits ?? []) {
+            if (hit.felled) {
+              toast({
+                title: `⚔️ ${hit.foeName} felled together!`,
+                description: `+${hit.coins} coins — a new foe stirs.`,
+                className: "border-amber-400 text-amber-300",
+              });
+            } else {
+              toast({
+                title: `Together you struck ${hit.foeName} for ${hit.damage}`,
+                description: `${encounterPhaseLabel(hit.encounter.phase)} · ${hit.encounter.hpRemaining.toLocaleString()} / ${hit.encounter.hp.toLocaleString()} HP`,
+                className: "border-primary",
+              });
+            }
+          }
+
           if (res.heroRevived) {
             toast({
               title: "⚔️ Your hero rises, renewed!",
