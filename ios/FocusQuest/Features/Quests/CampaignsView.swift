@@ -12,10 +12,19 @@ final class CampaignsViewModel: ObservableObject {
 
 struct CampaignsView: View {
     @StateObject private var model = CampaignsViewModel()
+    @State private var showCreate = false
 
     var body: some View {
         AsyncContentView(state: model.state, retry: { Task { await model.load() } }) { campaigns in
             NeonList {
+                // Exactly one campaign runs at a time (server-enforced), so the
+                // start button only appears when none is currently running.
+                if !campaigns.contains(where: { $0.status == "running" }) {
+                    Button { showCreate = true } label: {
+                        Label("New campaign", systemImage: "plus.circle.fill")
+                            .font(.outfitHeadline).foregroundStyle(Theme.accent)
+                    }
+                }
                 if campaigns.isEmpty {
                     EmptyStateView(symbol: "books.vertical", title: "No campaigns", message: "Campaigns tell a longer story across several questlines.")
                 }
@@ -41,6 +50,9 @@ struct CampaignsView: View {
             .refreshable { await model.load() }
         }
         .navigationTitle("Campaigns")
+        .sheet(isPresented: $showCreate) {
+            CampaignCreateSheet { Task { await model.load() } }
+        }
         .task { if model.state.value == nil { await model.load() } }
     }
 }
