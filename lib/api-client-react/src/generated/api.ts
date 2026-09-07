@@ -83,6 +83,7 @@ import type {
   HeroStatus,
   HyperfocusPauseInput,
   InsightsResponse,
+  InventoryResponse,
   KingdomsResponse,
   LeaderboardEntry,
   LeaveBodyDoubleRoom200,
@@ -128,6 +129,7 @@ import type {
   RescueEventRequest,
   RewardStoreItem,
   RewardStoreItemInput,
+  SalvageResult,
   SearchUsersParams,
   SentNudge,
   ShortcutCaptureRequest,
@@ -8185,6 +8187,153 @@ export const useUnequipGear = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUnequipGearMutationOptions(options));
+    }
+
+export const getGetInventoryUrl = () => {
+
+
+
+
+  return `/api/gear/inventory`
+}
+
+/**
+ * @summary List every owned gear item with its loadout summary and salvage value
+ */
+export const getInventory = async ( options?: RequestInit): Promise<InventoryResponse> => {
+
+  return customFetch<InventoryResponse>(getGetInventoryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetInventoryQueryKey = () => {
+    return [
+    `/api/gear/inventory`
+    ] as const;
+    }
+
+
+export const getGetInventoryQueryOptions = <TData = Awaited<ReturnType<typeof getInventory>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInventory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetInventoryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getInventory>>> = ({ signal }) => getInventory({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getInventory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetInventoryQueryResult = NonNullable<Awaited<ReturnType<typeof getInventory>>>
+export type GetInventoryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List every owned gear item with its loadout summary and salvage value
+ */
+
+export function useGetInventory<TData = Awaited<ReturnType<typeof getInventory>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInventory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetInventoryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSalvageGearUrl = (id: number,) => {
+
+
+
+
+  return `/api/gear/${id}/salvage`
+}
+
+/**
+ * @summary Salvage an owned, unequipped item for coins (permanent)
+ */
+export const salvageGear = async (id: number, options?: RequestInit): Promise<SalvageResult> => {
+
+  return customFetch<SalvageResult>(getSalvageGearUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getSalvageGearMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof salvageGear>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof salvageGear>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['salvageGear'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof salvageGear>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  salvageGear(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SalvageGearMutationResult = NonNullable<Awaited<ReturnType<typeof salvageGear>>>
+
+    export type SalvageGearMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Salvage an owned, unequipped item for coins (permanent)
+ */
+export const useSalvageGear = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof salvageGear>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof salvageGear>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getSalvageGearMutationOptions(options));
     }
 
 export const getGetBattleCurrentUrl = () => {

@@ -1797,6 +1797,72 @@ export interface GearStoreResponse {
   userLevel: number;
 }
 
+export type InventoryItemSlot = typeof InventoryItemSlot[keyof typeof InventoryItemSlot];
+
+
+export const InventoryItemSlot = {
+  weapon: 'weapon',
+  helmet: 'helmet',
+  armor: 'armor',
+  boots: 'boots',
+  accessory: 'accessory',
+} as const;
+
+export type InventoryItemRarity = typeof InventoryItemRarity[keyof typeof InventoryItemRarity];
+
+
+export const InventoryItemRarity = {
+  common: 'common',
+  rare: 'rare',
+  epic: 'epic',
+  legendary: 'legendary',
+} as const;
+
+export interface InventoryItem {
+  id: number;
+  name: string;
+  description: string;
+  slot: InventoryItemSlot;
+  rarity: InventoryItemRarity;
+  statPower: number;
+  icon: string;
+  spriteId?: string | null;
+  equipped: boolean;
+  salvageValue: number;
+  acquiredAt: string;
+}
+
+export type InventoryLoadoutSlotSlot = typeof InventoryLoadoutSlotSlot[keyof typeof InventoryLoadoutSlotSlot];
+
+
+export const InventoryLoadoutSlotSlot = {
+  weapon: 'weapon',
+  helmet: 'helmet',
+  armor: 'armor',
+  boots: 'boots',
+  accessory: 'accessory',
+} as const;
+
+export interface InventoryLoadoutSlot {
+  slot: InventoryLoadoutSlotSlot;
+  item: InventoryItem | null;
+}
+
+export interface InventoryResponse {
+  items: InventoryItem[];
+  loadout: InventoryLoadoutSlot[];
+  equippedCount: number;
+  equippedPower: number;
+  ownedCount: number;
+  coinBalance: number;
+}
+
+export interface SalvageResult {
+  salvaged: boolean;
+  coinsGained: number;
+  balance: number;
+}
+
 export type BuyGearResultReason = typeof BuyGearResultReason[keyof typeof BuyGearResultReason];
 
 
