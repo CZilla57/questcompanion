@@ -1,0 +1,1 @@
+ALTER TABLE "user_gear" ADD COLUMN "attuned" boolean DEFAULT false NOT NULL;

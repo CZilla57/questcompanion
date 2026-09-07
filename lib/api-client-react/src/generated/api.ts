@@ -8189,6 +8189,146 @@ export const useUnequipGear = <TError = ErrorType<unknown>,
       return useMutation(getUnequipGearMutationOptions(options));
     }
 
+export const getAttuneGearUrl = (id: number,) => {
+
+
+
+
+  return `/api/gear/${id}/attune`
+}
+
+/**
+ * @summary Attune an owned, equipped epic/legendary item for bonus battle power
+ */
+export const attuneGear = async (id: number, options?: RequestInit): Promise<SuccessEnvelope> => {
+
+  return customFetch<SuccessEnvelope>(getAttuneGearUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAttuneGearMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof attuneGear>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof attuneGear>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['attuneGear'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof attuneGear>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  attuneGear(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AttuneGearMutationResult = NonNullable<Awaited<ReturnType<typeof attuneGear>>>
+
+    export type AttuneGearMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Attune an owned, equipped epic/legendary item for bonus battle power
+ */
+export const useAttuneGear = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof attuneGear>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof attuneGear>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAttuneGearMutationOptions(options));
+    }
+
+export const getUnattuneGearUrl = (id: number,) => {
+
+
+
+
+  return `/api/gear/${id}/unattune`
+}
+
+/**
+ * @summary Remove attunement from an item
+ */
+export const unattuneGear = async (id: number, options?: RequestInit): Promise<SuccessEnvelope> => {
+
+  return customFetch<SuccessEnvelope>(getUnattuneGearUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getUnattuneGearMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unattuneGear>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unattuneGear>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['unattuneGear'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unattuneGear>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  unattuneGear(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnattuneGearMutationResult = NonNullable<Awaited<ReturnType<typeof unattuneGear>>>
+
+    export type UnattuneGearMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Remove attunement from an item
+ */
+export const useUnattuneGear = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unattuneGear>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unattuneGear>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getUnattuneGearMutationOptions(options));
+    }
+
 export const getGetInventoryUrl = () => {
 
 

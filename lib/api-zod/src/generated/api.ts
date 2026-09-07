@@ -2063,7 +2063,9 @@ export const GetPartnerDetailResponse = zod.object({
   "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
   "statPower": zod.number(),
   "icon": zod.string(),
-  "spriteId": zod.string().nullish()
+  "spriteId": zod.string().nullish(),
+  "attuned": zod.boolean().optional(),
+  "attunementBonus": zod.number().optional()
 }))
 }).optional(),
   "badges": zod.array(zod.object({
@@ -2216,7 +2218,9 @@ export const GetBodyDoubleRoomResponse = zod.object({
   "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
   "statPower": zod.number(),
   "icon": zod.string(),
-  "spriteId": zod.string().nullish()
+  "spriteId": zod.string().nullish(),
+  "attuned": zod.boolean().optional(),
+  "attunementBonus": zod.number().optional()
 }))
 }),zod.null()]).optional(),
   "isHost": zod.boolean(),
@@ -2274,7 +2278,9 @@ export const JoinBodyDoubleRoomResponse = zod.object({
   "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
   "statPower": zod.number(),
   "icon": zod.string(),
-  "spriteId": zod.string().nullish()
+  "spriteId": zod.string().nullish(),
+  "attuned": zod.boolean().optional(),
+  "attunementBonus": zod.number().optional()
 }))
 }),zod.null()]).optional(),
   "isHost": zod.boolean(),
@@ -2501,7 +2507,9 @@ export const GetAvatarResponse = zod.object({
   "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
   "statPower": zod.number(),
   "icon": zod.string(),
-  "spriteId": zod.string().nullish()
+  "spriteId": zod.string().nullish(),
+  "attuned": zod.boolean().optional(),
+  "attunementBonus": zod.number().optional()
 })),
   "availableColors": zod.array(zod.string()),
   "availableClasses": zod.array(zod.string()),
@@ -2558,7 +2566,9 @@ export const UpdateAvatarResponse = zod.object({
   "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
   "statPower": zod.number(),
   "icon": zod.string(),
-  "spriteId": zod.string().nullish()
+  "spriteId": zod.string().nullish(),
+  "attuned": zod.boolean().optional(),
+  "attunementBonus": zod.number().optional()
 })),
   "availableColors": zod.array(zod.string()),
   "availableClasses": zod.array(zod.string()),
@@ -2628,6 +2638,22 @@ export const UnequipGearResponse = zod.object({
 
 
 /**
+ * @summary Attune an owned, equipped epic/legendary item for bonus battle power
+ */
+export const AttuneGearResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Remove attunement from an item
+ */
+export const UnattuneGearResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
  * @summary List every owned gear item with its loadout summary and salvage value
  */
 export const GetInventoryResponse = zod.object({
@@ -2641,6 +2667,9 @@ export const GetInventoryResponse = zod.object({
   "icon": zod.string(),
   "spriteId": zod.string().nullish(),
   "equipped": zod.boolean(),
+  "attuned": zod.boolean(),
+  "attunable": zod.boolean(),
+  "attunementBonus": zod.number(),
   "salvageValue": zod.number(),
   "acquiredAt": zod.string()
 })),
@@ -2656,12 +2685,17 @@ export const GetInventoryResponse = zod.object({
   "icon": zod.string(),
   "spriteId": zod.string().nullish(),
   "equipped": zod.boolean(),
+  "attuned": zod.boolean(),
+  "attunable": zod.boolean(),
+  "attunementBonus": zod.number(),
   "salvageValue": zod.number(),
   "acquiredAt": zod.string()
 }).nullable()
 })),
   "equippedCount": zod.number(),
   "equippedPower": zod.number(),
+  "attunedCount": zod.number(),
+  "attunementCap": zod.number(),
   "ownedCount": zod.number(),
   "coinBalance": zod.number()
 })

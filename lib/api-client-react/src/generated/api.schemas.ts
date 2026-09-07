@@ -1473,6 +1473,8 @@ export interface EquippedGearItem {
   statPower: number;
   icon: string;
   spriteId?: string | null;
+  attuned?: boolean;
+  attunementBonus?: number;
 }
 
 export interface HeroLook {
@@ -1828,6 +1830,9 @@ export interface InventoryItem {
   icon: string;
   spriteId?: string | null;
   equipped: boolean;
+  attuned: boolean;
+  attunable: boolean;
+  attunementBonus: number;
   salvageValue: number;
   acquiredAt: string;
 }
@@ -1853,6 +1858,8 @@ export interface InventoryResponse {
   loadout: InventoryLoadoutSlot[];
   equippedCount: number;
   equippedPower: number;
+  attunedCount: number;
+  attunementCap: number;
   ownedCount: number;
   coinBalance: number;
 }
