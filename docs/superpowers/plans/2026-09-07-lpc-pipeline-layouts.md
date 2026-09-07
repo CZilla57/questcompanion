@@ -31,38 +31,44 @@ Generalize `loadDefFrame` into a loader that reads **every** `layer_N` on the de
 - **Task 1a:** refactor `loadDefFrame` → `loadDefStrip(def, build, variant)` iterating `layer_1..layer_N`.
 - **Task 1b:** wire ~1 new multi-layer def into the `GEAR` array as a proof (e.g. restore a real crossbow), rerun `build-lpc`, confirm a non-blank distinct sprite + attribution rows.
 
-## Phase 2 — Oversize `walk_128` support (build tool + BOTH renderers)
+## Phase 2 — Oversize `walk_128` support (REFINED: build-tool-only, no renderer changes)
 
-Big weapons render on 128px frames; a 128px weapon cannot fit a 64px frame, so this needs real geometry + renderer support. Do it **prototype-first** on one def (a normal bow) to pin the exact numbers before wiring many.
+**This section was rewritten after empirically probing a real oversize asset (see "Phase 2 findings" below). The renderer work the original draft feared is NOT needed for the frame the hero actually shows.**
 
-**Geometry (build tool):**
-- Detect the layout from the def's `custom_animation` field and the fetched sheet's dimensions (assert, never assume): 128px frames → 4 direction rows × 128, **south row at y=256..383**; frame width 128.
-- **Frame-count reconciliation:** the oversize walk sheet's column count may differ from the hero's 9-frame idle cadence (the rejected bow sheet is 1664×512 → 13 columns). The tool must map the walk animation's frames onto the hero's 9-frame strip (read the def's animation frame offsets, or resample), or the gear layer desyncs from the body during the idle animation. Pin this on the prototype.
-- Emit an oversize strip as `9 × 128` (128-square frames) to a parallel path, and record geometry on the catalog entry.
+### What the probe found (bow `weapon_ranged_bow_normal`)
 
-**Catalog (`CatalogEntry` + `catalog.ts` generator):**
-- Add optional `frameSize?: number` (default 64) and `offset?: {x,y}` (default centered, i.e. `-32,-32` for a 128 frame over a 64 body). Regenerate `catalog.ts`; update `catalog-integrity.test.ts`.
+- The def has four layers: `layer_1/2` = a `universal` (64px) pair that ships **only** `shoot`/`hurt` sheets (no `walk` — so Phase 1's "skip a layer with no sheet" already handles them), and `layer_3/4` = a `walk`/`background`+`foreground` pair marked `custom_animation: "walk_128"`.
+- The walk_128 sheet is `1664×512` = **13 cols × 4 rows of 128px frames**; **south is row 2 (y 256–383)**; sheets are per-color variants named `{prefix}{variant}.png` (e.g. `.../walk/foreground/brass.png`) — a different leaf convention from the standard `{prefix}walk/{variant}.png`.
+- **Crucially:** every south walk frame's art sits at ~x51–75, y67–84 *within* the 128 cell — i.e. **entirely inside the body-centered 64×64 box** (x32–96, y288–352). Cropping that box is **lossless** (`opaque(center64) === opaque(full128)` on frames 0–2). Oversize only ever mattered for action poses (shoot) the hero never renders.
 
-**Web renderer (`hero-renderer.ts`):**
-- `sliceFrames` and `buildLayerSprite` honor per-layer `frameSize`; an oversize gear sprite is sliced at 128, positioned at the layer offset so its body-center aligns with the 64 stage center. The 64×64 `RenderTexture`/stage must allow the overflow to draw (enlarge the working canvas and re-center, keeping the *exported* hero visual box consistent), so a bow's tips aren't clipped.
+### The approach
 
-**iOS renderer (`PixelHeroView`, `swift-mobile-app` line):**
-- Mirror: draw an oversize gear layer at 2× frame size, centered on the same anchor. Lands on a branch off `swift-mobile-app`; reaches users via the normal back-merge.
+Extend `loadLayerStrip` to handle a `custom_animation: "walk_128"` layer entirely in the build tool — no `CatalogEntry` field, no `hero-renderer.ts`, no iOS change:
 
-**Tasks:** 2a geometry + detection + reconciliation (prototype on one bow); 2b catalog fields + generator + integrity test; 2c web renderer; 2d iOS renderer; 2e wire a batch of oversize defs (bows, wand, katana) once 2a–2d validate.
+1. **Detect** `layer.custom_animation === "walk_128"`.
+2. **Fetch** at the walk_128 leaf convention: `{prefix}{variant}.png` (prefix already ends in the animation dir). Assert the sheet is a 128px-grid (`width % 128 === 0`, `height === 512`).
+3. **Crop** the south row (y=256) and **anchor-crop the center 64×64** of each frame (x = f*128+32 .. +96, y = 288..352) into a standard 64px strip.
+4. **Frame count:** the sheet has 13 columns, not 9. Sidestep reconciliation: **take frame 0 (the neutral standing pose) and replicate it across all 9 frames** → a static held weapon. Correct for a standing/idle hero; avoids mapping 13→9 cadence. (Animated oversize gear is a possible later enhancement requiring frame-semantic mapping — not needed now.)
+5. **Lossless guard:** assert `opaque(center64 crop) === opaque(full 128 south frame 0)`. If an item's standing art genuinely overflows 64 (a tall drawn longbow, a raised staff), the build **fails loudly** for that item — the signal that it, and only it, needs the heavy path.
 
-**Cheaper fallback (2-alt), if the renderer work isn't worth it yet:** bake-time **anchor-crop** the center 64×64 of each 128px south frame — no renderer/catalog change, but it **clips** overhang (bow tips, tall staves). Ship this only as an interim; it undercuts the point of oversize art.
+Phase 1's multi-layer composite already stacks the walk_128 bg+fg layers; Phase 1's skip-missing-layer already drops the content-less `universal` layers. So Phase 2 is a focused addition to the single-layer loader plus one geometry helper.
+
+### Tasks
+
+- **2a:** add `walk_128` detection + 128px south-crop + center-64 anchor + static-strip replication + lossless assert to `loadLayerStrip`; helper `cropSouth128Center(sheet, frame)`.
+- **2b:** wire one bow into the `GEAR` array as proof; rerun `build-lpc`; confirm a non-blank, un-clipped 64px bow strip + attribution.
+- **2c:** wire the remaining compatible oversize archetypes (other bows, wands, katana, boomerang) — each gated by the lossless assert; anything that fails is set aside for a possible future true-oversize renderer path (**2d, deferred, only-if-needed**: `frameSize`/`offset` on `CatalogEntry` + both renderers — kept in reserve, not built speculatively).
 
 ## Sequencing & rollout
 
-- **Phase 1 first** — pure build-tool win, unlocks multi-layer 64px art immediately, lands on `main`, flows to iOS with no iOS change.
-- **Phase 2 after**, prototype-first; it is the actual "unlock oversize layouts" work and touches both renderers, so it is the larger, riskier half — validate geometry on one bow before committing to the batch.
-- Art regeneration is a manual step (`pnpm --filter @workspace/scripts build-lpc`), committing the regenerated PNGs, `catalog.ts`, and `CREDITS.csv`. New defs carry their LPC attribution automatically; keep `CREDITS.csv` in the commit.
+- **Phase 1 — DONE** (multi-layer compositing + fetch hardening + neck-def drift fix; crossbow proven). Committed on `claude/dnd-lpc-pipeline`.
+- **Phase 2 — refined above**, build-tool-only, prototype-first on one bow. Lands on `main`, flows to iOS via back-merge with **no iOS/renderer change** (the whole point of the refinement).
+- Art regeneration is a manual step (`pnpm --filter @workspace/scripts build-lpc`), committing the regenerated PNGs, `catalog.ts`, and `CREDITS.csv`. New defs carry their LPC attribution automatically; keep `CREDITS.csv` in the commit. The build is now retry-hardened and fails loudly on a genuine 404, so upstream drift can't silently blank an asset again.
 - Feeds the catalog expansion ([2026-09-07-gear-catalog-expansion.md](docs/superpowers/plans/2026-09-07-gear-catalog-expansion.md)): each newly-bakeable archetype becomes a real distinct sprite instead of a reused one.
 
 ## Risks / notes
 
-- Phase 2 frame-count reconciliation is the main unknown — resolve empirically on the prototype (the original author vetted every current def by counting opaque south-row pixels; same discipline applies).
-- Enlarging the render canvas for overflow must not shift the hero's visual centering elsewhere (avatar page, leaderboard, completion sheet) — verify the exported box stays consistent across all hero surfaces.
+- **Static vs animated oversize gear:** the refined approach holds oversize weapons still during the hero's idle (existing 64px weapons sway with the walk strip). Acceptable for held weapons on a standing hero; revisit only if it reads oddly.
+- **Per-item lossless assert** is the safety net: if a standing pose overflows 64, that item errors rather than silently clipping — then it either gets set aside or motivates the deferred true-oversize path (2d).
 - Licensing: every unlocked def stays under its LPC license; attribution is emitted automatically into `CREDITS.csv` — no manual license work, but the file must ship with the art.
-- No DB/schema/API changes — this is art tooling + rendering only.
+- No DB/schema/API changes — art tooling only.
