@@ -72,6 +72,9 @@ struct HeroView: View {
             .navigationTitle("Hero")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
+                    NavigationLink { InventoryView() } label: { Image(systemName: "backpack.fill") }
+                }
+                ToolbarItem(placement: .primaryAction) {
                     NavigationLink { GearStoreView() } label: { Image(systemName: "shield.lefthalf.filled") }
                 }
             }

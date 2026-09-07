@@ -157,6 +157,43 @@ struct EquippedGearItem: Codable, Identifiable {
     let spriteId: String?
 }
 
+// The Campaign — second wave (Inventory & Salvage). Owned-gear inventory with a
+// per-slot loadout summary and salvage-for-coins.
+struct InventoryItem: Codable, Identifiable {
+    let id: Int
+    let name: String
+    let description: String
+    let slot: String
+    let rarity: String
+    let statPower: Int
+    let icon: String
+    let spriteId: String?
+    let equipped: Bool
+    let salvageValue: Int
+    let acquiredAt: String
+}
+
+struct InventoryLoadoutSlot: Codable, Identifiable {
+    let slot: String
+    let item: InventoryItem?
+    var id: String { slot }
+}
+
+struct InventoryResponse: Codable {
+    let items: [InventoryItem]
+    let loadout: [InventoryLoadoutSlot]
+    let equippedCount: Int
+    let equippedPower: Int
+    let ownedCount: Int
+    let coinBalance: Int
+}
+
+struct SalvageResult: Codable {
+    let salvaged: Bool
+    let coinsGained: Int
+    let balance: Int
+}
+
 struct AvatarProfile: Codable {
     let avatarColor: String
     let avatarClass: String
