@@ -97,6 +97,10 @@ enum HeroService {
 
     static func unequipGear(id: Int) async throws -> AvatarProfile { try await APIClient.shared.post("gear/\(id)/unequip") }
 
+    static func inventory() async throws -> InventoryResponse { try await APIClient.shared.get("gear/inventory") }
+
+    static func salvageGear(id: Int) async throws -> SalvageResult { try await APIClient.shared.post("gear/\(id)/salvage") }
+
     // World boss & battle
     static func worldBoss() async throws -> WorldBossStatus { try await APIClient.shared.get("world-boss/current") }
     static func attackBoss() async throws -> WorldBossAttackResult { try await APIClient.shared.post("world-boss/attack") }

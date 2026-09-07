@@ -3,16 +3,26 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		FQ000000000000000000B003 /* FocusActivityAttributes.swift in Sources (app) */ = {isa = PBXBuildFile; fileRef = FQ000000000000000000B002 /* FocusActivityAttributes.swift */; };
-		FQ000000000000000000B004 /* FocusActivityAttributes.swift in Sources (widget) */ = {isa = PBXBuildFile; fileRef = FQ000000000000000000B002 /* FocusActivityAttributes.swift */; };
-		FQ000000000000000000B007 /* WidgetSharedStore.swift in Sources (app) */ = {isa = PBXBuildFile; fileRef = FQ000000000000000000B006 /* WidgetSharedStore.swift */; };
-		FQ000000000000000000B008 /* WidgetSharedStore.swift in Sources (widget) */ = {isa = PBXBuildFile; fileRef = FQ000000000000000000B006 /* WidgetSharedStore.swift */; };
+		FQ000000000000000000B003 /* FocusActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQ000000000000000000B002 /* FocusActivityAttributes.swift */; };
+		FQ000000000000000000B004 /* FocusActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQ000000000000000000B002 /* FocusActivityAttributes.swift */; };
+		FQ000000000000000000B007 /* WidgetSharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQ000000000000000000B006 /* WidgetSharedStore.swift */; };
+		FQ000000000000000000B008 /* WidgetSharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQ000000000000000000B006 /* WidgetSharedStore.swift */; };
 		FQ000000000000000000B041 /* FocusQuestWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FQ000000000000000000B001 /* FocusQuestWidgetsExtension.appex */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		FQ000000000000000000B061 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FQ0000000000000000000050 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FQ000000000000000000B030;
+			remoteInfo = FocusQuestWidgetsExtension;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		FQ000000000000000000B040 /* Embed Foundation Extensions */ = {
@@ -37,14 +47,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		FQ00000000000000000000E1 /* Exceptions for "FocusQuest" folder in "FocusQuest" target */ = {
+		FQ00000000000000000000E1 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
 			target = FQ0000000000000000000030 /* FocusQuest */;
 		};
-		FQ000000000000000000B0E1 /* Exceptions for "FocusQuestWidgets" folder in "FocusQuestWidgetsExtension" target */ = {
+		FQ000000000000000000B0E1 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -54,22 +64,8 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		FQ0000000000000000000010 /* FocusQuest */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				FQ00000000000000000000E1 /* Exceptions for "FocusQuest" folder in "FocusQuest" target */,
-			);
-			path = FocusQuest;
-			sourceTree = "<group>";
-		};
-		FQ000000000000000000B010 /* FocusQuestWidgets */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				FQ000000000000000000B0E1 /* Exceptions for "FocusQuestWidgets" folder in "FocusQuestWidgetsExtension" target */,
-			);
-			path = FocusQuestWidgets;
-			sourceTree = "<group>";
-		};
+		FQ0000000000000000000010 /* FocusQuest */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (FQ00000000000000000000E1 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = FocusQuest; sourceTree = "<group>"; };
+		FQ000000000000000000B010 /* FocusQuestWidgets */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (FQ000000000000000000B0E1 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = FocusQuestWidgets; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -90,7 +86,7 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		FQ0000000000000000000000 /* Main */ = {
+		FQ0000000000000000000000 = {
 			isa = PBXGroup;
 			children = (
 				FQ00000000000000000000F1 /* Config.xcconfig */,
@@ -101,15 +97,6 @@
 			);
 			sourceTree = "<group>";
 		};
-		FQ000000000000000000B005 /* Shared */ = {
-			isa = PBXGroup;
-			children = (
-				FQ000000000000000000B002 /* FocusActivityAttributes.swift */,
-				FQ000000000000000000B006 /* WidgetSharedStore.swift */,
-			);
-			path = Shared;
-			sourceTree = "<group>";
-		};
 		FQ0000000000000000000002 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -117,6 +104,15 @@
 				FQ000000000000000000B001 /* FocusQuestWidgetsExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		FQ000000000000000000B005 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				FQ000000000000000000B002 /* FocusActivityAttributes.swift */,
+				FQ000000000000000000B006 /* WidgetSharedStore.swift */,
+			);
+			path = Shared;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -190,9 +186,8 @@
 				en,
 				Base,
 			);
-			mainGroup = FQ0000000000000000000000 /* Main */;
+			mainGroup = FQ0000000000000000000000;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 77;
 			productRefGroup = FQ0000000000000000000002 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -225,8 +220,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FQ000000000000000000B003 /* FocusActivityAttributes.swift in Sources (app) */,
-				FQ000000000000000000B007 /* WidgetSharedStore.swift in Sources (app) */,
+				FQ000000000000000000B003 /* FocusActivityAttributes.swift in Sources */,
+				FQ000000000000000000B007 /* WidgetSharedStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -234,8 +229,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FQ000000000000000000B004 /* FocusActivityAttributes.swift in Sources (widget) */,
-				FQ000000000000000000B008 /* WidgetSharedStore.swift in Sources (widget) */,
+				FQ000000000000000000B004 /* FocusActivityAttributes.swift in Sources */,
+				FQ000000000000000000B008 /* WidgetSharedStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -248,16 +243,6 @@
 			targetProxy = FQ000000000000000000B061 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
-
-/* Begin PBXContainerItemProxy section */
-		FQ000000000000000000B061 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = FQ0000000000000000000050 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = FQ000000000000000000B030;
-			remoteInfo = FocusQuestWidgetsExtension;
-		};
-/* End PBXContainerItemProxy section */
 
 /* Begin XCBuildConfiguration section */
 		FQ0000000000000000000051 /* Debug */ = {
@@ -403,10 +388,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_ENTITLEMENTS = FocusQuestWidgets/FocusQuestWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
-				CODE_SIGN_ENTITLEMENTS = FocusQuestWidgets/FocusQuestWidgets.entitlements;
 				INFOPLIST_FILE = FocusQuestWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FocusQuest;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -435,10 +420,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_ENTITLEMENTS = FocusQuestWidgets/FocusQuestWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
-				CODE_SIGN_ENTITLEMENTS = FocusQuestWidgets/FocusQuestWidgets.entitlements;
 				INFOPLIST_FILE = FocusQuestWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FocusQuest;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -462,20 +447,20 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		FQ0000000000000000000053 /* Build configuration list for PBXProject "FocusQuest" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				FQ0000000000000000000051 /* Debug */,
-				FQ0000000000000000000052 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		FQ0000000000000000000034 /* Build configuration list for PBXNativeTarget "FocusQuest" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				FQ0000000000000000000055 /* Debug */,
 				FQ0000000000000000000056 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FQ0000000000000000000053 /* Build configuration list for PBXProject "FocusQuest" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FQ0000000000000000000051 /* Debug */,
+				FQ0000000000000000000052 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
