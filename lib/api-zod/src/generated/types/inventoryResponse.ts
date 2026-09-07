@@ -13,6 +13,8 @@ export interface InventoryResponse {
   loadout: InventoryLoadoutSlot[];
   equippedCount: number;
   equippedPower: number;
+  attunedCount: number;
+  attunementCap: number;
   ownedCount: number;
   coinBalance: number;
 }

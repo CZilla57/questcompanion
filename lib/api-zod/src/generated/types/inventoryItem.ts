@@ -18,6 +18,9 @@ export interface InventoryItem {
   icon: string;
   spriteId?: string | null;
   equipped: boolean;
+  attuned: boolean;
+  attunable: boolean;
+  attunementBonus: number;
   salvageValue: number;
   acquiredAt: string;
 }

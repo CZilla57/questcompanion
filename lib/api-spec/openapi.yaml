@@ -2470,6 +2470,56 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessEnvelope"
 
+  /gear/{id}/attune:
+    post:
+      operationId: attuneGear
+      tags: [avatar]
+      summary: Attune an owned, equipped epic/legendary item for bonus battle power
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Attuned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessEnvelope"
+        "403":
+          description: Item not owned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: Not equipped, not attunable, or all attunement slots full
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /gear/{id}/unattune:
+    post:
+      operationId: unattuneGear
+      tags: [avatar]
+      summary: Remove attunement from an item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Unattuned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessEnvelope"
+
   /gear/inventory:
     get:
       operationId: getInventory
@@ -4479,6 +4529,10 @@ components:
         spriteId:
           type: string
           nullable: true
+        attuned:
+          type: boolean
+        attunementBonus:
+          type: integer
 
     AvatarProfile:
       type: object
@@ -4639,7 +4693,7 @@ components:
 
     InventoryItem:
       type: object
-      required: [id, name, description, slot, rarity, statPower, icon, equipped, salvageValue, acquiredAt]
+      required: [id, name, description, slot, rarity, statPower, icon, equipped, attuned, attunable, attunementBonus, salvageValue, acquiredAt]
       properties:
         id:
           type: integer
@@ -4662,6 +4716,12 @@ components:
           nullable: true
         equipped:
           type: boolean
+        attuned:
+          type: boolean
+        attunable:
+          type: boolean
+        attunementBonus:
+          type: integer
         salvageValue:
           type: integer
         acquiredAt:
@@ -4681,7 +4741,7 @@ components:
 
     InventoryResponse:
       type: object
-      required: [items, loadout, equippedCount, equippedPower, ownedCount, coinBalance]
+      required: [items, loadout, equippedCount, equippedPower, attunedCount, attunementCap, ownedCount, coinBalance]
       properties:
         items:
           type: array
@@ -4694,6 +4754,10 @@ components:
         equippedCount:
           type: integer
         equippedPower:
+          type: integer
+        attunedCount:
+          type: integer
+        attunementCap:
           type: integer
         ownedCount:
           type: integer

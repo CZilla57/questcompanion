@@ -16,4 +16,6 @@ export interface EquippedGearItem {
   statPower: number;
   icon: string;
   spriteId?: string | null;
+  attuned?: boolean;
+  attunementBonus?: number;
 }
