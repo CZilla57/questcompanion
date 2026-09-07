@@ -2628,6 +2628,56 @@ export const UnequipGearResponse = zod.object({
 
 
 /**
+ * @summary List every owned gear item with its loadout summary and salvage value
+ */
+export const GetInventoryResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "slot": zod.enum(['weapon', 'helmet', 'armor', 'boots', 'accessory']),
+  "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
+  "statPower": zod.number(),
+  "icon": zod.string(),
+  "spriteId": zod.string().nullish(),
+  "equipped": zod.boolean(),
+  "salvageValue": zod.number(),
+  "acquiredAt": zod.string()
+})),
+  "loadout": zod.array(zod.object({
+  "slot": zod.enum(['weapon', 'helmet', 'armor', 'boots', 'accessory']),
+  "item": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "slot": zod.enum(['weapon', 'helmet', 'armor', 'boots', 'accessory']),
+  "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
+  "statPower": zod.number(),
+  "icon": zod.string(),
+  "spriteId": zod.string().nullish(),
+  "equipped": zod.boolean(),
+  "salvageValue": zod.number(),
+  "acquiredAt": zod.string()
+}).nullable()
+})),
+  "equippedCount": zod.number(),
+  "equippedPower": zod.number(),
+  "ownedCount": zod.number(),
+  "coinBalance": zod.number()
+})
+
+
+/**
+ * @summary Salvage an owned, unequipped item for coins (permanent)
+ */
+export const SalvageGearResponse = zod.object({
+  "salvaged": zod.boolean(),
+  "coinsGained": zod.number(),
+  "balance": zod.number()
+})
+
+
+/**
  * @summary Get this week's battle status
  */
 export const GetBattleCurrentResponse = zod.object({

@@ -2470,6 +2470,50 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessEnvelope"
 
+  /gear/inventory:
+    get:
+      operationId: getInventory
+      tags: [avatar]
+      summary: List every owned gear item with its loadout summary and salvage value
+      responses:
+        "200":
+          description: Owned gear inventory
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryResponse"
+
+  /gear/{id}/salvage:
+    post:
+      operationId: salvageGear
+      tags: [avatar]
+      summary: Salvage an owned, unequipped item for coins (permanent)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Salvage result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SalvageResult"
+        "403":
+          description: Item not owned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: Item is equipped — unequip before salvaging
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
   /battle/current:
     get:
       operationId: getBattleCurrent
@@ -4591,6 +4635,80 @@ components:
         coinBalance:
           type: integer
         userLevel:
+          type: integer
+
+    InventoryItem:
+      type: object
+      required: [id, name, description, slot, rarity, statPower, icon, equipped, salvageValue, acquiredAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        slot:
+          type: string
+          enum: [weapon, helmet, armor, boots, accessory]
+        rarity:
+          type: string
+          enum: [common, rare, epic, legendary]
+        statPower:
+          type: integer
+        icon:
+          type: string
+        spriteId:
+          type: string
+          nullable: true
+        equipped:
+          type: boolean
+        salvageValue:
+          type: integer
+        acquiredAt:
+          type: string
+
+    InventoryLoadoutSlot:
+      type: object
+      required: [slot, item]
+      properties:
+        slot:
+          type: string
+          enum: [weapon, helmet, armor, boots, accessory]
+        item:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/InventoryItem"
+
+    InventoryResponse:
+      type: object
+      required: [items, loadout, equippedCount, equippedPower, ownedCount, coinBalance]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/InventoryItem"
+        loadout:
+          type: array
+          items:
+            $ref: "#/components/schemas/InventoryLoadoutSlot"
+        equippedCount:
+          type: integer
+        equippedPower:
+          type: integer
+        ownedCount:
+          type: integer
+        coinBalance:
+          type: integer
+
+    SalvageResult:
+      type: object
+      required: [salvaged, coinsGained, balance]
+      properties:
+        salvaged:
+          type: boolean
+        coinsGained:
+          type: integer
+        balance:
           type: integer
 
     BuyGearResult:
