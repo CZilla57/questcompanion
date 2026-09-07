@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, claude/swift-mobile-app-a70k2k]
   pull_request:
-    branches: [main]
+    branches: [main, claude/swift-mobile-app-a70k2k]
 
 jobs:
   check:
@@ -29,3 +29,33 @@ jobs:
         env:
           PORT: "5173"
           BASE_PATH: "/"
+
+  # Builds the native iOS app. Runs only where the app exists — the
+  # swift-mobile-app integration line and its PRs — and comes along when that
+  # branch eventually merges to main, so main gains iOS coverage with the code.
+  # The app is not on main today, so this job is a no-op there (nothing to build).
+  ios:
+    # Run only where the app lives: pushes to the integration branch and PRs
+    # targeting it. (On a pull_request, github.ref_name is the merge ref, so we
+    # match on base_ref.) When swift-mobile-app eventually merges to main, add
+    # 'main' here so main keeps building the app it now carries.
+    if: github.base_ref == 'claude/swift-mobile-app-a70k2k' || github.ref_name == 'claude/swift-mobile-app-a70k2k'
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      # Config.local.xcconfig may be absent on a fresh checkout; the tracked
+      # Config.xcconfig placeholder is enough to compile.
+      - name: Ensure local xcconfig exists
+        run: test -f ios/Config.local.xcconfig || cp ios/Config.xcconfig ios/Config.local.xcconfig
+
+      # Compile for the simulator (no signing, no device). -skipMacroValidation
+      # trusts the SPM macros the same way the headless dev build does.
+      - name: Build FocusQuest
+        run: |
+          xcodebuild build \
+            -project ios/FocusQuest.xcodeproj \
+            -scheme FocusQuest \
+            -destination 'generic/platform=iOS Simulator' \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO
