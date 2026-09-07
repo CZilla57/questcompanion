@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Anchor, CalendarClock, Check, Clock, Edit2, Flame, LifeBuoy, Pin, PinOff, Scroll, Shield, Timer, Trash2, Zap } from "lucide-react";
 import { format } from "date-fns";
-import { Task, TaskPriority, useCompleteTask, useDeleteTask, usePatchTaskFocus, useUncompleteTask, useUpdateTask, useGetMyStats, useGetMyPatterns, useGetBrainState } from "@workspace/api-client-react";
+import { Task, TaskPriority, useCompleteTask, useDeleteTask, usePatchTaskFocus, useUncompleteTask, useUpdateTask, useGetMyStats, useGetMyPatterns, useGetBrainState, type LootDrop } from "@workspace/api-client-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -174,6 +174,30 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
             });
           }
 
+          // The Campaign — second wave: the treasure reveal on a fell. Rarity-
+          // colored gear, or a small coins-only find — always a gift, never a letdown.
+          const rarityStyle: Record<string, string> = {
+            legendary: "border-amber-400 text-amber-300",
+            epic: "border-purple-400 text-purple-300",
+            rare: "border-blue-400 text-blue-300",
+            common: "border-slate-400 text-slate-300",
+          };
+          const revealLoot = (loot: LootDrop) => {
+            if (loot.gear) {
+              toast({
+                title: `🎁 Treasure — ${loot.gear.name}`,
+                description: `${loot.gear.rarity} · +${loot.gear.statPower} power`,
+                className: `border ${rarityStyle[loot.gear.rarity] ?? rarityStyle.common}`,
+              });
+            } else if (loot.bonusCoins > 0) {
+              toast({
+                title: "🎁 A small find",
+                description: `+${loot.bonusCoins} coins`,
+                className: "border-amber-400 text-amber-300",
+              });
+            }
+          };
+
           // The Campaign — Phase 2: the blow landed on your personal encounter.
           if (res.encounterHit) {
             const h = res.encounterHit;
@@ -183,6 +207,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
                 description: `+${h.coins} coins — a new foe stirs.`,
                 className: "border-amber-400 text-amber-300",
               });
+              if (h.loot) revealLoot(h.loot);
             } else {
               toast({
                 title: `You struck ${h.name} for ${h.damage}`,
@@ -202,6 +227,7 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
                 description: `+${hit.coins} coins — a new foe stirs.`,
                 className: "border-amber-400 text-amber-300",
               });
+              if (hit.loot) revealLoot(hit.loot);
             } else {
               toast({
                 title: `Together you struck ${hit.foeName} for ${hit.damage}`,
