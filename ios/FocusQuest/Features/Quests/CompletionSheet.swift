@@ -35,6 +35,8 @@ struct CompletionSheet: View {
                     Label("\(hit.name) felled! +\(hit.coins) coins", systemImage: "burst.fill")
                         .font(.outfitSubheadline).foregroundStyle(Theme.gold)
                         .labelStyle(TealIconLabelStyle())
+                    // The Campaign — second wave: the treasure reveal.
+                    if let loot = hit.loot { lootReveal(loot) }
                 } else {
                     Label("Struck \(hit.name) for \(hit.damage) · \(hit.encounter.phaseLabel)", systemImage: "shield.lefthalf.filled")
                         .font(.outfitSubheadline).foregroundStyle(Theme.accent)
@@ -79,6 +81,30 @@ struct CompletionSheet: View {
         // Celebrate once as the sheet appears — richer buzz on a level-up or crit.
         .onAppear {
             (result.leveledUp || result.skillCheck?.isCrit == true) ? Haptics.levelUp() : Haptics.success()
+        }
+    }
+
+    /// The Campaign — second wave: the treasure reveal on a fell. Rarity-colored
+    /// gear, or a small coins-only find — always a gift, never a letdown.
+    @ViewBuilder private func lootReveal(_ loot: LootDrop) -> some View {
+        if let gear = loot.gear {
+            Label("Treasure — \(gear.name) · \(gear.rarity.capitalized) · +\(gear.statPower) power",
+                  systemImage: "gift.fill")
+                .font(.outfitSubheadline).foregroundStyle(rarityColor(gear.rarity))
+                .labelStyle(TealIconLabelStyle())
+        } else if loot.bonusCoins > 0 {
+            Label("A small find · +\(loot.bonusCoins) coins", systemImage: "gift.fill")
+                .font(.outfitSubheadline).foregroundStyle(Theme.gold)
+                .labelStyle(TealIconLabelStyle())
+        }
+    }
+
+    private func rarityColor(_ rarity: String) -> Color {
+        switch rarity {
+        case "legendary": return Theme.gold
+        case "epic": return .purple
+        case "rare": return Theme.accent
+        default: return .gray
         }
     }
 }
