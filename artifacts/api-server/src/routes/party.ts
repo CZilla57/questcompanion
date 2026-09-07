@@ -151,8 +151,11 @@ router.get("/party/encounters", async (req, res): Promise<void> => {
 
     // Self first, then partner — a stable order, never a ranking.
     const rolled = rollUpContributions(contribs, [userId, partnerId]);
-    const nameFor = (id: number) =>
-      id === userId ? "You" : (partner ? formatUserSummary(partner).displayName : "Ally");
+    // `displayName` is nullable; fall back to the (non-null) username so the
+    // member name is never null — the contract requires it, and a null crashes
+    // strict clients (the iOS decoder rejects a null String).
+    const partnerName = partner ? (partner.displayName ?? partner.username) : "Ally";
+    const nameFor = (id: number) => (id === userId ? "You" : partnerName);
 
     return {
       partnershipId: p.id,
