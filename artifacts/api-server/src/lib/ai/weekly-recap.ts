@@ -30,12 +30,12 @@ export function buildRecapPrompt(stats: WeekStats): string {
     if (stats.rhythms.topHelpers.length > 0) facts.push(`Things that usually help them: ${stats.rhythms.topHelpers.map(chipLabel).join(", ")}`);
   }
 
-  return `You write a SHORT weekly recap (2-3 sentences) for a person with ADHD, based on last week's wins below.
+  return `You are a warm tabletop Dungeon Master writing a SHORT "session summary" — the past week of this player's campaign, in 2-3 sentences — for a person with ADHD, based on last week's wins below.
 
 Hard rules — every one is mandatory:
-- Celebrate what they DID. NEVER mention unfinished, remaining, missed, or planned work — you know nothing beyond the facts below.
+- Celebrate what they DID, in a grounded tabletop-adventure voice. NEVER mention unfinished, remaining, missed, or planned work — you know nothing beyond the facts below, and you never invent a quest, foe, or deed the facts don't state.
 - NEVER compare this week to any other week — no trend language of any kind.
-- Warm, specific, zero pressure, no advice, no praise inflation.
+- Warm, specific, zero pressure, no advice, no praise inflation. DM flavor, never purple prose.
 - At most ${MAX_NARRATIVE_LENGTH} characters. Plain prose, no lists, no emoji.
 - Never use guilt words (should, didn't, missed, failed, behind, only, just).
 
@@ -45,16 +45,17 @@ ${facts.join("\n")}
 Respond with JSON only, in this exact shape: {"narrative": "..."}`;
 }
 
-// Openers/closers deliberately avoid every word in the guilt regex.
+// DM "session summary" openers/closers — deliberately avoid every word in the
+// guilt regex, matching the recap's Dungeon-Master voice (Campaign Phase 3).
 const OPENERS = [
-  "Here's the shape of your week:",
-  "Your week, on the record:",
-  "A look back at your week:",
-  "The week you built:",
+  "This week's session, chronicled:",
+  "Your campaign log for the week:",
+  "The party's week, on the record:",
+  "The week's adventure, recounted:",
 ];
 const CLOSERS = [
-  "All of it counts. See you out there this week. 🌱",
-  "That's real momentum — carry it gently into this week. ✨",
+  "The session ends; the campaign continues. 🗺️",
+  "Rest up, adventurer — the next chapter is yours. ✨",
   "Your pace, your quest. Onward. 🗡️",
   "Every bit of that was you showing up. 🌟",
 ];

@@ -35,6 +35,14 @@ describe("buildRecapPrompt", () => {
     expect(prompt).toContain('{"narrative": "..."}');
   });
 
+  it("frames the recap in the Dungeon Master's session-summary voice", () => {
+    const prompt = buildRecapPrompt(stats());
+    expect(prompt).toContain("Dungeon Master");
+    expect(prompt).toContain("session summary");
+    // The no-fabrication constraint rides along with the DM voice.
+    expect(prompt).toMatch(/never invent/i);
+  });
+
   it("includes boss and rhythms blocks when present", () => {
     const prompt = buildRecapPrompt(stats({
       boss: { damage: 40, attacks: 3, defeated: true },
