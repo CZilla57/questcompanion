@@ -129,6 +129,39 @@ function cropSouthStrip(png) {
   }
   return out;
 }
+// Crop the south row of an oversize `custom_animation: "walk_128"` sheet (128px frames, 4 direction
+// rows; south/down at y=256) into a standard 9×64 strip. LPC keeps the 9 walk frames in the first
+// FRAMES columns (trailing columns are other animations / padding), and the body sits centered in
+// each 128 cell, so the hero-aligned art is the centered 64×64 window (offset 32,32). For the walk
+// frames the hero shows, oversize weapons' art fits inside that window — verified empirically — so
+// this crop is lossless. Guarded per frame: if a frame's art overflows the window we throw rather
+// than silently clip (that item would need a true-oversize renderer path, deferred).
+const SOUTH_128_Y = 256;
+function cropSouth128CenterStrip(png, defPath) {
+  if (png.width % 128 !== 0) throw new Error(`walk_128 ${defPath}: width ${png.width} not a multiple of 128`);
+  if (png.width / 128 < FRAMES) throw new Error(`walk_128 ${defPath}: ${png.width / 128} cols, need >= ${FRAMES}`);
+  if (png.height < SOUTH_128_Y + 128) throw new Error(`walk_128 ${defPath}: height ${png.height} has no south row`);
+  const out = new PNG({ width: FRAMES * 64, height: 64 });
+  for (let f = 0; f < FRAMES; f++) {
+    const cx = f * 128, cy = SOUTH_128_Y;
+    let full = 0, win = 0;
+    for (let y = 0; y < 128; y++) for (let x = 0; x < 128; x++) {
+      if (png.data[((cy + y) * png.width + (cx + x)) * 4 + 3] > 0) {
+        full++;
+        if (x >= 32 && x < 96 && y >= 32 && y < 96) win++;
+      }
+    }
+    if (full !== win) {
+      throw new Error(`walk_128 ${defPath}: frame ${f} overflows the 64px window (${full - win}px clipped) — needs true-oversize rendering`);
+    }
+    for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) {
+      const si = ((cy + 32 + y) * png.width + (cx + 32 + x)) * 4;
+      const di = (y * FRAMES * 64 + (f * 64 + x)) * 4;
+      out.data[di] = png.data[si]; out.data[di + 1] = png.data[si + 1]; out.data[di + 2] = png.data[si + 2]; out.data[di + 3] = png.data[si + 3];
+    }
+  }
+  return out;
+}
 function detectSource(png, palettes) {
   let best = null, bestN = -1;
   for (const k of Object.keys(palettes)) {
@@ -195,6 +228,16 @@ async function clothPalette() {
 async function loadLayerStrip(layer, def, defPath, variant, build) {
   const prefix = layer?.[build];
   if (!prefix) return null; // layer absent for this build
+
+  // Oversize layer: a big-weapon animation on 128px frames. Its sheets are per-variant PNGs at
+  // `{prefix}{variant}.png` (the prefix already ends in the animation dir), NOT `{prefix}walk/…`.
+  // Crop the centered 64 window from the 128px south row.
+  if (layer.custom_animation === "walk_128") {
+    const leaf = variant ? `${variant}.png` : "walk.png";
+    const sheet = await loadSheet(`${RAW}/spritesheets/${prefix}${leaf}`);
+    if (!sheet) return null;
+    return { frame: cropSouth128CenterStrip(sheet, defPath), zPos: layer.zPos ?? 0 };
+  }
 
   if (variant && !def.variants) {
     const raw = await loadSheet(`${RAW}/spritesheets/${prefix}walk.png`);
@@ -582,6 +625,11 @@ async function main() {
     // loader baked this blank — hence the earlier slingshot substitution. loadDefFrame now
     // composites every layer_N, so the crossbow renders correctly.
     { spriteId: "crossbow", category: "weapon", part: { def: "weapons/ranged/weapon_ranged_crossbow.json", variant: "crossbow" } },
+    // Oversize def (Phase 2 unlock): the bow's walkable art lives only in its `custom_animation:
+    // "walk_128"` layers (128px frames) — the `universal` 64px layers ship only shoot/hurt. The
+    // loader crops the body-centered 64 window from the 128px south row; both the background
+    // (string) and foreground (bow) walk_128 layers fit it losslessly, and composite via Phase 1.
+    { spriteId: "bow", category: "weapon", part: { def: "weapons/ranged/bow/weapon_ranged_bow_normal.json", variant: "bronze" } },
     // helmet archetypes
     { spriteId: "cap", category: "helmet", part: {
       male: { def: "headwear/hats/caps/hat_cap_leather.json", variant: "brown" },
