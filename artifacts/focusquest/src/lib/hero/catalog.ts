@@ -1966,6 +1966,42 @@ export const CATALOG: CatalogEntry[] = [
     "sourceUrl": "https://opengameart.org/content/lpc-more-weapons"
   },
   {
+    "id": "gear:crossbow:male",
+    "category": "weapon",
+    "zIndex": 80,
+    "file": "/lpc/gear/crossbow_male.png",
+    "author": "bluecarrot16; drjamgo@hotmail.com",
+    "license": "CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-crossbow-final"
+  },
+  {
+    "id": "gear:crossbow:female",
+    "category": "weapon",
+    "zIndex": 80,
+    "file": "/lpc/gear/crossbow_female.png",
+    "author": "bluecarrot16; drjamgo@hotmail.com",
+    "license": "CC0",
+    "sourceUrl": "https://opengameart.org/content/lpc-crossbow-final"
+  },
+  {
+    "id": "gear:bow:male",
+    "category": "weapon",
+    "zIndex": 80,
+    "file": "/lpc/gear/bow_male.png",
+    "author": "Johannes Sjölund (wulax); Pierre Vigier (pvigier)",
+    "license": "OGA-BY 3.0+, GPL 3.0, CC-BY 4.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
+    "id": "gear:bow:female",
+    "category": "weapon",
+    "zIndex": 80,
+    "file": "/lpc/gear/bow_female.png",
+    "author": "Johannes Sjölund (wulax); Pierre Vigier (pvigier)",
+    "license": "OGA-BY 3.0+, GPL 3.0, CC-BY 4.0",
+    "sourceUrl": "https://opengameart.org/content/lpc-medieval-fantasy-character-sprites"
+  },
+  {
     "id": "gear:cap:male",
     "category": "helmet",
     "zIndex": 70,
