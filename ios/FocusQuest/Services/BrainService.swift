@@ -24,8 +24,14 @@ enum BrainService {
 }
 
 enum ReflectionService {
-    static func today() async throws -> ReflectionResponse {
-        try await APIClient.shared.get("reflections/today", query: ["tz": TZ.identifier])
+    /// Fetch today's reflection. `draft: true` asks the server to draft tonight's
+    /// AI question (one LLM call, persisted) when no row exists yet — the
+    /// reflection screen opts in; the Today CTA does not, so merely seeing Today
+    /// never spends a call (server gates drafting on ?draft=true).
+    static func today(draft: Bool = false) async throws -> ReflectionResponse {
+        var query: [String: String?] = ["tz": TZ.identifier]
+        if draft { query["draft"] = "true" }
+        return try await APIClient.shared.get("reflections/today", query: query)
     }
 
     static func answer(chips: [String], freeText: String?) async throws -> ReflectionAnswerResponse {
