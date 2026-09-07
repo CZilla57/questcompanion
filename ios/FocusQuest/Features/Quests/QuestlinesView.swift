@@ -22,7 +22,9 @@ struct QuestlinesView: View {
                     EmptyStateView(symbol: "list.bullet.rectangle", title: "No questlines", message: "Group related quests toward a goal.")
                 }
                 ForEach(lines) { line in
-                    NavigationLink { QuestlineDetailView(questlineId: line.id) } label: {
+                    NavigationLink {
+                        QuestlineDetailView(questlineId: line.id) { Task { await model.load() } }
+                    } label: {
                         QuestlineRow(line: line)
                     }
                 }
@@ -66,9 +68,12 @@ struct QuestlineRow: View {
 
 struct QuestlineDetailView: View {
     let questlineId: Int
+    var onChanged: () -> Void = {}
+    @Environment(\.dismiss) private var dismiss
     @State private var state: Loadable<QuestlineDetail> = .idle
     @State private var showQuickAdd = false
     @State private var claiming = false
+    @State private var showDeleteConfirm = false
 
     var body: some View {
         AsyncContentView(state: state, retry: { Task { await load() } }) { detail in
@@ -97,11 +102,36 @@ struct QuestlineDetailView: View {
             ToolbarItem(placement: .primaryAction) {
                 Button { showQuickAdd = true } label: { Image(systemName: "plus") }
             }
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button(role: .destructive) { showDeleteConfirm = true } label: {
+                        Label("Delete questline", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+            }
+        }
+        .confirmationDialog("Delete this questline?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
+            Button("Delete", role: .destructive) { Task { await deleteQuestline() } }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("The quests inside stay in your list — only the questline grouping is removed.")
         }
         .sheet(isPresented: $showQuickAdd) {
             QuickAddSheet(onCreated: { _ in Task { await load() } }, questlineId: questlineId)
         }
         .task { if state.value == nil { await load() } }
+    }
+
+    private func deleteQuestline() async {
+        do {
+            try await QuestlineService.delete(id: questlineId)
+            onChanged()
+            dismiss()
+        } catch {
+            state = .failed(error.userMessage)
+        }
     }
 
     private func load() async {
