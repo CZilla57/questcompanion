@@ -2828,6 +2828,46 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
 
+  /users/me/feats:
+    get:
+      operationId: getMyFeats
+      tags: [users]
+      summary: The hero's class feats — unlocked (with per-day readiness) and locked (with unlock level)
+      responses:
+        "200":
+          description: Unlocked and locked feats; empty when the campaign layer is still locked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeatsResponse"
+        "401":
+          description: Unauthorized
+
+  /users/me/feats/{id}/activate:
+    post:
+      operationId: activateFeat
+      tags: [users]
+      summary: Use an active class feat (once a day; gentle no-op if locked, on cooldown, or maxed)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Activation outcome (activated, or a gentle reason it couldn't)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeatActivateResult"
+        "404":
+          description: Unknown or non-active feat
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
   /calendar/heatmap:
     get:
       operationId: getCalendarHeatmap
@@ -5340,6 +5380,85 @@ components:
           type: integer
           nullable: true
           description: Shield perk — streak freezes held after a successful buy (or the cap on at_max)
+
+    FeatView:
+      type: object
+      required: [id, heroClass, kind, unlockLevel, label, emoji, description]
+      properties:
+        id:
+          type: string
+        heroClass:
+          type: string
+          enum: [fighter, mage, ranger, healer]
+        kind:
+          type: string
+          enum: [passive, active]
+        unlockLevel:
+          type: integer
+        label:
+          type: string
+        emoji:
+          type: string
+        description:
+          type: string
+        grants:
+          type: string
+          nullable: true
+          enum: [xp_boost, focus_boost, streak_shield]
+          description: Active feats — the Stat Perk window activating grants
+        passiveKingdom:
+          type: string
+          nullable: true
+          description: Passive feats — the home kingdom whose categories get the XP bias
+        readyToday:
+          type: boolean
+          nullable: true
+          description: Active feats — false once used on the current local day
+        active:
+          type: boolean
+          nullable: true
+          description: Active boost feats — whether the granted boost window is currently live
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Active boost feats — active-until of the granted window
+        atMax:
+          type: boolean
+          nullable: true
+          description: Mend (streak shield) — whether the shield stock is already at the cap
+
+    FeatsResponse:
+      type: object
+      required: [unlocked, locked]
+      properties:
+        unlocked:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeatView"
+        locked:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeatView"
+
+    FeatActivateResult:
+      type: object
+      required: [activated, reason]
+      properties:
+        activated:
+          type: boolean
+        reason:
+          type: string
+          enum: [ok, locked, on_cooldown, at_max]
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Boost feats — the new active-until after activating
+        owned:
+          type: integer
+          nullable: true
+          description: Mend — streak freezes held after activating (or the cap on at_max)
 
     HeatmapDay:
       type: object
