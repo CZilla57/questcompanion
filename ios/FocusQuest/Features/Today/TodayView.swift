@@ -24,6 +24,9 @@ final class TodayViewModel: ObservableObject {
     /// when campaigns are locked, none is running, or every chapter is done.
     /// A quiet line of context under the focus suggestion — never a nag.
     @Published var campaignNow: CampaignNow?
+    /// Whether today's evening reflection is still unanswered. nil until known
+    /// (or outside the evening window), so the CTA stays hidden until we're sure.
+    @Published var reflectionUnanswered: Bool?
     /// Suggestions the user waved off this session ("Not this one").
     @Published var skippedFocusIds: Set<Int> = []
 
@@ -31,6 +34,17 @@ final class TodayViewModel: ObservableObject {
     static var beatKind: DmBeatKind {
         Calendar.current.component(.hour, from: Date()) < 17 ? .morning : .camp
     }
+
+    /// The evening reflection window opens at 17:00 local and runs to midnight —
+    /// an unanswered day simply disappears at midnight (anti-shame, web parity:
+    /// REFLECTION_CARD_START_HOUR).
+    static var inEveningWindow: Bool {
+        Calendar.current.component(.hour, from: Date()) >= 17
+    }
+
+    /// Show the evening reflection chip only in the evening window while today's
+    /// reflection is unanswered — independent of the brain check-in.
+    var showReflect: Bool { Self.inEveningWindow && reflectionUnanswered == true }
 
     /// The single quest the momentum board is nudging next — the first suggestion
     /// that's still pending and hasn't been skipped.
@@ -59,6 +73,16 @@ final class TodayViewModel: ObservableObject {
             dmBeat = s.features.contains(.campaigns) ? await dmResult : nil
             // Same gate for the quiet campaign chapter line (web's CampaignNowLine).
             campaignNow = s.features.contains(.campaigns) ? await Self.loadCampaignNow() : nil
+            // Evening reflection CTA (web's EveningReflectionCard): only fetch in
+            // the evening window, and without draft=true so viewing Today never
+            // spends an LLM call — only opening the reflection drafts a question.
+            // On a failed fetch we leave it hidden rather than nag (web hides on
+            // an undefined response).
+            if Self.inEveningWindow, let resp = try? await ReflectionService.today() {
+                reflectionUnanswered = resp.reflection?.answeredAt == nil
+            } else {
+                reflectionUnanswered = nil
+            }
             publishWidgetSnapshot()
         } catch {
             if stats.value == nil { stats = .failed(error.userMessage) }
@@ -225,11 +249,18 @@ struct TodayView: View {
     }
 
     @ViewBuilder private var promptChips: some View {
+        // Brain check-in follows its own daily cadence; the evening reflection
+        // is gated on the 17:00→midnight window while unanswered (web parity).
         let showBrain = model.brain.map { !$0.checkedInToday } ?? false
-        if showBrain {
+        let showReflect = model.showReflect
+        if showBrain || showReflect {
             HStack(spacing: Theme.Space.sm) {
-                PromptChip(icon: "brain.head.profile", label: "Brain check-in") { BrainCheckinView() }
-                PromptChip(icon: "moon.stars.fill", label: "Reflect") { ReflectionView() }
+                if showBrain {
+                    PromptChip(icon: "brain.head.profile", label: "Brain check-in") { BrainCheckinView() }
+                }
+                if showReflect {
+                    PromptChip(icon: "moon.stars.fill", label: "Reflect") { ReflectionView() }
+                }
                 Spacer(minLength: 0)
             }
         }
