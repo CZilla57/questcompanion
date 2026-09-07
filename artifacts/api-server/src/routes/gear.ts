@@ -5,6 +5,7 @@ import { getLevelInfo } from "../lib/gamification";
 import { gearCoinCost } from "../lib/coins";
 import { spendCoins, awardCoins } from "../lib/award-coins";
 import { salvageValue } from "../lib/salvage";
+import { ATTUNEMENT_CAP, isAttunable, attunementBonus } from "../lib/attunement";
 import type { GearSlot } from "@workspace/db";
 
 const router: IRouter = Router();
@@ -76,6 +77,10 @@ router.get("/gear/inventory", async (req, res): Promise<void> => {
     icon: gear.icon,
     spriteId: gear.spriteId ?? null,
     equipped: userGear.equipped,
+    attuned: userGear.attuned,
+    attunable: isAttunable(gear.rarity),
+    // The extra battle power this item would grant while equipped + attuned.
+    attunementBonus: attunementBonus(gear.statPower),
     salvageValue: salvageValue(gear.rarity),
     acquiredAt: userGear.acquiredAt.toISOString(),
   }));
@@ -86,13 +91,21 @@ router.get("/gear/inventory", async (req, res): Promise<void> => {
     item: items.find((it) => it.slot === slot && it.equipped) ?? null,
   }));
   const equippedItems = items.filter((it) => it.equipped);
-  const equippedPower = equippedItems.reduce((sum, it) => sum + it.statPower, 0);
+  // Equipped stat power plus the attunement bonus for each attuned attunable item —
+  // the same figure that feeds battle power (see the attunement lib).
+  const equippedPower = equippedItems.reduce(
+    (sum, it) => sum + it.statPower + (it.attuned && it.attunable ? it.attunementBonus : 0),
+    0,
+  );
+  const attunedCount = equippedItems.filter((it) => it.attuned && it.attunable).length;
 
   res.json({
     items,
     loadout,
     equippedCount: equippedItems.length,
     equippedPower,
+    attunedCount,
+    attunementCap: ATTUNEMENT_CAP,
     ownedCount: items.length,
     coinBalance: user.coinBalance,
   });
@@ -266,8 +279,10 @@ router.post("/gear/:id/equip", async (req, res): Promise<void> => {
 
   const sameSlot = slotGear.filter(g => g.gear.slot === item.slot);
   for (const g of sameSlot) {
+    // Displacing a same-slot item also clears its attunement — attunement only
+    // holds while equipped.
     await db.update(userGearTable)
-      .set({ equipped: false })
+      .set({ equipped: false, attuned: false })
       .where(eq(userGearTable.id, g.userGear.id));
   }
 
@@ -290,8 +305,87 @@ router.post("/gear/:id/unequip", async (req, res): Promise<void> => {
     .where(and(eq(userGearTable.userId, userId), eq(userGearTable.gearItemId, gearId)));
   if (owned.length === 0) { res.status(403).json({ error: "Item not owned" }); return; }
 
+  // Unequipping clears attunement too — attunement only holds while equipped.
   await db.update(userGearTable)
-    .set({ equipped: false })
+    .set({ equipped: false, attuned: false })
+    .where(and(eq(userGearTable.userId, userId), eq(userGearTable.gearItemId, gearId)));
+
+  res.json({ success: true });
+});
+
+// Attune an owned, equipped, epic/legendary item to draw extra battle power from
+// it. Upside-only: the bonus is purely additive and capped at ATTUNEMENT_CAP
+// items. The cap is re-checked inside the user-locked tx so concurrent attunes
+// can't overshoot it.
+router.post("/gear/:id/attune", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+  const gearId = parseInt(req.params.id, 10);
+
+  const [item] = await db.select().from(gearItemsTable).where(eq(gearItemsTable.id, gearId));
+  if (!item) { res.status(404).json({ error: "Item not found" }); return; }
+
+  type AttuneOutcome =
+    | { status: "not_owned" }
+    | { status: "not_equipped" }
+    | { status: "not_attunable" }
+    | { status: "cap_full" }
+    | { status: "ok" };
+
+  let outcome: AttuneOutcome;
+  try {
+    outcome = await db.transaction(async (tx): Promise<AttuneOutcome> => {
+      // Lock the user row so concurrent attunes serialize against the cap.
+      const [locked] = await tx.select().from(usersTable)
+        .where(eq(usersTable.id, userId)).for("update");
+      if (!locked) return { status: "not_owned" };
+
+      if (!isAttunable(item.rarity)) return { status: "not_attunable" };
+
+      const [owned] = await tx.select().from(userGearTable)
+        .where(and(eq(userGearTable.userId, userId), eq(userGearTable.gearItemId, gearId)));
+      if (!owned) return { status: "not_owned" };
+      if (!owned.equipped) return { status: "not_equipped" };
+      if (owned.attuned) return { status: "ok" }; // idempotent
+
+      // Count currently-attuned items and enforce the cap inside the lock.
+      const attuned = await tx.select({ id: userGearTable.id }).from(userGearTable)
+        .where(and(eq(userGearTable.userId, userId), eq(userGearTable.attuned, true)));
+      if (attuned.length >= ATTUNEMENT_CAP) return { status: "cap_full" };
+
+      await tx.update(userGearTable)
+        .set({ attuned: true })
+        .where(eq(userGearTable.id, owned.id));
+      return { status: "ok" };
+    });
+  } catch (err) {
+    console.error("gear attune failed", err);
+    res.status(500).json({ error: "Attune failed" });
+    return;
+  }
+
+  if (outcome.status === "not_owned") { res.status(403).json({ error: "Item not owned" }); return; }
+  if (outcome.status === "not_equipped") { res.status(409).json({ error: "Equip it first" }); return; }
+  if (outcome.status === "not_attunable") {
+    res.status(409).json({ error: "Only epic and legendary gear can be attuned" }); return;
+  }
+  if (outcome.status === "cap_full") {
+    res.status(409).json({ error: `All ${ATTUNEMENT_CAP} attunement slots are full` }); return;
+  }
+  res.json({ success: true });
+});
+
+router.post("/gear/:id/unattune", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+  const gearId = parseInt(req.params.id, 10);
+
+  const owned = await db.select().from(userGearTable)
+    .where(and(eq(userGearTable.userId, userId), eq(userGearTable.gearItemId, gearId)));
+  if (owned.length === 0) { res.status(403).json({ error: "Item not owned" }); return; }
+
+  await db.update(userGearTable)
+    .set({ attuned: false })
     .where(and(eq(userGearTable.userId, userId), eq(userGearTable.gearItemId, gearId)));
 
   res.json({ success: true });
