@@ -1,4 +1,6 @@
-import type { GearSlot, GearRarity } from "@workspace/db";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import * as schema from "./schema";
+import { gearItemsTable, type GearSlot, type GearRarity } from "./schema";
 
 export interface GearRosterItem {
   name: string; description: string; slot: GearSlot; rarity: GearRarity;
@@ -26,7 +28,7 @@ interface Row {
 //                    Honest-Coin rarity ladder 20/60/150/400).
 // `inStore: false` → drop-only treasures: high rarity at low/mid level, and flavorful uniques.
 //                    Found via loot/streak rewards, never sold — that's what makes a drop exciting.
-// Sprites are reused from the 20 baked archetypes (art variety is bounded until more are baked);
+// Sprites are reused from the baked archetypes (art variety is bounded until more are baked);
 // names/levels/rarity/flavor are free. Every existing item name is preserved so re-seeding upserts
 // in place and never orphans owned gear.
 const ROSTER: Row[] = [
@@ -92,3 +94,25 @@ export const GEAR_CATALOG: GearRosterItem[] = ROSTER.map((r) => {
   const statPower = gearStatPower(r.levelRequired, r.rarity);
   return { ...r, statPower, costXp: statPower * 50 };
 });
+
+/**
+ * Idempotently upsert the whole gear catalog (by unique `name`). Safe to run
+ * repeatedly — it updates existing rows in place (re-statting, setting in_store)
+ * and never deletes, so owned gear is never orphaned. Requires the `in_store`
+ * column (migration 0014). Shared by the scripts CLI and the boot-time seed.
+ */
+export async function seedGear(
+  dbi: NodePgDatabase<typeof schema>,
+): Promise<{ total: number; inStore: number }> {
+  for (const item of GEAR_CATALOG) {
+    await dbi.insert(gearItemsTable).values(item).onConflictDoUpdate({
+      target: gearItemsTable.name,
+      set: {
+        description: item.description, slot: item.slot, rarity: item.rarity,
+        statPower: item.statPower, costXp: item.costXp, levelRequired: item.levelRequired,
+        icon: item.icon, spriteId: item.spriteId, inStore: item.inStore,
+      },
+    });
+  }
+  return { total: GEAR_CATALOG.length, inStore: GEAR_CATALOG.filter((i) => i.inStore).length };
+}

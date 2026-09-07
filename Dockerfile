@@ -49,4 +49,8 @@ EXPOSE 8080
 # rather than leaving a server running against a half-migrated database. An
 # unreachable database is retried and then tolerated, so a database outage
 # degrades the app instead of crash-looping the container.
-CMD ["sh", "-c", "node dist/migrate.mjs && exec node --enable-source-maps dist/index.mjs"]
+#
+# Then seed the gear catalog: idempotent upsert-by-name, so it just keeps the
+# deployed catalog in sync with the code. It always exits 0 (a stale catalog
+# never justifies blocking the boot), so it can't abort the server.
+CMD ["sh", "-c", "node dist/migrate.mjs && node dist/seed-gear.mjs && exec node --enable-source-maps dist/index.mjs"]
