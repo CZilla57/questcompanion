@@ -1,5 +1,14 @@
 import SwiftUI
 
+/// The Campaign: the running campaign's current chapter, for the quiet context
+/// line on Today (web parity: CampaignNowLine). `chapterIndex` is 0-based.
+struct CampaignNow: Equatable {
+    let campaignId: Int
+    let chapterIndex: Int
+    let chapterCount: Int
+    let chapterTitle: String
+}
+
 @MainActor
 final class TodayViewModel: ObservableObject {
     @Published var stats: Loadable<UserStats> = .idle
@@ -11,6 +20,10 @@ final class TodayViewModel: ObservableObject {
     /// The Campaign — Phase 3: the Dungeon Master's beat for today, or nil when
     /// there's nothing to narrate (or the endpoint isn't live yet).
     @Published var dmBeat: DmBeat?
+    /// The Campaign: which chapter of a running campaign the hero is on, or nil
+    /// when campaigns are locked, none is running, or every chapter is done.
+    /// A quiet line of context under the focus suggestion — never a nag.
+    @Published var campaignNow: CampaignNow?
     /// Suggestions the user waved off this session ("Not this one").
     @Published var skippedFocusIds: Set<Int> = []
 
@@ -44,10 +57,30 @@ final class TodayViewModel: ObservableObject {
             // belongs to the campaign layer, so it stays invisible until the
             // `campaigns` feature is unlocked, per the anti-shame law.
             dmBeat = s.features.contains(.campaigns) ? await dmResult : nil
+            // Same gate for the quiet campaign chapter line (web's CampaignNowLine).
+            campaignNow = s.features.contains(.campaigns) ? await Self.loadCampaignNow() : nil
             publishWidgetSnapshot()
         } catch {
             if stats.value == nil { stats = .failed(error.userMessage) }
         }
+    }
+
+    /// Resolve the running campaign's current chapter for the quiet Today line.
+    /// Mirrors web's CampaignNowLine: the one running campaign, then the chapter
+    /// matching `currentChapterId`. Returns nil (renders nothing) when none is
+    /// running or every chapter is done. Best-effort — a failure just hides it.
+    static func loadCampaignNow() async -> CampaignNow? {
+        guard let running = try? await CampaignService.list()
+            .first(where: { $0.status == "running" }) else { return nil }
+        guard let detail = try? await CampaignService.detail(id: running.id),
+              let currentId = detail.currentChapterId,
+              let index = detail.chapters.firstIndex(where: { $0.questlineId == currentId })
+        else { return nil }
+        return CampaignNow(
+            campaignId: running.id,
+            chapterIndex: index,
+            chapterCount: detail.chapters.count,
+            chapterTitle: detail.chapters[index].title)
     }
 
     /// Mirror today's headline data into the App Group so the Home / Lock Screen
@@ -124,6 +157,7 @@ struct TodayView: View {
                         if let beat = model.dmBeat { dmBeatCard(beat) }
                         promptChips
                         todaysFocus
+                        if let now = model.campaignNow { campaignNowLine(now) }
                         quickAddBar
                         todaysQuests
                         StatusLine(stats: stats).padding(.top, Theme.Space.xs)
@@ -167,6 +201,27 @@ struct TodayView: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Dungeon Master, \(isCamp ? "make camp" : "quest board"). \(beat.narrative)")
+    }
+
+    /// The Campaign: one quiet line of context under the focus suggestion —
+    /// which chapter you're on — tapping through to the campaign. Never a call
+    /// to action; it only appears when a campaign is actively running (web
+    /// parity: CampaignNowLine).
+    private func campaignNowLine(_ now: CampaignNow) -> some View {
+        NavigationLink {
+            CampaignDetailView(campaignId: now.campaignId)
+        } label: {
+            HStack(spacing: Theme.Space.xs) {
+                Image(systemName: "map")
+                    .font(.outfitCaption2).foregroundStyle(Theme.accent.opacity(0.7))
+                Text("Chapter \(now.chapterIndex + 1) of \(now.chapterCount) — \(now.chapterTitle)")
+                    .font(.outfitCaption).foregroundStyle(.secondary)
+                    .lineLimit(1).truncationMode(.tail)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Chapter \(now.chapterIndex + 1) of \(now.chapterCount), \(now.chapterTitle)")
     }
 
     @ViewBuilder private var promptChips: some View {
