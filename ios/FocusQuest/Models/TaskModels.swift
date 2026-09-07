@@ -121,6 +121,9 @@ struct TaskCompletionResult: Codable {
     let skillCheck: SkillCheck?
     let skillCheckNarration: String?
     let encounterHit: EncounterHit?
+    /// Blows landed on shared party foes (one per accepted partnership). Optional
+    /// so the app decodes fine before the server deploys the party layer.
+    let partyHits: [PartyEncounterHit]?
 }
 
 struct SurpriseReward: Codable {

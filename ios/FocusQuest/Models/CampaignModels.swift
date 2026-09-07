@@ -125,3 +125,48 @@ struct DmBeat: Codable {
 struct DmBeatResponse: Codable {
     let beat: DmBeat?
 }
+
+// The Campaign — Phase 2 (Party): a co-op party (an accepted partnership) fights
+// ONE shared foe, chipped by either ally's quest completions. Mirrors the
+// server's additive party schemas. All decode defensively so the app still works
+// against a server that predates the party layer.
+
+/// One member's damage against the shared foe. Rendered as teamwork — never a
+/// ranking. `name` is "You" for the viewer, the partner's name otherwise.
+struct PartyMemberContribution: Codable, Identifiable {
+    var id: Int { userId }
+    let userId: Int
+    /// Optional/defensive: an older server can send a null name for a partner
+    /// without a display name; fall back rather than dropping the member.
+    let name: String?
+    let damage: Int
+
+    var displayName: String {
+        if let n = name, !n.isEmpty { return n }
+        return "Ally"
+    }
+}
+
+/// A party's shared foe (GET /party/encounters returns an array of these).
+struct PartyEncounter: Codable, Identifiable {
+    var id: Int { partnershipId }
+    let partnershipId: Int
+    let partner: UserSummary?
+    let foeName: String
+    let tier: Int
+    let encounter: EncounterView
+    let members: [PartyMemberContribution]
+}
+
+/// The blow a quest completion landed on one shared party foe.
+struct PartyEncounterHit: Codable, Identifiable {
+    var id: Int { partnershipId }
+    let partnershipId: Int
+    let foeName: String
+    let tier: Int
+    let damage: Int
+    let felled: Bool
+    /// Upside-only co-op loot this user earned on felling (0 otherwise).
+    let coins: Int
+    let encounter: EncounterView
+}

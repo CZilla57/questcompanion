@@ -13,13 +13,18 @@ final class AlliesViewModel: ObservableObject {
     @Published var searchQuery = ""
     @Published var searchResults: [UserSummary] = []
     @Published var searching = false
+    /// Gates the co-op party card — the party layer belongs to the campaigns
+    /// feature, so it stays hidden until that's unlocked (anti-shame law).
+    @Published var campaignsUnlocked = false
 
     func load() async {
         state = .loading
         async let me = try? UserService.me()
+        async let stats = try? UserService.stats()
         async let partners = SocialService.partners()
         async let nudges = try? SocialService.inbox()
         myId = (await me)?.id
+        campaignsUnlocked = (await stats)?.features.contains(.campaigns) ?? false
         do {
             state = .loaded(try await partners)
             inbox = await nudges ?? []
@@ -111,6 +116,9 @@ struct AlliesView: View {
     // MARK: - My Allies
 
     @ViewBuilder private var alliesTab: some View {
+        // The Campaign — Phase 2 (Party): the shared co-op foe, above the ally
+        // list. Renders nothing without a party, so it composes with the gate.
+        if model.campaignsUnlocked { PartyEncounterCard() }
         if active.isEmpty {
             Card { EmptyStateView(symbol: "person.2", title: "No active allies", message: "Find friends to hold you accountable.") }
         } else {

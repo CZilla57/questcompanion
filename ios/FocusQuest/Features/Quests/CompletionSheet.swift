@@ -42,6 +42,20 @@ struct CompletionSheet: View {
                 }
             }
 
+            // The Campaign — Phase 2 (Party): the same blow lands on each shared
+            // foe. Worded as teamwork — "together" — never a rank, never a loss.
+            ForEach(result.partyHits ?? []) { hit in
+                if hit.felled {
+                    Label("\(hit.foeName) felled together! +\(hit.coins) coins", systemImage: "person.2.fill")
+                        .font(.outfitSubheadline).foregroundStyle(Theme.gold)
+                        .labelStyle(TealIconLabelStyle())
+                } else {
+                    Label("Together you struck \(hit.foeName) for \(hit.damage) · \(hit.encounter.phaseLabel)", systemImage: "person.2.fill")
+                        .font(.outfitSubheadline).foregroundStyle(Theme.accent)
+                        .labelStyle(TealIconLabelStyle())
+                }
+            }
+
             if result.xpMultiplier > 1 {
                 Label("\(String(format: "%.2f", result.xpMultiplier))× streak bonus", systemImage: "flame.fill")
                     .font(.outfitSubheadline).foregroundStyle(Theme.gold)
