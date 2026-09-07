@@ -107,10 +107,12 @@ struct CampaignInput: Encodable {
 }
 
 struct CampaignUpdate: Encodable {
-    var title: String?
-    var arcPremise: String?
-    var endingBeat: String?
-    var status: String?
+    // `= nil` defaults so callers can send just one field; the synthesized
+    // encoder omits nil optionals, so a status-only update sends only `status`.
+    var title: String? = nil
+    var arcPremise: String? = nil
+    var endingBeat: String? = nil
+    var status: String? = nil
 }
 
 struct CampaignClaimResult: Codable {

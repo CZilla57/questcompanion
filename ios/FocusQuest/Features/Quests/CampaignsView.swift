@@ -29,20 +29,10 @@ struct CampaignsView: View {
                     EmptyStateView(symbol: "books.vertical", title: "No campaigns", message: "Campaigns tell a longer story across several questlines.")
                 }
                 ForEach(campaigns) { campaign in
-                    NavigationLink { CampaignDetailView(campaignId: campaign.id) } label: {
-                        VStack(alignment: .leading, spacing: Theme.Space.sm) {
-                            HStack {
-                                Text(campaign.title).font(.outfitHeadline)
-                                Spacer()
-                                Text(campaign.status.capitalized).font(.outfitCaption).foregroundStyle(.secondary)
-                            }
-                            if let premise = campaign.arcPremise, !premise.isEmpty {
-                                Text(premise).font(.outfitCaption).foregroundStyle(.secondary).lineLimit(2)
-                            }
-                            ProgressBar(value: campaign.progress)
-                            Text("\(campaign.done)/\(campaign.total) chapters").font(.outfitCaption).foregroundStyle(.secondary)
-                        }
-                        .padding(.vertical, 4)
+                    NavigationLink {
+                        CampaignDetailView(campaignId: campaign.id) { Task { await model.load() } }
+                    } label: {
+                        campaignRow(campaign)
                     }
                 }
             }
@@ -55,17 +45,42 @@ struct CampaignsView: View {
         }
         .task { if model.state.value == nil { await model.load() } }
     }
+
+    private func campaignRow(_ campaign: Campaign) -> some View {
+        VStack(alignment: .leading, spacing: Theme.Space.sm) {
+            HStack {
+                Text(campaign.title).font(.outfitHeadline)
+                Spacer()
+                Text(campaign.status.capitalized).font(.outfitCaption).foregroundStyle(.secondary)
+            }
+            if let premise = campaign.arcPremise, !premise.isEmpty {
+                Text(premise).font(.outfitCaption).foregroundStyle(.secondary).lineLimit(2)
+            }
+            ProgressBar(value: campaign.progress)
+            Text("\(campaign.done)/\(campaign.total) chapters").font(.outfitCaption).foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 4)
+    }
 }
 
 struct CampaignDetailView: View {
     let campaignId: Int
+    /// Let the list refresh after a status change or delete.
+    var onChanged: () -> Void = {}
+    @Environment(\.dismiss) private var dismiss
     @State private var state: Loadable<CampaignDetail> = .idle
     @State private var claiming = false
+    @State private var showDeleteConfirm = false
 
     var body: some View {
         AsyncContentView(state: state, retry: { Task { await load() } }) { detail in
             NeonList {
                 Section {
+                    if detail.campaign.status == "set_aside" {
+                        Label("Set aside. The story waited for you — pick it back up whenever you want.",
+                              systemImage: "moon.zzz.fill")
+                            .font(.outfitCaption).foregroundStyle(.secondary)
+                    }
                     if let premise = detail.campaign.arcPremise, !premise.isEmpty {
                         Text(premise).font(.outfitSubheadline)
                     }
@@ -79,24 +94,55 @@ struct CampaignDetailView: View {
                 }
                 Section("Chapters") {
                     ForEach(Array(detail.chapters.enumerated()), id: \.element.id) { index, chapter in
-                        HStack {
-                            Image(systemName: chapter.status == "completed" ? "checkmark.seal.fill" : "\(index + 1).circle")
-                                .foregroundStyle(chapter.status == "completed" ? Theme.success : .secondary)
-                            VStack(alignment: .leading) {
-                                Text(chapter.title).font(.outfitSubheadline)
-                                if let beat = chapter.chapterBeat, !beat.isEmpty {
-                                    Text(beat).font(.outfitCaption).foregroundStyle(.secondary)
-                                }
-                            }
-                            Spacer()
-                            Text("\(chapter.done)/\(chapter.total)").font(.outfitCaption).foregroundStyle(.secondary)
-                        }
+                        chapterRow(index: index, chapter: chapter)
                     }
                 }
             }
             .navigationTitle(detail.campaign.title)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        if detail.campaign.status == "running" {
+                            Button { Task { await setStatus("set_aside") } } label: {
+                                Label("Set aside", systemImage: "moon.zzz")
+                            }
+                        } else if detail.campaign.status == "set_aside" {
+                            Button { Task { await setStatus("running") } } label: {
+                                Label("Pick back up", systemImage: "play.circle")
+                            }
+                        }
+                        Button(role: .destructive) { showDeleteConfirm = true } label: {
+                            Label("Delete campaign", systemImage: "trash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                    }
+                }
+            }
+            .confirmationDialog("Delete this campaign?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
+                Button("Delete", role: .destructive) { Task { await deleteCampaign() } }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("The chapters stay as questlines — only the campaign is removed.")
+            }
         }
         .task { if state.value == nil { await load() } }
+    }
+
+    private func chapterRow(index: Int, chapter: CampaignChapter) -> some View {
+        let done = chapter.status == "completed"
+        return HStack {
+            Image(systemName: done ? "checkmark.seal.fill" : "\(index + 1).circle")
+                .foregroundStyle(done ? Theme.success : .secondary)
+            VStack(alignment: .leading) {
+                Text(chapter.title).font(.outfitSubheadline)
+                if let beat = chapter.chapterBeat, !beat.isEmpty {
+                    Text(beat).font(.outfitCaption).foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+            Text("\(chapter.done)/\(chapter.total)").font(.outfitCaption).foregroundStyle(.secondary)
+        }
     }
 
     private func load() async {
@@ -110,5 +156,21 @@ struct CampaignDetailView: View {
         defer { claiming = false }
         _ = try? await CampaignService.claim(id: campaignId)
         await load()
+    }
+
+    private func setStatus(_ status: String) async {
+        _ = try? await CampaignService.update(id: campaignId, CampaignUpdate(status: status))
+        await load()
+        onChanged()
+    }
+
+    private func deleteCampaign() async {
+        do {
+            try await CampaignService.delete(id: campaignId)
+            onChanged()
+            dismiss()
+        } catch {
+            state = .failed(error.userMessage)
+        }
     }
 }
