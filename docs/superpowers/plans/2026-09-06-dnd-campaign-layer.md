@@ -110,8 +110,8 @@ The roll is **seeded** from `userId + taskId + completionDay` so it is stable, f
 
 ### Party (reframe allies / body-double)
 **Files:** `partnerships.ts` / `body-double.ts`, `ally-milestones.ts`, routes, clients.
-- [ ] A **party** view: your allies as a co-op group with a **shared encounter** (a light co-op world boss) and **party loot** split on victory. Reuse existing ally/partnership plumbing; add a party-scoped encounter.
-- [ ] **Gate:** two linked accounts see the same shared encounter's HP move as either completes quests, and both receive loot on victory.
+- [~] A **party** view: your allies as a co-op group with a **shared encounter** and **party loot** on victory. Reuse existing ally/partnership plumbing; add a party-scoped encounter. *(Built server + web on `claude/dnd-party` — see [`2026-09-06-dnd-party-encounters.md`](./2026-09-06-dnd-party-encounters.md). A party = an accepted partnership (pairwise); the shared foe reuses the Phase-1 roll engine + Phase-2 `encounter.ts`; loot is upside-only to every contributor, never a split-to-less. iOS parity + the live two-account drive remain.)*
+- [~] **Gate:** two linked accounts see the same shared encounter's HP move as either completes quests, and both receive loot on victory. *(Server + web done; **iOS pending** on the `claude/dnd-ios` lineage, **live two-account drive pending** deploy.)*
 
 ---
 

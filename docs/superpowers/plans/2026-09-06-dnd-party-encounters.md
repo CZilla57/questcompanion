@@ -54,7 +54,7 @@
 
 **Interfaces produced:** `partyEncountersTable` (`id`, `partnershipId`, `name`, `tier`, `hp`, `totalDamage`, `felledAt`, `createdAt`); `partyEncounterContributionsTable` (`id`, `partyEncounterId`, `userId`, `damage`, `createdAt`); types `PartyEncounter`, `PartyEncounterContribution`.
 
-- [ ] **Step 1: Write the schema file** — model on `personal-encounters.ts`. Scope the foe to a partnership, and add a per-member contribution ledger:
+- [x] **Step 1: Write the schema file** — model on `personal-encounters.ts`. Scope the foe to a partnership, and add a per-member contribution ledger:
 
 ```typescript
 // lib/db/src/schema/party-encounters.ts
@@ -104,17 +104,17 @@ export type PartyEncounter = typeof partyEncountersTable.$inferSelect;
 export type PartyEncounterContribution = typeof partyEncounterContributionsTable.$inferSelect;
 ```
 
-- [ ] **Step 2: Export the module** — add `export * from "./party-encounters";` to `lib/db/src/schema/index.ts` after the `personal-encounters` line.
+- [x] **Step 2: Export the module** — add `export * from "./party-encounters";` to `lib/db/src/schema/index.ts` after the `personal-encounters` line.
 
-- [ ] **Step 3: Generate the migration**
+- [x] **Step 3: Generate the migration**
 
 ```bash
 DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder" pnpm --filter @workspace/db generate --name party_encounters
 ```
 
-- [ ] **Step 4: Review the SQL.** Confirm `lib/db/drizzle/0011_party_encounters.sql` creates both tables, the FK to `partnerships` with `ON DELETE cascade`, the two partial/unique indexes, and **nothing else**. If any `DROP` appears, STOP and report drift — do not hand-edit the SQL to hide it. Confirm `meta/_journal.json` + the new snapshot are staged alongside the `.sql` (see [[drizzle-migration-meta]]).
+- [x] **Step 4: Review the SQL.** Confirm `lib/db/drizzle/0011_party_encounters.sql` creates both tables, the FK to `partnerships` with `ON DELETE cascade`, the two partial/unique indexes, and **nothing else**. If any `DROP` appears, STOP and report drift — do not hand-edit the SQL to hide it. Confirm `meta/_journal.json` + the new snapshot are staged alongside the `.sql` (see [[drizzle-migration-meta]]).
 
-- [ ] **Step 5: Register in the account-data registry.** In `artifacts/api-server/src/lib/account-data.ts`, import both tables and add entries **before** the `partnerships` entry (children delete first):
+- [x] **Step 5: Register in the account-data registry.** In `artifacts/api-server/src/lib/account-data.ts`, import both tables and add entries **before** the `partnerships` entry (children delete first):
 
 ```typescript
   { name: "party_encounter_contributions", table: partyEncounterContributionsTable, userColumns: [partyEncounterContributionsTable.userId] },
@@ -124,14 +124,14 @@ DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder" p
   // from partnerships suffices. Follow whatever the guard test demands.
 ```
 
-- [ ] **Step 6: Run the registry guard + typecheck**
+- [x] **Step 6: Run the registry guard + typecheck**
 
 ```bash
 pnpm --filter @workspace/api-server test -- account-data
 pnpm typecheck
 ```
 
-- [ ] **Step 7: Commit** — `git add` the schema, `lib/db/drizzle` (SQL **+ meta**), the index export, and account-data; commit `feat(party): party_encounters + contribution ledger schema`.
+- [x] **Step 7: Commit** — `git add` the schema, `lib/db/drizzle` (SQL **+ meta**), the index export, and account-data; commit `feat(party): party_encounters + contribution ledger schema`.
 
 ---
 
@@ -145,13 +145,13 @@ pnpm typecheck
 - `rollUpContributions<T extends { userId: number; damage: number }>(rows: T[], members: number[]): { userId: number; damage: number }[]` — one entry per member (0 for a member who hasn't struck yet), ordered by `members`, with **no** implicit ranking.
 - Re-exports of the sizing constants it layers on (`HP` curve lives in `encounter-progress.ts`).
 
-- [ ] **Step 1: Write the failing tests** — cover: `partyPower` exceeds any single member's power (so `encounterHp(tier, partyPower) > encounterHp(tier, soloPower)`); `partyLoot` gives **each** contributor `felledCoins(tier)` and never a negative or zero-for-a-contributor payout; a non-contributor gets no row; `rollUpContributions` returns a 0-damage entry for a member who hasn't struck (never omits them, never marks them "behind"); determinism. Assert the anti-shame invariant explicitly (loot ≥ solo `felledCoins`, damage entries never sorted into winner/loser).
+- [x] **Step 1: Write the failing tests** — cover: `partyPower` exceeds any single member's power (so `encounterHp(tier, partyPower) > encounterHp(tier, soloPower)`); `partyLoot` gives **each** contributor `felledCoins(tier)` and never a negative or zero-for-a-contributor payout; a non-contributor gets no row; `rollUpContributions` returns a 0-damage entry for a member who hasn't struck (never omits them, never marks them "behind"); determinism. Assert the anti-shame invariant explicitly (loot ≥ solo `felledCoins`, damage entries never sorted into winner/loser).
 
-- [ ] **Step 2: Run to verify they fail** — `pnpm --filter @workspace/api-server test -- party-encounter` → cannot resolve import.
+- [x] **Step 2: Run to verify they fail** — `pnpm --filter @workspace/api-server test -- party-encounter` → cannot resolve import.
 
-- [ ] **Step 3: Implement `party-encounter.ts`** — pure, no I/O, importing `felledCoins` from `./encounter-progress`. Keep it thin; the HP/phase/damage math already lives in `encounter.ts` / `encounter-progress.ts` and must be reused, not re-derived.
+- [x] **Step 3: Implement `party-encounter.ts`** — pure, no I/O, importing `felledCoins` from `./encounter-progress`. Keep it thin; the HP/phase/damage math already lives in `encounter.ts` / `encounter-progress.ts` and must be reused, not re-derived.
 
-- [ ] **Step 4: Run to verify pass**, then **Step 5: Commit** `feat(party): pure party sizing, upside-only loot, contribution rollup`.
+- [x] **Step 4: Run to verify pass**, then **Step 5: Commit** `feat(party): pure party sizing, upside-only loot, contribution rollup`.
 
 ---
 
@@ -164,15 +164,15 @@ pnpm typecheck
 - `GET /party/encounters` — the user's parties (accepted partnerships), each with `EncounterView`, both members (name), and their contributions.
 - `TaskCompletionResult.partyHits: PartyEncounterHit[]`.
 
-- [ ] **Step 1: Build `chipPartyEncounters`** — model the transaction on `chipPersonalEncounter`. For the completing user, load accepted partnerships ([`accountability.ts`](../../../artifacts/api-server/src/routes/accountability.ts) shows the accepted-pair query). For each: `activePartyEncounter(tx, partnershipId, partyPower)` (lazy insert via the partial unique index, on-conflict re-read the winner); `damage = damageForCheck(power, band)`; bump `totalDamage` and the caller's contribution row (`onConflictDoUpdate` accumulate); if felled, stamp `felledAt`, `partyLoot(tier, contributorIds)` → `awardCoins` each, spawn `nextTier`. Return a `PartyEncounterHit` (party id, foe name/tier, this blow's damage, felled, this user's loot, `encounterView`). Sizing HP from **combined** power so it reads as a tougher, shared foe.
+- [x] **Step 1: Build `chipPartyEncounters`** — model the transaction on `chipPersonalEncounter`. For the completing user, load accepted partnerships ([`accountability.ts`](../../../artifacts/api-server/src/routes/accountability.ts) shows the accepted-pair query). For each: `activePartyEncounter(tx, partnershipId, partyPower)` (lazy insert via the partial unique index, on-conflict re-read the winner); `damage = damageForCheck(power, band)`; bump `totalDamage` and the caller's contribution row (`onConflictDoUpdate` accumulate); if felled, stamp `felledAt`, `partyLoot(tier, contributorIds)` → `awardCoins` each, spawn `nextTier`. Return a `PartyEncounterHit` (party id, foe name/tier, this blow's damage, felled, this user's loot, `encounterView`). Sizing HP from **combined** power so it reads as a tougher, shared foe.
 
-- [ ] **Step 2: `GET /party/encounters`** — list accepted partnerships, lazily surfacing (not necessarily spawning) each shared foe; return `encounterView`, member names, and `rollUpContributions`. 401 when unauthenticated.
+- [x] **Step 2: `GET /party/encounters`** — list accepted partnerships, lazily surfacing (not necessarily spawning) each shared foe; return `encounterView`, member names, and `rollUpContributions`. 401 when unauthenticated.
 
-- [ ] **Step 3: Wire into completion** — in `routes/tasks.ts`, inside the existing best-effort `try` that already calls `chipPersonalEncounter` (~line 976), also `partyHits = await chipPartyEncounters(userId, power, skillCheck.band)`; add `partyHits` to the `res.json` result. A party-chip throw must be caught by the **same** guard so it never fails the completion.
+- [x] **Step 3: Wire into completion** — in `routes/tasks.ts`, inside the existing best-effort `try` that already calls `chipPersonalEncounter` (~line 976), also `partyHits = await chipPartyEncounters(userId, power, skillCheck.band)`; add `partyHits` to the `res.json` result. A party-chip throw must be caught by the **same** guard so it never fails the completion.
 
-- [ ] **Step 4: Mount the router** in `routes/index.ts`.
+- [x] **Step 4: Mount the router** in `routes/index.ts`.
 
-- [ ] **Step 5: OpenAPI + codegen** — add the `party` tag, the `GET /party/encounters` path, and schemas `PartyEncounter`, `PartyMemberContribution`, `PartyEncounterHit`; add `partyHits` (array of `PartyEncounterHit`) to `TaskCompletionResult`. Every request/response body is a named `$ref` (orval inline-body collision gotcha). Then:
+- [x] **Step 5: OpenAPI + codegen** — add the `party` tag, the `GET /party/encounters` path, and schemas `PartyEncounter`, `PartyMemberContribution`, `PartyEncounterHit`; add `partyHits` (array of `PartyEncounterHit`) to `TaskCompletionResult`. Every request/response body is a named `$ref` (orval inline-body collision gotcha). Then:
 
 ```bash
 pnpm --filter @workspace/api-spec codegen
@@ -180,14 +180,14 @@ pnpm --filter @workspace/api-spec codegen
 
 Never hand-edit anything under `*/src/generated`.
 
-- [ ] **Step 6: Typecheck + server suite**
+- [x] **Step 6: Typecheck + server suite**
 
 ```bash
 pnpm typecheck
 pnpm --filter @workspace/api-server test
 ```
 
-- [ ] **Step 7: Commit** `feat(party): shared-foe chip on completion + GET /party/encounters + contract`.
+- [x] **Step 7: Commit** `feat(party): shared-foe chip on completion + GET /party/encounters + contract`.
 
 ---
 
@@ -195,9 +195,9 @@ pnpm --filter @workspace/api-server test
 
 **Files:** create `artifacts/focusquest/src/components/party-encounter-card.tsx`; modify the allies/partners page to mount it; reuse `artifacts/focusquest/src/lib/encounter.ts` and mirror `personal-encounter-card.tsx`.
 
-- [ ] **Step 1:** Render each party's shared foe: name, tier, the HP bar + phase label (reuse the encounter view helpers), and **both** members' contributions side by side as teamwork (e.g. "You · 120  ·  Alex · 95") — never a ranked list, never a "behind" state.
-- [ ] **Step 2:** On a completion whose result carries a `partyHits` strike or fell, surface the existing strike/fell toast (mirror the personal-encounter toast), worded co-op ("Together you struck the Gloomfen Warden").
-- [ ] **Step 3: Gate** — the panel appears only when `campaigns` is unlocked **and** the user has an accepted ally; otherwise render nothing. **Commit** `feat(web): party shared-encounter panel + co-op strike toast`.
+- [x] **Step 1:** Render each party's shared foe: name, tier, the HP bar + phase label (reuse the encounter view helpers), and **both** members' contributions side by side as teamwork (e.g. "You · 120  ·  Alex · 95") — never a ranked list, never a "behind" state.
+- [x] **Step 2:** On a completion whose result carries a `partyHits` strike or fell, surface the existing strike/fell toast (mirror the personal-encounter toast), worded co-op ("Together you struck the Gloomfen Warden").
+- [x] **Step 3: Gate** — the panel appears only when `campaigns` is unlocked **and** the user has an accepted ally; otherwise render nothing. **Commit** `feat(web): party shared-encounter panel + co-op strike toast`.
 
 ---
 
