@@ -2923,6 +2923,54 @@ export const BuyStatPerkResponse = zod.object({
 
 
 /**
+ * @summary The hero's class feats — unlocked (with per-day readiness) and locked (with unlock level)
+ */
+export const GetMyFeatsResponse = zod.object({
+  "unlocked": zod.array(zod.object({
+  "id": zod.string(),
+  "heroClass": zod.enum(['fighter', 'mage', 'ranger', 'healer']),
+  "kind": zod.enum(['passive', 'active']),
+  "unlockLevel": zod.number(),
+  "label": zod.string(),
+  "emoji": zod.string(),
+  "description": zod.string(),
+  "grants": zod.enum(['xp_boost', 'focus_boost', 'streak_shield']).nullish().describe('Active feats — the Stat Perk window activating grants'),
+  "passiveKingdom": zod.string().nullish().describe('Passive feats — the home kingdom whose categories get the XP bias'),
+  "readyToday": zod.boolean().nullish().describe('Active feats — false once used on the current local day'),
+  "active": zod.boolean().nullish().describe('Active boost feats — whether the granted boost window is currently live'),
+  "expiresAt": zod.coerce.date().nullish().describe('Active boost feats — active-until of the granted window'),
+  "atMax": zod.boolean().nullish().describe('Mend (streak shield) — whether the shield stock is already at the cap')
+})),
+  "locked": zod.array(zod.object({
+  "id": zod.string(),
+  "heroClass": zod.enum(['fighter', 'mage', 'ranger', 'healer']),
+  "kind": zod.enum(['passive', 'active']),
+  "unlockLevel": zod.number(),
+  "label": zod.string(),
+  "emoji": zod.string(),
+  "description": zod.string(),
+  "grants": zod.enum(['xp_boost', 'focus_boost', 'streak_shield']).nullish().describe('Active feats — the Stat Perk window activating grants'),
+  "passiveKingdom": zod.string().nullish().describe('Passive feats — the home kingdom whose categories get the XP bias'),
+  "readyToday": zod.boolean().nullish().describe('Active feats — false once used on the current local day'),
+  "active": zod.boolean().nullish().describe('Active boost feats — whether the granted boost window is currently live'),
+  "expiresAt": zod.coerce.date().nullish().describe('Active boost feats — active-until of the granted window'),
+  "atMax": zod.boolean().nullish().describe('Mend (streak shield) — whether the shield stock is already at the cap')
+}))
+})
+
+
+/**
+ * @summary Use an active class feat (once a day; gentle no-op if locked, on cooldown, or maxed)
+ */
+export const ActivateFeatResponse = zod.object({
+  "activated": zod.boolean(),
+  "reason": zod.enum(['ok', 'locked', 'on_cooldown', 'at_max']),
+  "expiresAt": zod.coerce.date().nullish().describe('Boost feats — the new active-until after activating'),
+  "owned": zod.number().nullish().describe('Mend — streak freezes held after activating (or the cap on at_max)')
+})
+
+
+/**
  * @summary Get completion heatmap data for the last N days
  */
 export const getCalendarHeatmapQueryDaysDefault = 90;

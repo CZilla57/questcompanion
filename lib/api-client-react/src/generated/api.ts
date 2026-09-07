@@ -51,6 +51,8 @@ import type {
   DopamineReward,
   DopamineRewardInput,
   ErrorEnvelope,
+  FeatActivateResult,
+  FeatsResponse,
   FinishBodyDoubleSprint200,
   FocusCompleteInput,
   FocusIntervalInput,
@@ -9593,6 +9595,153 @@ export const useBuyStatPerk = <TError = ErrorType<ErrorEnvelope>,
         TContext
       > => {
       return useMutation(getBuyStatPerkMutationOptions(options));
+    }
+
+export const getGetMyFeatsUrl = () => {
+
+
+
+
+  return `/api/users/me/feats`
+}
+
+/**
+ * @summary The hero's class feats — unlocked (with per-day readiness) and locked (with unlock level)
+ */
+export const getMyFeats = async ( options?: RequestInit): Promise<FeatsResponse> => {
+
+  return customFetch<FeatsResponse>(getGetMyFeatsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyFeatsQueryKey = () => {
+    return [
+    `/api/users/me/feats`
+    ] as const;
+    }
+
+
+export const getGetMyFeatsQueryOptions = <TData = Awaited<ReturnType<typeof getMyFeats>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyFeats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyFeatsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyFeats>>> = ({ signal }) => getMyFeats({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyFeats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyFeatsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyFeats>>>
+export type GetMyFeatsQueryError = ErrorType<void>
+
+
+/**
+ * @summary The hero's class feats — unlocked (with per-day readiness) and locked (with unlock level)
+ */
+
+export function useGetMyFeats<TData = Awaited<ReturnType<typeof getMyFeats>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyFeats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyFeatsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getActivateFeatUrl = (id: string,) => {
+
+
+
+
+  return `/api/users/me/feats/${id}/activate`
+}
+
+/**
+ * @summary Use an active class feat (once a day; gentle no-op if locked, on cooldown, or maxed)
+ */
+export const activateFeat = async (id: string, options?: RequestInit): Promise<FeatActivateResult> => {
+
+  return customFetch<FeatActivateResult>(getActivateFeatUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getActivateFeatMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateFeat>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof activateFeat>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['activateFeat'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof activateFeat>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  activateFeat(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActivateFeatMutationResult = NonNullable<Awaited<ReturnType<typeof activateFeat>>>
+
+    export type ActivateFeatMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Use an active class feat (once a day; gentle no-op if locked, on cooldown, or maxed)
+ */
+export const useActivateFeat = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateFeat>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof activateFeat>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getActivateFeatMutationOptions(options));
     }
 
 export const getGetCalendarHeatmapUrl = (params?: GetCalendarHeatmapParams,) => {

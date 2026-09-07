@@ -2387,6 +2387,82 @@ export interface StatPerkPurchaseResult {
   owned?: number | null;
 }
 
+export type FeatViewHeroClass = typeof FeatViewHeroClass[keyof typeof FeatViewHeroClass];
+
+
+export const FeatViewHeroClass = {
+  fighter: 'fighter',
+  mage: 'mage',
+  ranger: 'ranger',
+  healer: 'healer',
+} as const;
+
+export type FeatViewKind = typeof FeatViewKind[keyof typeof FeatViewKind];
+
+
+export const FeatViewKind = {
+  passive: 'passive',
+  active: 'active',
+} as const;
+
+/**
+ * Active feats — the Stat Perk window activating grants
+ */
+export type FeatViewGrants = typeof FeatViewGrants[keyof typeof FeatViewGrants] | null;
+
+
+export const FeatViewGrants = {
+  xp_boost: 'xp_boost',
+  focus_boost: 'focus_boost',
+  streak_shield: 'streak_shield',
+} as const;
+
+export interface FeatView {
+  id: string;
+  heroClass: FeatViewHeroClass;
+  kind: FeatViewKind;
+  unlockLevel: number;
+  label: string;
+  emoji: string;
+  description: string;
+  /** Active feats — the Stat Perk window activating grants */
+  grants?: FeatViewGrants;
+  /** Passive feats — the home kingdom whose categories get the XP bias */
+  passiveKingdom?: string | null;
+  /** Active feats — false once used on the current local day */
+  readyToday?: boolean | null;
+  /** Active boost feats — whether the granted boost window is currently live */
+  active?: boolean | null;
+  /** Active boost feats — active-until of the granted window */
+  expiresAt?: string | null;
+  /** Mend (streak shield) — whether the shield stock is already at the cap */
+  atMax?: boolean | null;
+}
+
+export interface FeatsResponse {
+  unlocked: FeatView[];
+  locked: FeatView[];
+}
+
+export type FeatActivateResultReason = typeof FeatActivateResultReason[keyof typeof FeatActivateResultReason];
+
+
+export const FeatActivateResultReason = {
+  ok: 'ok',
+  locked: 'locked',
+  on_cooldown: 'on_cooldown',
+  at_max: 'at_max',
+} as const;
+
+export interface FeatActivateResult {
+  activated: boolean;
+  reason: FeatActivateResultReason;
+  /** Boost feats — the new active-until after activating */
+  expiresAt?: string | null;
+  /** Mend — streak freezes held after activating (or the cap on at_max) */
+  owned?: number | null;
+}
+
 export interface HeatmapDay {
   /** Date in YYYY-MM-DD format */
   date: string;
