@@ -8,6 +8,7 @@ import { awardCoins } from "../lib/award-coins";
 import { encounterView, damageForCheck, type EncounterView } from "../lib/encounter";
 import { encounterName, encounterHp, nextTier } from "../lib/encounter-progress";
 import { partyPower, partyLoot, rollUpContributions } from "../lib/party-encounter";
+import { awardLoot, type LootDrop } from "../lib/gear-rewards";
 import { formatUserSummary } from "./accountability";
 import { getUserPower } from "./battle";
 import type { CheckBand } from "../lib/roll-engine";
@@ -59,6 +60,9 @@ export interface PartyEncounterHit {
   felled: boolean;
   /** Coins THIS user earned for felling (0 when not felled). Upside-only. */
   coins: number;
+  /** THIS user's treasure reveal on a fell (each contributor rolls their own).
+   *  null when not felled. */
+  loot: LootDrop | null;
   encounter: EncounterView;
 }
 
@@ -83,7 +87,7 @@ export async function chipPartyEncounters(
     const partnerId = p.requesterId === userId ? p.recipientId : p.requesterId;
     const combinedPower = partyPower([power, await getUserPower(partnerId)]);
 
-    const hit = await db.transaction(async (tx): Promise<PartyEncounterHit> => {
+    const { hit, felledInfo } = await db.transaction(async (tx): Promise<{ hit: PartyEncounterHit; felledInfo: { encId: number; tier: number; contributorIds: number[] } | null }> => {
       const enc = await activePartyEncounter(tx, p.id, combinedPower);
       const damage = damageForCheck(power, band);
       const newTotal = enc.totalDamage + damage;
@@ -102,10 +106,11 @@ export async function chipPartyEncounters(
         });
 
       let coins = 0;
+      let contributorIds: number[] = [];
       if (felled) {
         const contribs = await tx.select().from(partyEncounterContributionsTable)
           .where(eq(partyEncounterContributionsTable.partyEncounterId, enc.id));
-        const contributorIds = contribs.filter((c) => c.damage > 0).map((c) => c.userId);
+        contributorIds = contribs.filter((c) => c.damage > 0).map((c) => c.userId);
         for (const award of partyLoot(enc.tier, contributorIds)) {
           await awardCoins(tx, award.userId, award.coins, "boss_win");
           if (award.userId === userId) coins = award.coins;
@@ -117,15 +122,32 @@ export async function chipPartyEncounters(
       }
 
       return {
-        partnershipId: p.id,
-        foeName: enc.name,
-        tier: enc.tier,
-        damage,
-        felled,
-        coins,
-        encounter: encounterView(enc.hp, newTotal),
+        hit: {
+          partnershipId: p.id,
+          foeName: enc.name,
+          tier: enc.tier,
+          damage,
+          felled,
+          coins,
+          loot: null,
+          encounter: encounterView(enc.hp, newTotal),
+        },
+        felledInfo: felled ? { encId: enc.id, tier: enc.tier, contributorIds } : null,
       };
     });
+
+    // Treasure reveal — after the fell commits, every contributor rolls their
+    // own seeded drop (co-op loot, like the coins above). This user's drop rides
+    // back on the hit; partners' drops land silently in their inventory.
+    // Best-effort: a loot failure never fails the completion.
+    if (felledInfo) {
+      for (const cid of felledInfo.contributorIds) {
+        try {
+          const drop = await awardLoot(cid, felledInfo.encId, felledInfo.tier);
+          if (cid === userId) hit.loot = drop;
+        } catch { /* swallow — the fell + coins already landed */ }
+      }
+    }
 
     hits.push(hit);
   }

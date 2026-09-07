@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { EncounterView } from './encounterView';
+import type { LootDrop } from './lootDrop';
 
 export interface EncounterHit {
   /** The foe's name. */
@@ -17,5 +18,7 @@ export interface EncounterHit {
   felled: boolean;
   /** Upside-only loot coins granted on felling (0 otherwise). */
   coins: number;
+  /** Treasure reveal on a fell — gear and/or bonus coins; null when not felled. */
+  loot?: LootDrop | null;
   encounter: EncounterView;
 }

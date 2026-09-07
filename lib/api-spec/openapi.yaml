@@ -2470,6 +2470,100 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessEnvelope"
 
+  /gear/{id}/attune:
+    post:
+      operationId: attuneGear
+      tags: [avatar]
+      summary: Attune an owned, equipped epic/legendary item for bonus battle power
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Attuned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessEnvelope"
+        "403":
+          description: Item not owned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: Not equipped, not attunable, or all attunement slots full
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /gear/{id}/unattune:
+    post:
+      operationId: unattuneGear
+      tags: [avatar]
+      summary: Remove attunement from an item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Unattuned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessEnvelope"
+
+  /gear/inventory:
+    get:
+      operationId: getInventory
+      tags: [avatar]
+      summary: List every owned gear item with its loadout summary and salvage value
+      responses:
+        "200":
+          description: Owned gear inventory
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryResponse"
+
+  /gear/{id}/salvage:
+    post:
+      operationId: salvageGear
+      tags: [avatar]
+      summary: Salvage an owned, unequipped item for coins (permanent)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Salvage result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SalvageResult"
+        "403":
+          description: Item not owned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: Item is equipped — unequip before salvaging
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
   /battle/current:
     get:
       operationId: getBattleCurrent
@@ -4438,6 +4532,10 @@ components:
         spriteId:
           type: string
           nullable: true
+        attuned:
+          type: boolean
+        attunementBonus:
+          type: integer
 
     AvatarProfile:
       type: object
@@ -4594,6 +4692,90 @@ components:
         coinBalance:
           type: integer
         userLevel:
+          type: integer
+
+    InventoryItem:
+      type: object
+      required: [id, name, description, slot, rarity, statPower, icon, equipped, attuned, attunable, attunementBonus, salvageValue, acquiredAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        slot:
+          type: string
+          enum: [weapon, helmet, armor, boots, accessory]
+        rarity:
+          type: string
+          enum: [common, rare, epic, legendary]
+        statPower:
+          type: integer
+        icon:
+          type: string
+        spriteId:
+          type: string
+          nullable: true
+        equipped:
+          type: boolean
+        attuned:
+          type: boolean
+        attunable:
+          type: boolean
+        attunementBonus:
+          type: integer
+        salvageValue:
+          type: integer
+        acquiredAt:
+          type: string
+
+    InventoryLoadoutSlot:
+      type: object
+      required: [slot, item]
+      properties:
+        slot:
+          type: string
+          enum: [weapon, helmet, armor, boots, accessory]
+        item:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/InventoryItem"
+
+    InventoryResponse:
+      type: object
+      required: [items, loadout, equippedCount, equippedPower, attunedCount, attunementCap, ownedCount, coinBalance]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/InventoryItem"
+        loadout:
+          type: array
+          items:
+            $ref: "#/components/schemas/InventoryLoadoutSlot"
+        equippedCount:
+          type: integer
+        equippedPower:
+          type: integer
+        attunedCount:
+          type: integer
+        attunementCap:
+          type: integer
+        ownedCount:
+          type: integer
+        coinBalance:
+          type: integer
+
+    SalvageResult:
+      type: object
+      required: [salvaged, coinsGained, balance]
+      properties:
+        salvaged:
+          type: boolean
+        coinsGained:
+          type: integer
+        balance:
           type: integer
 
     BuyGearResult:
@@ -5052,8 +5234,31 @@ components:
         coins:
           type: integer
           description: Upside-only loot coins granted on felling (0 otherwise).
+        loot:
+          oneOf:
+            - $ref: "#/components/schemas/LootDrop"
+            - type: "null"
+          description: Treasure reveal on a fell — gear and/or bonus coins; null when not felled.
         encounter:
           $ref: "#/components/schemas/EncounterView"
+
+    LootDrop:
+      type: object
+      required: [rarity, gear, bonusCoins]
+      properties:
+        rarity:
+          type: string
+          nullable: true
+          enum: [legendary, epic, rare, common]
+          description: Gear rarity that dropped, or null for a coins-only "small find".
+        gear:
+          oneOf:
+            - $ref: "#/components/schemas/GearRewardInfo"
+            - type: "null"
+          description: The gear item awarded, or null when no gear dropped.
+        bonusCoins:
+          type: integer
+          description: Extra coins granted when no gear dropped (0 when gear dropped). Always ≥ 0.
 
     PersonalEncounterStatus:
       type: object
@@ -5120,6 +5325,11 @@ components:
         coins:
           type: integer
           description: Upside-only co-op loot this user earned for felling (0 otherwise).
+        loot:
+          oneOf:
+            - $ref: "#/components/schemas/LootDrop"
+            - type: "null"
+          description: This user's treasure reveal on a fell (each contributor rolls their own); null when not felled.
         encounter:
           $ref: "#/components/schemas/EncounterView"
 

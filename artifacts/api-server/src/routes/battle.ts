@@ -3,6 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { db, usersTable, gearItemsTable, userGearTable, weeklyBattlesTable, activityTable } from "@workspace/db";
 import { getLevelInfo } from "../lib/gamification";
 import { calcBattlePower } from "./avatar";
+import { gearPower } from "../lib/attunement";
 import { awardCoins } from "../lib/award-coins";
 import { COIN_EARN } from "../lib/coins";
 import { getWeekKey } from "../lib/week-key";
@@ -18,14 +19,18 @@ export async function getUserPower(userId: number): Promise<number> {
   if (!user) return 0;
 
   const equipped = await db
-    .select({ gear: gearItemsTable })
+    .select({ gear: gearItemsTable, userGear: userGearTable })
     .from(userGearTable)
     .innerJoin(gearItemsTable, eq(userGearTable.gearItemId, gearItemsTable.id))
     .where(and(eq(userGearTable.userId, userId), eq(userGearTable.equipped, true)));
 
-  const gearPower = equipped.reduce((sum, g) => sum + g.gear.statPower, 0);
+  const power = gearPower(equipped.map(g => ({
+    statPower: g.gear.statPower,
+    rarity: g.gear.rarity,
+    attuned: g.userGear.attuned,
+  })));
   const level = getLevelInfo(user.totalPoints).level;
-  return calcBattlePower(level, gearPower);
+  return calcBattlePower(level, power);
 }
 
 router.get("/battle/current", async (req, res): Promise<void> => {

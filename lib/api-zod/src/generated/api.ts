@@ -797,6 +797,18 @@ export const CompleteTaskResponse = zod.object({
   "damage": zod.number().describe('Damage this completion dealt (band-scaled; always ≥ 1).'),
   "felled": zod.boolean().describe('Whether this blow felled the foe (which then rests; a fresh foe spawns).'),
   "coins": zod.number().describe('Upside-only loot coins granted on felling (0 otherwise).'),
+  "loot": zod.union([zod.object({
+  "rarity": zod.enum(['legendary', 'epic', 'rare', 'common']).nullable().describe('Gear rarity that dropped, or null for a coins-only \"small find\".'),
+  "gear": zod.union([zod.object({
+  "gearItemId": zod.number(),
+  "name": zod.string(),
+  "slot": zod.enum(['weapon', 'helmet', 'armor', 'boots', 'accessory']),
+  "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
+  "statPower": zod.number(),
+  "icon": zod.string()
+}),zod.null()]).describe('The gear item awarded, or null when no gear dropped.'),
+  "bonusCoins": zod.number().describe('Extra coins granted when no gear dropped (0 when gear dropped). Always ≥ 0.')
+}),zod.null()]).optional().describe('Treasure reveal on a fell — gear and\/or bonus coins; null when not felled.'),
   "encounter": zod.object({
   "hp": zod.number(),
   "totalDamage": zod.number(),
@@ -814,6 +826,18 @@ export const CompleteTaskResponse = zod.object({
   "damage": zod.number().describe('Damage this completion dealt to the shared foe (band-scaled; always ≥ 1).'),
   "felled": zod.boolean().describe('Whether this blow felled the shared foe (which then rests; a fresh foe spawns).'),
   "coins": zod.number().describe('Upside-only co-op loot this user earned for felling (0 otherwise).'),
+  "loot": zod.union([zod.object({
+  "rarity": zod.enum(['legendary', 'epic', 'rare', 'common']).nullable().describe('Gear rarity that dropped, or null for a coins-only \"small find\".'),
+  "gear": zod.union([zod.object({
+  "gearItemId": zod.number(),
+  "name": zod.string(),
+  "slot": zod.enum(['weapon', 'helmet', 'armor', 'boots', 'accessory']),
+  "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
+  "statPower": zod.number(),
+  "icon": zod.string()
+}),zod.null()]).describe('The gear item awarded, or null when no gear dropped.'),
+  "bonusCoins": zod.number().describe('Extra coins granted when no gear dropped (0 when gear dropped). Always ≥ 0.')
+}),zod.null()]).optional().describe('This user\'s treasure reveal on a fell (each contributor rolls their own); null when not felled.'),
   "encounter": zod.object({
   "hp": zod.number(),
   "totalDamage": zod.number(),
@@ -2049,7 +2073,9 @@ export const GetPartnerDetailResponse = zod.object({
   "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
   "statPower": zod.number(),
   "icon": zod.string(),
-  "spriteId": zod.string().nullish()
+  "spriteId": zod.string().nullish(),
+  "attuned": zod.boolean().optional(),
+  "attunementBonus": zod.number().optional()
 }))
 }).optional(),
   "badges": zod.array(zod.object({
@@ -2202,7 +2228,9 @@ export const GetBodyDoubleRoomResponse = zod.object({
   "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
   "statPower": zod.number(),
   "icon": zod.string(),
-  "spriteId": zod.string().nullish()
+  "spriteId": zod.string().nullish(),
+  "attuned": zod.boolean().optional(),
+  "attunementBonus": zod.number().optional()
 }))
 }),zod.null()]).optional(),
   "isHost": zod.boolean(),
@@ -2260,7 +2288,9 @@ export const JoinBodyDoubleRoomResponse = zod.object({
   "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
   "statPower": zod.number(),
   "icon": zod.string(),
-  "spriteId": zod.string().nullish()
+  "spriteId": zod.string().nullish(),
+  "attuned": zod.boolean().optional(),
+  "attunementBonus": zod.number().optional()
 }))
 }),zod.null()]).optional(),
   "isHost": zod.boolean(),
@@ -2487,7 +2517,9 @@ export const GetAvatarResponse = zod.object({
   "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
   "statPower": zod.number(),
   "icon": zod.string(),
-  "spriteId": zod.string().nullish()
+  "spriteId": zod.string().nullish(),
+  "attuned": zod.boolean().optional(),
+  "attunementBonus": zod.number().optional()
 })),
   "availableColors": zod.array(zod.string()),
   "availableClasses": zod.array(zod.string()),
@@ -2544,7 +2576,9 @@ export const UpdateAvatarResponse = zod.object({
   "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
   "statPower": zod.number(),
   "icon": zod.string(),
-  "spriteId": zod.string().nullish()
+  "spriteId": zod.string().nullish(),
+  "attuned": zod.boolean().optional(),
+  "attunementBonus": zod.number().optional()
 })),
   "availableColors": zod.array(zod.string()),
   "availableClasses": zod.array(zod.string()),
@@ -2610,6 +2644,80 @@ export const EquipGearResponse = zod.object({
  */
 export const UnequipGearResponse = zod.object({
   "success": zod.boolean()
+})
+
+
+/**
+ * @summary Attune an owned, equipped epic/legendary item for bonus battle power
+ */
+export const AttuneGearResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Remove attunement from an item
+ */
+export const UnattuneGearResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary List every owned gear item with its loadout summary and salvage value
+ */
+export const GetInventoryResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "slot": zod.enum(['weapon', 'helmet', 'armor', 'boots', 'accessory']),
+  "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
+  "statPower": zod.number(),
+  "icon": zod.string(),
+  "spriteId": zod.string().nullish(),
+  "equipped": zod.boolean(),
+  "attuned": zod.boolean(),
+  "attunable": zod.boolean(),
+  "attunementBonus": zod.number(),
+  "salvageValue": zod.number(),
+  "acquiredAt": zod.string()
+})),
+  "loadout": zod.array(zod.object({
+  "slot": zod.enum(['weapon', 'helmet', 'armor', 'boots', 'accessory']),
+  "item": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "slot": zod.enum(['weapon', 'helmet', 'armor', 'boots', 'accessory']),
+  "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
+  "statPower": zod.number(),
+  "icon": zod.string(),
+  "spriteId": zod.string().nullish(),
+  "equipped": zod.boolean(),
+  "attuned": zod.boolean(),
+  "attunable": zod.boolean(),
+  "attunementBonus": zod.number(),
+  "salvageValue": zod.number(),
+  "acquiredAt": zod.string()
+}).nullable()
+})),
+  "equippedCount": zod.number(),
+  "equippedPower": zod.number(),
+  "attunedCount": zod.number(),
+  "attunementCap": zod.number(),
+  "ownedCount": zod.number(),
+  "coinBalance": zod.number()
+})
+
+
+/**
+ * @summary Salvage an owned, unequipped item for coins (permanent)
+ */
+export const SalvageGearResponse = zod.object({
+  "salvaged": zod.boolean(),
+  "coinsGained": zod.number(),
+  "balance": zod.number()
 })
 
 

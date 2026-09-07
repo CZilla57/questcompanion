@@ -11,12 +11,21 @@ import {
   useEnterBattle,
   useGetHeroStatus,
   useGetMyStats,
+  useGetInventory,
+  useSalvageGear,
+  useAttuneGear,
+  useUnattuneGear,
   getGetAvatarQueryKey,
   getGetGearStoreQueryKey,
   getGetBattleCurrentQueryKey,
+  getGetInventoryQueryKey,
   getGetCoinsQueryKey,
 } from "@workspace/api-client-react";
-import type { GearStoreItem, AvatarUpdateInput } from "@workspace/api-client-react";
+import type { GearStoreItem, InventoryItem, AvatarUpdateInput } from "@workspace/api-client-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { PixelHero } from "@/components/pixel-hero";
 import { HeroCredits } from "@/components/hero-credits";
 import { HeroVitality } from "@/components/hero-vitality";
@@ -33,7 +42,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Sword, HardHat, ShieldHalf, Shield, Footprints, Gem, Crown,
   Zap, Swords, Skull, Trophy, Lock, Check, ShoppingBag,
-  ChevronDown, Wand2, Coins,
+  ChevronDown, Wand2, Coins, Backpack, Recycle, ArrowUpDown, Sparkles,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -463,6 +472,259 @@ function BattlePanel() {
   );
 }
 
+type InvSort = "power" | "rarity";
+const RARITY_RANK: Record<string, number> = { legendary: 3, epic: 2, rare: 1, common: 0 };
+
+/** Owned-gear inventory: every item the player has, grouped by slot, with a
+ *  loadout summary, sort/filter, inline equip, and salvage-for-coins. Self-
+ *  contained — owns its own queries and mutations so the parent stays lean. */
+function InventoryTab() {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const { data, isLoading } = useGetInventory();
+  const equipGear = useEquipGear();
+  const unequipGear = useUnequipGear();
+  const salvageGear = useSalvageGear();
+  const attuneGear = useAttuneGear();
+  const unattuneGear = useUnattuneGear();
+
+  const [slotFilter, setSlotFilter] = useState<SlotFilter>("all");
+  const [sort, setSort] = useState<InvSort>("power");
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const [toSalvage, setToSalvage] = useState<InventoryItem | null>(null);
+
+  async function refresh() {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: getGetInventoryQueryKey() }),
+      qc.invalidateQueries({ queryKey: getGetAvatarQueryKey() }),
+      qc.invalidateQueries({ queryKey: getGetGearStoreQueryKey() }),
+      qc.invalidateQueries({ queryKey: getGetBattleCurrentQueryKey() }),
+      qc.invalidateQueries({ queryKey: getGetCoinsQueryKey() }),
+    ]);
+  }
+
+  async function handleEquipToggle(item: InventoryItem) {
+    setBusyId(item.id);
+    try {
+      if (item.equipped) await unequipGear.mutateAsync({ id: item.id });
+      else await equipGear.mutateAsync({ id: item.id });
+      await refresh();
+    } catch {
+      toast({ title: "Failed to update gear", variant: "destructive" });
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleAttuneToggle(item: InventoryItem) {
+    setBusyId(item.id);
+    try {
+      if (item.attuned) await unattuneGear.mutateAsync({ id: item.id });
+      else await attuneGear.mutateAsync({ id: item.id });
+      await refresh();
+    } catch (err: unknown) {
+      // The server returns a friendly reason (cap full, equip first, …) — surface it.
+      const msg = err instanceof Error ? err.message : "Couldn't change attunement";
+      toast({ title: "Attunement unchanged", description: msg });
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function confirmSalvage() {
+    const item = toSalvage;
+    if (!item) return;
+    setToSalvage(null);
+    setBusyId(item.id);
+    try {
+      const res = await salvageGear.mutateAsync({ id: item.id });
+      await refresh();
+      toast({
+        title: `Salvaged ${item.name}`,
+        description: `+${res.coinsGained} coins recovered. ${res.balance.toLocaleString()} total.`,
+        className: "border-amber-400/40",
+      });
+    } catch {
+      toast({ title: "Salvage failed", variant: "destructive" });
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  const items = data?.items ?? [];
+  const filtered = items
+    .filter(it => slotFilter === "all" || it.slot === slotFilter)
+    .sort((a, b) =>
+      sort === "power"
+        ? b.statPower - a.statPower
+        : (RARITY_RANK[b.rarity] - RARITY_RANK[a.rarity]) || (b.statPower - a.statPower));
+
+  return (
+    <div className="space-y-4">
+      {/* Loadout summary */}
+      {data && (
+        <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 rounded-lg bg-primary/5 border border-primary/20">
+          <span className="flex items-center gap-1.5 text-sm">
+            <Swords className="w-4 h-4 text-primary" />
+            <span className="font-bold text-primary">{data.equippedPower}</span>
+            <span className="text-muted-foreground">gear power</span>
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {data.equippedCount}/{SLOT_ORDER.length} slots equipped
+          </span>
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Sparkles className="w-3 h-3 text-violet-400" />
+            {data.attunedCount}/{data.attunementCap} attuned
+          </span>
+          <span className="text-xs text-muted-foreground">· {data.ownedCount} owned</span>
+          <span className="flex items-center gap-1.5 text-sm ml-auto">
+            <Coins className="w-4 h-4 text-amber-400" />
+            <span className="font-bold text-amber-300">{data.coinBalance.toLocaleString()}</span>
+          </span>
+        </div>
+      )}
+
+      {/* Filter + sort controls */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {(["all", ...SLOT_ORDER] as SlotFilter[]).map(f => (
+          <button
+            key={f}
+            onClick={() => setSlotFilter(f)}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-all border ${
+              slotFilter === f
+                ? "bg-primary text-primary-foreground border-primary"
+                : "border-border text-muted-foreground hover:border-muted-foreground"
+            }`}
+          >
+            {f === "all" ? "All" : SLOT_LABELS[f]}
+          </button>
+        ))}
+        <button
+          onClick={() => setSort(s => (s === "power" ? "rarity" : "power"))}
+          className="ml-auto flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-border text-muted-foreground hover:border-muted-foreground transition-all"
+        >
+          <ArrowUpDown className="w-3 h-3" /> {sort === "power" ? "Power" : "Rarity"}
+        </button>
+      </div>
+
+      {/* Inventory grid */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-28 rounded-xl bg-muted/30 animate-pulse" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-12 text-sm text-muted-foreground">
+          <Backpack className="w-8 h-8 mx-auto mb-2 opacity-40" />
+          {items.length === 0
+            ? "No gear yet — buy from the store or win it from encounters."
+            : "No items in this slot."}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {filtered.map(item => {
+            const color = RARITY_COLORS[item.rarity];
+            const busy = busyId === item.id;
+            const capFull = (data?.attunedCount ?? 0) >= (data?.attunementCap ?? 3);
+            const attuneReason = item.attuned
+              ? "Remove attunement"
+              : !item.equipped
+                ? "Equip it first"
+                : capFull
+                  ? `All ${data?.attunementCap ?? 3} attunement slots are full`
+                  : `Attune for +${item.attunementBonus} power`;
+            return (
+              <div
+                key={item.id}
+                className="rounded-xl border bg-card/60 p-3 flex flex-col gap-2"
+                style={{
+                  borderColor: item.equipped ? color : color + "44",
+                  boxShadow: item.equipped ? `0 0 12px ${color}33` : undefined,
+                }}
+              >
+                <div className="flex items-start gap-2">
+                  <span className="mt-0.5" style={{ color }}><GearIcon name={item.icon} size={20} /></span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-bold truncate">{item.name}</span>
+                      {item.equipped && (
+                        <span className="flex items-center gap-0.5 text-[10px] font-bold uppercase text-primary">
+                          <Check className="w-3 h-3" /> On
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <RarityBadge rarity={item.rarity} />
+                      <span className="text-xs text-muted-foreground">{SLOT_LABELS[item.slot]}</span>
+                    </div>
+                  </div>
+                  <span className="flex items-center gap-1 text-xs font-bold text-foreground/80 whitespace-nowrap">
+                    <Zap className="w-3 h-3" style={{ color }} />+{item.statPower}
+                    {item.attuned && (
+                      <span className="text-violet-400">+{item.attunementBonus}</span>
+                    )}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant={item.equipped ? "outline" : "default"}
+                    className="flex-1 h-8"
+                    disabled={busy}
+                    onClick={() => handleEquipToggle(item)}
+                  >
+                    {item.equipped ? "Unequip" : "Equip"}
+                  </Button>
+                  {item.attunable && (
+                    <Button
+                      size="sm"
+                      variant={item.attuned ? "default" : "outline"}
+                      className={`h-8 px-2 disabled:opacity-40 ${item.attuned ? "bg-violet-500/80 hover:bg-violet-500 text-white" : "text-violet-300"}`}
+                      disabled={busy || (!item.attuned && (!item.equipped || capFull))}
+                      title={attuneReason}
+                      onClick={() => handleAttuneToggle(item)}
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 px-2 text-muted-foreground hover:text-amber-300 disabled:opacity-40"
+                    disabled={busy || item.equipped}
+                    title={item.equipped ? "Unequip before salvaging" : `Salvage for ${item.salvageValue} coins`}
+                    onClick={() => setToSalvage(item)}
+                  >
+                    <Recycle className="w-3.5 h-3.5 mr-1" /> {item.salvageValue}
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <AlertDialog open={toSalvage !== null} onOpenChange={(o) => { if (!o) setToSalvage(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Salvage {toSalvage?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently gives up the item to recover{" "}
+              <span className="font-bold text-amber-300">{toSalvage?.salvageValue} coins</span>.
+              You can buy it again later from the store.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep it</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmSalvage}>Salvage</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
 export default function AvatarPage() {
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -476,7 +738,7 @@ export default function AvatarPage() {
   const equipGear = useEquipGear();
   const unequipGear = useUnequipGear();
 
-  const [activeTab, setActiveTab] = useState<"store" | "battle">("store");
+  const [activeTab, setActiveTab] = useState<"store" | "inventory" | "battle">("store");
   const [slotFilter, setSlotFilter] = useState<SlotFilter>("all");
   const [pendingColor, setPendingColor] = useState<string | null>(null);
 
@@ -772,6 +1034,14 @@ export default function AvatarPage() {
               <ShoppingBag className="w-4 h-4" /> Gear Store
             </button>
             <button
+              onClick={() => setActiveTab("inventory")}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-1.5 ${
+                activeTab === "inventory" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Backpack className="w-4 h-4" /> Inventory
+            </button>
+            <button
               onClick={() => setActiveTab("battle")}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-1.5 ${
                 activeTab === "battle" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
@@ -846,6 +1116,8 @@ export default function AvatarPage() {
               )}
             </div>
           )}
+
+          {activeTab === "inventory" && <InventoryTab />}
 
           {activeTab === "battle" && (
             <div className="space-y-4">

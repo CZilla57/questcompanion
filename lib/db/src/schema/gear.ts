@@ -24,6 +24,9 @@ export const userGearTable = pgTable("user_gear", {
   userId: integer("user_id").notNull().references(() => usersTable.id),
   gearItemId: integer("gear_item_id").notNull().references(() => gearItemsTable.id),
   equipped: boolean("equipped").notNull().default(false),
+  // Attunement (D&D second wave): an equipped magic item may be attuned to draw
+  // extra battle power. Only meaningful while equipped; unequipping clears it.
+  attuned: boolean("attuned").notNull().default(false),
   acquiredAt: timestamp("acquired_at").notNull().defaultNow(),
 }, (table) => [
   // Prevents a user from owning duplicate copies of the same gear item, which would allow

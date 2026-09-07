@@ -92,6 +92,13 @@
       "when": 1788787718859,
       "tag": "0012_zippy_spencer_smythe",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1788804086642,
+      "tag": "0013_futuristic_ghost_rider",
+      "breakpoints": true
     }
   ]
 }

@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, usersTable, gearItemsTable, userGearTable } from "@workspace/db";
 import { getLevelInfo } from "../lib/gamification";
+import { gearPower, attunementBonus, isAttunable } from "../lib/attunement";
 import {
   builds, skins, hairStyles, hairColors, faces, classes, colors,
   beardStyles, beardColors, glasses, earrings,
@@ -25,7 +26,13 @@ export async function buildHeroLook(userId: number) {
     .where(eq(userGearTable.userId, userId));
 
   const equipped = ownedGear.filter(g => g.userGear.equipped);
-  const equippedPower = equipped.reduce((sum, g) => sum + g.gear.statPower, 0);
+  // Battle power counts equipped stat power plus the attunement bonus for each
+  // attuned magic item (single source of truth in the attunement lib).
+  const equippedPower = gearPower(equipped.map(g => ({
+    statPower: g.gear.statPower,
+    rarity: g.gear.rarity,
+    attuned: g.userGear.attuned,
+  })));
   const levelInfo = getLevelInfo(user.totalPoints);
 
   return {
@@ -50,6 +57,11 @@ export async function buildHeroLook(userId: number) {
       statPower: g.gear.statPower,
       icon:      g.gear.icon,
       spriteId:  g.gear.spriteId ?? null,
+      attuned:   g.userGear.attuned,
+      // Bonus this item contributes to battle power while attuned (0 if it is
+      // not an attunable rarity).
+      attunementBonus: isAttunable(g.gear.rarity) && g.userGear.attuned
+        ? attunementBonus(g.gear.statPower) : 0,
     })),
   };
 }

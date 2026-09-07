@@ -4,6 +4,7 @@ import { db, personalEncountersTable, type PersonalEncounter } from "@workspace/
 import { awardCoins } from "../lib/award-coins";
 import { encounterView, damageForCheck, type EncounterView } from "../lib/encounter";
 import { encounterName, encounterHp, felledCoins, nextTier } from "../lib/encounter-progress";
+import { awardLoot, type LootDrop } from "../lib/gear-rewards";
 import { getUserPower } from "./battle";
 import type { CheckBand } from "../lib/roll-engine";
 
@@ -42,6 +43,8 @@ export interface EncounterHit {
   felled: boolean;
   /** Coins granted for felling (0 when not felled). Upside-only loot. */
   coins: number;
+  /** Treasure reveal on a fell — gear and/or bonus coins. null when not felled. */
+  loot: LootDrop | null;
   encounter: EncounterView;
 }
 
@@ -58,7 +61,7 @@ export async function chipPersonalEncounter(
   power: number,
   band: CheckBand,
 ): Promise<EncounterHit> {
-  return db.transaction(async (tx) => {
+  const { hit, felledEncounterId } = await db.transaction(async (tx): Promise<{ hit: EncounterHit; felledEncounterId: number | null }> => {
     const enc = await activeEncounter(tx, userId, power);
     const damage = damageForCheck(power, band);
     const newTotal = enc.totalDamage + damage;
@@ -69,7 +72,10 @@ export async function chipPersonalEncounter(
         .update(personalEncountersTable)
         .set({ totalDamage: newTotal })
         .where(eq(personalEncountersTable.id, enc.id));
-      return { name: enc.name, tier: enc.tier, damage, felled: false, coins: 0, encounter: encounterView(enc.hp, newTotal) };
+      return {
+        hit: { name: enc.name, tier: enc.tier, damage, felled: false, coins: 0, loot: null, encounter: encounterView(enc.hp, newTotal) },
+        felledEncounterId: null,
+      };
     }
 
     await tx
@@ -86,8 +92,21 @@ export async function chipPersonalEncounter(
       .values({ userId, name: encounterName(nt), tier: nt, hp: encounterHp(nt, power) })
       .onConflictDoNothing();
 
-    return { name: enc.name, tier: enc.tier, damage, felled: true, coins, encounter: encounterView(enc.hp, newTotal) };
+    return {
+      hit: { name: enc.name, tier: enc.tier, damage, felled: true, coins, loot: null, encounter: encounterView(enc.hp, newTotal) },
+      felledEncounterId: enc.id,
+    };
   });
+
+  // Treasure reveal — roll and grant loot AFTER the fell commits (awardLoot uses
+  // its own connection). Best-effort: a loot failure never fails the completion,
+  // and the fell + base coins have already landed.
+  if (felledEncounterId !== null) {
+    try {
+      hit.loot = await awardLoot(userId, felledEncounterId, hit.tier);
+    } catch { /* swallow — the fell already succeeded */ }
+  }
+  return hit;
 }
 
 // GET the current personal encounter (spawns a tier-1 foe on first view).

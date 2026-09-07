@@ -1,6 +1,9 @@
 import { eq, and, lte } from "drizzle-orm";
-import { db, gearItemsTable, userGearTable, activityTable } from "@workspace/db";
+import { db, gearItemsTable, userGearTable, activityTable, usersTable } from "@workspace/db";
 import type { GearRarity } from "@workspace/db";
+import { rollLoot, lootSeed, LOOT_BONUS_COINS } from "./loot-tables";
+import { getLevelInfo } from "./gamification";
+import { awardCoins } from "./award-coins";
 
 export interface GearRewardInfo {
   gearItemId: number;
@@ -128,4 +131,41 @@ export async function awardStreakGear(
   }
 
   return null; // All qualifying items already owned
+}
+
+/** A resolved treasure drop for an encounter fell — a gear item, or a coins-only
+ *  "small find" (rarity/gear null). Rides back on the encounter hit for the reveal. */
+export interface LootDrop {
+  rarity: GearRarity | null;
+  gear: GearRewardInfo | null;
+  bonusCoins: number;
+}
+
+/**
+ * The Campaign — second wave (Loot Tables): resolve and grant a fell's treasure.
+ * Seeded drop roll (loot-tables) → award gear at the rolled rarity via the same
+ * unowned/empty-slot selection above; if nothing drops (or every item at that
+ * rarity is already owned), grant a small coins-only find so the fell still
+ * rewards. Upside-only — this only ever adds, never touching base felled coins.
+ *
+ * DB-only (its own connection); call it AFTER the fell transaction, best-effort.
+ */
+export async function awardLoot(
+  userId: number,
+  encounterId: number,
+  tier: number,
+): Promise<LootDrop> {
+  const roll = rollLoot({ tier, seed: lootSeed(userId, encounterId, tier) });
+  if (roll.rarity) {
+    const [u] = await db
+      .select({ totalPoints: usersTable.totalPoints })
+      .from(usersTable)
+      .where(eq(usersTable.id, userId));
+    const level = getLevelInfo(u?.totalPoints ?? 0).level;
+    const gear = await awardStreakGear(userId, level, roll.rarity, "loot_drop");
+    if (gear) return { rarity: gear.rarity as GearRarity, gear, bonusCoins: 0 };
+    // Every item at/under that rarity is already owned — fall through to a coin find.
+  }
+  await db.transaction((tx) => awardCoins(tx, userId, LOOT_BONUS_COINS, "boss_win"));
+  return { rarity: null, gear: null, bonusCoins: LOOT_BONUS_COINS };
 }
