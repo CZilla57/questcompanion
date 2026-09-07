@@ -12,7 +12,9 @@ final class ReflectionViewModel: ObservableObject {
     func load() async {
         state = .loading
         do {
-            let response = try await ReflectionService.today()
+            // Draft tonight's AI question on open (web parity: the reflection
+            // page fetches with draft=true). The Today CTA fetches without it.
+            let response = try await ReflectionService.today(draft: true)
             if let reflection = response.reflection {
                 selectedChips = Set(reflection.chips)
                 freeText = reflection.freeText ?? ""
