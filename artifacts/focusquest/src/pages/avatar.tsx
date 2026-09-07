@@ -13,6 +13,8 @@ import {
   useGetMyStats,
   useGetInventory,
   useSalvageGear,
+  useAttuneGear,
+  useUnattuneGear,
   getGetAvatarQueryKey,
   getGetGearStoreQueryKey,
   getGetBattleCurrentQueryKey,
@@ -40,7 +42,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Sword, HardHat, ShieldHalf, Shield, Footprints, Gem, Crown,
   Zap, Swords, Skull, Trophy, Lock, Check, ShoppingBag,
-  ChevronDown, Wand2, Coins, Backpack, Recycle, ArrowUpDown,
+  ChevronDown, Wand2, Coins, Backpack, Recycle, ArrowUpDown, Sparkles,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -483,6 +485,8 @@ function InventoryTab() {
   const equipGear = useEquipGear();
   const unequipGear = useUnequipGear();
   const salvageGear = useSalvageGear();
+  const attuneGear = useAttuneGear();
+  const unattuneGear = useUnattuneGear();
 
   const [slotFilter, setSlotFilter] = useState<SlotFilter>("all");
   const [sort, setSort] = useState<InvSort>("power");
@@ -507,6 +511,21 @@ function InventoryTab() {
       await refresh();
     } catch {
       toast({ title: "Failed to update gear", variant: "destructive" });
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleAttuneToggle(item: InventoryItem) {
+    setBusyId(item.id);
+    try {
+      if (item.attuned) await unattuneGear.mutateAsync({ id: item.id });
+      else await attuneGear.mutateAsync({ id: item.id });
+      await refresh();
+    } catch (err: unknown) {
+      // The server returns a friendly reason (cap full, equip first, …) — surface it.
+      const msg = err instanceof Error ? err.message : "Couldn't change attunement";
+      toast({ title: "Attunement unchanged", description: msg });
     } finally {
       setBusyId(null);
     }
@@ -552,6 +571,10 @@ function InventoryTab() {
           </span>
           <span className="text-xs text-muted-foreground">
             {data.equippedCount}/{SLOT_ORDER.length} slots equipped
+          </span>
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Sparkles className="w-3 h-3 text-violet-400" />
+            {data.attunedCount}/{data.attunementCap} attuned
           </span>
           <span className="text-xs text-muted-foreground">· {data.ownedCount} owned</span>
           <span className="flex items-center gap-1.5 text-sm ml-auto">
@@ -603,6 +626,14 @@ function InventoryTab() {
           {filtered.map(item => {
             const color = RARITY_COLORS[item.rarity];
             const busy = busyId === item.id;
+            const capFull = (data?.attunedCount ?? 0) >= (data?.attunementCap ?? 3);
+            const attuneReason = item.attuned
+              ? "Remove attunement"
+              : !item.equipped
+                ? "Equip it first"
+                : capFull
+                  ? `All ${data?.attunementCap ?? 3} attunement slots are full`
+                  : `Attune for +${item.attunementBonus} power`;
             return (
               <div
                 key={item.id}
@@ -630,6 +661,9 @@ function InventoryTab() {
                   </div>
                   <span className="flex items-center gap-1 text-xs font-bold text-foreground/80 whitespace-nowrap">
                     <Zap className="w-3 h-3" style={{ color }} />+{item.statPower}
+                    {item.attuned && (
+                      <span className="text-violet-400">+{item.attunementBonus}</span>
+                    )}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -642,6 +676,18 @@ function InventoryTab() {
                   >
                     {item.equipped ? "Unequip" : "Equip"}
                   </Button>
+                  {item.attunable && (
+                    <Button
+                      size="sm"
+                      variant={item.attuned ? "default" : "outline"}
+                      className={`h-8 px-2 disabled:opacity-40 ${item.attuned ? "bg-violet-500/80 hover:bg-violet-500 text-white" : "text-violet-300"}`}
+                      disabled={busy || (!item.attuned && (!item.equipped || capFull))}
+                      title={attuneReason}
+                      onClick={() => handleAttuneToggle(item)}
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="ghost"
