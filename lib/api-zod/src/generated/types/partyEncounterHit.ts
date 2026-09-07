@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { EncounterView } from './encounterView';
+import type { LootDrop } from './lootDrop';
 
 export interface PartyEncounterHit {
   partnershipId: number;
@@ -17,5 +18,7 @@ export interface PartyEncounterHit {
   felled: boolean;
   /** Upside-only co-op loot this user earned for felling (0 otherwise). */
   coins: number;
+  /** This user's treasure reveal on a fell (each contributor rolls their own); null when not felled. */
+  loot?: LootDrop | null;
   encounter: EncounterView;
 }

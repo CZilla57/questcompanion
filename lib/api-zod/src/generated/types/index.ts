@@ -152,6 +152,8 @@ export * from './leaderboardEntry';
 export * from './leaveBodyDoubleRoom200';
 export * from './listFocusSessionsParams';
 export * from './logoutSuccess';
+export * from './lootDrop';
+export * from './lootDropRarity';
 export * from './markNudgesRead200';
 export * from './markNudgesReadInput';
 export * from './mintShortcutTokenRequest';

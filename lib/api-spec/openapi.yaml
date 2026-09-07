@@ -5049,8 +5049,31 @@ components:
         coins:
           type: integer
           description: Upside-only loot coins granted on felling (0 otherwise).
+        loot:
+          oneOf:
+            - $ref: "#/components/schemas/LootDrop"
+            - type: "null"
+          description: Treasure reveal on a fell — gear and/or bonus coins; null when not felled.
         encounter:
           $ref: "#/components/schemas/EncounterView"
+
+    LootDrop:
+      type: object
+      required: [rarity, gear, bonusCoins]
+      properties:
+        rarity:
+          type: string
+          nullable: true
+          enum: [legendary, epic, rare, common]
+          description: Gear rarity that dropped, or null for a coins-only "small find".
+        gear:
+          oneOf:
+            - $ref: "#/components/schemas/GearRewardInfo"
+            - type: "null"
+          description: The gear item awarded, or null when no gear dropped.
+        bonusCoins:
+          type: integer
+          description: Extra coins granted when no gear dropped (0 when gear dropped). Always ≥ 0.
 
     PersonalEncounterStatus:
       type: object
@@ -5117,6 +5140,11 @@ components:
         coins:
           type: integer
           description: Upside-only co-op loot this user earned for felling (0 otherwise).
+        loot:
+          oneOf:
+            - $ref: "#/components/schemas/LootDrop"
+            - type: "null"
+          description: This user's treasure reveal on a fell (each contributor rolls their own); null when not felled.
         encounter:
           $ref: "#/components/schemas/EncounterView"
 
