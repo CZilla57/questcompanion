@@ -171,6 +171,11 @@ struct InventoryItem: Codable, Identifiable {
     let equipped: Bool
     let salvageValue: Int
     let acquiredAt: String
+    // Attunement — optional so the screen still decodes against a pre-attunement
+    // server (the fields populate once attunement deploys).
+    let attuned: Bool?
+    let attunable: Bool?
+    let attunementBonus: Int?
 }
 
 struct InventoryLoadoutSlot: Codable, Identifiable {
@@ -186,6 +191,9 @@ struct InventoryResponse: Codable {
     let equippedPower: Int
     let ownedCount: Int
     let coinBalance: Int
+    // Optional until attunement deploys.
+    let attunedCount: Int?
+    let attunementCap: Int?
 }
 
 struct SalvageResult: Codable {

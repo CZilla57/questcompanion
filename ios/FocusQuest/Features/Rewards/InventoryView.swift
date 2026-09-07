@@ -29,12 +29,29 @@ final class InventoryViewModel: ObservableObject {
         await load()
         return result?.coinsGained
     }
+
+    /// Toggles attunement; returns the server's message on failure (e.g. slots
+    /// full), or nil on success.
+    func toggleAttune(_ item: InventoryItem) async -> String? {
+        busyId = item.id
+        var failure: String?
+        do {
+            if item.attuned == true { try await HeroService.unattuneGear(id: item.id) }
+            else { try await HeroService.attuneGear(id: item.id) }
+        } catch {
+            failure = error.userMessage
+        }
+        busyId = nil
+        await load()
+        return failure
+    }
 }
 
 struct InventoryView: View {
     @StateObject private var model = InventoryViewModel()
     @State private var toSalvage: InventoryItem?
     @State private var lastSalvage: String?
+    @State private var attuneNote: String?
 
     var body: some View {
         AsyncContentView(state: model.state, retry: { Task { await model.load() } }) { inv in
@@ -44,17 +61,21 @@ struct InventoryView: View {
                         Label("\(inv.equippedPower) gear power", systemImage: "bolt.fill")
                             .labelStyle(TealIconLabelStyle(spacing: 3))
                         Spacer()
-                        Text("\(inv.equippedCount)/\(inv.loadout.count) equipped")
+                        Text("\(inv.equippedCount)/\(inv.loadout.count) equipped · \(inv.ownedCount) owned")
                             .foregroundStyle(.secondary)
                     }.font(.outfitSubheadline)
                     HStack {
                         Label("\(inv.coinBalance) coins", systemImage: "dollarsign.circle.fill")
                             .labelStyle(TealIconLabelStyle(spacing: 3))
                         Spacer()
-                        Text("\(inv.ownedCount) owned").foregroundStyle(.secondary)
+                        Label("\(inv.attunedCount ?? 0)/\(inv.attunementCap ?? 3) attuned", systemImage: "sparkles")
+                            .foregroundStyle(.secondary)
                     }.font(.outfitCaption)
                     if let lastSalvage {
                         Text(lastSalvage).font(.outfitCaption).foregroundStyle(Theme.gold)
+                    }
+                    if let attuneNote {
+                        Text(attuneNote).font(.outfitCaption).foregroundStyle(.secondary)
                     }
                 }
 
@@ -105,12 +126,28 @@ struct InventoryView: View {
                         Text("Equipped").font(.outfitCaption2).foregroundStyle(Theme.accent)
                     }
                 }
-                Text("\(item.rarity.capitalized) · +\(item.statPower)")
-                    .font(.outfitCaption).foregroundStyle(.secondary)
+                HStack(spacing: 4) {
+                    Text("\(item.rarity.capitalized) · +\(item.statPower)")
+                        .font(.outfitCaption).foregroundStyle(.secondary)
+                    if item.attuned == true {
+                        Text("+\(item.attunementBonus ?? 0)")
+                            .font(.outfitCaption).foregroundStyle(Color(h: 271, s: 0.91, l: 0.72))
+                    }
+                }
             }
             Spacer()
             Button(item.equipped ? "Unequip" : "Equip") { Task { await model.toggleEquip(item) } }
                 .buttonStyle(.bordered).disabled(model.busyId != nil)
+            if item.attunable == true {
+                Button {
+                    Task { attuneNote = await model.toggleAttune(item) }
+                } label: {
+                    Image(systemName: item.attuned == true ? "sparkles" : "sparkle")
+                }
+                .buttonStyle(.borderless)
+                .tint(item.attuned == true ? Color(h: 271, s: 0.91, l: 0.65) : .secondary)
+                .disabled(model.busyId != nil || (item.attuned != true && (!item.equipped || attuneCapFull)))
+            }
             Button {
                 toSalvage = item
             } label: {
@@ -119,6 +156,12 @@ struct InventoryView: View {
             .buttonStyle(.borderless).tint(Theme.gold)
             .disabled(item.equipped || model.busyId != nil)
         }
+    }
+
+    /// Whether all attunement slots are in use (blocks attuning a new item).
+    private var attuneCapFull: Bool {
+        guard let inv = model.state.value else { return false }
+        return (inv.attunedCount ?? 0) >= (inv.attunementCap ?? 3)
     }
 
     /// Owned items grouped by slot, in the canonical slot order, equipped first
