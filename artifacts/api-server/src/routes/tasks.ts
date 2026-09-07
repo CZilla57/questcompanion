@@ -4,7 +4,8 @@ import { applyMultiplier } from "../lib/xp-multiplier";
 import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable, taskStepsTable, questlinesTable, brainCheckinsTable, recurringTasksTable, kingdomPointsTable, focusSessionsTable } from "@workspace/db";
 import type { DifficultyLevel, VariantLadder } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, DAILY_BONUS_POINTS } from "../lib/gamification";
-import { newlyUnlocked, type FeatureKey } from "../lib/feature-gates";
+import { newlyUnlocked, effectiveLevel, type FeatureKey } from "../lib/feature-gates";
+import { unlockedFeats, passiveBonusPoints } from "../lib/class-feats";
 import { assignPoints, CATEGORY_LABELS, VALID_CATEGORIES } from "../lib/auto-points";
 import { advanceHabitStreak, reverseHabitStreak, type HabitStreakPreviousState } from "../lib/habit-streaks";
 import { toFrequency } from "../lib/recurrence";
@@ -643,6 +644,18 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     // touches the streak/level math and can never lower a payout.
     const xpBoostBonus = boostBonusPoints(task.points, isBoostActive(user.xpBoostExpiresAt, now), XP_BOOST_BONUS);
     pointsToAdd += xpBoostBonus;
+
+    // Class Feats (second wave): a passive feat adds a small % of the base reward
+    // on the hero's home categories. Additive and upside-only, like the boost
+    // above — it never touches streak/level math and can never lower a payout.
+    // Passive feats unlock at a level past the campaigns gate, so the level
+    // ladder itself keeps this dark until the campaign era.
+    const passiveFeatBonus = passiveBonusPoints(
+      unlockedFeats(user.avatarClass, effectiveLevel(user)),
+      task.category,
+      task.points,
+    );
+    pointsToAdd += passiveFeatBonus;
 
     // Daily bonus check: the gating set is tasks due today plus anchored tasks past
     // their one-day grace (created before today). Fetch the superset in-transaction,
