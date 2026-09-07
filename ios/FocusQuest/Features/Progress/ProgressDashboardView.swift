@@ -12,6 +12,9 @@ final class ProgressViewModel: ObservableObject {
         let badgeTotal: Int
         let patterns: PatternSummary?
         let heatmap: HeatmapResponse?
+        /// The Campaign — Phase 3: the week told back in the Dungeon Master's
+        /// "session summary" voice. Empty until the first recap generates.
+        let recaps: [WeeklyRecapItem]
     }
     @Published var core: Loadable<Core> = .idle
     @Published var insights: InsightsResponse?
@@ -28,13 +31,15 @@ final class ProgressViewModel: ObservableObject {
             async let patterns = try? ProgressService.patterns()
             async let heatmap = try? ProgressService.heatmap(days: 84)
             async let ins = try? ProgressService.insights(days: insightDays)
+            async let recaps = try? ProgressService.recaps()
             let c = Core(
                 me: try await me,
                 stats: try await stats,
                 earnedBadges: await earned ?? [],
                 badgeTotal: (await all)?.count ?? 0,
                 patterns: await patterns,
-                heatmap: await heatmap
+                heatmap: await heatmap,
+                recaps: (await recaps)?.recaps ?? []
             )
             insights = await ins
             core = .loaded(c)
@@ -107,7 +112,82 @@ struct ProgressDashboardView: View {
 
         if let heatmap = core.heatmap { HeatmapCard(days: heatmap.days) }
 
+        if !core.recaps.isEmpty { weeklyRecapsCard(core.recaps) }
+
         activityCard(core.stats)
+    }
+
+    /// The Campaign — Phase 3: the weekly recap, now written in the Dungeon
+    /// Master's "session summary" voice. Read-only here (the email toggle lives
+    /// in Settings); mirrors the web `WeeklyRecapsSection` — a week range, a row
+    /// of strengths-only stat chips, and the DM's narration.
+    private func weeklyRecapsCard(_ recaps: [WeeklyRecapItem]) -> some View {
+        Card {
+            VStack(alignment: .leading, spacing: Theme.Space.md) {
+                Label("Weekly recaps", systemImage: "scroll")
+                    .font(.outfitHeadline).labelStyle(TealIconLabelStyle())
+                ForEach(recaps.prefix(6)) { recap in
+                    VStack(alignment: .leading, spacing: Theme.Space.sm) {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text(Self.weekLabel(recap.weekKey))
+                                .font(.outfitSubheadlineBold)
+                            Spacer(minLength: Theme.Space.sm)
+                        }
+                        let chips = Self.statChips(recap.stats)
+                        if !chips.isEmpty {
+                            FlowChips(chips)
+                        }
+                        Text(recap.narrative)
+                            .font(.outfitCallout)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(Theme.Space.md)
+                    .background(Theme.cardBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous)
+                            .strokeBorder(Theme.cardBorder, lineWidth: 1)
+                    )
+                }
+            }
+        }
+    }
+
+    /// Strengths-only chips for a recap week (mirrors the web `statChips`): a
+    /// count is shown only when it's positive, so a quiet week never reads as a
+    /// deficit.
+    private static func statChips(_ s: WeeklyRecapStats) -> [String] {
+        var chips: [String] = []
+        if s.questsCompleted > 0 { chips.append("\(s.questsCompleted) quest\(s.questsCompleted == 1 ? "" : "s")") }
+        if s.focusMinutes > 0 { chips.append("\(s.focusMinutes) focus min") }
+        if s.xpEarned > 0 { chips.append("\(s.xpEarned) XP") }
+        if let boss = s.boss, boss.damage > 0 { chips.append("\(boss.damage) boss dmg\(boss.defeated ? " 🐉" : "")") }
+        return chips
+    }
+
+    /// An ISO week key ("2026-W29") rendered as its "Mon D – Mon D" span, anchored
+    /// in UTC to match the server's week bucketing.
+    private static func weekLabel(_ weekKey: String) -> String {
+        let parts = weekKey.split(separator: "W")
+        guard parts.count == 2,
+              let year = Int(parts[0].dropLast()),  // trailing "-"
+              let week = Int(parts[1]) else { return weekKey }
+        var cal = Calendar(identifier: .iso8601)
+        cal.timeZone = TimeZone(identifier: "UTC") ?? .current
+        var comps = DateComponents()
+        comps.weekOfYear = week
+        comps.yearForWeekOfYear = year
+        comps.weekday = cal.firstWeekday  // Monday, per ISO-8601
+        guard let monday = cal.date(from: comps),
+              let sunday = cal.date(byAdding: .day, value: 6, to: monday) else { return weekKey }
+        let fmt = DateFormatter()
+        fmt.calendar = cal
+        fmt.timeZone = cal.timeZone
+        fmt.locale = Locale(identifier: "en_US_POSIX")
+        fmt.dateFormat = "MMM d"
+        return "\(fmt.string(from: monday)) – \(fmt.string(from: sunday))"
     }
 
     private func profileHeader(_ me: User) -> some View {
@@ -471,4 +551,26 @@ struct HeatmapCard: View {
 
 extension Array {
     subscript(safe index: Int) -> Element? { indices.contains(index) ? self[index] : nil }
+}
+
+/// A row of small teal stat chips that wraps to the next line instead of
+/// clipping — used by the weekly-recap card. Mirrors the web's flex-wrap chips.
+struct FlowChips: View {
+    private let chips: [String]
+    init(_ chips: [String]) { self.chips = chips }
+
+    var body: some View {
+        FlowLayout(spacing: 6) {
+            ForEach(chips, id: \.self) { chip in
+                Text(chip)
+                    .font(.outfitCaption2)
+                    .foregroundStyle(Theme.accent)
+                    .padding(.horizontal, Theme.Space.sm)
+                    .padding(.vertical, 3)
+                    .background(Theme.accentSoft)
+                    .clipShape(Capsule())
+                    .overlay(Capsule().strokeBorder(Theme.accent.opacity(0.3), lineWidth: 1))
+            }
+        }
+    }
 }

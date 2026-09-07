@@ -28,6 +28,22 @@ struct WeeklyRecapStats: Codable {
     let levelUps: Int
     let badges: [String]
     let questlinesCompleted: [String]
+    /// The week's encounter tally, or nil when no boss was engaged. Optional so
+    /// the app decodes fine against a server that predates the D&D layer.
+    let boss: WeeklyRecapBoss?
+    let rhythms: WeeklyRecapRhythms?
+}
+
+struct WeeklyRecapBoss: Codable {
+    let damage: Int
+    let attacks: Int
+    let defeated: Bool
+}
+
+struct WeeklyRecapRhythms: Codable {
+    let powerHours: [Int]
+    let bestDay: Int?
+    let topHelpers: [String]
 }
 
 struct RecapEmailSettingsRequest: Encodable { let enabled: Bool }
