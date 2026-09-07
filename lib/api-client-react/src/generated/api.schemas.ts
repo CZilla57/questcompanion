@@ -695,6 +695,19 @@ export interface EncounterHit {
   encounter: EncounterView;
 }
 
+export interface PartyEncounterHit {
+  partnershipId: number;
+  foeName: string;
+  tier: number;
+  /** Damage this completion dealt to the shared foe (band-scaled; always ≥ 1). */
+  damage: number;
+  /** Whether this blow felled the shared foe (which then rests; a fresh foe spawns). */
+  felled: boolean;
+  /** Upside-only co-op loot this user earned for felling (0 otherwise). */
+  coins: number;
+  encounter: EncounterView;
+}
+
 export type BadgeCategory = typeof BadgeCategory[keyof typeof BadgeCategory];
 
 
@@ -776,6 +789,8 @@ export interface TaskCompletionResult {
   skillCheckNarration?: string | null;
   /** The blow this completion landed on the player's personal encounter. Null when the encounter couldn't be updated (completion still succeeds). */
   encounterHit?: EncounterHit | null;
+  /** The blow this completion landed on each shared party foe (one per accepted partnership). Empty when the user has no party or the update couldn't run (completion still succeeds). */
+  partyHits?: PartyEncounterHit[];
   bonusAwarded: boolean;
   /** All-day completion bonus XP */
   bonusPoints: number;
@@ -2104,6 +2119,24 @@ export interface PersonalEncounterStatus {
   name: string;
   tier: number;
   encounter: EncounterView;
+}
+
+export interface PartyMemberContribution {
+  userId: number;
+  /** Display name for this member ("You" for the viewer). Never a rank. */
+  name: string;
+  /** Total damage this member has dealt to the shared foe (0 if they haven't struck yet). */
+  damage: number;
+}
+
+export interface PartyEncounter {
+  partnershipId: number;
+  partner?: UserSummary | null;
+  foeName: string;
+  tier: number;
+  encounter: EncounterView;
+  /** Both members' contributions as teamwork — one entry per member, never a ranking. */
+  members: PartyMemberContribution[];
 }
 
 /**

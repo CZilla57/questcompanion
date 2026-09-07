@@ -9,6 +9,7 @@ import type { Badge } from './badge';
 import type { EncounterHit } from './encounterHit';
 import type { FeatureKey } from './featureKey';
 import type { GearRewardInfo } from './gearRewardInfo';
+import type { PartyEncounterHit } from './partyEncounterHit';
 import type { SkillCheck } from './skillCheck';
 import type { SurpriseReward } from './surpriseReward';
 import type { Task } from './task';
@@ -23,6 +24,8 @@ export interface TaskCompletionResult {
   skillCheckNarration?: string | null;
   /** The blow this completion landed on the player's personal encounter. Null when the encounter couldn't be updated (completion still succeeds). */
   encounterHit?: EncounterHit | null;
+  /** The blow this completion landed on each shared party foe (one per accepted partnership). Empty when the user has no party or the update couldn't run (completion still succeeds). */
+  partyHits?: PartyEncounterHit[];
   bonusAwarded: boolean;
   /** All-day completion bonus XP */
   bonusPoints: number;

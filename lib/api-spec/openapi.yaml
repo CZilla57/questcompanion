@@ -31,6 +31,8 @@ tags:
     description: Grouping quests into goal-oriented questlines
   - name: campaigns
     description: Long-horizon goals told as an ordered story arc over questlines
+  - name: party
+    description: Co-op parties (accepted partnerships) fighting a shared encounter
   - name: brain
     description: Brain check-ins, derived mode state, and rescue events
   - name: recaps
@@ -2515,6 +2517,23 @@ paths:
         "401":
           description: Unauthorized
 
+  /party/encounters:
+    get:
+      operationId: getPartyEncounters
+      summary: The user's parties and their shared foes (spawns a tier-1 foe on first view)
+      tags: [party]
+      responses:
+        "200":
+          description: One entry per accepted partnership, each with its shared encounter
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PartyEncounter"
+        "401":
+          description: Unauthorized
+
   /dm/beat:
     get:
       operationId: getDmBeat
@@ -3443,6 +3462,11 @@ components:
           oneOf:
             - $ref: "#/components/schemas/EncounterHit"
             - type: "null"
+        partyHits:
+          type: array
+          description: The blow this completion landed on each shared party foe (one per accepted partnership). Empty when the user has no party or the update couldn't run (completion still succeeds).
+          items:
+            $ref: "#/components/schemas/PartyEncounterHit"
         bonusAwarded:
           type: boolean
         bonusPoints:
@@ -4996,6 +5020,63 @@ components:
           type: string
         tier:
           type: integer
+        encounter:
+          $ref: "#/components/schemas/EncounterView"
+
+    PartyMemberContribution:
+      type: object
+      required: [userId, name, damage]
+      properties:
+        userId:
+          type: integer
+        name:
+          type: string
+          description: Display name for this member ("You" for the viewer). Never a rank.
+        damage:
+          type: integer
+          description: Total damage this member has dealt to the shared foe (0 if they haven't struck yet).
+
+    PartyEncounter:
+      type: object
+      required: [partnershipId, foeName, tier, encounter, members]
+      properties:
+        partnershipId:
+          type: integer
+        partner:
+          oneOf:
+            - $ref: "#/components/schemas/UserSummary"
+            - type: "null"
+        foeName:
+          type: string
+        tier:
+          type: integer
+        encounter:
+          $ref: "#/components/schemas/EncounterView"
+        members:
+          type: array
+          description: Both members' contributions as teamwork — one entry per member, never a ranking.
+          items:
+            $ref: "#/components/schemas/PartyMemberContribution"
+
+    PartyEncounterHit:
+      type: object
+      required: [partnershipId, foeName, tier, damage, felled, coins, encounter]
+      properties:
+        partnershipId:
+          type: integer
+        foeName:
+          type: string
+        tier:
+          type: integer
+        damage:
+          type: integer
+          description: Damage this completion dealt to the shared foe (band-scaled; always ≥ 1).
+        felled:
+          type: boolean
+          description: Whether this blow felled the shared foe (which then rests; a fresh foe spawns).
+        coins:
+          type: integer
+          description: Upside-only co-op loot this user earned for felling (0 otherwise).
         encounter:
           $ref: "#/components/schemas/EncounterView"
 

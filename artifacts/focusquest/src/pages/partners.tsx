@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { useGetPartners, useGetMe, useSearchUsers, useSendPartnerRequest, useAcceptPartnerRequest, useDeclinePartnerRequest, useGetNudges, useMarkNudgesRead, getGetNudgesQueryKey, PartnershipStatus } from "@workspace/api-client-react";
+import { useGetPartners, useGetMe, useGetMyStats, useSearchUsers, useSendPartnerRequest, useAcceptPartnerRequest, useDeclinePartnerRequest, useGetNudges, useMarkNudgesRead, getGetNudgesQueryKey, PartnershipStatus } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,9 @@ import { getGetPartnersQueryKey } from "@workspace/api-client-react";
 import { NudgePicker } from "@/components/nudge-picker";
 import { apiErrorMessage } from "@/lib/api-error";
 import { PageTabs } from "@/components/page-tabs";
+import { PartyEncounterCard } from "@/components/party-encounter-card";
+import { isUnlocked } from "@/lib/feature-gates";
+import { browserTimeZone } from "@/lib/timezone";
 
 export default function Partners() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -26,6 +29,8 @@ export default function Partners() {
 
   const { data: partners, isLoading: partnersLoading } = useGetPartners();
   const { data: me } = useGetMe();
+  const { data: stats } = useGetMyStats({ tz: browserTimeZone() });
+  const campaignsUnlocked = isUnlocked(stats?.unlockedFeatures, "campaigns");
   const { data: searchResults, isLoading: searchLoading } = useSearchUsers(
     { q: debouncedSearch },
     { query: { enabled: debouncedSearch.length > 2, queryKey: ["searchUsers", debouncedSearch] } }
@@ -128,6 +133,7 @@ export default function Partners() {
         </TabsList>
 
         <TabsContent value="allies" className="mt-6 space-y-4">
+          {campaignsUnlocked && <PartyEncounterCard />}
           {activePartners.length === 0 ? (
             <div className="text-center py-20 border-2 border-dashed border-muted rounded-xl bg-card/50">
               <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />

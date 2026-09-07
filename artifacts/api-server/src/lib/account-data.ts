@@ -18,6 +18,7 @@ import {
   recurringTasksTable, reflectionsTable, rescueEventsTable, rewardStoreItemsTable,
   taskStepsTable, tasksTable, userBadgesTable, userGearTable, weeklyBattlesTable,
   weeklyRecapsTable, worldBossAttacksTable, personalEncountersTable, dmBeatsTable,
+  partyEncounterContributionsTable,
 } from "@workspace/db/schema";
 
 export interface UserDataTable {
@@ -53,6 +54,10 @@ export const USER_DATA_TABLES: readonly UserDataTable[] = [
   { name: "weekly_battles",     table: weeklyBattlesTable,    userColumns: [weeklyBattlesTable.userId] },
   { name: "world_boss_attacks", table: worldBossAttacksTable, userColumns: [worldBossAttacksTable.userId] },
   { name: "personal_encounters", table: personalEncountersTable, userColumns: [personalEncountersTable.userId] },
+  // Party shared-foe contributions carry a userId; the party_encounters row
+  // itself has no user column (it hangs off the partnership) and is cleaned via
+  // the partnership cascade, like world_boss_weeks.
+  { name: "party_encounter_contributions", table: partyEncounterContributionsTable, userColumns: [partyEncounterContributionsTable.userId] },
   { name: "dm_beats",           table: dmBeatsTable,          userColumns: [dmBeatsTable.userId] },
   // Body-double children before rooms; my hosted rooms cascade their other
   // members'/sprints' rows at the DB level (all room FKs cascade).

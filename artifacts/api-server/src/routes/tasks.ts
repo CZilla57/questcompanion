@@ -36,6 +36,7 @@ import { capitalLifetime, capitalTier, type KingdomId } from "../lib/kingdoms";
 import { abilityScores, proficiencyBonus } from "../lib/character-sheet";
 import { resolveTaskCheck, taskCheckSeed, bandEffect, bandNarration, type SkillCheck } from "../lib/roll-engine";
 import { chipPersonalEncounter, type EncounterHit } from "./encounter";
+import { chipPartyEncounters, type PartyEncounterHit } from "./party";
 import { getUserPower } from "./battle";
 import { grantInitiationAwards } from "../lib/initiation-grant";
 import type { InitiationXp } from "../lib/initiation";
@@ -963,6 +964,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
   let skillCheck: SkillCheck | null = null;
   let skillCheckNarration: string | null = null;
   let encounterHit: EncounterHit | null = null;
+  let partyHits: PartyEncounterHit[] = [];
   try {
     skillCheck = await rollCompletionCheck(userId, id, task.category, task.difficulty, today!);
     skillCheckNarration = bandNarration(skillCheck.band, task.title);
@@ -974,6 +976,9 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     // its HP, scaled by the roll's band. Best-effort; felling grants upside loot.
     const power = await getUserPower(userId);
     encounterHit = await chipPersonalEncounter(userId, power, skillCheck.band);
+    // The same blow also lands on every shared party foe. Same best-effort
+    // contract — a party-chip failure must never fail the completion.
+    partyHits = await chipPartyEncounters(userId, power, skillCheck.band);
   } catch (err) {
     logger.error({ err, taskId: id }, "skill check / encounter failed; completing without them");
   }
@@ -986,6 +991,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     skillCheck,
     skillCheckNarration,
     encounterHit,
+    partyHits,
     streakBonus,
     xpMultiplier: multiplierValue,
     newTotalPoints: finalTotalPoints,

@@ -802,6 +802,23 @@ export const CompleteTaskResponse = zod.object({
   "felled": zod.boolean().describe('True once fully chipped down; the encounter now rests (never \"you lost\").')
 })
 }),zod.null()]).optional().describe('The blow this completion landed on the player\'s personal encounter. Null when the encounter couldn\'t be updated (completion still succeeds).'),
+  "partyHits": zod.array(zod.object({
+  "partnershipId": zod.number(),
+  "foeName": zod.string(),
+  "tier": zod.number(),
+  "damage": zod.number().describe('Damage this completion dealt to the shared foe (band-scaled; always ≥ 1).'),
+  "felled": zod.boolean().describe('Whether this blow felled the shared foe (which then rests; a fresh foe spawns).'),
+  "coins": zod.number().describe('Upside-only co-op loot this user earned for felling (0 otherwise).'),
+  "encounter": zod.object({
+  "hp": zod.number(),
+  "totalDamage": zod.number(),
+  "hpRemaining": zod.number(),
+  "percentRemaining": zod.number().describe('Fraction of HP still standing, 0..1.'),
+  "phase": zod.enum(['fresh', 'bloodied', 'wounded', 'resting']),
+  "status": zod.enum(['active', 'resting']),
+  "felled": zod.boolean().describe('True once fully chipped down; the encounter now rests (never \"you lost\").')
+})
+})).optional().describe('The blow this completion landed on each shared party foe (one per accepted partnership). Empty when the user has no party or the update couldn\'t run (completion still succeeds).'),
   "bonusAwarded": zod.boolean(),
   "bonusPoints": zod.number().describe('All-day completion bonus XP'),
   "streakBonus": zod.number().describe('Extra XP from the streak difficulty multiplier'),
@@ -2632,6 +2649,41 @@ export const GetEncounterCurrentResponse = zod.object({
   "felled": zod.boolean().describe('True once fully chipped down; the encounter now rests (never \"you lost\").')
 })
 })
+
+
+/**
+ * @summary The user's parties and their shared foes (spawns a tier-1 foe on first view)
+ */
+export const GetPartyEncountersResponseItem = zod.object({
+  "partnershipId": zod.number(),
+  "partner": zod.union([zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "displayName": zod.string().nullish(),
+  "avatarColor": zod.string().optional(),
+  "currentLevel": zod.number(),
+  "levelName": zod.string().optional(),
+  "totalPoints": zod.number(),
+  "streakDays": zod.number().optional()
+}),zod.null()]).optional(),
+  "foeName": zod.string(),
+  "tier": zod.number(),
+  "encounter": zod.object({
+  "hp": zod.number(),
+  "totalDamage": zod.number(),
+  "hpRemaining": zod.number(),
+  "percentRemaining": zod.number().describe('Fraction of HP still standing, 0..1.'),
+  "phase": zod.enum(['fresh', 'bloodied', 'wounded', 'resting']),
+  "status": zod.enum(['active', 'resting']),
+  "felled": zod.boolean().describe('True once fully chipped down; the encounter now rests (never \"you lost\").')
+}),
+  "members": zod.array(zod.object({
+  "userId": zod.number(),
+  "name": zod.string().describe('Display name for this member (\"You\" for the viewer). Never a rank.'),
+  "damage": zod.number().describe('Total damage this member has dealt to the shared foe (0 if they haven\'t struck yet).')
+})).describe('Both members\' contributions as teamwork — one entry per member, never a ranking.')
+})
+export const GetPartyEncountersResponse = zod.array(GetPartyEncountersResponseItem)
 
 
 /**
