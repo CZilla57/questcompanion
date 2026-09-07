@@ -19,6 +19,8 @@ async function buildAll() {
       path.resolve(artifactDir, "src/index.ts"),
       // Standalone migration step run before the server boots.
       path.resolve(artifactDir, "src/migrate.ts"),
+      // Idempotent gear-catalog seed, run after migrations and before the server boots.
+      path.resolve(artifactDir, "src/seed-gear.ts"),
     ],
     platform: "node",
     bundle: true,

@@ -1,0 +1,1 @@
+ALTER TABLE "gear_items" ADD COLUMN "in_store" boolean DEFAULT true NOT NULL;

@@ -99,6 +99,13 @@
       "when": 1788804086642,
       "tag": "0013_futuristic_ghost_rider",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1788808982536,
+      "tag": "0014_cute_terrax",
+      "breakpoints": true
     }
   ]
 }

@@ -15,6 +15,9 @@ export const gearItemsTable = pgTable("gear_items", {
   levelRequired: integer("level_required").notNull().default(1),
   icon: text("icon").notNull(),
   spriteId: text("sprite_id"),
+  // Catalog expansion: false = drop-only treasure (won't appear in the Gear Store).
+  // The store filters on this; loot/awardStreakGear draw from the full pool.
+  inStore: boolean("in_store").notNull().default(true),
 }, (table) => [
   unique("gear_items_name_unique").on(table.name),
 ]);

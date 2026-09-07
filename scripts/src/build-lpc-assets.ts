@@ -76,8 +76,32 @@ const merge = (...cs) => ({
 const BODY_CRED = merge(CRED.body, CRED.head, CRED.eyes);
 const cc = (c) => ({ author: c.authors.join("; "), license: c.licenses.join(", "), sourceUrl: c.url });
 
-async function fetchBuf(url) { const r = await fetch(url); if (!r.ok) throw new Error(`${r.status}`); return Buffer.from(await r.arrayBuffer()); }
-async function fetchJson(url) { return (await fetch(url)).json(); }
+// Retry transient network failures — the build makes hundreds of raw.githubusercontent.com
+// fetches and an occasional bad/truncated response (a non-JSON body, a 5xx) would otherwise
+// abort the whole run before catalog.ts is written.
+async function withRetry(fn, label, tries = 4) {
+  let lastErr;
+  for (let i = 0; i < tries; i++) {
+    try { return await fn(); }
+    catch (e) { lastErr = e; await new Promise((r) => setTimeout(r, 300 * (i + 1))); }
+  }
+  throw new Error(`fetch failed after ${tries} tries: ${label} — ${lastErr}`);
+}
+async function fetchBuf(url) {
+  return withRetry(async () => {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`${r.status}`);
+    return Buffer.from(await r.arrayBuffer());
+  }, url);
+}
+async function fetchJson(url) {
+  return withRetry(async () => {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`${r.status}`);
+    const text = await r.text();
+    return JSON.parse(text); // throws on a truncated/non-JSON body → retried
+  }, url);
+}
 const hexToRgb = (h) => { h = h.replace("#", ""); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; };
 const key = (r, g, b) => (r << 16) | (g << 8) | b;
 async function loadSheet(url) { try { return PNG.sync.read(await fetchBuf(url)); } catch { return null; } }
@@ -102,6 +126,39 @@ function cropSouthStrip(png) {
   for (let y = 0; y < 64; y++) for (let x = 0; x < width; x++) {
     const si = ((128 + y) * png.width + x) * 4, di = (y * width + x) * 4;
     out.data[di] = png.data[si]; out.data[di + 1] = png.data[si + 1]; out.data[di + 2] = png.data[si + 2]; out.data[di + 3] = png.data[si + 3];
+  }
+  return out;
+}
+// Crop the south row of an oversize `custom_animation: "walk_128"` sheet (128px frames, 4 direction
+// rows; south/down at y=256) into a standard 9×64 strip. LPC keeps the 9 walk frames in the first
+// FRAMES columns (trailing columns are other animations / padding), and the body sits centered in
+// each 128 cell, so the hero-aligned art is the centered 64×64 window (offset 32,32). For the walk
+// frames the hero shows, oversize weapons' art fits inside that window — verified empirically — so
+// this crop is lossless. Guarded per frame: if a frame's art overflows the window we throw rather
+// than silently clip (that item would need a true-oversize renderer path, deferred).
+const SOUTH_128_Y = 256;
+function cropSouth128CenterStrip(png, defPath) {
+  if (png.width % 128 !== 0) throw new Error(`walk_128 ${defPath}: width ${png.width} not a multiple of 128`);
+  if (png.width / 128 < FRAMES) throw new Error(`walk_128 ${defPath}: ${png.width / 128} cols, need >= ${FRAMES}`);
+  if (png.height < SOUTH_128_Y + 128) throw new Error(`walk_128 ${defPath}: height ${png.height} has no south row`);
+  const out = new PNG({ width: FRAMES * 64, height: 64 });
+  for (let f = 0; f < FRAMES; f++) {
+    const cx = f * 128, cy = SOUTH_128_Y;
+    let full = 0, win = 0;
+    for (let y = 0; y < 128; y++) for (let x = 0; x < 128; x++) {
+      if (png.data[((cy + y) * png.width + (cx + x)) * 4 + 3] > 0) {
+        full++;
+        if (x >= 32 && x < 96 && y >= 32 && y < 96) win++;
+      }
+    }
+    if (full !== win) {
+      throw new Error(`walk_128 ${defPath}: frame ${f} overflows the 64px window (${full - win}px clipped) — needs true-oversize rendering`);
+    }
+    for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) {
+      const si = ((cy + 32 + y) * png.width + (cx + 32 + x)) * 4;
+      const di = (y * FRAMES * 64 + (f * 64 + x)) * 4;
+      out.data[di] = png.data[si]; out.data[di + 1] = png.data[si + 1]; out.data[di + 2] = png.data[si + 2]; out.data[di + 3] = png.data[si + 3];
+    }
   }
   return out;
 }
@@ -151,9 +208,13 @@ async function clothPalette() {
   return _clothPal;
 }
 
-// Load the south walk strip for a def's layer_1 for a given build, applying its color variant.
+// Load the south walk strip for ONE layer of a def for a given build, applying its color variant.
+// Returns null when the layer has no sheet for this build (absent build key, or a missing sheet —
+// e.g. a background sub-layer that ships no walk.png); the caller decides whether that's fatal
+// (it is only when NO layer of the def produced a frame). Config errors — a requested cloth
+// variant the palette doesn't define — still throw.
 //
-// Upstream ships colored defs in two shapes, distinguished by the def JSON itself:
+// Upstream ships colored layers in two shapes, distinguished by the def JSON itself:
 //   - A def WITH a `variants` list (e.g. jacket/frock, sword/arming, hats/caps) ships pre-baked
 //     per-color sheets at `{prefix}walk/{variant}.png`. Fetch that directly.
 //   - A recolor def (a `recolors` block, NO `variants` — e.g. shoes/basic, pants, sandals, boots,
@@ -161,30 +222,69 @@ async function clothPalette() {
 //     to be applied from an external palette ramp. Upstream removed the `walk/{variant}.png`
 //     subfolder sheets these were previously (incorrectly) fetched from, so recolor the base here
 //     using the ULPC cloth palette — the identical detectSource+recolor path the body/hair/beard
-//     loops in main() already use. Verified: the cloth base sheets are drawn in the palette's
-//     source ramp, and recoloring yields a distinct, non-blank strip per variant.
-// A def with no requested variant (e.g. plate armor, the longsleeve shirt) resolves at the bare
+//     loops in main() already use.
+// A layer with no requested variant (e.g. plate armor, the longsleeve shirt) resolves at the bare
 // `{prefix}walk.png` unchanged.
-async function loadDefFrame({ def: defPath, variant }, build) {
-  const def = await fetchDef(defPath);
-  const layer = def.layer_1;
-  const prefix = layer[build];
-  if (!prefix) throw new Error(`def ${defPath} has no '${build}' layer — supply a per-build override in the manifest`);
+async function loadLayerStrip(layer, def, defPath, variant, build) {
+  const prefix = layer?.[build];
+  if (!prefix) return null; // layer absent for this build
+
+  // Oversize layer: a big-weapon animation on 128px frames. Its sheets are per-variant PNGs at
+  // `{prefix}{variant}.png` (the prefix already ends in the animation dir), NOT `{prefix}walk/…`.
+  // Crop the centered 64 window from the 128px south row.
+  if (layer.custom_animation === "walk_128") {
+    const leaf = variant ? `${variant}.png` : "walk.png";
+    const sheet = await loadSheet(`${RAW}/spritesheets/${prefix}${leaf}`);
+    if (!sheet) return null;
+    return { frame: cropSouth128CenterStrip(sheet, defPath), zPos: layer.zPos ?? 0 };
+  }
 
   if (variant && !def.variants) {
     const raw = await loadSheet(`${RAW}/spritesheets/${prefix}walk.png`);
-    if (!raw) throw new Error(`no base sheet at ${prefix}walk.png for recolor def ${defPath} (build ${build})`);
+    if (!raw) return null;
     const base = cropSouthStrip(raw);
     const pal = await clothPalette();
     if (!pal[variant]) throw new Error(`cloth palette has no variant '${variant}' for recolor def ${defPath}`);
     const src = detectSource(base, pal);
-    return { frame: recolor(base, pal[src], pal[variant]), credit: defCredit(def), zPos: layer.zPos };
+    return { frame: recolor(base, pal[src], pal[variant]), zPos: layer.zPos ?? 0 };
   }
 
   const url = variant ? `${RAW}/spritesheets/${prefix}walk/${variant}.png` : `${RAW}/spritesheets/${prefix}walk.png`;
   const sheet = await loadSheet(url);
-  if (!sheet) throw new Error(`no sheet at ${url} for def ${defPath} (build ${build}) — check variant/leaf path`);
-  return { frame: cropSouthStrip(sheet), credit: defCredit(def), zPos: layer.zPos };
+  if (!sheet) return null;
+  return { frame: cropSouthStrip(sheet), zPos: layer.zPos ?? 0 };
+}
+
+// Load a def's full south strip by compositing EVERY `layer_N` (not just layer_1), in ascending
+// zPos order. Most gear/outfit defs are single-layer, but some — e.g. ranged weapons — keep a
+// transparent `layer_1` (background) and put the visible art in `layer_2`/`layer_3` (foreground);
+// reading only layer_1 baked those blank (the historical crossbow defect). A layer that has no
+// sheet for this build is skipped; the def is only an error when NONE of its layers resolve. The
+// final blank-pixel guard in writePng still catches an all-transparent composite.
+async function loadDefFrame({ def: defPath, variant }, build) {
+  const def = await fetchDef(defPath);
+  const layerKeys = Object.keys(def)
+    .filter((k) => /^layer_\d+$/.test(k))
+    .sort((a, b) => Number(a.slice(6)) - Number(b.slice(6)));
+  if (layerKeys.length === 0) throw new Error(`def ${defPath} has no layer_N keys`);
+
+  const loaded = [];
+  for (const k of layerKeys) {
+    const res = await loadLayerStrip(def[k], def, defPath, variant, build);
+    if (res) loaded.push(res);
+  }
+  if (loaded.length === 0) {
+    throw new Error(`def ${defPath} produced no layers for build ${build} — check variant/leaf paths`);
+  }
+
+  loaded.sort((a, b) => a.zPos - b.zPos);
+  // Single-layer defs (the overwhelming majority) return their strip UNCHANGED — routing them
+  // through over() would premultiply semi-transparent edge pixels and subtly darken soft edges
+  // vs the historical single-layer bake. Only genuinely multi-layer defs get composited.
+  const frame = loaded.length === 1
+    ? loaded[0].frame
+    : loaded.reduce((acc, l) => over(acc, l.frame), new PNG({ width: FRAMES * 64, height: 64 }));
+  return { frame, credit: defCredit(def), zPos: loaded[0].zPos };
 }
 
 // Union author/license/url across the parts of a baked sprite.
@@ -453,13 +553,13 @@ async function main() {
   //     walk sheet.
   // spriteId strings are UNCHANGED from the contract in both cases — only the underlying def.
   //
-  // Accessory ambiguity (cape/amulet): `headwear/neck/` (the plan's suggested dir) contains only
-  // `meta_neck.json` — no real items. The actual neck-item defs live at `head/neck/` (NOT
-  // `headwear/neck/`). `cape` uses `head/neck/neck_capetie.json` (the front-visible cloak-tie
-  // clasp, zPos 90 — matches the accessory z-band and reads correctly drawn over the front,
-  // unlike `torso/cape/cape_solid.json`'s back-spread bg layer, which would incorrectly occlude
-  // the torso at z=90). `amulet` uses `head/neck/charms/neck_amulet_dangle.json`. Both have
-  // real, distinct male+female layer_1 keys. No spriteId change — see task-3-report.md.
+  // Accessory (cape/amulet): the neck-item defs live under `headwear/neck/`. (Upstream has moved
+  // these between `head/neck/` and `headwear/neck/` over time — as of this build they are at
+  // `headwear/neck/`; the fetch layer now surfaces a 404 loudly if that drifts again.) `cape` uses
+  // `headwear/neck/neck_capetie.json` (the front-visible cloak-tie clasp, zPos 90 — matches the
+  // accessory z-band and reads correctly drawn over the front, unlike `torso/cape/cape_solid.json`'s
+  // back-spread bg layer, which would incorrectly occlude the torso at z=90). `amulet` uses
+  // `headwear/neck/charms/neck_amulet_dangle.json`. Both have real, distinct male+female layer_1 keys.
   //
   // Distinctness (build-level): a handful of archetypes (sword/staff/cap/crown/archmage-staff)
   // resolve to a def with MULTIPLE color variants but a body-type-*universal* path (identical
@@ -520,6 +620,16 @@ async function main() {
     // `spriteId: "crossbow"` reference. Only one upstream variant exists (like `greatsword`), so
     // male/female are intentionally byte-identical — see Distinctness note below.
     { spriteId: "slingshot", category: "weapon", part: { def: "weapons/ranged/weapon_ranged_slingshot.json", variant: "slingshot" } },
+    // Multi-layer def (Phase 1 unlock): layer_1 is a transparent background sub-layer, the visible
+    // art lives in layer_2 (foreground, zPos 140, 1563 south-frame opaque px). The old single-layer
+    // loader baked this blank — hence the earlier slingshot substitution. loadDefFrame now
+    // composites every layer_N, so the crossbow renders correctly.
+    { spriteId: "crossbow", category: "weapon", part: { def: "weapons/ranged/weapon_ranged_crossbow.json", variant: "crossbow" } },
+    // Oversize def (Phase 2 unlock): the bow's walkable art lives only in its `custom_animation:
+    // "walk_128"` layers (128px frames) — the `universal` 64px layers ship only shoot/hurt. The
+    // loader crops the body-centered 64 window from the 128px south row; both the background
+    // (string) and foreground (bow) walk_128 layers fit it losslessly, and composite via Phase 1.
+    { spriteId: "bow", category: "weapon", part: { def: "weapons/ranged/bow/weapon_ranged_bow_normal.json", variant: "bronze" } },
     // helmet archetypes
     { spriteId: "cap", category: "helmet", part: {
       male: { def: "headwear/hats/caps/hat_cap_leather.json", variant: "brown" },
@@ -536,10 +646,10 @@ async function main() {
     { spriteId: "boots", category: "boots", part: { def: "feet/boots/feet_boots_basic.json", variant: "brown" } },
     { spriteId: "greaves", category: "boots", part: { def: "feet/feet_armour.json" } },
     // accessory archetypes (z=90 — drawn on top; must read correctly in front)
-    { spriteId: "cape", category: "accessory", part: { def: "head/neck/neck_capetie.json", variant: "brown" } },
+    { spriteId: "cape", category: "accessory", part: { def: "headwear/neck/neck_capetie.json", variant: "brown" } },
     { spriteId: "amulet", category: "accessory", part: {
-      male: { def: "head/neck/charms/neck_amulet_dangle.json", variant: "gold_blue" },
-      female: { def: "head/neck/charms/neck_amulet_dangle.json", variant: "silver_purple" },
+      male: { def: "headwear/neck/charms/neck_amulet_dangle.json", variant: "gold_blue" },
+      female: { def: "headwear/neck/charms/neck_amulet_dangle.json", variant: "silver_purple" },
     } },
     // signature legendaries (unique shapes; distinct def from their base archetype)
     { spriteId: "excalibur", category: "weapon", part: {
