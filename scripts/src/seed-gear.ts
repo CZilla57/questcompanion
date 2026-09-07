@@ -1,8 +1,8 @@
 // Idempotent seed for `gear_items`, upserted by unique `name`. Run via:
 //   pnpm --filter @workspace/scripts seed-gear
-import { db, pool, gearItemsTable } from "@workspace/db";
+import { db, pool } from "@workspace/db";
 import type { GearSlot, GearRarity } from "@workspace/db";
-import { GEAR_CATALOG, gearStatPower } from "./gear-catalog.js";
+import { GEAR_CATALOG, gearStatPower, seedGear } from "@workspace/db/gear-catalog";
 // Generated catalog lives in the focusquest package; import for the pre-flight resolution check.
 import { catalogById } from "../../artifacts/focusquest/src/lib/hero/catalog";
 
@@ -45,20 +45,9 @@ function validate() {
 }
 
 async function main() {
-  validate();
-
-  for (const item of GEAR_CATALOG) {
-    await db.insert(gearItemsTable).values(item).onConflictDoUpdate({
-      target: gearItemsTable.name,
-      set: {
-        description: item.description, slot: item.slot, rarity: item.rarity,
-        statPower: item.statPower, costXp: item.costXp, levelRequired: item.levelRequired,
-        icon: item.icon, spriteId: item.spriteId, inStore: item.inStore,
-      },
-    });
-  }
-  const store = GEAR_CATALOG.filter((i) => i.inStore).length;
-  console.log(`✓ seeded ${GEAR_CATALOG.length} gear items (${store} in-store, ${GEAR_CATALOG.length - store} drop-only)`);
+  validate(); // dev/CI guard — the boot-time seed skips this (data is validated before merge)
+  const { total, inStore } = await seedGear(db);
+  console.log(`✓ seeded ${total} gear items (${inStore} in-store, ${total - inStore} drop-only)`);
   await pool.end();
 }
 main().catch((e) => { console.error(e); process.exit(1); });
