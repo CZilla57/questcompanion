@@ -93,7 +93,18 @@ struct EncounterHit: Codable {
     let felled: Bool
     /// Upside-only loot coins granted on felling (0 otherwise).
     let coins: Int
+    /// The Campaign — second wave: the treasure reveal on a fell (gear and/or
+    /// bonus coins). Optional so the app decodes before the loot server deploys.
+    let loot: LootDrop?
     let encounter: EncounterView
+}
+
+/// A treasure drop on an encounter fell — a gear item, or a coins-only "small
+/// find" (rarity/gear nil). Mirrors the server's LootDrop; reuses GearRewardInfo.
+struct LootDrop: Codable {
+    let rarity: String?
+    let gear: GearRewardInfo?
+    let bonusCoins: Int
 }
 
 /// The player's current personal encounter (GET /encounter/current).
