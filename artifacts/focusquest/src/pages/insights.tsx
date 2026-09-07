@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RhythmsCard } from "@/components/rhythms-card";
 import { WeeklyRecapsSection } from "@/components/weekly-recaps";
 import { KingdomMap } from "@/components/kingdom-map";
+import { CharacterSheetPanel } from "@/components/character-sheet";
+import { FeatsPanel } from "@/components/feats-panel";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
   ResponsiveContainer, Cell, AreaChart, Area,
@@ -399,6 +401,10 @@ export default function Insights() {
           person the map's warm "your world is resting" state exists for. The
           kingdoms endpoint has its own window and lifetime data, so it always
           has something true to show. */}
+      <CharacterSheetPanel />
+
+      <FeatsPanel />
+
       <KingdomMap />
 
       {isEmpty ? (

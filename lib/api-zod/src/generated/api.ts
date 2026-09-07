@@ -219,6 +219,25 @@ export const GetKingdomsResponse = zod.object({
 
 
 /**
+ * @summary Derived D&D character sheet — six ability scores, proficiency, class, level, power
+ */
+export const GetCharacterSheetResponse = zod.object({
+  "abilities": zod.array(zod.object({
+  "id": zod.enum(['might', 'intellect', 'attunement', 'presence', 'vigor', 'finesse']),
+  "name": zod.string(),
+  "abbreviation": zod.string(),
+  "score": zod.number().describe('Ability score in [8, 20], derived from the source signal.'),
+  "modifier": zod.number().describe('Classic floor((score - 10) \/ 2) modifier, the \"+N\" shown next to the ability.'),
+  "kingdomId": zod.string().nullable().describe('Source kingdom on the Life Kingdoms map, or null for Finesse, which reads focus discipline rather than a kingdom.')
+})),
+  "proficiencyBonus": zod.number().describe('Added to every skill check; derived from the capital tier (+2…+6).'),
+  "heroClass": zod.string(),
+  "level": zod.number(),
+  "battlePower": zod.number()
+})
+
+
+/**
  * @summary Get daily XP earned for the past N days
  */
 export const getMyXpHistoryQueryDaysDefault = 7;
@@ -762,6 +781,49 @@ export const CompleteTaskResponse = zod.object({
   "bigSwing": zod.boolean().describe('True when this quest is a \"big swing\" (hard rung, high priority, or a 25+ minute estimate) — the kind steering routes into power windows')
 }),
   "pointsAwarded": zod.number().describe('Total XP awarded (base + streak bonus + all-day bonus)'),
+  "skillCheck": zod.union([zod.object({
+  "d20": zod.number().describe('The raw die face, 1–20.'),
+  "modifier": zod.number().describe('The rolled ability\'s modifier.'),
+  "proficiency": zod.number(),
+  "total": zod.number().describe('d20 + modifier + proficiency.'),
+  "dc": zod.number().describe('Difficulty class from the task\'s difficulty rung.'),
+  "band": zod.enum(['crit', 'success', 'glancing']).describe('Outcome band. There is no failure band — the quest completes in full regardless; only a crit adds a bonus.'),
+  "ability": zod.enum(['might', 'intellect', 'attunement', 'presence', 'vigor', 'finesse'])
+}),zod.null()]).optional().describe('The d20 skill check resolved for this completion. Null when the roll could not be computed (completion still succeeds).'),
+  "skillCheckNarration": zod.string().nullish().describe('Anti-shame narration for the check\'s outcome band; quotes the quest title, never blames.'),
+  "encounterHit": zod.union([zod.object({
+  "name": zod.string().describe('The foe\'s name.'),
+  "tier": zod.number(),
+  "damage": zod.number().describe('Damage this completion dealt (band-scaled; always ≥ 1).'),
+  "felled": zod.boolean().describe('Whether this blow felled the foe (which then rests; a fresh foe spawns).'),
+  "coins": zod.number().describe('Upside-only loot coins granted on felling (0 otherwise).'),
+  "encounter": zod.object({
+  "hp": zod.number(),
+  "totalDamage": zod.number(),
+  "hpRemaining": zod.number(),
+  "percentRemaining": zod.number().describe('Fraction of HP still standing, 0..1.'),
+  "phase": zod.enum(['fresh', 'bloodied', 'wounded', 'resting']),
+  "status": zod.enum(['active', 'resting']),
+  "felled": zod.boolean().describe('True once fully chipped down; the encounter now rests (never \"you lost\").')
+})
+}),zod.null()]).optional().describe('The blow this completion landed on the player\'s personal encounter. Null when the encounter couldn\'t be updated (completion still succeeds).'),
+  "partyHits": zod.array(zod.object({
+  "partnershipId": zod.number(),
+  "foeName": zod.string(),
+  "tier": zod.number(),
+  "damage": zod.number().describe('Damage this completion dealt to the shared foe (band-scaled; always ≥ 1).'),
+  "felled": zod.boolean().describe('Whether this blow felled the shared foe (which then rests; a fresh foe spawns).'),
+  "coins": zod.number().describe('Upside-only co-op loot this user earned for felling (0 otherwise).'),
+  "encounter": zod.object({
+  "hp": zod.number(),
+  "totalDamage": zod.number(),
+  "hpRemaining": zod.number(),
+  "percentRemaining": zod.number().describe('Fraction of HP still standing, 0..1.'),
+  "phase": zod.enum(['fresh', 'bloodied', 'wounded', 'resting']),
+  "status": zod.enum(['active', 'resting']),
+  "felled": zod.boolean().describe('True once fully chipped down; the encounter now rests (never \"you lost\").')
+})
+})).optional().describe('The blow this completion landed on each shared party foe (one per accepted partnership). Empty when the user has no party or the update couldn\'t run (completion still succeeds).'),
   "bonusAwarded": zod.boolean(),
   "bonusPoints": zod.number().describe('All-day completion bonus XP'),
   "streakBonus": zod.number().describe('Extra XP from the streak difficulty multiplier'),
@@ -2582,6 +2644,79 @@ export const EnterBattleResponse = zod.object({
 
 
 /**
+ * @summary The player's current personal encounter (spawns a tier-1 foe on first view)
+ */
+export const GetEncounterCurrentResponse = zod.object({
+  "name": zod.string(),
+  "tier": zod.number(),
+  "encounter": zod.object({
+  "hp": zod.number(),
+  "totalDamage": zod.number(),
+  "hpRemaining": zod.number(),
+  "percentRemaining": zod.number().describe('Fraction of HP still standing, 0..1.'),
+  "phase": zod.enum(['fresh', 'bloodied', 'wounded', 'resting']),
+  "status": zod.enum(['active', 'resting']),
+  "felled": zod.boolean().describe('True once fully chipped down; the encounter now rests (never \"you lost\").')
+})
+})
+
+
+/**
+ * @summary The user's parties and their shared foes (spawns a tier-1 foe on first view)
+ */
+export const GetPartyEncountersResponseItem = zod.object({
+  "partnershipId": zod.number(),
+  "partner": zod.union([zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "displayName": zod.string().nullish(),
+  "avatarColor": zod.string().optional(),
+  "currentLevel": zod.number(),
+  "levelName": zod.string().optional(),
+  "totalPoints": zod.number(),
+  "streakDays": zod.number().optional()
+}),zod.null()]).optional(),
+  "foeName": zod.string(),
+  "tier": zod.number(),
+  "encounter": zod.object({
+  "hp": zod.number(),
+  "totalDamage": zod.number(),
+  "hpRemaining": zod.number(),
+  "percentRemaining": zod.number().describe('Fraction of HP still standing, 0..1.'),
+  "phase": zod.enum(['fresh', 'bloodied', 'wounded', 'resting']),
+  "status": zod.enum(['active', 'resting']),
+  "felled": zod.boolean().describe('True once fully chipped down; the encounter now rests (never \"you lost\").')
+}),
+  "members": zod.array(zod.object({
+  "userId": zod.number(),
+  "name": zod.string().describe('Display name for this member (\"You\" for the viewer). Never a rank.'),
+  "damage": zod.number().describe('Total damage this member has dealt to the shared foe (0 if they haven\'t struck yet).')
+})).describe('Both members\' contributions as teamwork — one entry per member, never a ranking.')
+})
+export const GetPartyEncountersResponse = zod.array(GetPartyEncountersResponseItem)
+
+
+/**
+ * A short, grounded beat in a tabletop-DM voice — either the morning quest board or the evening make-camp. Generated once per (day, kind) and cached; the model never blocks the screen and falls back to a templated beat on failure. Every specific is grounded in the user's real quests — the DM never fabricates. Returns { beat: null } when the day has nothing real to narrate.
+ * @summary The Dungeon Master's narrated beat for today (the campaign layer)
+ */
+export const GetDmBeatQueryParams = zod.object({
+  "kind": zod.enum(['morning', 'camp']).describe('Which beat to fetch.'),
+  "tz": zod.coerce.string().optional().describe('IANA timezone (e.g. \"America\/New_York\") used to resolve the user\'s local day. Defaults to UTC when omitted or invalid.')
+})
+
+export const GetDmBeatResponse = zod.object({
+  "beat": zod.object({
+  "kind": zod.enum(['morning', 'camp']).describe('The morning quest board or the evening make-camp.'),
+  "localDate": zod.string().describe('The user\'s local day this beat narrates (YYYY-MM-DD).'),
+  "narrative": zod.string().describe('The DM\'s short, grounded prose — always anti-shame, never fabricated.'),
+  "source": zod.enum(['ai', 'fallback']).describe('Whether the model wrote it or the templated fallback did.'),
+  "createdAt": zod.coerce.date()
+}).nullable().describe('Null when the day has nothing real to narrate (the DM stays quiet).')
+})
+
+
+/**
  * @summary Get this week's shared World Boss status
  */
 export const GetWorldBossCurrentResponse = zod.object({
@@ -2602,7 +2737,16 @@ export const GetWorldBossCurrentResponse = zod.object({
   "avatarColor": zod.string(),
   "damage": zod.number(),
   "isAlly": zod.boolean()
-}))
+})),
+  "encounter": zod.object({
+  "hp": zod.number(),
+  "totalDamage": zod.number(),
+  "hpRemaining": zod.number(),
+  "percentRemaining": zod.number().describe('Fraction of HP still standing, 0..1.'),
+  "phase": zod.enum(['fresh', 'bloodied', 'wounded', 'resting']),
+  "status": zod.enum(['active', 'resting']),
+  "felled": zod.boolean().describe('True once fully chipped down; the encounter now rests (never \"you lost\").')
+}).optional().describe('The boss reframed as a D&D encounter — HP phases and an anti-shame \"resting\" state. Derived from hp + totalDamage; additive.')
 })
 
 
@@ -2785,6 +2929,54 @@ export const BuyStatPerkResponse = zod.object({
   "remaining": zod.number().describe('Coins still needed (present on the insufficient no-op)'),
   "expiresAt": zod.coerce.date().nullish().describe('Boost perks — the new active-until after a successful buy'),
   "owned": zod.number().nullish().describe('Shield perk — streak freezes held after a successful buy (or the cap on at_max)')
+})
+
+
+/**
+ * @summary The hero's class feats — unlocked (with per-day readiness) and locked (with unlock level)
+ */
+export const GetMyFeatsResponse = zod.object({
+  "unlocked": zod.array(zod.object({
+  "id": zod.string(),
+  "heroClass": zod.enum(['fighter', 'mage', 'ranger', 'healer']),
+  "kind": zod.enum(['passive', 'active']),
+  "unlockLevel": zod.number(),
+  "label": zod.string(),
+  "emoji": zod.string(),
+  "description": zod.string(),
+  "grants": zod.enum(['xp_boost', 'focus_boost', 'streak_shield']).nullish().describe('Active feats — the Stat Perk window activating grants'),
+  "passiveKingdom": zod.string().nullish().describe('Passive feats — the home kingdom whose categories get the XP bias'),
+  "readyToday": zod.boolean().nullish().describe('Active feats — false once used on the current local day'),
+  "active": zod.boolean().nullish().describe('Active boost feats — whether the granted boost window is currently live'),
+  "expiresAt": zod.coerce.date().nullish().describe('Active boost feats — active-until of the granted window'),
+  "atMax": zod.boolean().nullish().describe('Mend (streak shield) — whether the shield stock is already at the cap')
+})),
+  "locked": zod.array(zod.object({
+  "id": zod.string(),
+  "heroClass": zod.enum(['fighter', 'mage', 'ranger', 'healer']),
+  "kind": zod.enum(['passive', 'active']),
+  "unlockLevel": zod.number(),
+  "label": zod.string(),
+  "emoji": zod.string(),
+  "description": zod.string(),
+  "grants": zod.enum(['xp_boost', 'focus_boost', 'streak_shield']).nullish().describe('Active feats — the Stat Perk window activating grants'),
+  "passiveKingdom": zod.string().nullish().describe('Passive feats — the home kingdom whose categories get the XP bias'),
+  "readyToday": zod.boolean().nullish().describe('Active feats — false once used on the current local day'),
+  "active": zod.boolean().nullish().describe('Active boost feats — whether the granted boost window is currently live'),
+  "expiresAt": zod.coerce.date().nullish().describe('Active boost feats — active-until of the granted window'),
+  "atMax": zod.boolean().nullish().describe('Mend (streak shield) — whether the shield stock is already at the cap')
+}))
+})
+
+
+/**
+ * @summary Use an active class feat (once a day; gentle no-op if locked, on cooldown, or maxed)
+ */
+export const ActivateFeatResponse = zod.object({
+  "activated": zod.boolean(),
+  "reason": zod.enum(['ok', 'locked', 'on_cooldown', 'at_max']),
+  "expiresAt": zod.coerce.date().nullish().describe('Boost feats — the new active-until after activating'),
+  "owned": zod.number().nullish().describe('Mend — streak freezes held after activating (or the cap on at_max)')
 })
 
 

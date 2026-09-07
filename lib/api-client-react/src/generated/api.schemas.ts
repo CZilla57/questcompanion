@@ -260,6 +260,78 @@ export interface KingdomsResponse {
   invitation: KingdomInvitation | null;
 }
 
+export type AbilityScoreId = typeof AbilityScoreId[keyof typeof AbilityScoreId];
+
+
+export const AbilityScoreId = {
+  might: 'might',
+  intellect: 'intellect',
+  attunement: 'attunement',
+  presence: 'presence',
+  vigor: 'vigor',
+  finesse: 'finesse',
+} as const;
+
+export interface AbilityScore {
+  id: AbilityScoreId;
+  name: string;
+  abbreviation: string;
+  /** Ability score in [8, 20], derived from the source signal. */
+  score: number;
+  /** Classic floor((score - 10) / 2) modifier, the "+N" shown next to the ability. */
+  modifier: number;
+  /** Source kingdom on the Life Kingdoms map, or null for Finesse, which reads focus discipline rather than a kingdom. */
+  kingdomId: string | null;
+}
+
+/**
+ * Outcome band. There is no failure band — the quest completes in full regardless; only a crit adds a bonus.
+ */
+export type SkillCheckBand = typeof SkillCheckBand[keyof typeof SkillCheckBand];
+
+
+export const SkillCheckBand = {
+  crit: 'crit',
+  success: 'success',
+  glancing: 'glancing',
+} as const;
+
+export type SkillCheckAbility = typeof SkillCheckAbility[keyof typeof SkillCheckAbility];
+
+
+export const SkillCheckAbility = {
+  might: 'might',
+  intellect: 'intellect',
+  attunement: 'attunement',
+  presence: 'presence',
+  vigor: 'vigor',
+  finesse: 'finesse',
+} as const;
+
+export interface SkillCheck {
+  /** The raw die face, 1–20. */
+  d20: number;
+  /** The rolled ability's modifier. */
+  modifier: number;
+  proficiency: number;
+  /** d20 + modifier + proficiency. */
+  total: number;
+  /** Difficulty class from the task's difficulty rung. */
+  dc: number;
+  /** Outcome band. There is no failure band — the quest completes in full regardless; only a crit adds a bonus. */
+  band: SkillCheckBand;
+  ability: SkillCheckAbility;
+}
+
+export interface CharacterSheet {
+  abilities: AbilityScore[];
+  /** Added to every skill check; derived from the capital tier (+2…+6). */
+  proficiencyBonus: number;
+  heroClass: string;
+  level: number;
+  battlePower: number;
+}
+
 export type TaskPriority = typeof TaskPriority[keyof typeof TaskPriority];
 
 
@@ -585,6 +657,62 @@ export interface TaskUpdate {
   viaSteering?: boolean;
 }
 
+export type EncounterViewPhase = typeof EncounterViewPhase[keyof typeof EncounterViewPhase];
+
+
+export const EncounterViewPhase = {
+  fresh: 'fresh',
+  bloodied: 'bloodied',
+  wounded: 'wounded',
+  resting: 'resting',
+} as const;
+
+export type EncounterViewStatus = typeof EncounterViewStatus[keyof typeof EncounterViewStatus];
+
+
+export const EncounterViewStatus = {
+  active: 'active',
+  resting: 'resting',
+} as const;
+
+export interface EncounterView {
+  hp: number;
+  totalDamage: number;
+  hpRemaining: number;
+  /** Fraction of HP still standing, 0..1. */
+  percentRemaining: number;
+  phase: EncounterViewPhase;
+  status: EncounterViewStatus;
+  /** True once fully chipped down; the encounter now rests (never "you lost"). */
+  felled: boolean;
+}
+
+export interface EncounterHit {
+  /** The foe's name. */
+  name: string;
+  tier: number;
+  /** Damage this completion dealt (band-scaled; always ≥ 1). */
+  damage: number;
+  /** Whether this blow felled the foe (which then rests; a fresh foe spawns). */
+  felled: boolean;
+  /** Upside-only loot coins granted on felling (0 otherwise). */
+  coins: number;
+  encounter: EncounterView;
+}
+
+export interface PartyEncounterHit {
+  partnershipId: number;
+  foeName: string;
+  tier: number;
+  /** Damage this completion dealt to the shared foe (band-scaled; always ≥ 1). */
+  damage: number;
+  /** Whether this blow felled the shared foe (which then rests; a fresh foe spawns). */
+  felled: boolean;
+  /** Upside-only co-op loot this user earned for felling (0 otherwise). */
+  coins: number;
+  encounter: EncounterView;
+}
+
 export type BadgeCategory = typeof BadgeCategory[keyof typeof BadgeCategory];
 
 
@@ -660,6 +788,14 @@ export interface TaskCompletionResult {
   task: Task;
   /** Total XP awarded (base + streak bonus + all-day bonus) */
   pointsAwarded: number;
+  /** The d20 skill check resolved for this completion. Null when the roll could not be computed (completion still succeeds). */
+  skillCheck?: SkillCheck | null;
+  /** Anti-shame narration for the check's outcome band; quotes the quest title, never blames. */
+  skillCheckNarration?: string | null;
+  /** The blow this completion landed on the player's personal encounter. Null when the encounter couldn't be updated (completion still succeeds). */
+  encounterHit?: EncounterHit | null;
+  /** The blow this completion landed on each shared party foe (one per accepted partnership). Empty when the user has no party or the update couldn't run (completion still succeeds). */
+  partyHits?: PartyEncounterHit[];
   bonusAwarded: boolean;
   /** All-day completion bonus XP */
   bonusPoints: number;
@@ -1980,6 +2116,71 @@ export interface WorldBossStatus {
   defeatCoins: number;
   defeatXp: number;
   contributors: WorldBossContributor[];
+  /** The boss reframed as a D&D encounter — HP phases and an anti-shame "resting" state. Derived from hp + totalDamage; additive. */
+  encounter?: EncounterView;
+}
+
+export interface PersonalEncounterStatus {
+  name: string;
+  tier: number;
+  encounter: EncounterView;
+}
+
+export interface PartyMemberContribution {
+  userId: number;
+  /** Display name for this member ("You" for the viewer). Never a rank. */
+  name: string;
+  /** Total damage this member has dealt to the shared foe (0 if they haven't struck yet). */
+  damage: number;
+}
+
+export interface PartyEncounter {
+  partnershipId: number;
+  partner?: UserSummary | null;
+  foeName: string;
+  tier: number;
+  encounter: EncounterView;
+  /** Both members' contributions as teamwork — one entry per member, never a ranking. */
+  members: PartyMemberContribution[];
+}
+
+/**
+ * The morning quest board or the evening make-camp.
+ */
+export type DmBeatKind = typeof DmBeatKind[keyof typeof DmBeatKind];
+
+
+export const DmBeatKind = {
+  morning: 'morning',
+  camp: 'camp',
+} as const;
+
+/**
+ * Whether the model wrote it or the templated fallback did.
+ */
+export type DmBeatSource = typeof DmBeatSource[keyof typeof DmBeatSource];
+
+
+export const DmBeatSource = {
+  ai: 'ai',
+  fallback: 'fallback',
+} as const;
+
+export interface DmBeat {
+  /** The morning quest board or the evening make-camp. */
+  kind: DmBeatKind;
+  /** The user's local day this beat narrates (YYYY-MM-DD). */
+  localDate: string;
+  /** The DM's short, grounded prose — always anti-shame, never fabricated. */
+  narrative: string;
+  /** Whether the model wrote it or the templated fallback did. */
+  source: DmBeatSource;
+  createdAt: string;
+}
+
+export interface DmBeatResponse {
+  /** Null when the day has nothing real to narrate (the DM stays quiet). */
+  beat: DmBeat | null;
 }
 
 /**
@@ -2188,6 +2389,82 @@ export interface StatPerkPurchaseResult {
   /** Boost perks — the new active-until after a successful buy */
   expiresAt?: string | null;
   /** Shield perk — streak freezes held after a successful buy (or the cap on at_max) */
+  owned?: number | null;
+}
+
+export type FeatViewHeroClass = typeof FeatViewHeroClass[keyof typeof FeatViewHeroClass];
+
+
+export const FeatViewHeroClass = {
+  fighter: 'fighter',
+  mage: 'mage',
+  ranger: 'ranger',
+  healer: 'healer',
+} as const;
+
+export type FeatViewKind = typeof FeatViewKind[keyof typeof FeatViewKind];
+
+
+export const FeatViewKind = {
+  passive: 'passive',
+  active: 'active',
+} as const;
+
+/**
+ * Active feats — the Stat Perk window activating grants
+ */
+export type FeatViewGrants = typeof FeatViewGrants[keyof typeof FeatViewGrants] | null;
+
+
+export const FeatViewGrants = {
+  xp_boost: 'xp_boost',
+  focus_boost: 'focus_boost',
+  streak_shield: 'streak_shield',
+} as const;
+
+export interface FeatView {
+  id: string;
+  heroClass: FeatViewHeroClass;
+  kind: FeatViewKind;
+  unlockLevel: number;
+  label: string;
+  emoji: string;
+  description: string;
+  /** Active feats — the Stat Perk window activating grants */
+  grants?: FeatViewGrants;
+  /** Passive feats — the home kingdom whose categories get the XP bias */
+  passiveKingdom?: string | null;
+  /** Active feats — false once used on the current local day */
+  readyToday?: boolean | null;
+  /** Active boost feats — whether the granted boost window is currently live */
+  active?: boolean | null;
+  /** Active boost feats — active-until of the granted window */
+  expiresAt?: string | null;
+  /** Mend (streak shield) — whether the shield stock is already at the cap */
+  atMax?: boolean | null;
+}
+
+export interface FeatsResponse {
+  unlocked: FeatView[];
+  locked: FeatView[];
+}
+
+export type FeatActivateResultReason = typeof FeatActivateResultReason[keyof typeof FeatActivateResultReason];
+
+
+export const FeatActivateResultReason = {
+  ok: 'ok',
+  locked: 'locked',
+  on_cooldown: 'on_cooldown',
+  at_max: 'at_max',
+} as const;
+
+export interface FeatActivateResult {
+  activated: boolean;
+  reason: FeatActivateResultReason;
+  /** Boost feats — the new active-until after activating */
+  expiresAt?: string | null;
+  /** Mend — streak freezes held after activating (or the cap on at_max) */
   owned?: number | null;
 }
 
@@ -2701,6 +2978,25 @@ export const GetLeaderboardPeriod = {
 export type SearchUsersParams = {
 q: string;
 };
+
+export type GetDmBeatParams = {
+/**
+ * Which beat to fetch.
+ */
+kind: GetDmBeatKind;
+/**
+ * IANA timezone (e.g. "America/New_York") used to resolve the user's local day. Defaults to UTC when omitted or invalid.
+ */
+tz?: string;
+};
+
+export type GetDmBeatKind = typeof GetDmBeatKind[keyof typeof GetDmBeatKind];
+
+
+export const GetDmBeatKind = {
+  morning: 'morning',
+  camp: 'camp',
+} as const;
 
 export type GetCalendarHeatmapParams = {
 /**

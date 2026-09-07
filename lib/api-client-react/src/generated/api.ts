@@ -43,12 +43,16 @@ import type {
   CampaignDetail,
   CampaignInput,
   CampaignUpdate,
+  CharacterSheet,
   Coins,
   CreateRescueEvent201,
   DeleteAccountRequest,
+  DmBeatResponse,
   DopamineReward,
   DopamineRewardInput,
   ErrorEnvelope,
+  FeatActivateResult,
+  FeatsResponse,
   FinishBodyDoubleSprint200,
   FocusCompleteInput,
   FocusIntervalInput,
@@ -60,6 +64,7 @@ import type {
   GearStoreResponse,
   GetBrainStateParams,
   GetCalendarHeatmapParams,
+  GetDmBeatParams,
   GetLeaderboardParams,
   GetMyInsightsParams,
   GetMyPatternsParams,
@@ -99,9 +104,11 @@ import type {
   ParsedQuickAdd,
   PartnerRequestInput,
   Partnership,
+  PartyEncounter,
   PatchTaskStepParams,
   PatternSummary,
   PauseHyperfocus200,
+  PersonalEncounterStatus,
   PutMyTimezone200,
   Questline,
   QuestlineClaimResult,
@@ -1080,6 +1087,83 @@ export function useGetKingdoms<TData = Awaited<ReturnType<typeof getKingdoms>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetKingdomsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetCharacterSheetUrl = () => {
+
+
+
+
+  return `/api/users/me/character-sheet`
+}
+
+/**
+ * @summary Derived D&D character sheet — six ability scores, proficiency, class, level, power
+ */
+export const getCharacterSheet = async ( options?: RequestInit): Promise<CharacterSheet> => {
+
+  return customFetch<CharacterSheet>(getGetCharacterSheetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCharacterSheetQueryKey = () => {
+    return [
+    `/api/users/me/character-sheet`
+    ] as const;
+    }
+
+
+export const getGetCharacterSheetQueryOptions = <TData = Awaited<ReturnType<typeof getCharacterSheet>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCharacterSheet>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCharacterSheetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCharacterSheet>>> = ({ signal }) => getCharacterSheet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCharacterSheet>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCharacterSheetQueryResult = NonNullable<Awaited<ReturnType<typeof getCharacterSheet>>>
+export type GetCharacterSheetQueryError = ErrorType<void>
+
+
+/**
+ * @summary Derived D&D character sheet — six ability scores, proficiency, class, level, power
+ */
+
+export function useGetCharacterSheet<TData = Awaited<ReturnType<typeof getCharacterSheet>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCharacterSheet>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCharacterSheetQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -8250,6 +8334,245 @@ export const useEnterBattle = <TError = ErrorType<ErrorEnvelope>,
       return useMutation(getEnterBattleMutationOptions(options));
     }
 
+export const getGetEncounterCurrentUrl = () => {
+
+
+
+
+  return `/api/encounter/current`
+}
+
+/**
+ * @summary The player's current personal encounter (spawns a tier-1 foe on first view)
+ */
+export const getEncounterCurrent = async ( options?: RequestInit): Promise<PersonalEncounterStatus> => {
+
+  return customFetch<PersonalEncounterStatus>(getGetEncounterCurrentUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEncounterCurrentQueryKey = () => {
+    return [
+    `/api/encounter/current`
+    ] as const;
+    }
+
+
+export const getGetEncounterCurrentQueryOptions = <TData = Awaited<ReturnType<typeof getEncounterCurrent>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEncounterCurrent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEncounterCurrentQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEncounterCurrent>>> = ({ signal }) => getEncounterCurrent({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEncounterCurrent>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetEncounterCurrentQueryResult = NonNullable<Awaited<ReturnType<typeof getEncounterCurrent>>>
+export type GetEncounterCurrentQueryError = ErrorType<void>
+
+
+/**
+ * @summary The player's current personal encounter (spawns a tier-1 foe on first view)
+ */
+
+export function useGetEncounterCurrent<TData = Awaited<ReturnType<typeof getEncounterCurrent>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEncounterCurrent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetEncounterCurrentQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetPartyEncountersUrl = () => {
+
+
+
+
+  return `/api/party/encounters`
+}
+
+/**
+ * @summary The user's parties and their shared foes (spawns a tier-1 foe on first view)
+ */
+export const getPartyEncounters = async ( options?: RequestInit): Promise<PartyEncounter[]> => {
+
+  return customFetch<PartyEncounter[]>(getGetPartyEncountersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPartyEncountersQueryKey = () => {
+    return [
+    `/api/party/encounters`
+    ] as const;
+    }
+
+
+export const getGetPartyEncountersQueryOptions = <TData = Awaited<ReturnType<typeof getPartyEncounters>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPartyEncounters>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPartyEncountersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPartyEncounters>>> = ({ signal }) => getPartyEncounters({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPartyEncounters>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPartyEncountersQueryResult = NonNullable<Awaited<ReturnType<typeof getPartyEncounters>>>
+export type GetPartyEncountersQueryError = ErrorType<void>
+
+
+/**
+ * @summary The user's parties and their shared foes (spawns a tier-1 foe on first view)
+ */
+
+export function useGetPartyEncounters<TData = Awaited<ReturnType<typeof getPartyEncounters>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPartyEncounters>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPartyEncountersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetDmBeatUrl = (params: GetDmBeatParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/dm/beat?${stringifiedParams}` : `/api/dm/beat`
+}
+
+/**
+ * A short, grounded beat in a tabletop-DM voice — either the morning quest board or the evening make-camp. Generated once per (day, kind) and cached; the model never blocks the screen and falls back to a templated beat on failure. Every specific is grounded in the user's real quests — the DM never fabricates. Returns { beat: null } when the day has nothing real to narrate.
+ * @summary The Dungeon Master's narrated beat for today (the campaign layer)
+ */
+export const getDmBeat = async (params: GetDmBeatParams, options?: RequestInit): Promise<DmBeatResponse> => {
+
+  return customFetch<DmBeatResponse>(getGetDmBeatUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDmBeatQueryKey = (params?: GetDmBeatParams,) => {
+    return [
+    `/api/dm/beat`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetDmBeatQueryOptions = <TData = Awaited<ReturnType<typeof getDmBeat>>, TError = ErrorType<void>>(params: GetDmBeatParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDmBeat>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDmBeatQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDmBeat>>> = ({ signal }) => getDmBeat(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDmBeat>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDmBeatQueryResult = NonNullable<Awaited<ReturnType<typeof getDmBeat>>>
+export type GetDmBeatQueryError = ErrorType<void>
+
+
+/**
+ * @summary The Dungeon Master's narrated beat for today (the campaign layer)
+ */
+
+export function useGetDmBeat<TData = Awaited<ReturnType<typeof getDmBeat>>, TError = ErrorType<void>>(
+ params: GetDmBeatParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDmBeat>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDmBeatQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getGetWorldBossCurrentUrl = () => {
 
 
@@ -9272,6 +9595,153 @@ export const useBuyStatPerk = <TError = ErrorType<ErrorEnvelope>,
         TContext
       > => {
       return useMutation(getBuyStatPerkMutationOptions(options));
+    }
+
+export const getGetMyFeatsUrl = () => {
+
+
+
+
+  return `/api/users/me/feats`
+}
+
+/**
+ * @summary The hero's class feats — unlocked (with per-day readiness) and locked (with unlock level)
+ */
+export const getMyFeats = async ( options?: RequestInit): Promise<FeatsResponse> => {
+
+  return customFetch<FeatsResponse>(getGetMyFeatsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyFeatsQueryKey = () => {
+    return [
+    `/api/users/me/feats`
+    ] as const;
+    }
+
+
+export const getGetMyFeatsQueryOptions = <TData = Awaited<ReturnType<typeof getMyFeats>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyFeats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyFeatsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyFeats>>> = ({ signal }) => getMyFeats({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyFeats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyFeatsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyFeats>>>
+export type GetMyFeatsQueryError = ErrorType<void>
+
+
+/**
+ * @summary The hero's class feats — unlocked (with per-day readiness) and locked (with unlock level)
+ */
+
+export function useGetMyFeats<TData = Awaited<ReturnType<typeof getMyFeats>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyFeats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyFeatsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getActivateFeatUrl = (id: string,) => {
+
+
+
+
+  return `/api/users/me/feats/${id}/activate`
+}
+
+/**
+ * @summary Use an active class feat (once a day; gentle no-op if locked, on cooldown, or maxed)
+ */
+export const activateFeat = async (id: string, options?: RequestInit): Promise<FeatActivateResult> => {
+
+  return customFetch<FeatActivateResult>(getActivateFeatUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getActivateFeatMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateFeat>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof activateFeat>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['activateFeat'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof activateFeat>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  activateFeat(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActivateFeatMutationResult = NonNullable<Awaited<ReturnType<typeof activateFeat>>>
+
+    export type ActivateFeatMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Use an active class feat (once a day; gentle no-op if locked, on cooldown, or maxed)
+ */
+export const useActivateFeat = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateFeat>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof activateFeat>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getActivateFeatMutationOptions(options));
     }
 
 export const getGetCalendarHeatmapUrl = (params?: GetCalendarHeatmapParams,) => {

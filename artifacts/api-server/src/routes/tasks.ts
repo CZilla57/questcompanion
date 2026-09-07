@@ -1,10 +1,11 @@
 import express, { Router, type IRouter } from "express";
 import { eq, and, or, desc, count, inArray, sql } from "drizzle-orm";
 import { applyMultiplier } from "../lib/xp-multiplier";
-import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable, taskStepsTable, questlinesTable, brainCheckinsTable, recurringTasksTable } from "@workspace/db";
+import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable, taskStepsTable, questlinesTable, brainCheckinsTable, recurringTasksTable, kingdomPointsTable, focusSessionsTable } from "@workspace/db";
 import type { DifficultyLevel, VariantLadder } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, DAILY_BONUS_POINTS } from "../lib/gamification";
-import { newlyUnlocked, type FeatureKey } from "../lib/feature-gates";
+import { newlyUnlocked, effectiveLevel, type FeatureKey } from "../lib/feature-gates";
+import { unlockedFeats, passiveBonusPoints } from "../lib/class-feats";
 import { assignPoints, CATEGORY_LABELS, VALID_CATEGORIES } from "../lib/auto-points";
 import { advanceHabitStreak, reverseHabitStreak, type HabitStreakPreviousState } from "../lib/habit-streaks";
 import { toFrequency } from "../lib/recurrence";
@@ -32,6 +33,12 @@ import { isQuestlineAssignable } from "../lib/questlines";
 import { hungerStage } from "../lib/hero-care";
 import { completionCompanionReaction } from "../lib/companion";
 import { growKingdom } from "../lib/kingdom-growth";
+import { capitalLifetime, capitalTier, type KingdomId } from "../lib/kingdoms";
+import { abilityScores, proficiencyBonus } from "../lib/character-sheet";
+import { resolveTaskCheck, taskCheckSeed, bandEffect, bandNarration, type SkillCheck } from "../lib/roll-engine";
+import { chipPersonalEncounter, type EncounterHit } from "./encounter";
+import { chipPartyEncounters, type PartyEncounterHit } from "./party";
+import { getUserPower } from "./battle";
 import { grantInitiationAwards } from "../lib/initiation-grant";
 import type { InitiationXp } from "../lib/initiation";
 import { awardCoins, reverseCoins } from "../lib/award-coins";
@@ -42,6 +49,46 @@ import { isValidClientKey } from "../lib/client-key";
 const router: IRouter = Router();
 
 const FOCUS_BONUS_POINTS = 10;
+
+/**
+ * The Campaign — Phase 1: roll the completion skill check for a quest. Reads the
+ * character's ability scores + proficiency as they stand at completion and
+ * resolves a seeded d20 against the task's difficulty DC. Seeded from
+ * user+task+day so it is deterministic and can't be re-rolled. Pure display +
+ * upside — the base completion reward is computed elsewhere and never touched
+ * by this.
+ */
+async function rollCompletionCheck(
+  userId: number,
+  taskId: number,
+  category: string,
+  difficulty: string,
+  completionDay: string,
+): Promise<SkillCheck> {
+  const kingdomRows = await db
+    .select({ kingdomId: kingdomPointsTable.kingdomId, lifetimePoints: kingdomPointsTable.lifetimePoints })
+    .from(kingdomPointsTable)
+    .where(eq(kingdomPointsTable.userId, userId));
+  const lifetimeByKingdom: Partial<Record<KingdomId, number>> = {};
+  for (const r of kingdomRows) lifetimeByKingdom[r.kingdomId as KingdomId] = r.lifetimePoints;
+
+  const focusRows = await db
+    .select({ completedIntervals: focusSessionsTable.completedIntervals })
+    .from(focusSessionsTable)
+    .where(eq(focusSessionsTable.userId, userId));
+  const completedIntervals = focusRows.reduce((sum, r) => sum + r.completedIntervals, 0);
+
+  const abilities = abilityScores({ lifetimeByKingdom, focus: { completedIntervals } });
+  const proficiency = proficiencyBonus(capitalTier(capitalLifetime(lifetimeByKingdom)).tier);
+
+  return resolveTaskCheck({
+    seed: taskCheckSeed(userId, taskId, completionDay),
+    abilities,
+    proficiency,
+    category,
+    difficulty,
+  });
+}
 
 // node-postgres reports a unique-constraint violation as SQLSTATE 23505.
 // drizzle-orm may wrap the driver error, so inspect the error and its `cause`.
@@ -599,6 +646,18 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     const xpBoostBonus = boostBonusPoints(task.points, isBoostActive(user.xpBoostExpiresAt, now), XP_BOOST_BONUS);
     pointsToAdd += xpBoostBonus;
 
+    // Class Feats (second wave): a passive feat adds a small % of the base reward
+    // on the hero's home categories. Additive and upside-only, like the boost
+    // above — it never touches streak/level math and can never lower a payout.
+    // Passive feats unlock at a level past the campaigns gate, so the level
+    // ladder itself keeps this dark until the campaign era.
+    const passiveFeatBonus = passiveBonusPoints(
+      unlockedFeats(user.avatarClass, effectiveLevel(user)),
+      task.category,
+      task.points,
+    );
+    pointsToAdd += passiveFeatBonus;
+
     // Daily bonus check: the gating set is tasks due today plus anchored tasks past
     // their one-day grace (created before today). Fetch the superset in-transaction,
     // then filter with the pure predicate so grace logic stays unit-tested.
@@ -912,11 +971,41 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     gearReward = habitGearReward ?? accountGearReward;
   }
 
+  // The Campaign — Phase 1: resolve and surface the completion skill check. A
+  // crit adds upside-only bonus coins (its own tiny transaction; the base
+  // completion reward above is untouched). Best-effort — a roll failure must
+  // never fail a completion, so it degrades to no check rather than throwing.
+  let skillCheck: SkillCheck | null = null;
+  let skillCheckNarration: string | null = null;
+  let encounterHit: EncounterHit | null = null;
+  let partyHits: PartyEncounterHit[] = [];
+  try {
+    skillCheck = await rollCompletionCheck(userId, id, task.category, task.difficulty, today!);
+    skillCheckNarration = bandNarration(skillCheck.band, task.title);
+    const effect = bandEffect(skillCheck.band);
+    if (effect.bonusCoins > 0) {
+      await db.transaction((tx) => awardCoins(tx, userId, effect.bonusCoins, "quest_complete"));
+    }
+    // The same blow lands on the player's personal encounter — the quest chips
+    // its HP, scaled by the roll's band. Best-effort; felling grants upside loot.
+    const power = await getUserPower(userId);
+    encounterHit = await chipPersonalEncounter(userId, power, skillCheck.band);
+    // The same blow also lands on every shared party foe. Same best-effort
+    // contract — a party-chip failure must never fail the completion.
+    partyHits = await chipPartyEncounters(userId, power, skillCheck.band);
+  } catch (err) {
+    logger.error({ err, taskId: id }, "skill check / encounter failed; completing without them");
+  }
+
   res.json({
     task: formatTask(task),
     pointsAwarded: pointsToAdd,
     bonusAwarded,
     bonusPoints: bonusAwarded ? DAILY_BONUS_POINTS : 0,
+    skillCheck,
+    skillCheckNarration,
+    encounterHit,
+    partyHits,
     streakBonus,
     xpMultiplier: multiplierValue,
     newTotalPoints: finalTotalPoints,

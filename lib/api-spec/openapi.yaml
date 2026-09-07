@@ -31,6 +31,8 @@ tags:
     description: Grouping quests into goal-oriented questlines
   - name: campaigns
     description: Long-horizon goals told as an ordered story arc over questlines
+  - name: party
+    description: Co-op parties (accepted partnerships) fighting a shared encounter
   - name: brain
     description: Brain check-ins, derived mode state, and rescue events
   - name: recaps
@@ -267,6 +269,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/KingdomsResponse"
+        "401":
+          description: Unauthorized
+
+  /users/me/character-sheet:
+    get:
+      operationId: getCharacterSheet
+      summary: Derived D&D character sheet — six ability scores, proficiency, class, level, power
+      tags: [users]
+      responses:
+        "200":
+          description: Character sheet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CharacterSheet"
         "401":
           description: Unauthorized
 
@@ -2485,6 +2502,77 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
 
+  /encounter/current:
+    get:
+      operationId: getEncounterCurrent
+      summary: The player's current personal encounter (spawns a tier-1 foe on first view)
+      tags: [users]
+      responses:
+        "200":
+          description: Current personal encounter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonalEncounterStatus"
+        "401":
+          description: Unauthorized
+
+  /party/encounters:
+    get:
+      operationId: getPartyEncounters
+      summary: The user's parties and their shared foes (spawns a tier-1 foe on first view)
+      tags: [party]
+      responses:
+        "200":
+          description: One entry per accepted partnership, each with its shared encounter
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PartyEncounter"
+        "401":
+          description: Unauthorized
+
+  /dm/beat:
+    get:
+      operationId: getDmBeat
+      summary: The Dungeon Master's narrated beat for today (the campaign layer)
+      description: >-
+        A short, grounded beat in a tabletop-DM voice — either the morning quest
+        board or the evening make-camp. Generated once per (day, kind) and cached;
+        the model never blocks the screen and falls back to a templated beat on
+        failure. Every specific is grounded in the user's real quests — the DM
+        never fabricates. Returns { beat: null } when the day has nothing real to
+        narrate.
+      tags: [users]
+      parameters:
+        - name: kind
+          in: query
+          required: true
+          description: Which beat to fetch.
+          schema:
+            type: string
+            enum: [morning, camp]
+        - name: tz
+          in: query
+          description: >-
+            IANA timezone (e.g. "America/New_York") used to resolve the user's
+            local day. Defaults to UTC when omitted or invalid.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Today's beat, or null when there is nothing to narrate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DmBeatResponse"
+        "400":
+          description: Missing or invalid kind
+        "401":
+          description: Unauthorized
+
   /world-boss/current:
     get:
       operationId: getWorldBossCurrent
@@ -2735,6 +2823,46 @@ paths:
                 $ref: "#/components/schemas/StatPerkPurchaseResult"
         "404":
           description: Unknown perk
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /users/me/feats:
+    get:
+      operationId: getMyFeats
+      tags: [users]
+      summary: The hero's class feats — unlocked (with per-day readiness) and locked (with unlock level)
+      responses:
+        "200":
+          description: Unlocked and locked feats; empty when the campaign layer is still locked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeatsResponse"
+        "401":
+          description: Unauthorized
+
+  /users/me/feats/{id}/activate:
+    post:
+      operationId: activateFeat
+      tags: [users]
+      summary: Use an active class feat (once a day; gentle no-op if locked, on cooldown, or maxed)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Activation outcome (activated, or a gentle reason it couldn't)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeatActivateResult"
+        "404":
+          description: Unknown or non-active feat
           content:
             application/json:
               schema:
@@ -3049,6 +3177,74 @@ components:
         kingdomName:
           type: string
 
+    AbilityScore:
+      type: object
+      required: [id, name, abbreviation, score, modifier, kingdomId]
+      properties:
+        id:
+          type: string
+          enum: [might, intellect, attunement, presence, vigor, finesse]
+        name:
+          type: string
+        abbreviation:
+          type: string
+        score:
+          type: integer
+          description: Ability score in [8, 20], derived from the source signal.
+        modifier:
+          type: integer
+          description: Classic floor((score - 10) / 2) modifier, the "+N" shown next to the ability.
+        kingdomId:
+          type: string
+          nullable: true
+          description: >-
+            Source kingdom on the Life Kingdoms map, or null for Finesse, which
+            reads focus discipline rather than a kingdom.
+
+    SkillCheck:
+      type: object
+      required: [d20, modifier, proficiency, total, dc, band, ability]
+      properties:
+        d20:
+          type: integer
+          description: The raw die face, 1–20.
+        modifier:
+          type: integer
+          description: The rolled ability's modifier.
+        proficiency:
+          type: integer
+        total:
+          type: integer
+          description: d20 + modifier + proficiency.
+        dc:
+          type: integer
+          description: Difficulty class from the task's difficulty rung.
+        band:
+          type: string
+          enum: [crit, success, glancing]
+          description: Outcome band. There is no failure band — the quest completes in full regardless; only a crit adds a bonus.
+        ability:
+          type: string
+          enum: [might, intellect, attunement, presence, vigor, finesse]
+
+    CharacterSheet:
+      type: object
+      required: [abilities, proficiencyBonus, heroClass, level, battlePower]
+      properties:
+        abilities:
+          type: array
+          items:
+            $ref: "#/components/schemas/AbilityScore"
+        proficiencyBonus:
+          type: integer
+          description: Added to every skill check; derived from the capital tier (+2…+6).
+        heroClass:
+          type: string
+        level:
+          type: integer
+        battlePower:
+          type: integer
+
     Task:
       type: object
       required: [id, userId, title, points, completed, dueDate, priority, createdAt, category, categoryLabel, steps, difficulty, difficultyOfferable, bigSwing]
@@ -3295,6 +3491,25 @@ components:
         pointsAwarded:
           type: integer
           description: Total XP awarded (base + streak bonus + all-day bonus)
+        skillCheck:
+          description: The d20 skill check resolved for this completion. Null when the roll could not be computed (completion still succeeds).
+          oneOf:
+            - $ref: "#/components/schemas/SkillCheck"
+            - type: "null"
+        skillCheckNarration:
+          type: string
+          nullable: true
+          description: Anti-shame narration for the check's outcome band; quotes the quest title, never blames.
+        encounterHit:
+          description: The blow this completion landed on the player's personal encounter. Null when the encounter couldn't be updated (completion still succeeds).
+          oneOf:
+            - $ref: "#/components/schemas/EncounterHit"
+            - type: "null"
+        partyHits:
+          type: array
+          description: The blow this completion landed on each shared party foe (one per accepted partnership). Empty when the user has no party or the update couldn't run (completion still succeeds).
+          items:
+            $ref: "#/components/schemas/PartyEncounterHit"
         bonusAwarded:
           type: boolean
         bonusPoints:
@@ -4795,6 +5010,149 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/WorldBossContributor"
+        encounter:
+          description: The boss reframed as a D&D encounter — HP phases and an anti-shame "resting" state. Derived from hp + totalDamage; additive.
+          $ref: "#/components/schemas/EncounterView"
+
+    EncounterView:
+      type: object
+      required: [hp, totalDamage, hpRemaining, percentRemaining, phase, status, felled]
+      properties:
+        hp: { type: integer }
+        totalDamage: { type: integer }
+        hpRemaining: { type: integer }
+        percentRemaining:
+          type: number
+          description: Fraction of HP still standing, 0..1.
+        phase:
+          type: string
+          enum: [fresh, bloodied, wounded, resting]
+        status:
+          type: string
+          enum: [active, resting]
+        felled:
+          type: boolean
+          description: True once fully chipped down; the encounter now rests (never "you lost").
+
+    EncounterHit:
+      type: object
+      required: [name, tier, damage, felled, coins, encounter]
+      properties:
+        name:
+          type: string
+          description: The foe's name.
+        tier:
+          type: integer
+        damage:
+          type: integer
+          description: Damage this completion dealt (band-scaled; always ≥ 1).
+        felled:
+          type: boolean
+          description: Whether this blow felled the foe (which then rests; a fresh foe spawns).
+        coins:
+          type: integer
+          description: Upside-only loot coins granted on felling (0 otherwise).
+        encounter:
+          $ref: "#/components/schemas/EncounterView"
+
+    PersonalEncounterStatus:
+      type: object
+      required: [name, tier, encounter]
+      properties:
+        name:
+          type: string
+        tier:
+          type: integer
+        encounter:
+          $ref: "#/components/schemas/EncounterView"
+
+    PartyMemberContribution:
+      type: object
+      required: [userId, name, damage]
+      properties:
+        userId:
+          type: integer
+        name:
+          type: string
+          description: Display name for this member ("You" for the viewer). Never a rank.
+        damage:
+          type: integer
+          description: Total damage this member has dealt to the shared foe (0 if they haven't struck yet).
+
+    PartyEncounter:
+      type: object
+      required: [partnershipId, foeName, tier, encounter, members]
+      properties:
+        partnershipId:
+          type: integer
+        partner:
+          oneOf:
+            - $ref: "#/components/schemas/UserSummary"
+            - type: "null"
+        foeName:
+          type: string
+        tier:
+          type: integer
+        encounter:
+          $ref: "#/components/schemas/EncounterView"
+        members:
+          type: array
+          description: Both members' contributions as teamwork — one entry per member, never a ranking.
+          items:
+            $ref: "#/components/schemas/PartyMemberContribution"
+
+    PartyEncounterHit:
+      type: object
+      required: [partnershipId, foeName, tier, damage, felled, coins, encounter]
+      properties:
+        partnershipId:
+          type: integer
+        foeName:
+          type: string
+        tier:
+          type: integer
+        damage:
+          type: integer
+          description: Damage this completion dealt to the shared foe (band-scaled; always ≥ 1).
+        felled:
+          type: boolean
+          description: Whether this blow felled the shared foe (which then rests; a fresh foe spawns).
+        coins:
+          type: integer
+          description: Upside-only co-op loot this user earned for felling (0 otherwise).
+        encounter:
+          $ref: "#/components/schemas/EncounterView"
+
+    DmBeat:
+      type: object
+      required: [kind, localDate, narrative, source, createdAt]
+      properties:
+        kind:
+          type: string
+          enum: [morning, camp]
+          description: The morning quest board or the evening make-camp.
+        localDate:
+          type: string
+          description: The user's local day this beat narrates (YYYY-MM-DD).
+        narrative:
+          type: string
+          description: The DM's short, grounded prose — always anti-shame, never fabricated.
+        source:
+          type: string
+          enum: [ai, fallback]
+          description: Whether the model wrote it or the templated fallback did.
+        createdAt:
+          type: string
+          format: date-time
+    DmBeatResponse:
+      type: object
+      required: [beat]
+      properties:
+        beat:
+          nullable: true
+          description: Null when the day has nothing real to narrate (the DM stays quiet).
+          allOf:
+            - $ref: "#/components/schemas/DmBeat"
 
     WorldBossAttackResult:
       type: object
@@ -5025,6 +5383,85 @@ components:
           type: integer
           nullable: true
           description: Shield perk — streak freezes held after a successful buy (or the cap on at_max)
+
+    FeatView:
+      type: object
+      required: [id, heroClass, kind, unlockLevel, label, emoji, description]
+      properties:
+        id:
+          type: string
+        heroClass:
+          type: string
+          enum: [fighter, mage, ranger, healer]
+        kind:
+          type: string
+          enum: [passive, active]
+        unlockLevel:
+          type: integer
+        label:
+          type: string
+        emoji:
+          type: string
+        description:
+          type: string
+        grants:
+          type: string
+          nullable: true
+          enum: [xp_boost, focus_boost, streak_shield]
+          description: Active feats — the Stat Perk window activating grants
+        passiveKingdom:
+          type: string
+          nullable: true
+          description: Passive feats — the home kingdom whose categories get the XP bias
+        readyToday:
+          type: boolean
+          nullable: true
+          description: Active feats — false once used on the current local day
+        active:
+          type: boolean
+          nullable: true
+          description: Active boost feats — whether the granted boost window is currently live
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Active boost feats — active-until of the granted window
+        atMax:
+          type: boolean
+          nullable: true
+          description: Mend (streak shield) — whether the shield stock is already at the cap
+
+    FeatsResponse:
+      type: object
+      required: [unlocked, locked]
+      properties:
+        unlocked:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeatView"
+        locked:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeatView"
+
+    FeatActivateResult:
+      type: object
+      required: [activated, reason]
+      properties:
+        activated:
+          type: boolean
+        reason:
+          type: string
+          enum: [ok, locked, on_cooldown, at_max]
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Boost feats — the new active-until after activating
+        owned:
+          type: integer
+          nullable: true
+          description: Mend — streak freezes held after activating (or the cap on at_max)
 
     HeatmapDay:
       type: object

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, and, gte, gt, desc } from "drizzle-orm";
-import { db, usersTable, tasksTable, activityTable, kingdomPointsTable } from "@workspace/db";
+import { db, usersTable, tasksTable, activityTable, kingdomPointsTable, focusSessionsTable } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, getPointsIntoLevel } from "../lib/gamification";
 import { CATEGORY_LABELS } from "../lib/auto-points";
 import { resolveTimeZone, localDateKey, buildDayDates, buildDaySlots, localHour } from "../lib/date-buckets";
@@ -13,6 +13,8 @@ import {
   LIVELINESS_WINDOW_DAYS, type KingdomId,
 } from "../lib/kingdoms";
 import { unlockedFeatures } from "../lib/feature-gates";
+import { characterSheet } from "../lib/character-sheet";
+import { buildHeroLook } from "./avatar";
 import { decideRename, isUniqueViolation, renameAvailableAt } from "../lib/rename";
 
 const router: IRouter = Router();
@@ -258,6 +260,40 @@ router.get("/users/me/kingdoms", async (req, res): Promise<void> => {
     kingdoms: kingdomStates(lifetimeByKingdom, recentByKingdom),
     invitation: deriveNeglectInvitation({ lifetimeByKingdom, recentByKingdom }),
   });
+});
+
+// The Campaign — Phase 0: the derived Character Sheet. Six ability scores read
+// from the same kingdom lifetime points the map shows, plus Finesse from focus
+// discipline, plus a proficiency bonus from the capital tier. Nothing new is
+// stored — this is a re-reading of existing signals (see lib/character-sheet).
+router.get("/users/me/character-sheet", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  // Five ability sources: lifetime kingdom points (persisted, monotonic).
+  const kingdomRows = await db.select().from(kingdomPointsTable).where(eq(kingdomPointsTable.userId, userId));
+  const lifetimeByKingdom: Partial<Record<KingdomId, number>> = {};
+  for (const r of kingdomRows) lifetimeByKingdom[r.kingdomId as KingdomId] = r.lifetimePoints;
+
+  // Finesse's source: lifetime completed focus intervals across all sessions.
+  const focusRows = await db
+    .select({ completedIntervals: focusSessionsTable.completedIntervals })
+    .from(focusSessionsTable)
+    .where(eq(focusSessionsTable.userId, userId));
+  const completedIntervals = focusRows.reduce((sum, r) => sum + r.completedIntervals, 0);
+
+  // Class / level / battle power belong to the avatar system — reuse its assembly
+  // rather than recomputing battle power here.
+  const hero = await buildHeroLook(userId);
+  if (!hero) { res.status(404).json({ error: "User not found" }); return; }
+
+  res.json(characterSheet({
+    lifetimeByKingdom,
+    focus: { completedIntervals },
+    heroClass: hero.avatarClass,
+    level: hero.level,
+    battlePower: hero.battlePower,
+  }));
 });
 
 router.get("/users/me/xp-history", async (req, res): Promise<void> => {

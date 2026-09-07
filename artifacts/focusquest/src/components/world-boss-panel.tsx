@@ -12,6 +12,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { encounterPhaseLabel } from "@/lib/encounter";
 
 /** Shared co-op raid card: everyone in the game chips away at one weekly World
  *  Boss. Mirrors BattlePanel's conventions (Card / useToast / useQueryClient /
@@ -78,7 +79,9 @@ export function WorldBossPanel() {
       {/* Shared HP bar */}
       <div>
         <div className="flex justify-between text-sm mb-1">
-          <span className="text-muted-foreground">{pct}% felled this week</span>
+          <span className="text-muted-foreground">
+            {boss.encounter ? `${encounterPhaseLabel(boss.encounter.phase)} · ${pct}% felled` : `${pct}% felled this week`}
+          </span>
           <span className="font-medium">{boss.totalDamage.toLocaleString()} / {boss.hp.toLocaleString()}</span>
         </div>
         <div className="h-3 w-full rounded-full bg-muted overflow-hidden">
