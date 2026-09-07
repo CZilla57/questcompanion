@@ -20,7 +20,10 @@ router.get("/gear/store", async (req, res): Promise<void> => {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
 
+  // Only the curated buy-your-way-up ladder shows in the store; drop-only treasures
+  // (in_store = false) are found via loot/streak rewards, never sold.
   const allItems = await db.select().from(gearItemsTable)
+    .where(eq(gearItemsTable.inStore, true))
     .orderBy(gearItemsTable.levelRequired, gearItemsTable.statPower);
   const owned = await db.select().from(userGearTable).where(eq(userGearTable.userId, userId));
 
