@@ -23,6 +23,7 @@ export * from "./reward-store-items";
 export * from "./coin-transactions";
 export * from "./world-boss";
 export * from "./personal-encounters";
+export * from "./party-encounters";
 export * from "./dm-beats";
 export * from "./reflections";
 export * from "./weekly-recaps";
