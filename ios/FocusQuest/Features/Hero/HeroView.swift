@@ -9,8 +9,11 @@ final class HeroViewModel: ObservableObject {
         let me: User?
         let sheet: CharacterSheet?
         let encounter: PersonalEncounterStatus?
+        let feats: FeatsResponse?
     }
     @Published var state: Loadable<Bundle> = .idle
+    /// The active feat currently being used, so its button can show progress.
+    @Published var activatingFeatId: String?
 
     func load() async {
         state = .loading
@@ -21,13 +24,24 @@ final class HeroViewModel: ObservableObject {
             async let me = try? UserService.me()
             async let sheet = try? UserService.characterSheet()
             async let encounter = try? UserService.currentEncounter()
+            async let feats = try? FeatService.list()
             let bundle = Bundle(
                 hero: try await hero, avatar: await avatar, kingdoms: await kingdoms,
-                me: await me, sheet: await sheet, encounter: await encounter)
+                me: await me, sheet: await sheet, encounter: await encounter,
+                feats: await feats)
             state = .loaded(bundle)
         } catch {
             state = .failed(error.userMessage)
         }
+    }
+
+    /// Use an active feat, then reload so its readiness flips and any granted
+    /// boost/shield shows. Best-effort — a failure just leaves the card as-is.
+    func activate(_ feat: Feat) async {
+        activatingFeatId = feat.id
+        _ = try? await FeatService.activate(id: feat.id)
+        activatingFeatId = nil
+        await load()
     }
 }
 
@@ -42,6 +56,9 @@ struct HeroView: View {
                         if let name = bundle.me?.username { heroName(name, avatar: bundle.avatar) }
                         characterCard(bundle.hero, avatar: bundle.avatar)
                         if let sheet = bundle.sheet { characterSheetCard(sheet) }
+                        if let feats = bundle.feats, !(feats.unlocked.isEmpty && feats.locked.isEmpty) {
+                            featsCard(feats)
+                        }
                         if let avatar = bundle.avatar { equipmentCard(avatar) }
                         companionCard(bundle.hero.companion)
                         if let encounter = bundle.encounter { encounterCard(encounter) }
@@ -174,6 +191,65 @@ struct HeroView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Class Feats (The Campaign — second wave)
+
+    private func featsCard(_ feats: FeatsResponse) -> some View {
+        Card {
+            VStack(alignment: .leading, spacing: Theme.Space.md) {
+                SectionHeader("Class Feats")
+                ForEach(feats.unlocked) { feat in unlockedFeatRow(feat) }
+                ForEach(feats.locked) { feat in lockedFeatRow(feat) }
+            }
+        }
+    }
+
+    @ViewBuilder private func unlockedFeatRow(_ feat: Feat) -> some View {
+        HStack(spacing: Theme.Space.sm) {
+            Text(feat.emoji).font(.outfitTitle2)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(feat.label).font(.outfitSubheadlineBold)
+                Text(feat.description).font(.outfitCaption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: Theme.Space.sm)
+            if feat.isActive {
+                if feat.isUsable {
+                    Button {
+                        Task { await model.activate(feat) }
+                    } label: {
+                        Text(model.activatingFeatId == feat.id ? "…" : "Use today").font(.outfitCaptionBold)
+                    }
+                    .buttonStyle(.borderedProminent).tint(Theme.accent)
+                    .disabled(model.activatingFeatId != nil)
+                } else {
+                    Text(feat.atMax == true ? "Fully warded" : "Ready tomorrow")
+                        .font(.outfitCaption).foregroundStyle(.secondary)
+                }
+            } else {
+                Label("Always on", systemImage: "infinity")
+                    .font(.outfitCaption2).labelStyle(TealIconLabelStyle(spacing: 3))
+                    .foregroundStyle(Theme.accent)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func lockedFeatRow(_ feat: Feat) -> some View {
+        HStack(spacing: Theme.Space.sm) {
+            Image(systemName: "lock.fill").font(.outfitCaption).foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(feat.label).font(.outfitSubheadline).foregroundStyle(.secondary)
+                Text(feat.description).font(.outfitCaption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: Theme.Space.sm)
+            Text("Level \(feat.unlockLevel)").font(.outfitCaption).foregroundStyle(.secondary)
+        }
+        .opacity(0.7)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(feat.label), unlocks at level \(feat.unlockLevel)")
     }
 
     // MARK: - Personal encounter (The Campaign — Phase 2)
