@@ -9,6 +9,7 @@ export type CoinReason =
   | "questline_complete"
   | "boss_win"
   | "gear"
+  | "gear_salvage"
   | "redeem"
   | "quest_uncomplete"
   | "world_boss_defeat"
