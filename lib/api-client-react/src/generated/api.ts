@@ -102,6 +102,7 @@ import type {
   ParsedQuickAdd,
   PartnerRequestInput,
   Partnership,
+  PartyEncounter,
   PatchTaskStepParams,
   PatternSummary,
   PauseHyperfocus200,
@@ -8396,6 +8397,83 @@ export function useGetEncounterCurrent<TData = Awaited<ReturnType<typeof getEnco
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetEncounterCurrentQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetPartyEncountersUrl = () => {
+
+
+
+
+  return `/api/party/encounters`
+}
+
+/**
+ * @summary The user's parties and their shared foes (spawns a tier-1 foe on first view)
+ */
+export const getPartyEncounters = async ( options?: RequestInit): Promise<PartyEncounter[]> => {
+
+  return customFetch<PartyEncounter[]>(getGetPartyEncountersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPartyEncountersQueryKey = () => {
+    return [
+    `/api/party/encounters`
+    ] as const;
+    }
+
+
+export const getGetPartyEncountersQueryOptions = <TData = Awaited<ReturnType<typeof getPartyEncounters>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPartyEncounters>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPartyEncountersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPartyEncounters>>> = ({ signal }) => getPartyEncounters({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPartyEncounters>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPartyEncountersQueryResult = NonNullable<Awaited<ReturnType<typeof getPartyEncounters>>>
+export type GetPartyEncountersQueryError = ErrorType<void>
+
+
+/**
+ * @summary The user's parties and their shared foes (spawns a tier-1 foe on first view)
+ */
+
+export function useGetPartyEncounters<TData = Awaited<ReturnType<typeof getPartyEncounters>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPartyEncounters>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPartyEncountersQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
