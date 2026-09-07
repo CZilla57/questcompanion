@@ -58,6 +58,13 @@ export function rollD20(seed: string): number {
   return (hashSeed(seed) % 20) + 1;
 }
 
+/** Deterministic uniform in [0, 1) from a seed string — the same PRNG as the
+ *  die, for callers that need a probability (e.g. loot drop tables) rather than
+ *  a 1–20 roll. Stable and un-rerollable for a fixed seed, like rollD20. */
+export function seededUnit(seed: string): number {
+  return hashSeed(seed) / 4294967296; // uint32 max + 1
+}
+
 /** Stable seed for a quest-completion check. Uses the completion CALENDAR DAY,
  *  not the exact timestamp, so the same completion always resolves the same and
  *  a client re-render can't reroll it. */

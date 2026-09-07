@@ -652,6 +652,58 @@ export interface TaskUpdate {
   viaSteering?: boolean;
 }
 
+/**
+ * Gear rarity that dropped, or null for a coins-only "small find".
+ */
+export type LootDropRarity = typeof LootDropRarity[keyof typeof LootDropRarity] | null;
+
+
+export const LootDropRarity = {
+  legendary: 'legendary',
+  epic: 'epic',
+  rare: 'rare',
+  common: 'common',
+} as const;
+
+export type GearRewardInfoSlot = typeof GearRewardInfoSlot[keyof typeof GearRewardInfoSlot];
+
+
+export const GearRewardInfoSlot = {
+  weapon: 'weapon',
+  helmet: 'helmet',
+  armor: 'armor',
+  boots: 'boots',
+  accessory: 'accessory',
+} as const;
+
+export type GearRewardInfoRarity = typeof GearRewardInfoRarity[keyof typeof GearRewardInfoRarity];
+
+
+export const GearRewardInfoRarity = {
+  common: 'common',
+  rare: 'rare',
+  epic: 'epic',
+  legendary: 'legendary',
+} as const;
+
+export interface GearRewardInfo {
+  gearItemId: number;
+  name: string;
+  slot: GearRewardInfoSlot;
+  rarity: GearRewardInfoRarity;
+  statPower: number;
+  icon: string;
+}
+
+export interface LootDrop {
+  /** Gear rarity that dropped, or null for a coins-only "small find". */
+  rarity: LootDropRarity;
+  /** The gear item awarded, or null when no gear dropped. */
+  gear: GearRewardInfo | null;
+  /** Extra coins granted when no gear dropped (0 when gear dropped). Always ≥ 0. */
+  bonusCoins: number;
+}
+
 export type EncounterViewPhase = typeof EncounterViewPhase[keyof typeof EncounterViewPhase];
 
 
@@ -692,6 +744,8 @@ export interface EncounterHit {
   felled: boolean;
   /** Upside-only loot coins granted on felling (0 otherwise). */
   coins: number;
+  /** Treasure reveal on a fell — gear and/or bonus coins; null when not felled. */
+  loot?: LootDrop | null;
   encounter: EncounterView;
 }
 
@@ -705,6 +759,8 @@ export interface PartyEncounterHit {
   felled: boolean;
   /** Upside-only co-op loot this user earned for felling (0 otherwise). */
   coins: number;
+  /** This user's treasure reveal on a fell (each contributor rolls their own); null when not felled. */
+  loot?: LootDrop | null;
   encounter: EncounterView;
 }
 
@@ -727,36 +783,6 @@ export interface Badge {
   icon: string;
   category: BadgeCategory;
   requirement: number;
-}
-
-export type GearRewardInfoSlot = typeof GearRewardInfoSlot[keyof typeof GearRewardInfoSlot];
-
-
-export const GearRewardInfoSlot = {
-  weapon: 'weapon',
-  helmet: 'helmet',
-  armor: 'armor',
-  boots: 'boots',
-  accessory: 'accessory',
-} as const;
-
-export type GearRewardInfoRarity = typeof GearRewardInfoRarity[keyof typeof GearRewardInfoRarity];
-
-
-export const GearRewardInfoRarity = {
-  common: 'common',
-  rare: 'rare',
-  epic: 'epic',
-  legendary: 'legendary',
-} as const;
-
-export interface GearRewardInfo {
-  gearItemId: number;
-  name: string;
-  slot: GearRewardInfoSlot;
-  rarity: GearRewardInfoRarity;
-  statPower: number;
-  icon: string;
 }
 
 /**

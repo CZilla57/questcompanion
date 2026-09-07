@@ -792,6 +792,18 @@ export const CompleteTaskResponse = zod.object({
   "damage": zod.number().describe('Damage this completion dealt (band-scaled; always ≥ 1).'),
   "felled": zod.boolean().describe('Whether this blow felled the foe (which then rests; a fresh foe spawns).'),
   "coins": zod.number().describe('Upside-only loot coins granted on felling (0 otherwise).'),
+  "loot": zod.union([zod.object({
+  "rarity": zod.enum(['legendary', 'epic', 'rare', 'common']).nullable().describe('Gear rarity that dropped, or null for a coins-only \"small find\".'),
+  "gear": zod.union([zod.object({
+  "gearItemId": zod.number(),
+  "name": zod.string(),
+  "slot": zod.enum(['weapon', 'helmet', 'armor', 'boots', 'accessory']),
+  "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
+  "statPower": zod.number(),
+  "icon": zod.string()
+}),zod.null()]).describe('The gear item awarded, or null when no gear dropped.'),
+  "bonusCoins": zod.number().describe('Extra coins granted when no gear dropped (0 when gear dropped). Always ≥ 0.')
+}),zod.null()]).optional().describe('Treasure reveal on a fell — gear and\/or bonus coins; null when not felled.'),
   "encounter": zod.object({
   "hp": zod.number(),
   "totalDamage": zod.number(),
@@ -809,6 +821,18 @@ export const CompleteTaskResponse = zod.object({
   "damage": zod.number().describe('Damage this completion dealt to the shared foe (band-scaled; always ≥ 1).'),
   "felled": zod.boolean().describe('Whether this blow felled the shared foe (which then rests; a fresh foe spawns).'),
   "coins": zod.number().describe('Upside-only co-op loot this user earned for felling (0 otherwise).'),
+  "loot": zod.union([zod.object({
+  "rarity": zod.enum(['legendary', 'epic', 'rare', 'common']).nullable().describe('Gear rarity that dropped, or null for a coins-only \"small find\".'),
+  "gear": zod.union([zod.object({
+  "gearItemId": zod.number(),
+  "name": zod.string(),
+  "slot": zod.enum(['weapon', 'helmet', 'armor', 'boots', 'accessory']),
+  "rarity": zod.enum(['common', 'rare', 'epic', 'legendary']),
+  "statPower": zod.number(),
+  "icon": zod.string()
+}),zod.null()]).describe('The gear item awarded, or null when no gear dropped.'),
+  "bonusCoins": zod.number().describe('Extra coins granted when no gear dropped (0 when gear dropped). Always ≥ 0.')
+}),zod.null()]).optional().describe('This user\'s treasure reveal on a fell (each contributor rolls their own); null when not felled.'),
   "encounter": zod.object({
   "hp": zod.number(),
   "totalDamage": zod.number(),
