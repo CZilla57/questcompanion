@@ -782,7 +782,7 @@ export const CompleteTaskResponse = zod.object({
   "proficiency": zod.number(),
   "total": zod.number().describe('d20 + modifier + proficiency.'),
   "dc": zod.number().describe('Difficulty class from the task\'s difficulty rung.'),
-  "band": zod.enum(['crit', 'success', 'glancing']).describe('Outcome band. There is no failure band — the quest completes in full regardless; only a crit adds a bonus.'),
+  "band": zod.enum(['crit', 'success', 'partial', 'fail']).describe('Outcome band. The quest completes in full regardless of band — none reduce the reward. crit adds a bonus; partial is a calm near-miss reframe; fail affirms full completion and offers the supportive rescue pathway (a gentler next step), never a penalty or debuff.'),
   "ability": zod.enum(['might', 'intellect', 'attunement', 'presence', 'vigor', 'finesse'])
 }),zod.null()]).optional().describe('The d20 skill check resolved for this completion. Null when the roll could not be computed (completion still succeeds).'),
   "skillCheckNarration": zod.string().nullish().describe('Anti-shame narration for the check\'s outcome band; quotes the quest title, never blames.'),

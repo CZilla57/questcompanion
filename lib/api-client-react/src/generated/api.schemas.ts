@@ -285,7 +285,7 @@ export interface AbilityScore {
 }
 
 /**
- * Outcome band. There is no failure band — the quest completes in full regardless; only a crit adds a bonus.
+ * Outcome band. The quest completes in full regardless of band — none reduce the reward. crit adds a bonus; partial is a calm near-miss reframe; fail affirms full completion and offers the supportive rescue pathway (a gentler next step), never a penalty or debuff.
  */
 export type SkillCheckBand = typeof SkillCheckBand[keyof typeof SkillCheckBand];
 
@@ -293,7 +293,8 @@ export type SkillCheckBand = typeof SkillCheckBand[keyof typeof SkillCheckBand];
 export const SkillCheckBand = {
   crit: 'crit',
   success: 'success',
-  glancing: 'glancing',
+  partial: 'partial',
+  fail: 'fail',
 } as const;
 
 export type SkillCheckAbility = typeof SkillCheckAbility[keyof typeof SkillCheckAbility];
@@ -318,7 +319,7 @@ export interface SkillCheck {
   total: number;
   /** Difficulty class from the task's difficulty rung. */
   dc: number;
-  /** Outcome band. There is no failure band — the quest completes in full regardless; only a crit adds a bonus. */
+  /** Outcome band. The quest completes in full regardless of band — none reduce the reward. crit adds a bonus; partial is a calm near-miss reframe; fail affirms full completion and offers the supportive rescue pathway (a gentler next step), never a penalty or debuff. */
   band: SkillCheckBand;
   ability: SkillCheckAbility;
 }
