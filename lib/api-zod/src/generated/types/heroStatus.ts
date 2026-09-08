@@ -8,6 +8,7 @@
 import type { HeroStatusActivity } from './heroStatusActivity';
 import type { HeroStatusCompanion } from './heroStatusCompanion';
 import type { HeroStatusStage } from './heroStatusStage';
+import type { HeroStatusWellRested } from './heroStatusWellRested';
 
 export interface HeroStatus {
   stage: HeroStatusStage;
@@ -18,4 +19,6 @@ export interface HeroStatus {
   activity: HeroStatusActivity;
   /** Living Companion reaction (Act VI) — derived relational beat + bond, plus its name/disposition (Act III) */
   companion: HeroStatusCompanion;
+  /** Act IV "Well-Rested" — earned upside from keeping a good run (advancing the streak). While active, a small flat bonus rides quest-completion rolls. Never a penalty; a broken run simply lets it lapse. */
+  wellRested: HeroStatusWellRested;
 }

@@ -195,7 +195,12 @@ export const GetHeroStatusResponse = zod.object({
   "bondQuestsCompleted": zod.number(),
   "name": zod.string().nullable().describe('The companion\'s user-given name, or null until named (client shows a neutral fallback).'),
   "disposition": zod.enum(['warm', 'wry', 'stoic']).describe('Flavors the companion\'s voice. Defaults to \"warm\" (the original tone).')
-}).describe('Living Companion reaction (Act VI) — derived relational beat + bond, plus its name\/disposition (Act III)')
+}).describe('Living Companion reaction (Act VI) — derived relational beat + bond, plus its name\/disposition (Act III)'),
+  "wellRested": zod.object({
+  "active": zod.boolean().describe('Whether the bonus is currently in effect.'),
+  "expiresAt": zod.coerce.date().nullish().describe('When the rested window ends, or null if never earned \/ lapsed.'),
+  "bonus": zod.number().describe('The flat roll bonus granted while active.')
+}).describe('Act IV \"Well-Rested\" — earned upside from keeping a good run (advancing the streak). While active, a small flat bonus rides quest-completion rolls. Never a penalty; a broken run simply lets it lapse.')
 })
 
 
@@ -804,6 +809,7 @@ export const CompleteTaskResponse = zod.object({
   "name": zod.string(),
   "emoji": zod.string()
 }).describe('A consumable spent on a completion\'s roll; its boost is already reflected in the skillCheck.'),zod.null()]).optional().describe('A queued consumable spent on this completion\'s roll (Act IV), or null. Its boost is already reflected in skillCheck.'),
+  "wellRested": zod.boolean().optional().describe('Whether an Act IV \"Well-Rested\" bonus rode this roll (earned by keeping a good run). The bonus is already reflected in skillCheck.total.'),
   "encounterHit": zod.union([zod.object({
   "name": zod.string().describe('The foe\'s name.'),
   "tier": zod.number(),

@@ -122,6 +122,10 @@ export const REROLL_THRESHOLD = 10;
  * An optional `boost` (a spent consumable) only ever helps: advantage/reroll
  * take the HIGHER of two seeded dice, and bonus adds to the total. All seed-
  * derived, so the result is still deterministic and un-rerollable.
+ *
+ * An optional `restedBonus` (Act IV "Well-Rested", earned by keeping a good
+ * run) is a further flat, non-negative addition to the total. It composes with
+ * any consumable boost and, like everything here, can only raise the band.
  */
 export function resolveCheck(args: {
   seed: string;
@@ -130,6 +134,7 @@ export function resolveCheck(args: {
   dc: number;
   ability: AbilityId;
   boost?: RollBoost;
+  restedBonus?: number;
 }): SkillCheck {
   let d20 = rollD20(args.seed);
   if (args.boost?.kind === "advantage") {
@@ -137,7 +142,10 @@ export function resolveCheck(args: {
   } else if (args.boost?.kind === "reroll" && d20 <= REROLL_THRESHOLD) {
     d20 = Math.max(d20, rollD20(args.seed + ":rr"));
   }
-  const bonus = args.boost?.kind === "bonus" ? args.boost.amount : 0;
+  // Both upside channels are additive and clamped non-negative, so a boost or a
+  // Well-Rested bonus can only ever raise the total.
+  const boostBonus = args.boost?.kind === "bonus" ? args.boost.amount : 0;
+  const bonus = Math.max(0, boostBonus) + Math.max(0, args.restedBonus ?? 0);
   const total = d20 + args.modifier + args.proficiency + bonus;
   const band: CheckBand =
     d20 === 20 ? "crit"
@@ -169,6 +177,7 @@ export function resolveTaskCheck(args: {
   category: string;
   difficulty: string;
   boost?: RollBoost;
+  restedBonus?: number;
 }): SkillCheck {
   const ability = abilityForKingdom(kingdomForCategory(args.category));
   return resolveCheck({
@@ -178,6 +187,7 @@ export function resolveTaskCheck(args: {
     dc: dcForDifficulty(args.difficulty),
     ability,
     boost: args.boost,
+    restedBonus: args.restedBonus,
   });
 }
 

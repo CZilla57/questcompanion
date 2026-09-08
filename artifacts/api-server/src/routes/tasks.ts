@@ -37,6 +37,7 @@ import { capitalLifetime, capitalTier, type KingdomId } from "../lib/kingdoms";
 import { abilityScores, proficiencyBonus } from "../lib/character-sheet";
 import { resolveTaskCheck, taskCheckSeed, bandEffect, bandNarration, type SkillCheck, type RollBoost } from "../lib/roll-engine";
 import { consumableById } from "../lib/consumables";
+import { wellRestedBonus, wellRestedExpiry, shouldGrantWellRested, WELL_RESTED_BONUS } from "../lib/well-rested";
 import { chipPersonalEncounter, type EncounterHit } from "./encounter";
 import { chipPartyEncounters, type PartyEncounterHit } from "./party";
 import { getUserPower } from "./battle";
@@ -66,6 +67,7 @@ async function rollCompletionCheck(
   difficulty: string,
   completionDay: string,
   boost?: RollBoost,
+  restedBonus?: number,
 ): Promise<SkillCheck> {
   const kingdomRows = await db
     .select({ kingdomId: kingdomPointsTable.kingdomId, lifetimePoints: kingdomPointsTable.lifetimePoints })
@@ -90,6 +92,7 @@ async function rollCompletionCheck(
     category,
     difficulty,
     boost,
+    restedBonus,
   });
 }
 
@@ -644,6 +647,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
         bondBefore: number;
         companionDisposition: string;
         pendingConsumable: string | null;
+        wellRestedActive: boolean;
       };
 
   const outcome = await db.transaction(async (tx): Promise<TxOutcome> => {
@@ -767,6 +771,12 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     // fail. Only bondBefore needs to escape the tx for that.
     const bondBefore = user.bondQuestsCompleted;
 
+    // Act IV "Well-Rested": the bonus rides on the state the user ENTERED this
+    // completion with (earned by a prior good run), so read it before we grant.
+    // Keeping the run — advancing the streak — (re)grants it for the next window.
+    const wellRestedActive = wellRestedBonus(user.wellRestedExpiresAt, now) > 0;
+    const grantWellRested = shouldGrantWellRested(newStreak, streakDaysBefore);
+
     // Persist user state.
     await tx.update(usersTable).set({
       totalPoints: newTotalPoints,
@@ -779,6 +789,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       hungerNotifiedStage: null,
       bondQuestsCompleted: bondBefore + 1,
       ...(freezeConsumed ? { streakFreezes: user.streakFreezes - 1 } : {}),
+      ...(grantWellRested ? { wellRestedExpiresAt: wellRestedExpiry(now) } : {}),
     }).where(eq(usersTable.id, userId));
 
     // Act VI Life Kingdoms: base points (NOT boostedBase) grow the kingdom that
@@ -828,6 +839,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       bondBefore,
       companionDisposition: user.companionDisposition,
       pendingConsumable: user.pendingConsumable,
+      wellRestedActive,
     };
   });
   // ─────────────────────────────────────────────────────────────────────────────
@@ -857,7 +869,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
   }
 
   const { task, boostedBase, pointsToAdd, bonusAwarded, focusBonusAwarded, streakBonus, multiplierLabel, multiplierValue,
-    newTotalPoints, newLevel, leveledUp, unlockedByAward, newStreak, oldStreak, freezeConsumed, heroRevived, bondBefore, companionDisposition, pendingConsumable } = outcome;
+    newTotalPoints, newLevel, leveledUp, unlockedByAward, newStreak, oldStreak, freezeConsumed, heroRevived, bondBefore, companionDisposition, pendingConsumable, wellRestedActive } = outcome;
 
   // ─── Post-transaction side effects ───────────────────────────────────────────
   // These run outside the transaction.  Any failure here leaves the user with
@@ -1019,7 +1031,11 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     // boost. Best-effort — never fails the completion.
     const consumed = await consumeQueuedConsumable(userId, pendingConsumable);
     if (consumed?.def) consumableUsed = { id: consumed.def.id, name: consumed.def.name, emoji: consumed.def.emoji };
-    skillCheck = await rollCompletionCheck(userId, id, task.category, task.difficulty, today!, consumed?.boost);
+    // Act IV Well-Rested: a small flat bonus rides this roll if the user entered
+    // the completion rested (earned by a prior good run). Composes with any
+    // consumable boost; both are upside-only.
+    const restedBonus = wellRestedActive ? WELL_RESTED_BONUS : 0;
+    skillCheck = await rollCompletionCheck(userId, id, task.category, task.difficulty, today!, consumed?.boost, restedBonus);
     skillCheckNarration = bandNarration(skillCheck.band, task.title);
     const effect = bandEffect(skillCheck.band);
     if (effect.bonusCoins > 0) {
@@ -1058,6 +1074,9 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     skillCheck,
     skillCheckNarration,
     consumableUsed,
+    // Act IV Well-Rested: whether a rested bonus rode this roll (already in
+    // skillCheck.total). Upside-only surface, like consumableUsed.
+    wellRested: wellRestedActive,
     encounterHit,
     partyHits,
     streakBonus,
