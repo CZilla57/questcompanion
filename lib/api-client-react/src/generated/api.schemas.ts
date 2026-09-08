@@ -2406,6 +2406,28 @@ export interface PartyEncounter {
 }
 
 /**
+ * The hero's Capital (Act V) — the seat of the realm, derived from the sum of lifetime kingdom points. Monotonic: it only ever grows, never a penalty. `fraction` is the fine-grained progress toward the next tier.
+ */
+export interface CapitalProgress {
+  /** Current capital tier (0…MAX_CAPITAL_TIER). */
+  tier: number;
+  /** Current tier's name (e.g. "Hamlet", "Crown City"). */
+  name: string;
+  /** Lifetime kingdom points feeding the capital. */
+  points: number;
+  /** True at the top of the ladder (no next tier). */
+  atMax: boolean;
+  /** The next tier's name, or null at max. */
+  nextName: string | null;
+  /** Lifetime points needed for the next tier, or null at max. */
+  nextThreshold: number | null;
+  /** Points still to go to the next tier (0 at max). */
+  pointsToNext: number;
+  /** Progress toward the next tier, 0..1 (1 at max). */
+  fraction: number;
+}
+
+/**
  * One roster slot in the discovery log. A discovered (felled ≥ 1) foe reveals its full copy and counts; the currently-active foe reveals its name/motive but withholds the earned defeat copy until felled; every other slot is a withheld silhouette (all fields null). Anti-shame — an unmet foe is "not yet encountered", never "unbeaten".
  */
 export interface BestiaryEntry {

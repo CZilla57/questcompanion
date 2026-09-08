@@ -2804,6 +2804,21 @@ export const GetEncounterCurrentResponse = zod.object({
 
 
 /**
+ * @summary The hero's Capital — a home that visibly grows, with progress to the next tier (Act V)
+ */
+export const GetCapitalResponse = zod.object({
+  "tier": zod.number().describe('Current capital tier (0…MAX_CAPITAL_TIER).'),
+  "name": zod.string().describe('Current tier\'s name (e.g. \"Hamlet\", \"Crown City\").'),
+  "points": zod.number().describe('Lifetime kingdom points feeding the capital.'),
+  "atMax": zod.boolean().describe('True at the top of the ladder (no next tier).'),
+  "nextName": zod.string().nullable().describe('The next tier\'s name, or null at max.'),
+  "nextThreshold": zod.number().nullable().describe('Lifetime points needed for the next tier, or null at max.'),
+  "pointsToNext": zod.number().describe('Points still to go to the next tier (0 at max).'),
+  "fraction": zod.number().describe('Progress toward the next tier, 0..1 (1 at max).')
+}).describe('The hero\'s Capital (Act V) — the seat of the realm, derived from the sum of lifetime kingdom points. Monotonic: it only ever grows, never a penalty. `fraction` is the fine-grained progress toward the next tier.')
+
+
+/**
  * @summary The player's bestiary — a discovery log completed by felling each roster foe (Act V)
  */
 export const GetBestiaryResponse = zod.object({
