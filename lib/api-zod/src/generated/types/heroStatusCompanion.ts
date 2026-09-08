@@ -6,9 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { HeroStatusCompanionBeat } from './heroStatusCompanionBeat';
+import type { HeroStatusCompanionDisposition } from './heroStatusCompanionDisposition';
 
 /**
- * Living Companion reaction (Act VI) — derived relational beat + bond
+ * Living Companion reaction (Act VI) — derived relational beat + bond, plus its name/disposition (Act III)
  */
 export type HeroStatusCompanion = {
   beat: HeroStatusCompanionBeat;
@@ -17,4 +18,8 @@ export type HeroStatusCompanion = {
   bondTier: number;
   bondTierName: string;
   bondQuestsCompleted: number;
+  /** The companion's user-given name, or null until named (client shows a neutral fallback). */
+  name: string | null;
+  /** Flavors the companion's voice. Defaults to "warm" (the original tone). */
+  disposition: HeroStatusCompanionDisposition;
 };

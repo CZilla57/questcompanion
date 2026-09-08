@@ -114,16 +114,19 @@ export function completionCompanionReaction(args: {
   now: Date;
   /** The completion's d20 outcome band, when a check ran (Act III). */
   band?: CheckBand;
+  /** Companion disposition, flavoring the crit/fail voice (Act III slice B). */
+  disposition?: string | null;
 }): string | null {
+  const { userId, now, disposition } = args;
   const after = bondTier(args.bondBefore + 1);
   if (after.tier > bondTier(args.bondBefore).tier) {
-    return companionReactionLine("bond_tier_up", { userId: args.userId, now: args.now, bondTierName: after.name });
+    return companionReactionLine("bond_tier_up", { userId, now, bondTierName: after.name });
   }
   if (args.leveledUp) {
-    return companionReactionLine("leveled_up", { userId: args.userId, now: args.now, newLevel: args.newLevel });
+    return companionReactionLine("leveled_up", { userId, now, newLevel: args.newLevel });
   }
   if (args.band === "crit" || args.band === "fail") {
-    return companionReactionLine(args.band, { userId: args.userId, now: args.now });
+    return companionReactionLine(args.band, { userId, now, disposition });
   }
   return null;
 }

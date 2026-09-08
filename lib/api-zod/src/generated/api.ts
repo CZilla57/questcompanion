@@ -192,8 +192,10 @@ export const GetHeroStatusResponse = zod.object({
   "line": zod.string().describe('Curated companion line; empty when beat is \"quiet\"'),
   "bondTier": zod.number(),
   "bondTierName": zod.string(),
-  "bondQuestsCompleted": zod.number()
-}).describe('Living Companion reaction (Act VI) — derived relational beat + bond')
+  "bondQuestsCompleted": zod.number(),
+  "name": zod.string().nullable().describe('The companion\'s user-given name, or null until named (client shows a neutral fallback).'),
+  "disposition": zod.enum(['warm', 'wry', 'stoic']).describe('Flavors the companion\'s voice. Defaults to \"warm\" (the original tone).')
+}).describe('Living Companion reaction (Act VI) — derived relational beat + bond, plus its name\/disposition (Act III)')
 })
 
 
@@ -1244,6 +1246,24 @@ export const PutMyTimezoneBody = zod.object({
 
 export const PutMyTimezoneResponse = zod.object({
   "ok": zod.boolean()
+})
+
+
+/**
+ * @summary Name the companion and/or set its disposition (Act III)
+ */
+export const updateCompanionBodyNameMax = 24;
+
+
+
+export const UpdateCompanionBody = zod.object({
+  "name": zod.string().max(updateCompanionBodyNameMax).nullish().describe('New name (1–24 chars after trimming), or null to clear it back to the fallback.'),
+  "disposition": zod.enum(['warm', 'wry', 'stoic']).optional()
+}).describe('Rename the companion and\/or set its disposition (Act III). At least one field.')
+
+export const UpdateCompanionResponse = zod.object({
+  "name": zod.string().nullable(),
+  "disposition": zod.enum(['warm', 'wry', 'stoic'])
 })
 
 
