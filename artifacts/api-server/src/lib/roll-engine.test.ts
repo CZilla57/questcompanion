@@ -3,6 +3,8 @@ import {
   DC_BY_DIFFICULTY,
   DEFAULT_DC,
   CRIT_BONUS_COINS,
+  PARTIAL_MARGIN,
+  REROLL_THRESHOLD,
   dcForDifficulty,
   rollD20,
   taskCheckSeed,
@@ -83,11 +85,32 @@ describe("resolveCheck bands", () => {
     expect(c.total).toBe(16);
   });
 
-  it("total < DC (without a nat 20) is a glancing hit, never a failure", () => {
+  it("a near miss (within PARTIAL_MARGIN of the DC) is a partial", () => {
+    const seed = seedForFace(10);
+    // 10 + 0 + 0 = 10 vs DC 12 → missed by 2 (≤ PARTIAL_MARGIN) → partial.
+    const c = resolveCheck({ seed, modifier: 0, proficiency: 0, dc: 12, ability: "vigor" });
+    expect(c.total).toBe(10);
+    expect(c.band).toBe("partial");
+  });
+
+  it("a wide miss is a fail (still completes; never a negative outcome)", () => {
     const seed = seedForFace(2);
-    const c = resolveCheck({ seed, modifier: -1, proficiency: 2, dc: 16, ability: "vigor" }); // 2-1+2=3 < 16
-    expect(c.band).toBe("glancing");
-    expect((c.band as CheckBand)).not.toBe("failure" as unknown as CheckBand);
+    // 2 - 1 + 2 = 3 vs DC 16 → missed by 13 (> PARTIAL_MARGIN) → fail.
+    const c = resolveCheck({ seed, modifier: -1, proficiency: 2, dc: 16, ability: "vigor" });
+    expect(c.band).toBe("fail");
+  });
+
+  it("exactly PARTIAL_MARGIN below the DC is still a partial (boundary)", () => {
+    const seed = seedForFace(10);
+    // 10 + 0 + 0 = 10 vs DC 14 → missed by exactly 4 → partial; DC 15 → missed by 5 → fail.
+    expect(resolveCheck({ seed, modifier: 0, proficiency: 0, dc: 10 + PARTIAL_MARGIN, ability: "vigor" }).band).toBe("partial");
+    expect(resolveCheck({ seed, modifier: 0, proficiency: 0, dc: 10 + PARTIAL_MARGIN + 1, ability: "vigor" }).band).toBe("fail");
+  });
+
+  it("a natural 1 is always the low band, even with a big bonus that clears the DC", () => {
+    const c = resolveCheck({ seed: seedForFace(1), modifier: 10, proficiency: 6, dc: 8, ability: "might" });
+    expect(c.d20).toBe(1);
+    expect(c.band).toBe("fail"); // classic auto-miss — but still a full completion (see bandEffect)
   });
 
   it("reports the totals it used", () => {
@@ -124,7 +147,7 @@ describe("resolveTaskCheck", () => {
 });
 
 describe("bandEffect — the upside-only invariant", () => {
-  const bands: CheckBand[] = ["crit", "success", "glancing"];
+  const bands: CheckBand[] = ["crit", "success", "partial", "fail"];
 
   it("never carries a negative effect for any band", () => {
     for (const band of bands) {
@@ -133,24 +156,37 @@ describe("bandEffect — the upside-only invariant", () => {
     }
   });
 
-  it("only a crit adds a bonus; success and glancing are neutral", () => {
-    expect(bandEffect("crit")).toEqual({ band: "crit", bonusLoot: true, bonusCoins: CRIT_BONUS_COINS });
-    expect(bandEffect("success")).toEqual({ band: "success", bonusLoot: false, bonusCoins: 0 });
-    expect(bandEffect("glancing")).toEqual({ band: "glancing", bonusLoot: false, bonusCoins: 0 });
+  it("only a crit adds a bonus; success and partial are fully neutral", () => {
+    expect(bandEffect("crit")).toEqual({ band: "crit", bonusLoot: true, bonusCoins: CRIT_BONUS_COINS, offerRescue: false });
+    expect(bandEffect("success")).toEqual({ band: "success", bonusLoot: false, bonusCoins: 0, offerRescue: false });
+    expect(bandEffect("partial")).toEqual({ band: "partial", bonusLoot: false, bonusCoins: 0, offerRescue: false });
   });
 
-  it("glancing is exactly as rewarding as success at the base (no penalty)", () => {
-    const g = bandEffect("glancing");
+  it("fail's only consequence is to OFFER rescue — no bonus, but no cost either", () => {
+    const f = bandEffect("fail");
+    expect(f).toEqual({ band: "fail", bonusLoot: false, bonusCoins: 0, offerRescue: true });
+  });
+
+  it("only fail offers rescue; no other band does", () => {
+    for (const band of bands) {
+      expect(bandEffect(band).offerRescue).toBe(band === "fail");
+    }
+  });
+
+  it("every band is exactly as rewarding as success at the base (no penalty)", () => {
     const s = bandEffect("success");
-    expect(g.bonusCoins).toBe(s.bonusCoins);
-    expect(g.bonusLoot).toBe(s.bonusLoot);
+    for (const band of ["partial", "fail"] as CheckBand[]) {
+      const e = bandEffect(band);
+      expect(e.bonusCoins).toBe(s.bonusCoins);
+      expect(e.bonusLoot).toBe(s.bonusLoot);
+    }
   });
 });
 
 describe("bandNarration — anti-shame copy", () => {
-  const bands: CheckBand[] = ["crit", "success", "glancing"];
+  const bands: CheckBand[] = ["crit", "success", "partial", "fail"];
 
-  it("quotes the quest title and never says 'fail'", () => {
+  it("quotes the quest title and never blames, for any band", () => {
     for (const band of bands) {
       const line = bandNarration(band, "Email Dr. Lee");
       expect(line).toContain('"Email Dr. Lee"');
@@ -159,8 +195,71 @@ describe("bandNarration — anti-shame copy", () => {
     }
   });
 
-  it("frames a glancing hit toward a smaller next step, not a penalty", () => {
-    const line = bandNarration("glancing", "Deep clean the garage").toLowerCase();
+  it("frames a partial toward a smaller next step, not a penalty", () => {
+    const line = bandNarration("partial", "Deep clean the garage").toLowerCase();
     expect(line).toContain("smaller next step");
+  });
+
+  it("a fail affirms full completion and offers help, never a loss", () => {
+    const line = bandNarration("fail", "Deep clean the garage");
+    expect(line.toLowerCase()).toContain("in full");
+    expect(line.toLowerCase()).toContain("break the next");
+  });
+});
+
+describe("resolveCheck with a RollBoost — upside-only (Act IV consumables)", () => {
+  function seedForFace(face: number): string {
+    for (let i = 0; i < 100_000; i++) {
+      const s = `boost-${i}`;
+      if (rollD20(s) === face) return s;
+    }
+    throw new Error(`no seed for face ${face}`);
+  }
+  const base = { modifier: 0, proficiency: 2, dc: 12, ability: "might" as const };
+
+  it("a flat bonus raises the total, never lowers it", () => {
+    const seed = seedForFace(10);
+    const plain = resolveCheck({ ...base, seed });
+    const boosted = resolveCheck({ ...base, seed, boost: { kind: "bonus", amount: 3 } });
+    expect(boosted.total).toBe(plain.total + 3);
+  });
+
+  it("advantage keeps the higher of two seeded dice (never worse)", () => {
+    for (const face of [1, 5, 10, 15, 20]) {
+      const seed = seedForFace(face);
+      const plain = resolveCheck({ ...base, seed });
+      const adv = resolveCheck({ ...base, seed, boost: { kind: "advantage" } });
+      expect(adv.d20).toBeGreaterThanOrEqual(plain.d20);
+    }
+  });
+
+  it("reroll only fires on a low die, and only ever improves it", () => {
+    const low = seedForFace(3);
+    const rrLow = resolveCheck({ ...base, seed: low, boost: { kind: "reroll" } });
+    expect(rrLow.d20).toBeGreaterThanOrEqual(3);
+
+    const high = seedForFace(18); // above REROLL_THRESHOLD → untouched
+    expect(18).toBeGreaterThan(REROLL_THRESHOLD);
+    const rrHigh = resolveCheck({ ...base, seed: high, boost: { kind: "reroll" } });
+    expect(rrHigh.d20).toBe(18);
+  });
+
+  it("no boost can ever reduce the d20 or total (invariant sweep)", () => {
+    for (let i = 0; i < 200; i++) {
+      const seed = `sweep-${i}`;
+      const plain = resolveCheck({ ...base, seed });
+      for (const boost of [{ kind: "bonus", amount: 2 }, { kind: "advantage" }, { kind: "reroll" }] as const) {
+        const b = resolveCheck({ ...base, seed, boost });
+        expect(b.d20).toBeGreaterThanOrEqual(plain.d20);
+        expect(b.total).toBeGreaterThanOrEqual(plain.total);
+      }
+    }
+  });
+
+  it("determinism: a boosted roll is stable for a fixed seed", () => {
+    const seed = seedForFace(4);
+    const a = resolveCheck({ ...base, seed, boost: { kind: "advantage" } });
+    const b = resolveCheck({ ...base, seed, boost: { kind: "advantage" } });
+    expect(a).toEqual(b);
   });
 });

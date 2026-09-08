@@ -7,7 +7,7 @@ import { resolveTimeZone, localDateKey, buildDayDates, buildDaySlots, localHour 
 import { hungerStage, moodFor } from "../lib/hero-care";
 import { currentVignette } from "../lib/hero-flavor";
 import { bondTier, dayGap, deriveCompanionBeat } from "../lib/companion";
-import { companionLine } from "../lib/companion-copy";
+import { companionLine, DISPOSITIONS, isDisposition } from "../lib/companion-copy";
 import {
   kingdomForCategory, deriveNeglectInvitation, isWorldResting, kingdomStates,
   LIVELINESS_WINDOW_DAYS, type KingdomId,
@@ -221,12 +221,60 @@ router.get("/users/me/hero-status", async (req, res): Promise<void> => {
     activity: { id: vignette.id, text: vignette.text },
     companion: {
       beat: beat.kind,
-      line: companionLine(beat, { userId: user.id, now }),
+      line: companionLine(beat, { userId: user.id, now, disposition: user.companionDisposition }),
       bondTier: tier.tier,
       bondTierName: tier.name,
       bondQuestsCompleted: user.bondQuestsCompleted,
+      // Act III (Living World): the companion as a named character. `name` is
+      // null until the user names it (client shows a neutral fallback).
+      name: user.companionName,
+      disposition: user.companionDisposition,
     },
   });
+});
+
+// Act III (Living World): name the companion and set its disposition. Both
+// optional; a null name clears it back to the neutral fallback. Purely
+// cosmetic — no game state, no anti-shame surface.
+const MAX_COMPANION_NAME = 24;
+router.patch("/users/me/companion", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId;
+
+  const body = (req.body ?? {}) as { name?: unknown; disposition?: unknown };
+  const updates: Partial<typeof usersTable.$inferInsert> = {};
+
+  if ("name" in body) {
+    if (body.name === null) {
+      updates.companionName = null;
+    } else if (typeof body.name === "string") {
+      const trimmed = body.name.trim();
+      if (trimmed.length < 1 || trimmed.length > MAX_COMPANION_NAME) {
+        res.status(422).json({ error: `Name must be 1–${MAX_COMPANION_NAME} characters` });
+        return;
+      }
+      updates.companionName = trimmed;
+    } else {
+      res.status(422).json({ error: "name must be a string or null" });
+      return;
+    }
+  }
+
+  if ("disposition" in body) {
+    if (!isDisposition(body.disposition)) {
+      res.status(422).json({ error: `disposition must be one of: ${DISPOSITIONS.join(", ")}` });
+      return;
+    }
+    updates.companionDisposition = body.disposition;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    res.status(422).json({ error: "Provide a name and/or disposition to update" });
+    return;
+  }
+
+  const [user] = await db.update(usersTable).set(updates).where(eq(usersTable.id, userId)).returning();
+  res.json({ name: user!.companionName, disposition: user!.companionDisposition });
 });
 
 router.get("/users/me/kingdoms", async (req, res): Promise<void> => {

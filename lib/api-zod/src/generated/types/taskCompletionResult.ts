@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Badge } from './badge';
+import type { ConsumableUsed } from './consumableUsed';
 import type { EncounterHit } from './encounterHit';
 import type { FeatureKey } from './featureKey';
 import type { GearRewardInfo } from './gearRewardInfo';
@@ -22,6 +23,8 @@ export interface TaskCompletionResult {
   skillCheck?: SkillCheck | null;
   /** Anti-shame narration for the check's outcome band; quotes the quest title, never blames. */
   skillCheckNarration?: string | null;
+  /** A queued consumable spent on this completion's roll (Act IV), or null. Its boost is already reflected in skillCheck. */
+  consumableUsed?: ConsumableUsed | null;
   /** The blow this completion landed on the player's personal encounter. Null when the encounter couldn't be updated (completion still succeeds). */
   encounterHit?: EncounterHit | null;
   /** The blow this completion landed on each shared party foe (one per accepted partnership). Empty when the user has no party or the update couldn't run (completion still succeeds). */

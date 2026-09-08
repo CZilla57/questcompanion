@@ -6,9 +6,19 @@
 //
 // ANTI-SHAME CONTRACT: a roll may only ADD upside or reframe — it can never
 // reduce the base reward, XP, level, or streak. There is deliberately no code
-// path here that lowers anything: a "glancing" result carries the SAME base
-// reward as a success (the quest still completes in full), and only a crit adds
-// a bonus. `bandEffect` encodes that, and the tests assert it.
+// path here that lowers anything: every band carries the SAME base reward (the
+// quest always completes in full), only a crit adds a bonus, and the lowest
+// band ("fail") is NOT a penalty — its only consequence is to OFFER the
+// supportive rescue pathway (a gentler next step). It never applies a debuff,
+// never writes a rescue_events row on its own (that table records interventions
+// the user actually took), and never reads as blame. `bandEffect` encodes this,
+// and the tests assert it.
+//
+// The four bands (Act II) split the sub-DC region the old three-band model
+// collapsed into "glancing": a check that just missed the DC is a "partial"
+// (the same calm reframe), and one that missed badly — or a natural 1 — is a
+// "fail" that routes the user toward help. Both still complete the quest in
+// full; the difference is narrative and how eagerly we offer a smaller opening.
 import { kingdomForCategory } from "./kingdoms";
 import {
   type AbilityId,
@@ -17,7 +27,11 @@ import {
   modifierForAbility,
 } from "./character-sheet";
 
-export type CheckBand = "crit" | "success" | "glancing";
+export type CheckBand = "crit" | "success" | "partial" | "fail";
+
+/** How far below the DC still counts as a "partial" (a near miss) rather than a
+ *  "fail". Missed by 1…PARTIAL_MARGIN → partial; by more → fail. */
+export const PARTIAL_MARGIN = 4;
 
 /** DC per difficulty rung. The task's existing `difficulty` field drives this;
  *  unknown values fall to the medium DC (the schema's own default). */
@@ -84,10 +98,30 @@ export interface SkillCheck {
 }
 
 /**
- * Resolve a check. A natural 20 is always a crit (rare, exciting, no DC math);
- * otherwise total ≥ DC is a success and below is a "glancing" hit. There is no
- * "failure" band — the lowest outcome still completes the quest in full; the
- * naming and `bandEffect` keep it upside-only.
+ * A consumable's effect on the next roll (Act IV). Every kind is UPSIDE-ONLY —
+ * it can only raise the d20 or the total, never lower them, so a boost can only
+ * improve the band. Applied deterministically from the seed (see resolveCheck)
+ * so the roll stays stable and cannot be re-rolled by refetching.
+ */
+export type RollBoost =
+  | { kind: "bonus"; amount: number }   // flat + to the total
+  | { kind: "advantage" }               // roll twice, keep the higher die
+  | { kind: "reroll" };                 // if the die is low, reroll and keep the better
+
+/** A roll at or below this face is "low" enough for a Second Wind reroll. */
+export const REROLL_THRESHOLD = 10;
+
+/**
+ * Resolve a check. A natural 20 is always a crit (rare, exciting, no DC math)
+ * and a natural 1 is always the lowest band (classic auto-miss); otherwise
+ * total ≥ DC is a success, a near miss (within PARTIAL_MARGIN of the DC) is a
+ * "partial", and a wide miss is a "fail". Crucially, EVERY band still completes
+ * the quest in full — "fail" is the roadmap's "fail-with-consequence" reframed
+ * to the anti-shame law: the consequence is that we offer help, never a loss.
+ *
+ * An optional `boost` (a spent consumable) only ever helps: advantage/reroll
+ * take the HIGHER of two seeded dice, and bonus adds to the total. All seed-
+ * derived, so the result is still deterministic and un-rerollable.
  */
 export function resolveCheck(args: {
   seed: string;
@@ -95,10 +129,22 @@ export function resolveCheck(args: {
   proficiency: number;
   dc: number;
   ability: AbilityId;
+  boost?: RollBoost;
 }): SkillCheck {
-  const d20 = rollD20(args.seed);
-  const total = d20 + args.modifier + args.proficiency;
-  const band: CheckBand = d20 === 20 ? "crit" : total >= args.dc ? "success" : "glancing";
+  let d20 = rollD20(args.seed);
+  if (args.boost?.kind === "advantage") {
+    d20 = Math.max(d20, rollD20(args.seed + ":adv"));
+  } else if (args.boost?.kind === "reroll" && d20 <= REROLL_THRESHOLD) {
+    d20 = Math.max(d20, rollD20(args.seed + ":rr"));
+  }
+  const bonus = args.boost?.kind === "bonus" ? args.boost.amount : 0;
+  const total = d20 + args.modifier + args.proficiency + bonus;
+  const band: CheckBand =
+    d20 === 20 ? "crit"
+    : d20 === 1 ? "fail"
+    : total >= args.dc ? "success"
+    : args.dc - total <= PARTIAL_MARGIN ? "partial"
+    : "fail";
   return {
     d20,
     modifier: args.modifier,
@@ -122,6 +168,7 @@ export function resolveTaskCheck(args: {
   proficiency: number;
   category: string;
   difficulty: string;
+  boost?: RollBoost;
 }): SkillCheck {
   const ability = abilityForKingdom(kingdomForCategory(args.category));
   return resolveCheck({
@@ -130,6 +177,7 @@ export function resolveTaskCheck(args: {
     proficiency: args.proficiency,
     dc: dcForDifficulty(args.difficulty),
     ability,
+    boost: args.boost,
   });
 }
 
@@ -139,23 +187,29 @@ export interface BandEffect {
   bonusLoot: boolean;
   /** Flat bonus coins on top of the normal award. Crit only; never negative. */
   bonusCoins: number;
+  /** Fail only: surface the supportive rescue pathway (offer a gentler next
+   *  step / breakdown). This is the ONLY consequence of a fail — an offer of
+   *  help, never a penalty, debuff, or auto-recorded rescue_events row. */
+  offerRescue: boolean;
 }
 
 /**
- * The reward delta for a band — always ≥ 0. Note there is no field that can
- * lower the base reward: success and glancing are neutral (the quest's own XP
- * is untouched), and only a crit adds anything. This is the upside-only
- * contract in code.
+ * The reward delta for a band — always ≥ 0, and no field can lower the base
+ * reward: success and partial are neutral (the quest's own XP is untouched),
+ * only a crit adds anything, and a fail's `offerRescue` is upside (help), not a
+ * cost. This is the anti-shame contract in code.
  */
 export function bandEffect(band: CheckBand): BandEffect {
-  if (band === "crit") return { band, bonusLoot: true, bonusCoins: CRIT_BONUS_COINS };
-  return { band, bonusLoot: false, bonusCoins: 0 };
+  if (band === "crit") return { band, bonusLoot: true, bonusCoins: CRIT_BONUS_COINS, offerRescue: false };
+  if (band === "fail") return { band, bonusLoot: false, bonusCoins: 0, offerRescue: true };
+  return { band, bonusLoot: false, bonusCoins: 0, offerRescue: false };
 }
 
 /**
  * Anti-shame narration for a band. Always quotes the quest title; never says
- * "fail"/"failed" and never blames. A glancing hit reframes toward a smaller
- * next step — the difficulty ladder's own language — rather than a penalty.
+ * "fail"/"failed" and never blames. A partial reframes toward a smaller next
+ * step; a fail affirms the quest still counts in full and OFFERS a gentler
+ * opening — the rescue pathway — rather than reading as a loss.
  */
 export function bandNarration(band: CheckBand, questTitle: string): string {
   switch (band) {
@@ -163,7 +217,9 @@ export function bandNarration(band: CheckBand, questTitle: string): string {
       return `Critical hit — "${questTitle}" done with flair.`;
     case "success":
       return `"${questTitle}" cleared.`;
-    case "glancing":
+    case "partial":
       return `"${questTitle}" is done. A glancing pass — a smaller next step will land clean.`;
+    case "fail":
+      return `"${questTitle}" is done — it counts in full. That one fought back; want to break the next into a smaller opening?`;
   }
 }

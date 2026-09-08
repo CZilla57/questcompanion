@@ -190,7 +190,19 @@ export const HeroStatusCompanionBeat = {
 } as const;
 
 /**
- * Living Companion reaction (Act VI) — derived relational beat + bond
+ * Flavors the companion's voice. Defaults to "warm" (the original tone).
+ */
+export type HeroStatusCompanionDisposition = typeof HeroStatusCompanionDisposition[keyof typeof HeroStatusCompanionDisposition];
+
+
+export const HeroStatusCompanionDisposition = {
+  warm: 'warm',
+  wry: 'wry',
+  stoic: 'stoic',
+} as const;
+
+/**
+ * Living Companion reaction (Act VI) — derived relational beat + bond, plus its name/disposition (Act III)
  */
 export type HeroStatusCompanion = {
   beat: HeroStatusCompanionBeat;
@@ -199,6 +211,10 @@ export type HeroStatusCompanion = {
   bondTier: number;
   bondTierName: string;
   bondQuestsCompleted: number;
+  /** The companion's user-given name, or null until named (client shows a neutral fallback). */
+  name: string | null;
+  /** Flavors the companion's voice. Defaults to "warm" (the original tone). */
+  disposition: HeroStatusCompanionDisposition;
 };
 
 export interface HeroStatus {
@@ -208,8 +224,43 @@ export interface HeroStatus {
   lastFedAt: string;
   /** Current ambient "hero life" vignette (rotates every ~3h) */
   activity: HeroStatusActivity;
-  /** Living Companion reaction (Act VI) — derived relational beat + bond */
+  /** Living Companion reaction (Act VI) — derived relational beat + bond, plus its name/disposition (Act III) */
   companion: HeroStatusCompanion;
+}
+
+export type CompanionUpdateDisposition = typeof CompanionUpdateDisposition[keyof typeof CompanionUpdateDisposition];
+
+
+export const CompanionUpdateDisposition = {
+  warm: 'warm',
+  wry: 'wry',
+  stoic: 'stoic',
+} as const;
+
+/**
+ * Rename the companion and/or set its disposition (Act III). At least one field.
+ */
+export interface CompanionUpdate {
+  /**
+     * New name (1–24 chars after trimming), or null to clear it back to the fallback.
+     * @maxLength 24
+     */
+  name?: string | null;
+  disposition?: CompanionUpdateDisposition;
+}
+
+export type CompanionIdentityDisposition = typeof CompanionIdentityDisposition[keyof typeof CompanionIdentityDisposition];
+
+
+export const CompanionIdentityDisposition = {
+  warm: 'warm',
+  wry: 'wry',
+  stoic: 'stoic',
+} as const;
+
+export interface CompanionIdentity {
+  name: string | null;
+  disposition: CompanionIdentityDisposition;
 }
 
 export type KingdomStateId = typeof KingdomStateId[keyof typeof KingdomStateId];
@@ -260,6 +311,20 @@ export interface KingdomsResponse {
   invitation: KingdomInvitation | null;
 }
 
+/**
+ * Sub-step fill toward the next ability point. The integer score only steps at a band boundary, so this exposes the distance travelled inside the current band — the felt "that quest nudged my Might" loop — derived from the same monotonic signal the score reads.
+ */
+export interface AbilityProgress {
+  /** Fill toward the next point, 0..1. 1 once the ability is maxed. */
+  fraction: number;
+  /** Signal units still needed to reach the next point; 0 when maxed. */
+  toNext: number;
+  /** The score the next step reaches, or null when already at the max. */
+  nextScore: number | null;
+  /** True at the top of the ladder — no further point to climb toward. */
+  atMax: boolean;
+}
+
 export type AbilityScoreId = typeof AbilityScoreId[keyof typeof AbilityScoreId];
 
 
@@ -282,10 +347,11 @@ export interface AbilityScore {
   modifier: number;
   /** Source kingdom on the Life Kingdoms map, or null for Finesse, which reads focus discipline rather than a kingdom. */
   kingdomId: string | null;
+  progress: AbilityProgress;
 }
 
 /**
- * Outcome band. There is no failure band — the quest completes in full regardless; only a crit adds a bonus.
+ * Outcome band. The quest completes in full regardless of band — none reduce the reward. crit adds a bonus; partial is a calm near-miss reframe; fail affirms full completion and offers the supportive rescue pathway (a gentler next step), never a penalty or debuff.
  */
 export type SkillCheckBand = typeof SkillCheckBand[keyof typeof SkillCheckBand];
 
@@ -293,7 +359,8 @@ export type SkillCheckBand = typeof SkillCheckBand[keyof typeof SkillCheckBand];
 export const SkillCheckBand = {
   crit: 'crit',
   success: 'success',
-  glancing: 'glancing',
+  partial: 'partial',
+  fail: 'fail',
 } as const;
 
 export type SkillCheckAbility = typeof SkillCheckAbility[keyof typeof SkillCheckAbility];
@@ -318,9 +385,75 @@ export interface SkillCheck {
   total: number;
   /** Difficulty class from the task's difficulty rung. */
   dc: number;
-  /** Outcome band. There is no failure band — the quest completes in full regardless; only a crit adds a bonus. */
+  /** Outcome band. The quest completes in full regardless of band — none reduce the reward. crit adds a bonus; partial is a calm near-miss reframe; fail affirms full completion and offers the supportive rescue pathway (a gentler next step), never a penalty or debuff. */
   band: SkillCheckBand;
   ability: SkillCheckAbility;
+}
+
+export type ConsumableItemId = typeof ConsumableItemId[keyof typeof ConsumableItemId];
+
+
+export const ConsumableItemId = {
+  focus_draught: 'focus_draught',
+  lucky_clover: 'lucky_clover',
+  second_wind: 'second_wind',
+} as const;
+
+export interface ConsumableItem {
+  id: ConsumableItemId;
+  name: string;
+  emoji: string;
+  description: string;
+  /** Coin price to buy one. */
+  coinCost: number;
+  /** How many the user currently owns. */
+  quantity: number;
+  /** Whether the balance covers one purchase. */
+  affordable: boolean;
+  /** Coins still needed to afford one (0 when affordable). Feeds the gentle "N more to go". */
+  remaining: number;
+}
+
+export interface ConsumablesResponse {
+  /** The user's current coin balance. */
+  balance: number;
+  /** The consumable queued to boost the next quest roll, or null. */
+  pending: string | null;
+  items: ConsumableItem[];
+}
+
+export type ConsumablePurchaseResultReason = typeof ConsumablePurchaseResultReason[keyof typeof ConsumablePurchaseResultReason];
+
+
+export const ConsumablePurchaseResultReason = {
+  ok: 'ok',
+  insufficient: 'insufficient',
+} as const;
+
+export interface ConsumablePurchaseResult {
+  /** True when a consumable was bought; false is a gentle no-op, never an error. */
+  purchased: boolean;
+  reason: ConsumablePurchaseResultReason;
+  /** The coin balance after the attempt. */
+  balance: number;
+  /** Owned quantity after a successful buy (present only when purchased). */
+  quantity?: number;
+  /** Coins still needed (present only when the buy was a gentle no-op). */
+  remaining?: number;
+}
+
+export interface ConsumableQueue {
+  /** The now-queued consumable id, or null when the queue was cleared. */
+  pending: string | null;
+}
+
+/**
+ * A consumable spent on a completion's roll; its boost is already reflected in the skillCheck.
+ */
+export interface ConsumableUsed {
+  id: string;
+  name: string;
+  emoji: string;
 }
 
 export interface CharacterSheet {
@@ -751,6 +884,12 @@ export interface EncounterHit {
   coins: number;
   /** Treasure reveal on a fell — gear and/or bonus coins; null when not felled. */
   loot?: LootDrop | null;
+  /** Why the foe stands against you (Act III) — an external friction, never the player. */
+  motive: string;
+  /** Celebratory defeat line, set only on a fell (null otherwise). Anti-shame — only ever a win. */
+  defeatBeat: string | null;
+  /** How the realm shifts when the foe falls, set only on a fell (null otherwise). */
+  worldNote: string | null;
   encounter: EncounterView;
 }
 
@@ -766,6 +905,12 @@ export interface PartyEncounterHit {
   coins: number;
   /** This user's treasure reveal on a fell (each contributor rolls their own); null when not felled. */
   loot?: LootDrop | null;
+  /** Why the shared foe stands against the party (Act III) — an external friction, never a member. */
+  motive: string;
+  /** Celebratory defeat line, set only on a fell (null otherwise). Anti-shame — only ever a win. */
+  defeatBeat: string | null;
+  /** How the realm shifts when the shared foe falls, set only on a fell (null otherwise). */
+  worldNote: string | null;
   encounter: EncounterView;
 }
 
@@ -818,6 +963,8 @@ export interface TaskCompletionResult {
   skillCheck?: SkillCheck | null;
   /** Anti-shame narration for the check's outcome band; quotes the quest title, never blames. */
   skillCheckNarration?: string | null;
+  /** A queued consumable spent on this completion's roll (Act IV), or null. Its boost is already reflected in skillCheck. */
+  consumableUsed?: ConsumableUsed | null;
   /** The blow this completion landed on the player's personal encounter. Null when the encounter couldn't be updated (completion still succeeds). */
   encounterHit?: EncounterHit | null;
   /** The blow this completion landed on each shared party foe (one per accepted partnership). Empty when the user has no party or the update couldn't run (completion still succeeds). */
@@ -2222,6 +2369,8 @@ export interface WorldBossStatus {
 export interface PersonalEncounterStatus {
   name: string;
   tier: number;
+  /** Why the foe stands against you (Act III) — shown while it lives. */
+  motive: string;
   encounter: EncounterView;
 }
 
@@ -2238,6 +2387,8 @@ export interface PartyEncounter {
   partner?: UserSummary | null;
   foeName: string;
   tier: number;
+  /** Why the shared foe stands against the party (Act III) — shown while it lives. */
+  motive: string;
   encounter: EncounterView;
   /** Both members' contributions as teamwork — one entry per member, never a ranking. */
   members: PartyMemberContribution[];

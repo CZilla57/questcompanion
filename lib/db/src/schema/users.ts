@@ -35,6 +35,15 @@ export const usersTable = pgTable("users", {
   // Streak-milestone celebration push dedup marker (last milestone value pushed,
   // e.g. "7"); cleared when the streak breaks. Mirrors hungerNotifiedStage.
   companionMilestoneNotified: text("companion_milestone_notified"),
+  // Act III (Living World): the companion as a named character. Name is null
+  // until the user names it (clients show a neutral fallback + a naming
+  // affordance); disposition flavors its voice and defaults to the existing
+  // warm tone, so every current user reads exactly as before.
+  companionName: text("companion_name"),
+  companionDisposition: text("companion_disposition").notNull().default("warm"),
+  // Act IV (Tactics & Stakes): the one consumable queued to apply to the NEXT
+  // quest completion's roll, or null. Cleared when consumed. Upside-only.
+  pendingConsumable: text("pending_consumable"),
   // Per-user timezone (IANA), captured from the client. Lets cron compute the
   // user's local hour for bedtime / quiet-hours.
   timezone: text("timezone"),

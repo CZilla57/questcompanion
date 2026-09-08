@@ -192,8 +192,10 @@ export const GetHeroStatusResponse = zod.object({
   "line": zod.string().describe('Curated companion line; empty when beat is \"quiet\"'),
   "bondTier": zod.number(),
   "bondTierName": zod.string(),
-  "bondQuestsCompleted": zod.number()
-}).describe('Living Companion reaction (Act VI) — derived relational beat + bond')
+  "bondQuestsCompleted": zod.number(),
+  "name": zod.string().nullable().describe('The companion\'s user-given name, or null until named (client shows a neutral fallback).'),
+  "disposition": zod.enum(['warm', 'wry', 'stoic']).describe('Flavors the companion\'s voice. Defaults to \"warm\" (the original tone).')
+}).describe('Living Companion reaction (Act VI) — derived relational beat + bond, plus its name\/disposition (Act III)')
 })
 
 
@@ -228,7 +230,13 @@ export const GetCharacterSheetResponse = zod.object({
   "abbreviation": zod.string(),
   "score": zod.number().describe('Ability score in [8, 20], derived from the source signal.'),
   "modifier": zod.number().describe('Classic floor((score - 10) \/ 2) modifier, the \"+N\" shown next to the ability.'),
-  "kingdomId": zod.string().nullable().describe('Source kingdom on the Life Kingdoms map, or null for Finesse, which reads focus discipline rather than a kingdom.')
+  "kingdomId": zod.string().nullable().describe('Source kingdom on the Life Kingdoms map, or null for Finesse, which reads focus discipline rather than a kingdom.'),
+  "progress": zod.object({
+  "fraction": zod.number().describe('Fill toward the next point, 0..1. 1 once the ability is maxed.'),
+  "toNext": zod.number().describe('Signal units still needed to reach the next point; 0 when maxed.'),
+  "nextScore": zod.number().nullable().describe('The score the next step reaches, or null when already at the max.'),
+  "atMax": zod.boolean().describe('True at the top of the ladder — no further point to climb toward.')
+}).describe('Sub-step fill toward the next ability point. The integer score only steps at a band boundary, so this exposes the distance travelled inside the current band — the felt \"that quest nudged my Might\" loop — derived from the same monotonic signal the score reads.')
 })),
   "proficiencyBonus": zod.number().describe('Added to every skill check; derived from the capital tier (+2…+6).'),
   "heroClass": zod.string(),
@@ -787,10 +795,15 @@ export const CompleteTaskResponse = zod.object({
   "proficiency": zod.number(),
   "total": zod.number().describe('d20 + modifier + proficiency.'),
   "dc": zod.number().describe('Difficulty class from the task\'s difficulty rung.'),
-  "band": zod.enum(['crit', 'success', 'glancing']).describe('Outcome band. There is no failure band — the quest completes in full regardless; only a crit adds a bonus.'),
+  "band": zod.enum(['crit', 'success', 'partial', 'fail']).describe('Outcome band. The quest completes in full regardless of band — none reduce the reward. crit adds a bonus; partial is a calm near-miss reframe; fail affirms full completion and offers the supportive rescue pathway (a gentler next step), never a penalty or debuff.'),
   "ability": zod.enum(['might', 'intellect', 'attunement', 'presence', 'vigor', 'finesse'])
 }),zod.null()]).optional().describe('The d20 skill check resolved for this completion. Null when the roll could not be computed (completion still succeeds).'),
   "skillCheckNarration": zod.string().nullish().describe('Anti-shame narration for the check\'s outcome band; quotes the quest title, never blames.'),
+  "consumableUsed": zod.union([zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "emoji": zod.string()
+}).describe('A consumable spent on a completion\'s roll; its boost is already reflected in the skillCheck.'),zod.null()]).optional().describe('A queued consumable spent on this completion\'s roll (Act IV), or null. Its boost is already reflected in skillCheck.'),
   "encounterHit": zod.union([zod.object({
   "name": zod.string().describe('The foe\'s name.'),
   "tier": zod.number(),
@@ -809,6 +822,9 @@ export const CompleteTaskResponse = zod.object({
 }),zod.null()]).describe('The gear item awarded, or null when no gear dropped.'),
   "bonusCoins": zod.number().describe('Extra coins granted when no gear dropped (0 when gear dropped). Always ≥ 0.')
 }),zod.null()]).optional().describe('Treasure reveal on a fell — gear and\/or bonus coins; null when not felled.'),
+  "motive": zod.string().describe('Why the foe stands against you (Act III) — an external friction, never the player.'),
+  "defeatBeat": zod.string().nullable().describe('Celebratory defeat line, set only on a fell (null otherwise). Anti-shame — only ever a win.'),
+  "worldNote": zod.string().nullable().describe('How the realm shifts when the foe falls, set only on a fell (null otherwise).'),
   "encounter": zod.object({
   "hp": zod.number(),
   "totalDamage": zod.number(),
@@ -838,6 +854,9 @@ export const CompleteTaskResponse = zod.object({
 }),zod.null()]).describe('The gear item awarded, or null when no gear dropped.'),
   "bonusCoins": zod.number().describe('Extra coins granted when no gear dropped (0 when gear dropped). Always ≥ 0.')
 }),zod.null()]).optional().describe('This user\'s treasure reveal on a fell (each contributor rolls their own); null when not felled.'),
+  "motive": zod.string().describe('Why the shared foe stands against the party (Act III) — an external friction, never a member.'),
+  "defeatBeat": zod.string().nullable().describe('Celebratory defeat line, set only on a fell (null otherwise). Anti-shame — only ever a win.'),
+  "worldNote": zod.string().nullable().describe('How the realm shifts when the shared foe falls, set only on a fell (null otherwise).'),
   "encounter": zod.object({
   "hp": zod.number(),
   "totalDamage": zod.number(),
@@ -1246,6 +1265,24 @@ export const PutMyTimezoneBody = zod.object({
 
 export const PutMyTimezoneResponse = zod.object({
   "ok": zod.boolean()
+})
+
+
+/**
+ * @summary Name the companion and/or set its disposition (Act III)
+ */
+export const updateCompanionBodyNameMax = 24;
+
+
+
+export const UpdateCompanionBody = zod.object({
+  "name": zod.string().max(updateCompanionBodyNameMax).nullish().describe('New name (1–24 chars after trimming), or null to clear it back to the fallback.'),
+  "disposition": zod.enum(['warm', 'wry', 'stoic']).optional()
+}).describe('Rename the companion and\/or set its disposition (Act III). At least one field.')
+
+export const UpdateCompanionResponse = zod.object({
+  "name": zod.string().nullable(),
+  "disposition": zod.enum(['warm', 'wry', 'stoic'])
 })
 
 
@@ -2757,6 +2794,7 @@ export const EnterBattleResponse = zod.object({
 export const GetEncounterCurrentResponse = zod.object({
   "name": zod.string(),
   "tier": zod.number(),
+  "motive": zod.string().describe('Why the foe stands against you (Act III) — shown while it lives.'),
   "encounter": zod.object({
   "hp": zod.number(),
   "totalDamage": zod.number(),
@@ -2786,6 +2824,7 @@ export const GetPartyEncountersResponseItem = zod.object({
 }),zod.null()]).optional(),
   "foeName": zod.string(),
   "tier": zod.number(),
+  "motive": zod.string().describe('Why the shared foe stands against the party (Act III) — shown while it lives.'),
   "encounter": zod.object({
   "hp": zod.number(),
   "totalDamage": zod.number(),
@@ -3037,6 +3076,45 @@ export const BuyStatPerkResponse = zod.object({
   "remaining": zod.number().describe('Coins still needed (present on the insufficient no-op)'),
   "expiresAt": zod.coerce.date().nullish().describe('Boost perks — the new active-until after a successful buy'),
   "owned": zod.number().nullish().describe('Shield perk — streak freezes held after a successful buy (or the cap on at_max)')
+})
+
+
+/**
+ * @summary Consumables catalog with the user's owned quantities, balance, and queued item (Act IV)
+ */
+export const GetConsumablesResponse = zod.object({
+  "balance": zod.number().describe('The user\'s current coin balance.'),
+  "pending": zod.string().nullable().describe('The consumable queued to boost the next quest roll, or null.'),
+  "items": zod.array(zod.object({
+  "id": zod.enum(['focus_draught', 'lucky_clover', 'second_wind']),
+  "name": zod.string(),
+  "emoji": zod.string(),
+  "description": zod.string(),
+  "coinCost": zod.number().describe('Coin price to buy one.'),
+  "quantity": zod.number().describe('How many the user currently owns.'),
+  "affordable": zod.boolean().describe('Whether the balance covers one purchase.'),
+  "remaining": zod.number().describe('Coins still needed to afford one (0 when affordable). Feeds the gentle \"N more to go\".')
+}))
+})
+
+
+/**
+ * @summary Spend coins to buy a consumable (gentle no-op if unaffordable)
+ */
+export const BuyConsumableResponse = zod.object({
+  "purchased": zod.boolean().describe('True when a consumable was bought; false is a gentle no-op, never an error.'),
+  "reason": zod.enum(['ok', 'insufficient']),
+  "balance": zod.number().describe('The coin balance after the attempt.'),
+  "quantity": zod.number().optional().describe('Owned quantity after a successful buy (present only when purchased).'),
+  "remaining": zod.number().optional().describe('Coins still needed (present only when the buy was a gentle no-op).')
+})
+
+
+/**
+ * @summary Queue a consumable for the next roll ("none" clears the queue)
+ */
+export const ActivateConsumableResponse = zod.object({
+  "pending": zod.string().nullable().describe('The now-queued consumable id, or null when the queue was cleared.')
 })
 
 

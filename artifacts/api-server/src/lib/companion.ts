@@ -38,6 +38,7 @@ export function dayGap(fromDateKey: string | null, toDateKey: string): number | 
 }
 
 import type { HungerStage } from "./hero-care";
+import type { CheckBand } from "./roll-engine";
 import { companionReactionLine } from "./companion-copy";
 
 export type CompanionBeatKind = "welcome_back" | "streak_milestone" | "rest_day" | "ambient" | "quiet";
@@ -99,8 +100,11 @@ export function companionMilestonePush(
 }
 
 /**
- * The companion's line for a "just happened" completion moment, or null. Precedence:
- * a bond tier crossing (bondBefore → bondBefore+1) beats a level-up.
+ * The companion's line for a "just happened" completion moment, or null.
+ * Precedence: a bond-tier crossing beats a level-up, which beats the roll's
+ * band. Only a crit or a fail band speaks — success/partial stay quiet so the
+ * companion reacts to genuine spikes, not every quest. The fail line is
+ * anti-shame: it affirms full completion and credits the effort, never blames.
  */
 export function completionCompanionReaction(args: {
   bondBefore: number;
@@ -108,13 +112,21 @@ export function completionCompanionReaction(args: {
   newLevel: number;
   userId: number;
   now: Date;
+  /** The completion's d20 outcome band, when a check ran (Act III). */
+  band?: CheckBand;
+  /** Companion disposition, flavoring the crit/fail voice (Act III slice B). */
+  disposition?: string | null;
 }): string | null {
+  const { userId, now, disposition } = args;
   const after = bondTier(args.bondBefore + 1);
   if (after.tier > bondTier(args.bondBefore).tier) {
-    return companionReactionLine("bond_tier_up", { userId: args.userId, now: args.now, bondTierName: after.name });
+    return companionReactionLine("bond_tier_up", { userId, now, bondTierName: after.name });
   }
   if (args.leveledUp) {
-    return companionReactionLine("leveled_up", { userId: args.userId, now: args.now, newLevel: args.newLevel });
+    return companionReactionLine("leveled_up", { userId, now, newLevel: args.newLevel });
+  }
+  if (args.band === "crit" || args.band === "fail") {
+    return companionReactionLine(args.band, { userId, now, disposition });
   }
   return null;
 }

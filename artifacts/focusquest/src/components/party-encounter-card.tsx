@@ -32,6 +32,7 @@ export function PartyEncounterCard() {
               <div className="flex-1">
                 <h3 className="font-bold text-lg leading-tight">{party.foeName}</h3>
                 <p className="text-sm text-muted-foreground">Encounter {party.tier} · {encounterPhaseLabel(enc.phase)}</p>
+                {party.motive ? <p className="text-xs text-muted-foreground/80 italic mt-0.5">{party.motive}</p> : null}
               </div>
             </div>
 

@@ -48,6 +48,9 @@ const ROSTER: Row[] = [
   { name: "Emberkiss Shortbow", description: "Its arrows smoke where they strike.",   slot: "weapon", rarity: "epic",      levelRequired: 4,  icon: "Sword", spriteId: "bow",            inStore: false },
   { name: "Feywood Wand",       description: "A sapling's whisper, impossibly old.",  slot: "weapon", rarity: "legendary", levelRequired: 6,  icon: "Gem",   spriteId: "staff",          inStore: false },
   { name: "Duskfang Dagger",    description: "A relic that chose an unready hand.",   slot: "weapon", rarity: "legendary", levelRequired: 3,  icon: "Sword", spriteId: "sword",          inStore: false },
+  // mid-band (store epic + drop legendary — the L15–21 gap)
+  { name: "Runed Warblade",     description: "Etched with a battle-hymn only it can hear.", slot: "weapon", rarity: "epic",  levelRequired: 17, icon: "Sword", spriteId: "sword",          inStore: true },
+  { name: "Stormpike Glaive",   description: "Thunder answers each swing.",           slot: "weapon", rarity: "legendary", levelRequired: 15, icon: "Sword", spriteId: "greatsword",     inStore: false },
 
   // ── HELMET ─────────────────────────────────────────────────────────────────
   { name: "Leather Cap",        description: "Simple head protection.",               slot: "helmet", rarity: "common",    levelRequired: 1,  icon: "HardHat", spriteId: "cap",       inStore: true },
@@ -58,6 +61,9 @@ const ROSTER: Row[] = [
   { name: "Dented Barbute",     description: "Someone braver wore it first.",         slot: "helmet", rarity: "rare",      levelRequired: 2,  icon: "HardHat", spriteId: "helm",      inStore: false },
   { name: "Hexward Hood",       description: "Stitched with wards you can't read.",   slot: "helmet", rarity: "epic",      levelRequired: 5,  icon: "HardHat", spriteId: "cap",       inStore: false },
   { name: "Circlet of the Prodigy", description: "It hums for those who start young.",slot: "helmet", rarity: "legendary", levelRequired: 4,  icon: "Crown",   spriteId: "crown",     inStore: false },
+  // mid-band
+  { name: "Warden's Greathelm", description: "Standard issue for those who hold the line.", slot: "helmet", rarity: "epic",  levelRequired: 16, icon: "HardHat", spriteId: "greathelm", inStore: true },
+  { name: "Helm of the Fallen King", description: "It remembers a crown it can no longer wear.", slot: "helmet", rarity: "legendary", levelRequired: 18, icon: "Crown", spriteId: "crown",   inStore: false },
 
   // ── ARMOR ──────────────────────────────────────────────────────────────────
   { name: "Leather Vest",       description: "Light, flexible protection.",           slot: "armor",  rarity: "common",    levelRequired: 1,  icon: "ShieldHalf", spriteId: "leather-armor", inStore: true },
@@ -68,6 +74,9 @@ const ROSTER: Row[] = [
   { name: "Patched Gambeson",   description: "Well-loved, and luckier than it looks.", slot: "armor", rarity: "rare",      levelRequired: 2,  icon: "ShieldHalf", spriteId: "leather-armor", inStore: false },
   { name: "Enchanted Brigandine", description: "The rivets glow when danger nears.",  slot: "armor",  rarity: "epic",      levelRequired: 6,  icon: "ShieldHalf", spriteId: "mail",          inStore: false },
   { name: "Scales of the Wyrmling", description: "Shed by a dragon barely hatched.",  slot: "armor",  rarity: "legendary", levelRequired: 5,  icon: "ShieldHalf", spriteId: "dragon-plate",  inStore: false },
+  // mid-band
+  { name: "Runesteel Plate",    description: "Forge-runes drink the force of a blow.", slot: "armor",  rarity: "epic",      levelRequired: 18, icon: "ShieldHalf", spriteId: "plate",         inStore: true },
+  { name: "Aegis of the Bulwark", description: "Nothing has ever gotten through.",     slot: "armor",  rarity: "legendary", levelRequired: 16, icon: "ShieldHalf", spriteId: "dragon-plate",  inStore: false },
 
   // ── BOOTS ──────────────────────────────────────────────────────────────────
   { name: "Worn Shoes",         description: "Better than bare feet.",                slot: "boots",  rarity: "common",    levelRequired: 1,  icon: "Footprints", spriteId: "shoes",   inStore: true },
@@ -78,6 +87,9 @@ const ROSTER: Row[] = [
   { name: "Squeaky Sandals",    description: "Absurd. Also, somehow, blessed.",       slot: "boots",  rarity: "rare",      levelRequired: 2,  icon: "Footprints", spriteId: "shoes",   inStore: false },
   { name: "Seven-League Boots", description: "Each step is longer than the last.",    slot: "boots",  rarity: "epic",      levelRequired: 5,  icon: "Footprints", spriteId: "boots",   inStore: false },
   { name: "Featherfall Slippers", description: "You have never once tripped in them.",slot: "boots",  rarity: "legendary", levelRequired: 4,  icon: "Footprints", spriteId: "shoes",   inStore: false },
+  // mid-band
+  { name: "Greaves of the Bastion", description: "Rooted as a fortress wall.",         slot: "boots",  rarity: "epic",      levelRequired: 17, icon: "Footprints", spriteId: "greaves", inStore: true },
+  { name: "Striders of the Tempest", description: "You arrive with the storm, or just before it.", slot: "boots", rarity: "legendary", levelRequired: 19, icon: "Footprints", spriteId: "boots", inStore: false },
 
   // ── ACCESSORY ──────────────────────────────────────────────────────────────
   { name: "Traveler's Cloak",   description: "A warm, sturdy cape.",                  slot: "accessory", rarity: "common",    levelRequired: 1,  icon: "Gem", spriteId: "cape",   inStore: true },
@@ -88,6 +100,9 @@ const ROSTER: Row[] = [
   { name: "Threadbare Shawl",   description: "Frayed, warm, and quietly enchanted.",  slot: "accessory", rarity: "rare",      levelRequired: 2,  icon: "Gem", spriteId: "cape",   inStore: false },
   { name: "Gambler's Charm",    description: "Fortune favors the newly bold.",        slot: "accessory", rarity: "epic",      levelRequired: 3,  icon: "Gem", spriteId: "amulet", inStore: false },
   { name: "Locket of Second Wind", description: "It opens for those who keep going.", slot: "accessory", rarity: "legendary", levelRequired: 4,  icon: "Gem", spriteId: "amulet", inStore: false },
+  // mid-band
+  { name: "Sigil of Warding",   description: "Turns aside what wishes you ill.",      slot: "accessory", rarity: "epic",      levelRequired: 16, icon: "Gem", spriteId: "amulet", inStore: true },
+  { name: "Aetherweave Mantle", description: "Spun from the space between moments.",   slot: "accessory", rarity: "legendary", levelRequired: 20, icon: "Gem", spriteId: "cape",   inStore: false },
 ];
 
 export const GEAR_CATALOG: GearRosterItem[] = ROSTER.map((r) => {

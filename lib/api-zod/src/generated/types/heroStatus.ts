@@ -16,6 +16,6 @@ export interface HeroStatus {
   lastFedAt: Date;
   /** Current ambient "hero life" vignette (rotates every ~3h) */
   activity: HeroStatusActivity;
-  /** Living Companion reaction (Act VI) — derived relational beat + bond */
+  /** Living Companion reaction (Act VI) — derived relational beat + bond, plus its name/disposition (Act III) */
   companion: HeroStatusCompanion;
 }

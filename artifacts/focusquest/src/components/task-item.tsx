@@ -5,6 +5,7 @@ import { Task, TaskPriority, useCompleteTask, useDeleteTask, usePatchTaskFocus, 
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetTasksQueryKey, getGetMyStatsQueryKey, getGetQuestlinesQueryKey, getGetQuestlineQueryKey, getGetHeroStatusQueryKey, getGetTasksMomentumQueryKey, getGetCoinsQueryKey, getGetMyPatternsQueryKey, getGetKingdomsQueryKey } from "@workspace/api-client-react";
 import { browserTimeZone } from "@/lib/timezone";
@@ -26,6 +27,11 @@ interface TaskItemProps {
   task: Task;
   onEdit?: (task: Task) => void;
   onLevelUp?: (result: any) => void;
+  /** Fail-band rescue offer: called when a completion's d20 check lands on the
+   *  lowest band. The host opens the rescue flow on the NEXT pending quest (the
+   *  completed one is done). Absent hosts simply show no action — the gentle
+   *  narration still invites a smaller next step. */
+  onRescueNext?: () => void;
 }
 
 const priorityColors: Record<TaskPriority, string> = {
@@ -62,7 +68,7 @@ function formatMinutes(minutes: number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
-export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
+export function TaskItem({ task, onEdit, onLevelUp, onRescueNext }: TaskItemProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [loggingTime, setLoggingTime] = useState(false);
@@ -159,18 +165,30 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
             const bandStyle: Record<string, string> = {
               crit: "border-amber-400 text-amber-300",
               success: "border-primary text-primary",
-              glancing: "border-border text-muted-foreground",
+              partial: "border-border text-muted-foreground",
+              fail: "border-border text-muted-foreground",
             };
             const bandTitle: Record<string, string> = {
               crit: `🎲 Critical! ${ability} check`,
               success: `🎲 ${ability} check`,
-              glancing: `🎲 ${ability} check`,
+              partial: `🎲 ${ability} check`,
+              fail: `🎲 ${ability} check`,
             };
             const math = `d20 ${sc.d20} ${sign(sc.modifier)} ${sign(sc.proficiency)} = ${sc.total} vs DC ${sc.dc}`;
+            // Fail band → offer the rescue pathway on the NEXT quest (this one is
+            // done). Upside-only: an offer of help, never a penalty. Other bands
+            // and hosts without a handler show no action.
+            const rescueAction =
+              sc.band === "fail" && onRescueNext ? (
+                <ToastAction altText="Break down my next quest" onClick={() => onRescueNext()}>
+                  Break it down
+                </ToastAction>
+              ) : undefined;
             toast({
               title: bandTitle[sc.band] ?? bandTitle.success,
               description: res.skillCheckNarration ? `${math} · ${res.skillCheckNarration}` : math,
               className: `border ${bandStyle[sc.band] ?? bandStyle.success}`,
+              ...(rescueAction ? { action: rescueAction } : {}),
             });
           }
 
@@ -204,7 +222,8 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
             if (h.felled) {
               toast({
                 title: `⚔️ ${h.name} felled!`,
-                description: `+${h.coins} coins — a new foe stirs.`,
+                description: [h.defeatBeat, h.worldNote, `+${h.coins} coins — a new foe stirs.`]
+                  .filter(Boolean).join(" "),
                 className: "border-amber-400 text-amber-300",
               });
               if (h.loot) revealLoot(h.loot);
@@ -224,7 +243,8 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
             if (hit.felled) {
               toast({
                 title: `⚔️ ${hit.foeName} felled together!`,
-                description: `+${hit.coins} coins — a new foe stirs.`,
+                description: [hit.defeatBeat, hit.worldNote, `+${hit.coins} coins — a new foe stirs.`]
+                  .filter(Boolean).join(" "),
                 className: "border-amber-400 text-amber-300",
               });
               if (hit.loot) revealLoot(hit.loot);

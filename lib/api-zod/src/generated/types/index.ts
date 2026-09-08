@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './abilityProgress';
 export * from './abilityScore';
 export * from './abilityScoreId';
 export * from './accountExport';
@@ -62,6 +63,17 @@ export * from './campaignUpdate';
 export * from './campaignUpdateStatus';
 export * from './characterSheet';
 export * from './coins';
+export * from './companionIdentity';
+export * from './companionIdentityDisposition';
+export * from './companionUpdate';
+export * from './companionUpdateDisposition';
+export * from './consumableItem';
+export * from './consumableItemId';
+export * from './consumablePurchaseResult';
+export * from './consumablePurchaseResultReason';
+export * from './consumableQueue';
+export * from './consumablesResponse';
+export * from './consumableUsed';
 export * from './createRescueEvent201';
 export * from './deleteAccountRequest';
 export * from './deleteAccountRequestConfirm';
@@ -133,6 +145,7 @@ export * from './heroStatus';
 export * from './heroStatusActivity';
 export * from './heroStatusCompanion';
 export * from './heroStatusCompanionBeat';
+export * from './heroStatusCompanionDisposition';
 export * from './heroStatusStage';
 export * from './hyperfocusPauseInput';
 export * from './initiationAward';
