@@ -41,6 +41,9 @@ export const usersTable = pgTable("users", {
   // warm tone, so every current user reads exactly as before.
   companionName: text("companion_name"),
   companionDisposition: text("companion_disposition").notNull().default("warm"),
+  // Act IV (Tactics & Stakes): the one consumable queued to apply to the NEXT
+  // quest completion's roll, or null. Cleared when consumed. Upside-only.
+  pendingConsumable: text("pending_consumable"),
   // Per-user timezone (IANA), captured from the client. Lets cron compute the
   // user's local hour for bedtime / quiet-hours.
   timezone: text("timezone"),

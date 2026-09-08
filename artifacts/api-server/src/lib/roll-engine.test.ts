@@ -4,6 +4,7 @@ import {
   DEFAULT_DC,
   CRIT_BONUS_COINS,
   PARTIAL_MARGIN,
+  REROLL_THRESHOLD,
   dcForDifficulty,
   rollD20,
   taskCheckSeed,
@@ -203,5 +204,62 @@ describe("bandNarration — anti-shame copy", () => {
     const line = bandNarration("fail", "Deep clean the garage");
     expect(line.toLowerCase()).toContain("in full");
     expect(line.toLowerCase()).toContain("break the next");
+  });
+});
+
+describe("resolveCheck with a RollBoost — upside-only (Act IV consumables)", () => {
+  function seedForFace(face: number): string {
+    for (let i = 0; i < 100_000; i++) {
+      const s = `boost-${i}`;
+      if (rollD20(s) === face) return s;
+    }
+    throw new Error(`no seed for face ${face}`);
+  }
+  const base = { modifier: 0, proficiency: 2, dc: 12, ability: "might" as const };
+
+  it("a flat bonus raises the total, never lowers it", () => {
+    const seed = seedForFace(10);
+    const plain = resolveCheck({ ...base, seed });
+    const boosted = resolveCheck({ ...base, seed, boost: { kind: "bonus", amount: 3 } });
+    expect(boosted.total).toBe(plain.total + 3);
+  });
+
+  it("advantage keeps the higher of two seeded dice (never worse)", () => {
+    for (const face of [1, 5, 10, 15, 20]) {
+      const seed = seedForFace(face);
+      const plain = resolveCheck({ ...base, seed });
+      const adv = resolveCheck({ ...base, seed, boost: { kind: "advantage" } });
+      expect(adv.d20).toBeGreaterThanOrEqual(plain.d20);
+    }
+  });
+
+  it("reroll only fires on a low die, and only ever improves it", () => {
+    const low = seedForFace(3);
+    const rrLow = resolveCheck({ ...base, seed: low, boost: { kind: "reroll" } });
+    expect(rrLow.d20).toBeGreaterThanOrEqual(3);
+
+    const high = seedForFace(18); // above REROLL_THRESHOLD → untouched
+    expect(18).toBeGreaterThan(REROLL_THRESHOLD);
+    const rrHigh = resolveCheck({ ...base, seed: high, boost: { kind: "reroll" } });
+    expect(rrHigh.d20).toBe(18);
+  });
+
+  it("no boost can ever reduce the d20 or total (invariant sweep)", () => {
+    for (let i = 0; i < 200; i++) {
+      const seed = `sweep-${i}`;
+      const plain = resolveCheck({ ...base, seed });
+      for (const boost of [{ kind: "bonus", amount: 2 }, { kind: "advantage" }, { kind: "reroll" }] as const) {
+        const b = resolveCheck({ ...base, seed, boost });
+        expect(b.d20).toBeGreaterThanOrEqual(plain.d20);
+        expect(b.total).toBeGreaterThanOrEqual(plain.total);
+      }
+    }
+  });
+
+  it("determinism: a boosted roll is stable for a fixed seed", () => {
+    const seed = seedForFace(4);
+    const a = resolveCheck({ ...base, seed, boost: { kind: "advantage" } });
+    const b = resolveCheck({ ...base, seed, boost: { kind: "advantage" } });
+    expect(a).toEqual(b);
   });
 });
