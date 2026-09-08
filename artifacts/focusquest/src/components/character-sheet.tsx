@@ -6,10 +6,19 @@ function formatMod(mod: number): string {
   return mod >= 0 ? `+${mod}` : `${mod}`;
 }
 
-/** One ability block: abbreviation, big score, signed modifier. Mirrors the
- *  D&D character-sheet stat box; the kingdom map below is the same data as a
- *  place. */
+/** One ability block: name, big score, signed modifier, and a thin bar showing
+ *  how far the next completed quest in this area has carried the score toward
+ *  its next point. Mirrors the D&D character-sheet stat box; the kingdom map
+ *  below is the same data as a place. */
 function AbilityBlock({ ability }: { ability: AbilityScore }) {
+  // Defensive: `progress` ships with the server that emits it; fall back to a
+  // neutral empty bar if a client is ever built ahead of that server.
+  const { fraction, nextScore, toNext, atMax } =
+    ability.progress ?? { fraction: 0, nextScore: null, toNext: 0, atMax: false };
+  const pct = Math.round(Math.min(1, Math.max(0, fraction)) * 100);
+  const label = atMax
+    ? `${ability.name} is at its peak`
+    : `${ability.name} ${pct}% to ${nextScore} · ${toNext.toLocaleString()} to go`;
   return (
     <div className="rounded-lg border border-border bg-card/60 p-3 text-center">
       <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
@@ -17,6 +26,20 @@ function AbilityBlock({ ability }: { ability: AbilityScore }) {
       </div>
       <div className="mt-1 text-2xl font-semibold leading-none tabular-nums">{ability.score}</div>
       <div className="mt-1 text-sm font-medium text-primary tabular-nums">{formatMod(ability.modifier)}</div>
+      <div
+        className="mt-2 h-1 overflow-hidden rounded-full bg-muted"
+        role="progressbar"
+        aria-valuenow={atMax ? 100 : pct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={label}
+        title={label}
+      >
+        <div
+          className={`h-full rounded-full transition-[width] duration-500 ${atMax ? "bg-amber-400" : "bg-primary"}`}
+          style={{ width: atMax ? "100%" : `${pct}%` }}
+        />
+      </div>
     </div>
   );
 }

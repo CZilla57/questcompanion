@@ -5,6 +5,7 @@
  * FocusQuest API - ADHD gamified task tracker
  * OpenAPI spec version: 0.1.0
  */
+import type { AbilityProgress } from './abilityProgress';
 import type { AbilityScoreId } from './abilityScoreId';
 
 export interface AbilityScore {
@@ -17,4 +18,5 @@ export interface AbilityScore {
   modifier: number;
   /** Source kingdom on the Life Kingdoms map, or null for Finesse, which reads focus discipline rather than a kingdom. */
   kingdomId: string | null;
+  progress: AbilityProgress;
 }

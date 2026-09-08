@@ -98,6 +98,75 @@ export function scoreForFocus(completedIntervals: number): number {
 }
 
 /**
+ * Sub-step progress toward the next ability point.
+ *
+ * The score only steps at a band boundary (a kingdom tier, or a focus band), so
+ * a single completed quest almost never moves the integer score. `stepProgress`
+ * exposes the *distance travelled inside the current band* so a client can show
+ * a filling bar — the felt "that quest nudged my Might" loop — without inventing
+ * a second, stored ability model. Purely derived from the same monotonic signal
+ * the score reads.
+ *
+ * Anti-shame: within a band the fill only rises as the signal rises, and at the
+ * top of the ladder the bar reads full (never "stuck" or empty). A step-up
+ * resets the bar toward the next point, which is the intended reward, not a
+ * regression — the score itself is monotonic (pinned by the tests).
+ */
+export interface AbilityProgress {
+  /** Fill toward the next score point, 0..1. `1` once the ability is maxed. */
+  fraction: number;
+  /** Signal units still needed to reach the next point; `0` when maxed. */
+  toNext: number;
+  /** The score the next step reaches, or `null` when already at the max. */
+  nextScore: number | null;
+  /** True at the top of the ladder — no further point to climb toward. */
+  atMax: boolean;
+}
+
+/** One rung of a score ladder: at `at` signal units the score becomes `score`.
+ *  Ascending by `at`, first rung at 0. */
+interface ScoreRung {
+  at: number;
+  score: number;
+}
+
+/** Kingdom-ability ladder — the KINGDOM_TIERS bands (`8 + 2·tier`) plus the
+ *  veteran 20. A test pins every rung to `scoreForKingdomPoints` so it can never
+ *  silently drift from the score function it mirrors. */
+const KINGDOM_LADDER: readonly ScoreRung[] = [
+  { at: 0, score: 8 },
+  { at: 1, score: 10 },
+  { at: 250, score: 12 },
+  { at: 1000, score: 14 },
+  { at: 3000, score: 16 },
+  { at: 8000, score: 18 },
+  { at: VETERAN_KINGDOM_POINTS, score: 20 },
+];
+
+/** Finesse ladder — derived from FINESSE_BANDS (reversed to ascending) so it
+ *  stays the single source of truth with `scoreForFocus`. */
+const FOCUS_LADDER: readonly ScoreRung[] = [...FINESSE_BANDS]
+  .reverse()
+  .map((b) => ({ at: b.minIntervals, score: b.score }));
+
+/** Distance travelled inside the current band of an ascending score ladder. */
+export function stepProgress(value: number, ladder: readonly ScoreRung[]): AbilityProgress {
+  let i = 0;
+  for (let k = 0; k < ladder.length; k++) {
+    if (value >= ladder[k]!.at) i = k;
+  }
+  const cur = ladder[i]!;
+  const next = ladder[i + 1];
+  if (!next) {
+    return { fraction: 1, toNext: 0, nextScore: null, atMax: true };
+  }
+  const span = next.at - cur.at;
+  const into = Math.min(Math.max(value - cur.at, 0), span);
+  const fraction = span > 0 ? into / span : 1;
+  return { fraction, toNext: Math.max(next.at - value, 0), nextScore: next.score, atMax: false };
+}
+
+/**
  * Proficiency bonus, added to every skill check, drawn from the capital's tier
  * (0–11 → +2…+6). Classic D&D proficiency runs +2 to +6 across levels 1–20;
  * `2 + floor(tier / 2)` reaches +6 near the top of the capital ladder. The
@@ -117,6 +186,9 @@ export interface AbilityScore {
   /** Source kingdom (null for finesse) — lets a client link the score to its
    *  place on the Kingdom map. */
   kingdomId: KingdomId | null;
+  /** Fill toward the next ability point, so each qualifying quest visibly
+   *  nudges the right ability even between whole-number steps. Derived. */
+  progress: AbilityProgress;
 }
 
 export interface FocusDiscipline {
@@ -130,9 +202,11 @@ export function abilityScores(args: {
   focus: FocusDiscipline;
 }): AbilityScore[] {
   return ABILITIES.map((meta) => {
-    const score = meta.kingdomId
-      ? scoreForKingdomPoints(args.lifetimeByKingdom[meta.kingdomId] ?? 0)
-      : scoreForFocus(args.focus.completedIntervals);
+    const value = meta.kingdomId
+      ? (args.lifetimeByKingdom[meta.kingdomId] ?? 0)
+      : args.focus.completedIntervals;
+    const score = meta.kingdomId ? scoreForKingdomPoints(value) : scoreForFocus(value);
+    const progress = stepProgress(value, meta.kingdomId ? KINGDOM_LADDER : FOCUS_LADDER);
     return {
       id: meta.id,
       name: meta.name,
@@ -140,6 +214,7 @@ export function abilityScores(args: {
       score,
       modifier: abilityModifier(score),
       kingdomId: meta.kingdomId,
+      progress,
     };
   });
 }

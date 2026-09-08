@@ -12,6 +12,7 @@ import {
   modifierForAbility,
   abilityForKingdom,
   characterSheet,
+  stepProgress,
   type AbilityId,
 } from "./character-sheet";
 import { BALANCE_KINGDOMS, CAPITAL_TIERS, type KingdomId } from "./kingdoms";
@@ -192,5 +193,93 @@ describe("characterSheet", () => {
       expect(a.modifier).toBe(-1);
     }
     expect(sheet.proficiencyBonus).toBe(2);
+  });
+});
+
+describe("stepProgress — sub-band fill toward the next point", () => {
+  const ladder = [
+    { at: 0, score: 8 },
+    { at: 10, score: 10 },
+    { at: 30, score: 12 },
+  ];
+
+  it("is empty just after a step and fills across the band", () => {
+    expect(stepProgress(10, ladder)).toMatchObject({ fraction: 0, toNext: 20, nextScore: 12, atMax: false });
+    expect(stepProgress(20, ladder)).toMatchObject({ fraction: 0.5, toNext: 10, nextScore: 12 });
+    expect(stepProgress(29, ladder).fraction).toBeCloseTo(19 / 20);
+  });
+
+  it("reads full and maxed at the top rung, with no next score", () => {
+    expect(stepProgress(30, ladder)).toEqual({ fraction: 1, toNext: 0, nextScore: null, atMax: true });
+    expect(stepProgress(999, ladder)).toEqual({ fraction: 1, toNext: 0, nextScore: null, atMax: true });
+  });
+
+  it("reads the first band toward the first point", () => {
+    expect(stepProgress(0, ladder)).toMatchObject({ fraction: 0, toNext: 10, nextScore: 10 });
+    expect(stepProgress(5, ladder).fraction).toBeCloseTo(0.5);
+  });
+
+  it("fill only rises within a band as the signal rises (anti-shame)", () => {
+    let prev = -1;
+    for (let v = 10; v < 30; v++) {
+      const f = stepProgress(v, ladder).fraction;
+      expect(f).toBeGreaterThanOrEqual(prev);
+      prev = f;
+    }
+  });
+});
+
+describe("ability progress on the real ladders", () => {
+  it("attaches a progress reading to every ability, consistent with its score", () => {
+    const scores = abilityScores({
+      lifetimeByKingdom: { forge: 1500, athenaeum: 20000 },
+      focus: { completedIntervals: 100 },
+    });
+    const by = (id: AbilityId) => scores.find((s) => s.id === id)!;
+
+    // forge 1500 → Village (14); band [1000,3000) → (1500-1000)/2000 = 0.25, 1500 to Might 16.
+    const might = by("might");
+    expect(might.score).toBe(14);
+    expect(might.progress.fraction).toBeCloseTo(0.25);
+    expect(might.progress.toNext).toBe(1500);
+    expect(might.progress.nextScore).toBe(16);
+    expect(might.progress.atMax).toBe(false);
+
+    // athenaeum 20000 → maxed at 20, bar reads full, no next point.
+    const intellect = by("intellect");
+    expect(intellect.score).toBe(MAX_SCORE);
+    expect(intellect.progress).toEqual({ fraction: 1, toNext: 0, nextScore: null, atMax: true });
+
+    // finesse 100 intervals → band [75,200) score 14 → next 16.
+    const finesse = by("finesse");
+    expect(finesse.score).toBe(14);
+    expect(finesse.progress.nextScore).toBe(16);
+    expect(finesse.progress.fraction).toBeCloseTo((100 - 75) / (200 - 75));
+  });
+
+  it("a floor ability reads empty toward its first point (10)", () => {
+    const scores = abilityScores({ lifetimeByKingdom: {}, focus: { completedIntervals: 0 } });
+    for (const s of scores) {
+      expect(s.progress.atMax).toBe(false);
+      expect(s.progress.nextScore).toBe(10);
+      expect(s.progress.fraction).toBe(0);
+    }
+  });
+
+  it("progress never disagrees with the score function at a rung (drift guard)", () => {
+    for (const at of [0, 1, 250, 1000, 3000, 8000, VETERAN_KINGDOM_POINTS]) {
+      const s = abilityScores({
+        lifetimeByKingdom: { forge: at },
+        focus: { completedIntervals: 0 },
+      }).find((x) => x.id === "might")!;
+      expect(s.score).toBe(scoreForKingdomPoints(at));
+      if (at >= VETERAN_KINGDOM_POINTS) {
+        expect(s.progress.atMax).toBe(true);
+      } else {
+        // Exactly on a rung: a fresh band whose next point is score + 2.
+        expect(s.progress.fraction).toBe(0);
+        expect(s.progress.nextScore).toBe(s.score + 2);
+      }
+    }
   });
 });

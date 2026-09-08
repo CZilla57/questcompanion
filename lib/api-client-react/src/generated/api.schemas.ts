@@ -260,6 +260,20 @@ export interface KingdomsResponse {
   invitation: KingdomInvitation | null;
 }
 
+/**
+ * Sub-step fill toward the next ability point. The integer score only steps at a band boundary, so this exposes the distance travelled inside the current band — the felt "that quest nudged my Might" loop — derived from the same monotonic signal the score reads.
+ */
+export interface AbilityProgress {
+  /** Fill toward the next point, 0..1. 1 once the ability is maxed. */
+  fraction: number;
+  /** Signal units still needed to reach the next point; 0 when maxed. */
+  toNext: number;
+  /** The score the next step reaches, or null when already at the max. */
+  nextScore: number | null;
+  /** True at the top of the ladder — no further point to climb toward. */
+  atMax: boolean;
+}
+
 export type AbilityScoreId = typeof AbilityScoreId[keyof typeof AbilityScoreId];
 
 
@@ -282,6 +296,7 @@ export interface AbilityScore {
   modifier: number;
   /** Source kingdom on the Life Kingdoms map, or null for Finesse, which reads focus discipline rather than a kingdom. */
   kingdomId: string | null;
+  progress: AbilityProgress;
 }
 
 /**
