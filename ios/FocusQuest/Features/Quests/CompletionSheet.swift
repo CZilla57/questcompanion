@@ -109,9 +109,10 @@ struct CompletionSheet: View {
     }
 }
 
-/// The Campaign — Phase 1: an animated d20 that flickers through faces and
-/// settles on the rolled value, colored by outcome band (gold crit, teal
-/// success, muted glancing — never red). Honors Reduce Motion.
+/// The Campaign — Phase 1 / Act II: an animated d20 that flickers through faces
+/// and settles on the rolled value, colored by outcome band (gold crit, teal
+/// success, muted partial/fail — never red; a fail is a full completion that
+/// offers a gentler next step, not a loss). Honors Reduce Motion.
 private struct DiceRollView: View {
     let check: SkillCheck
     @State private var shown = 1
@@ -120,7 +121,7 @@ private struct DiceRollView: View {
     private var bandColor: Color {
         switch check.band {
         case "crit": return Theme.gold
-        case "glancing": return .secondary
+        case "partial", "fail": return .secondary
         default: return Theme.accent
         }
     }

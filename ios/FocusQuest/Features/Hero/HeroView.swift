@@ -181,19 +181,38 @@ struct HeroView: View {
                                 .lineLimit(1).minimumScaleFactor(0.8)
                             Text("\(ability.score)").font(.outfitTitle2Bold)
                             Text(ability.modifierText).font(.outfitCaption).foregroundStyle(Theme.accent)
+                            if let progress = ability.progress {
+                                AbilityProgressBar(progress: progress)
+                                    .padding(.top, 3)
+                            }
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, Theme.Space.sm)
+                        .padding(.horizontal, 6)
                         .background(Theme.screenBackground.opacity(0.5))
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
                             .strokeBorder(Color.white.opacity(0.10)))
                         .accessibilityElement(children: .ignore)
-                        .accessibilityLabel("\(ability.name) \(ability.score), modifier \(ability.modifierText)")
+                        .accessibilityLabel(abilityAccessibilityLabel(ability))
                     }
                 }
             }
         }
+    }
+
+    /// Reads the score, modifier, and (when present) how close the next quest in
+    /// this area is to the next point — spoken, never a bare number.
+    private func abilityAccessibilityLabel(_ ability: AbilityScore) -> String {
+        var label = "\(ability.name) \(ability.score), modifier \(ability.modifierText)"
+        if let p = ability.progress {
+            if p.atMax {
+                label += ", at its peak"
+            } else if let next = p.nextScore {
+                label += ", \(Int((p.clampedFraction * 100).rounded()))% to \(next)"
+            }
+        }
+        return label
     }
 
     // MARK: - Class Feats (The Campaign — second wave)
@@ -390,6 +409,27 @@ struct HeroView: View {
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .strokeBorder(Color.white.opacity(0.10)))
+    }
+}
+
+// MARK: - Ability progress bar (Act I — per-task ability feedback)
+
+/// A thin bar under each ability showing how far the next completed quest in
+/// that life area has carried the score toward its next point. Gold when the
+/// ability is maxed; teal while climbing. Purely derived, never a countdown.
+private struct AbilityProgressBar: View {
+    let progress: AbilityProgress
+    var body: some View {
+        GeometryReader { geo in
+            let filled = progress.atMax ? 1 : progress.clampedFraction
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color.white.opacity(0.12))
+                Capsule()
+                    .fill(progress.atMax ? Theme.gold : Theme.accent)
+                    .frame(width: max(0, geo.size.width * filled))
+            }
+        }
+        .frame(height: 3)
     }
 }
 
