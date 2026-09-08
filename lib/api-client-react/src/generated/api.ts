@@ -31,6 +31,7 @@ import type {
   BattleResult,
   BattleStatus,
   BeginBrowserLoginParams,
+  Bestiary,
   BodyDoubleRoomState,
   BodyDoubleSprint,
   BodyDoubleSprintInput,
@@ -8764,6 +8765,83 @@ export function useGetEncounterCurrent<TData = Awaited<ReturnType<typeof getEnco
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetEncounterCurrentQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetBestiaryUrl = () => {
+
+
+
+
+  return `/api/bestiary`
+}
+
+/**
+ * @summary The player's bestiary — a discovery log completed by felling each roster foe (Act V)
+ */
+export const getBestiary = async ( options?: RequestInit): Promise<Bestiary> => {
+
+  return customFetch<Bestiary>(getGetBestiaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBestiaryQueryKey = () => {
+    return [
+    `/api/bestiary`
+    ] as const;
+    }
+
+
+export const getGetBestiaryQueryOptions = <TData = Awaited<ReturnType<typeof getBestiary>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBestiary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBestiaryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBestiary>>> = ({ signal }) => getBestiary({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBestiary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBestiaryQueryResult = NonNullable<Awaited<ReturnType<typeof getBestiary>>>
+export type GetBestiaryQueryError = ErrorType<void>
+
+
+/**
+ * @summary The player's bestiary — a discovery log completed by felling each roster foe (Act V)
+ */
+
+export function useGetBestiary<TData = Awaited<ReturnType<typeof getBestiary>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBestiary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBestiaryQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

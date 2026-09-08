@@ -25,6 +25,7 @@ import RewardsTreats from "@/pages/rewards-treats";
 import Focus from "@/pages/focus";
 import PartnerDetail from "@/pages/partner-detail";
 import Campaigns from "@/pages/campaigns";
+import Bestiary from "@/pages/bestiary";
 import CampaignDetail from "@/pages/campaign-detail";
 import Questlines from "@/pages/questlines";
 import QuestlineDetail from "@/pages/questline-detail";
@@ -205,6 +206,7 @@ const RewardsTreatsGated = withGate("rewards", RewardsTreats);
 const RewardsStoreGated = withGate("rewards", RewardsStore);
 const RewardsPerksGated = withGate("rewards", RewardsPerks);
 const CampaignsGated = withGate("campaigns", Campaigns);
+const BestiaryGated = withGate("campaigns", Bestiary);
 const CampaignDetailGated = withGate("campaigns", CampaignDetail);
 
 function Router() {
@@ -226,6 +228,7 @@ function Router() {
         <Route path="/partners" component={PartnersGated} />
         <Route path="/leaderboard" component={LeaderboardGated} />
         <Route path="/avatar" component={AvatarGated} />
+        <Route path="/bestiary" component={BestiaryGated} />
         <Route path="/rewards/treats" component={RewardsTreatsGated} />
         <Route path="/rewards/store" component={RewardsStoreGated} />
         <Route path="/rewards/perks" component={RewardsPerksGated} />

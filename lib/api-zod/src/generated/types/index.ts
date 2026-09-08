@@ -33,6 +33,8 @@ export * from './battleResultResult';
 export * from './battleStatus';
 export * from './battleStatusResult';
 export * from './beginBrowserLoginParams';
+export * from './bestiary';
+export * from './bestiaryEntry';
 export * from './bodyDoubleOpenRoom';
 export * from './bodyDoubleRoomMember';
 export * from './bodyDoubleRoomMemberPresence';
