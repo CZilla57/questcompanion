@@ -15,7 +15,7 @@ export function PersonalEncounterCard() {
   const { data, isLoading } = useGetEncounterCurrent();
   if (isLoading || !data) return null;
 
-  const { encounter: enc, name, tier } = data;
+  const { encounter: enc, name, tier, motive } = data;
   const pct = Math.round(enc.percentRemaining * 100);
 
   return (
@@ -27,6 +27,7 @@ export function PersonalEncounterCard() {
         <div className="flex-1">
           <h3 className="font-bold text-lg leading-tight">{name}</h3>
           <p className="text-sm text-muted-foreground">Encounter {tier} · {encounterPhaseLabel(enc.phase)}</p>
+          {motive ? <p className="text-xs text-muted-foreground/80 italic mt-0.5">{motive}</p> : null}
         </div>
       </div>
 

@@ -10,5 +10,7 @@ import type { EncounterView } from './encounterView';
 export interface PersonalEncounterStatus {
   name: string;
   tier: number;
+  /** Why the foe stands against you (Act III) — shown while it lives. */
+  motive: string;
   encounter: EncounterView;
 }

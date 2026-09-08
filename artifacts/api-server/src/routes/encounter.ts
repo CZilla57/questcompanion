@@ -3,7 +3,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { db, personalEncountersTable, type PersonalEncounter } from "@workspace/db";
 import { awardCoins } from "../lib/award-coins";
 import { encounterView, damageForCheck, type EncounterView } from "../lib/encounter";
-import { encounterName, encounterHp, felledCoins, nextTier } from "../lib/encounter-progress";
+import { encounterName, encounterHp, felledCoins, nextTier, foeByName, foeFor } from "../lib/encounter-progress";
 import { awardLoot, type LootDrop } from "../lib/gear-rewards";
 import { getUserPower } from "./battle";
 import type { CheckBand } from "../lib/roll-engine";
@@ -45,6 +45,12 @@ export interface EncounterHit {
   coins: number;
   /** Treasure reveal on a fell — gear and/or bonus coins. null when not felled. */
   loot: LootDrop | null;
+  /** Why this foe stands against you (Act III) — shown while it lives. */
+  motive: string;
+  /** Celebratory defeat line, set only on a fell (null otherwise). Anti-shame. */
+  defeatBeat: string | null;
+  /** How the realm shifts when it falls, set only on a fell (null otherwise). */
+  worldNote: string | null;
   encounter: EncounterView;
 }
 
@@ -63,6 +69,7 @@ export async function chipPersonalEncounter(
 ): Promise<EncounterHit> {
   const { hit, felledEncounterId } = await db.transaction(async (tx): Promise<{ hit: EncounterHit; felledEncounterId: number | null }> => {
     const enc = await activeEncounter(tx, userId, power);
+    const foe = foeByName(enc.name) ?? foeFor(enc.tier);
     const damage = damageForCheck(power, band);
     const newTotal = enc.totalDamage + damage;
     const felled = newTotal >= enc.hp;
@@ -73,7 +80,7 @@ export async function chipPersonalEncounter(
         .set({ totalDamage: newTotal })
         .where(eq(personalEncountersTable.id, enc.id));
       return {
-        hit: { name: enc.name, tier: enc.tier, damage, felled: false, coins: 0, loot: null, encounter: encounterView(enc.hp, newTotal) },
+        hit: { name: enc.name, tier: enc.tier, damage, felled: false, coins: 0, loot: null, motive: foe.motive, defeatBeat: null, worldNote: null, encounter: encounterView(enc.hp, newTotal) },
         felledEncounterId: null,
       };
     }
@@ -93,7 +100,7 @@ export async function chipPersonalEncounter(
       .onConflictDoNothing();
 
     return {
-      hit: { name: enc.name, tier: enc.tier, damage, felled: true, coins, loot: null, encounter: encounterView(enc.hp, newTotal) },
+      hit: { name: enc.name, tier: enc.tier, damage, felled: true, coins, loot: null, motive: foe.motive, defeatBeat: foe.defeatBeat, worldNote: foe.worldNote, encounter: encounterView(enc.hp, newTotal) },
       felledEncounterId: enc.id,
     };
   });
@@ -115,9 +122,11 @@ router.get("/encounter/current", async (req, res): Promise<void> => {
   const userId = req.gameUserId;
   const power = await getUserPower(userId);
   const enc = await db.transaction((tx) => activeEncounter(tx, userId, power));
+  const foe = foeByName(enc.name) ?? foeFor(enc.tier);
   res.json({
     name: enc.name,
     tier: enc.tier,
+    motive: foe.motive,
     encounter: encounterView(enc.hp, enc.totalDamage),
   });
 });

@@ -812,6 +812,9 @@ export const CompleteTaskResponse = zod.object({
 }),zod.null()]).describe('The gear item awarded, or null when no gear dropped.'),
   "bonusCoins": zod.number().describe('Extra coins granted when no gear dropped (0 when gear dropped). Always ≥ 0.')
 }),zod.null()]).optional().describe('Treasure reveal on a fell — gear and\/or bonus coins; null when not felled.'),
+  "motive": zod.string().describe('Why the foe stands against you (Act III) — an external friction, never the player.'),
+  "defeatBeat": zod.string().nullable().describe('Celebratory defeat line, set only on a fell (null otherwise). Anti-shame — only ever a win.'),
+  "worldNote": zod.string().nullable().describe('How the realm shifts when the foe falls, set only on a fell (null otherwise).'),
   "encounter": zod.object({
   "hp": zod.number(),
   "totalDamage": zod.number(),
@@ -2773,6 +2776,7 @@ export const EnterBattleResponse = zod.object({
 export const GetEncounterCurrentResponse = zod.object({
   "name": zod.string(),
   "tier": zod.number(),
+  "motive": zod.string().describe('Why the foe stands against you (Act III) — shown while it lives.'),
   "encounter": zod.object({
   "hp": zod.number(),
   "totalDamage": zod.number(),

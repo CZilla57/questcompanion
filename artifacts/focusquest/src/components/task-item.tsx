@@ -222,7 +222,8 @@ export function TaskItem({ task, onEdit, onLevelUp, onRescueNext }: TaskItemProp
             if (h.felled) {
               toast({
                 title: `⚔️ ${h.name} felled!`,
-                description: `+${h.coins} coins — a new foe stirs.`,
+                description: [h.defeatBeat, h.worldNote, `+${h.coins} coins — a new foe stirs.`]
+                  .filter(Boolean).join(" "),
                 className: "border-amber-400 text-amber-300",
               });
               if (h.loot) revealLoot(h.loot);

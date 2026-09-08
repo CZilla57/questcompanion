@@ -5302,7 +5302,7 @@ components:
 
     EncounterHit:
       type: object
-      required: [name, tier, damage, felled, coins, encounter]
+      required: [name, tier, damage, felled, coins, motive, defeatBeat, worldNote, encounter]
       properties:
         name:
           type: string
@@ -5323,6 +5323,17 @@ components:
             - $ref: "#/components/schemas/LootDrop"
             - type: "null"
           description: Treasure reveal on a fell — gear and/or bonus coins; null when not felled.
+        motive:
+          type: string
+          description: Why the foe stands against you (Act III) — an external friction, never the player.
+        defeatBeat:
+          type: string
+          nullable: true
+          description: Celebratory defeat line, set only on a fell (null otherwise). Anti-shame — only ever a win.
+        worldNote:
+          type: string
+          nullable: true
+          description: How the realm shifts when the foe falls, set only on a fell (null otherwise).
         encounter:
           $ref: "#/components/schemas/EncounterView"
 
@@ -5346,12 +5357,15 @@ components:
 
     PersonalEncounterStatus:
       type: object
-      required: [name, tier, encounter]
+      required: [name, tier, motive, encounter]
       properties:
         name:
           type: string
         tier:
           type: integer
+        motive:
+          type: string
+          description: Why the foe stands against you (Act III) — shown while it lives.
         encounter:
           $ref: "#/components/schemas/EncounterView"
 

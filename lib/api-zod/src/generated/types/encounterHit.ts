@@ -20,5 +20,11 @@ export interface EncounterHit {
   coins: number;
   /** Treasure reveal on a fell — gear and/or bonus coins; null when not felled. */
   loot?: LootDrop | null;
+  /** Why the foe stands against you (Act III) — an external friction, never the player. */
+  motive: string;
+  /** Celebratory defeat line, set only on a fell (null otherwise). Anti-shame — only ever a win. */
+  defeatBeat: string | null;
+  /** How the realm shifts when the foe falls, set only on a fell (null otherwise). */
+  worldNote: string | null;
   encounter: EncounterView;
 }
