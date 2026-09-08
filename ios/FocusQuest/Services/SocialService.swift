@@ -21,6 +21,11 @@ enum SocialService {
         try await APIClient.shared.send("accountability/partners/\(id)/decline", method: .post)
     }
 
+    // Act III: shared party foes (co-op). Empty when the viewer has no party.
+    static func partyEncounters() async throws -> [PartyEncounter] {
+        try await APIClient.shared.get("party/encounters")
+    }
+
     static func allyDetail(id: Int) async throws -> AllyDetail {
         try await APIClient.shared.get("accountability/partners/\(id)/detail")
     }

@@ -121,6 +121,9 @@ struct TaskCompletionResult: Codable {
     let skillCheck: SkillCheck?
     let skillCheckNarration: String?
     let encounterHit: EncounterHit?
+    // Act III party parity: the same blow landed on each shared party foe (one
+    // per accepted partnership). Optional/absent for pre-deploy or no-party.
+    let partyHits: [PartyEncounterHit]?
     // Act IV: the consumable spent on this completion's roll, if any. Its boost
     // is already reflected in skillCheck. Optional for pre-deploy decoding.
     let consumableUsed: ConsumableUsed?

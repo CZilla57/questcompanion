@@ -9,6 +9,7 @@ enum AllyTab: String, CaseIterable, Identifiable {
 final class AlliesViewModel: ObservableObject {
     @Published var state: Loadable<[Partnership]> = .idle
     @Published var inbox: [Nudge] = []
+    @Published var party: [PartyEncounter] = []
     @Published var myId: Int?
     @Published var searchQuery = ""
     @Published var searchResults: [UserSummary] = []
@@ -19,10 +20,14 @@ final class AlliesViewModel: ObservableObject {
         async let me = try? UserService.me()
         async let partners = SocialService.partners()
         async let nudges = try? SocialService.inbox()
+        // Act III party foes — optional, so a pre-deploy server or no-party user
+        // just yields an empty list (the card renders nothing).
+        async let partyEncounters = try? SocialService.partyEncounters()
         myId = (await me)?.id
         do {
             state = .loaded(try await partners)
             inbox = await nudges ?? []
+            party = await partyEncounters ?? []
         } catch { state = .failed(error.userMessage) }
     }
 
@@ -111,6 +116,10 @@ struct AlliesView: View {
     // MARK: - My Allies
 
     @ViewBuilder private var alliesTab: some View {
+        // Act III: shared party foes (co-op) sit above the ally roster — one HP
+        // bar per party, chipped by either ally's quests. Renders nothing with
+        // no party.
+        ForEach(model.party) { PartyEncounterCard(party: $0) }
         if active.isEmpty {
             Card { EmptyStateView(symbol: "person.2", title: "No active allies", message: "Find friends to hold you accountable.") }
         } else {
@@ -335,5 +344,73 @@ struct AllyDetailView: View {
         state = .loading
         do { state = .loaded(try await SocialService.allyDetail(id: partnershipId)) }
         catch { state = .failed(error.userMessage) }
+    }
+}
+
+// MARK: - Party encounter card (Act III shared foe — co-op)
+
+/// The co-op reframe of the personal encounter: a party (an accepted
+/// partnership) fights ONE shared foe whose single HP bar is chipped by EITHER
+/// ally's quest completions. Contributions read as additive teamwork, never a
+/// ranking — no member is "behind" or "carrying". An unfelled foe RESTS; it is
+/// never a party loss (anti-shame). Mirrors the web PartyEncounterCard.
+struct PartyEncounterCard: View {
+    let party: PartyEncounter
+
+    var body: some View {
+        let enc = party.encounter
+        let pct = Int((enc.percentRemaining * 100).rounded())
+        Card {
+            VStack(alignment: .leading, spacing: Theme.Space.md) {
+                HStack(spacing: Theme.Space.md) {
+                    Image(systemName: "person.2.fill").font(.system(size: 22))
+                        .foregroundStyle(Theme.accent)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(party.foeName).font(.outfitSubheadlineBold)
+                        Text("Encounter \(party.tier) · \(enc.phaseLabel)")
+                            .font(.outfitCaption).foregroundStyle(.secondary)
+                        if let motive = party.motive, !motive.isEmpty {
+                            Text(motive).font(.outfitCaption).italic().foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    Spacer(minLength: 0)
+                }
+
+                // Shared HP bar — warms as the foe weakens (progress, not health).
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("\(pct)% HP").font(.outfitCaption).foregroundStyle(.secondary)
+                        Spacer()
+                        Text("\(enc.hpRemaining) / \(enc.hp)").font(.outfitCaption).foregroundStyle(.secondary)
+                    }
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(Color.white.opacity(0.08))
+                            Capsule().fill(enc.hpBarColor)
+                                .frame(width: max(0, geo.size.width * enc.percentRemaining))
+                        }
+                    }
+                    .frame(height: 8)
+                }
+
+                // Both members' contributions — additive teamwork, never a rank.
+                HStack(spacing: Theme.Space.sm) {
+                    ForEach(party.members) { m in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(m.name).font(.outfitCaption).foregroundStyle(.primary).lineLimit(1)
+                            Text("\(m.damage) struck").font(.outfitCaption).foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(Theme.Space.sm)
+                        .background(Color.white.opacity(0.04))
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    }
+                }
+
+                Text("Every quest either of you finishes strikes together.")
+                    .font(.outfitCaption).foregroundStyle(.secondary)
+            }
+        }
     }
 }
