@@ -43,6 +43,7 @@ import type {
   CampaignDetail,
   CampaignInput,
   CampaignUpdate,
+  CapitalProgress,
   CharacterSheet,
   Coins,
   CompanionIdentity,
@@ -8764,6 +8765,83 @@ export function useGetEncounterCurrent<TData = Awaited<ReturnType<typeof getEnco
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetEncounterCurrentQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetCapitalUrl = () => {
+
+
+
+
+  return `/api/capital`
+}
+
+/**
+ * @summary The hero's Capital — a home that visibly grows, with progress to the next tier (Act V)
+ */
+export const getCapital = async ( options?: RequestInit): Promise<CapitalProgress> => {
+
+  return customFetch<CapitalProgress>(getGetCapitalUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCapitalQueryKey = () => {
+    return [
+    `/api/capital`
+    ] as const;
+    }
+
+
+export const getGetCapitalQueryOptions = <TData = Awaited<ReturnType<typeof getCapital>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCapital>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCapitalQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCapital>>> = ({ signal }) => getCapital({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCapital>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCapitalQueryResult = NonNullable<Awaited<ReturnType<typeof getCapital>>>
+export type GetCapitalQueryError = ErrorType<void>
+
+
+/**
+ * @summary The hero's Capital — a home that visibly grows, with progress to the next tier (Act V)
+ */
+
+export function useGetCapital<TData = Awaited<ReturnType<typeof getCapital>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCapital>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCapitalQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

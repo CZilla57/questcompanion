@@ -2636,6 +2636,21 @@ paths:
         "401":
           description: Unauthorized
 
+  /capital:
+    get:
+      operationId: getCapital
+      summary: The hero's Capital — a home that visibly grows, with progress to the next tier (Act V)
+      tags: [users]
+      responses:
+        "200":
+          description: Current capital tier + fine-grained progress toward the next.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapitalProgress"
+        "401":
+          description: Unauthorized
+
   /party/encounters:
     get:
       operationId: getPartyEncounters
@@ -5587,6 +5602,41 @@ components:
           description: Both members' contributions as teamwork — one entry per member, never a ranking.
           items:
             $ref: "#/components/schemas/PartyMemberContribution"
+
+    CapitalProgress:
+      type: object
+      required: [tier, name, points, atMax, nextName, nextThreshold, pointsToNext, fraction]
+      description: >-
+        The hero's Capital (Act V) — the seat of the realm, derived from the sum
+        of lifetime kingdom points. Monotonic: it only ever grows, never a
+        penalty. `fraction` is the fine-grained progress toward the next tier.
+      properties:
+        tier:
+          type: integer
+          description: Current capital tier (0…MAX_CAPITAL_TIER).
+        name:
+          type: string
+          description: Current tier's name (e.g. "Hamlet", "Crown City").
+        points:
+          type: integer
+          description: Lifetime kingdom points feeding the capital.
+        atMax:
+          type: boolean
+          description: True at the top of the ladder (no next tier).
+        nextName:
+          type: string
+          nullable: true
+          description: The next tier's name, or null at max.
+        nextThreshold:
+          type: integer
+          nullable: true
+          description: Lifetime points needed for the next tier, or null at max.
+        pointsToNext:
+          type: integer
+          description: Points still to go to the next tier (0 at max).
+        fraction:
+          type: number
+          description: Progress toward the next tier, 0..1 (1 at max).
 
     PartyEncounterHit:
       type: object

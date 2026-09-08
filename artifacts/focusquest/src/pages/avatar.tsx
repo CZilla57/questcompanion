@@ -31,6 +31,7 @@ import { HeroCredits } from "@/components/hero-credits";
 import { HeroVitality } from "@/components/hero-vitality";
 import { WorldBossPanel } from "@/components/world-boss-panel";
 import { PersonalEncounterCard } from "@/components/personal-encounter-card";
+import { CapitalCard } from "@/components/capital-card";
 import { HeroIdentity } from "@/components/hero-identity";
 import { heroSpriteEffect, type HungerStage } from "@/lib/hero-vitality";
 import type { AvatarClass, HeroLook, Build, Skin, HairStyle, HairColor, FaceId, EquippedGearLook } from "@/lib/hero/types";
@@ -1121,6 +1122,7 @@ export default function AvatarPage() {
 
           {activeTab === "battle" && (
             <div className="space-y-4">
+              <CapitalCard />
               <PersonalEncounterCard />
               <BattlePanel />
               {/* World Boss is an allies-gate (L5) feature hosted on the hero page. */}

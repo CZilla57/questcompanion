@@ -2406,6 +2406,28 @@ export interface PartyEncounter {
 }
 
 /**
+ * The hero's Capital (Act V) — the seat of the realm, derived from the sum of lifetime kingdom points. Monotonic: it only ever grows, never a penalty. `fraction` is the fine-grained progress toward the next tier.
+ */
+export interface CapitalProgress {
+  /** Current capital tier (0…MAX_CAPITAL_TIER). */
+  tier: number;
+  /** Current tier's name (e.g. "Hamlet", "Crown City"). */
+  name: string;
+  /** Lifetime kingdom points feeding the capital. */
+  points: number;
+  /** True at the top of the ladder (no next tier). */
+  atMax: boolean;
+  /** The next tier's name, or null at max. */
+  nextName: string | null;
+  /** Lifetime points needed for the next tier, or null at max. */
+  nextThreshold: number | null;
+  /** Points still to go to the next tier (0 at max). */
+  pointsToNext: number;
+  /** Progress toward the next tier, 0..1 (1 at max). */
+  fraction: number;
+}
+
+/**
  * The morning quest board or the evening make-camp.
  */
 export type DmBeatKind = typeof DmBeatKind[keyof typeof DmBeatKind];

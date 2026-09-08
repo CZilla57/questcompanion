@@ -61,6 +61,7 @@ export * from './campaignStatus';
 export * from './campaignStorySource';
 export * from './campaignUpdate';
 export * from './campaignUpdateStatus';
+export * from './capitalProgress';
 export * from './characterSheet';
 export * from './coins';
 export * from './companionIdentity';

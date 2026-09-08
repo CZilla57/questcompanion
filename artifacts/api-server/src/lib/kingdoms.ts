@@ -98,6 +98,52 @@ export function capitalTier(points: number): KingdomTierInfo {
   return CAPITAL_TIERS[CAPITAL_TIERS.length - 1]!;
 }
 
+/** Act V (Depth & Collection): the capital as a home that visibly grows. The
+ *  kingdom-map already shows the capital's discrete tier + pips; this adds the
+ *  FINE-GRAINED progress BETWEEN tiers so growth is felt continuously, plus the
+ *  next tier's name/threshold. Derived from lifetime points — monotonic, so the
+ *  capital only ever grows (anti-shame by construction). */
+export interface CapitalProgress {
+  tier: number;
+  name: string;
+  points: number;
+  atMax: boolean;
+  /** The next tier's name, or null at the top of the ladder. */
+  nextName: string | null;
+  /** Lifetime points needed to reach the next tier, or null at max. */
+  nextThreshold: number | null;
+  /** Points still to go to the next tier (≥ 0); 0 at max. */
+  pointsToNext: number;
+  /** Progress toward the next tier as a fraction 0..1 (1 at max). */
+  fraction: number;
+}
+
+export function capitalProgress(points: number): CapitalProgress {
+  const p = Math.max(0, Math.floor(points));
+  const current = capitalTier(p);
+  const atMax = current.tier >= MAX_CAPITAL_TIER;
+  const next = atMax ? undefined : CAPITAL_TIERS.find((t) => t.tier === current.tier + 1);
+  if (!next) {
+    return {
+      tier: current.tier, name: current.name, points: p, atMax: true,
+      nextName: null, nextThreshold: null, pointsToNext: 0, fraction: 1,
+    };
+  }
+  const span = next.minPoints - current.minPoints;
+  const into = p - current.minPoints;
+  return {
+    tier: current.tier,
+    name: current.name,
+    points: p,
+    atMax: false,
+    nextName: next.name,
+    nextThreshold: next.minPoints,
+    pointsToNext: Math.max(0, next.minPoints - p),
+    // span is always > 0 for non-max tiers (thresholds strictly increase).
+    fraction: Math.min(1, Math.max(0, into / span)),
+  };
+}
+
 export type Liveliness = "dormant" | "stirring" | "steady" | "bustling";
 
 /** Rolling window for the liveliness reading. */
