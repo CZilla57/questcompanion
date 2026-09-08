@@ -152,6 +152,51 @@ struct PersonalEncounterStatus: Codable {
     let encounter: EncounterView
 }
 
+// MARK: - Party & shared encounters (co-op)
+
+/// One member's additive contribution to a shared party foe. Never a ranking —
+/// no member is ever "behind" or "out-damaged".
+struct PartyMemberContribution: Codable, Identifiable {
+    var id: Int { userId }
+    let userId: Int
+    let name: String   // "You" for the viewer
+    let damage: Int
+}
+
+/// A party's current shared encounter (GET /party/encounters). A party (an
+/// accepted partnership) fights ONE shared foe whose single HP bar is chipped by
+/// EITHER ally's completions. An unfelled foe RESTS — never a party loss.
+struct PartyEncounter: Codable, Identifiable {
+    var id: Int { partnershipId }
+    let partnershipId: Int
+    let foeName: String
+    let tier: Int
+    /// Act III: why the shared foe stands against the party — shown while it lives.
+    let motive: String?
+    let encounter: EncounterView
+    let members: [PartyMemberContribution]
+}
+
+/// The blow a quest completion landed on a shared party foe (one per party).
+struct PartyEncounterHit: Codable, Identifiable {
+    var id: Int { partnershipId }
+    let partnershipId: Int
+    let foeName: String
+    let tier: Int
+    let damage: Int
+    let felled: Bool
+    /// Upside-only co-op loot coins earned for felling (0 otherwise).
+    let coins: Int
+    let loot: LootDrop?
+    /// Act III: the foe's motive, and — on a fell — the celebratory defeat beat +
+    /// how the realm shifts. Optional so the app decodes against a pre-deploy
+    /// server. Anti-shame: only ever a win.
+    let motive: String?
+    let defeatBeat: String?
+    let worldNote: String?
+    let encounter: EncounterView
+}
+
 // The Campaign — Phase 3: the Dungeon Master's narrated beat for today.
 
 /// Which beat to fetch. "morning" is the quest board; "camp" is the evening

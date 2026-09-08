@@ -55,6 +55,26 @@ struct CompletionSheet: View {
                 }
             }
 
+            // Act III party parity: the same blow lands on each shared party foe.
+            // Co-op teamwork — a fell celebrates the foe's defeat beat + world note.
+            ForEach(result.partyHits ?? []) { hit in
+                if hit.felled {
+                    Label("\(hit.foeName) felled together! +\(hit.coins) coins", systemImage: "person.2.fill")
+                        .font(.outfitSubheadline).foregroundStyle(Theme.gold)
+                        .labelStyle(TealIconLabelStyle())
+                    if let beat = hit.defeatBeat, !beat.isEmpty {
+                        Text([beat, hit.worldNote].compactMap { $0 }.joined(separator: " "))
+                            .font(.outfitCaption).italic().foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    if let loot = hit.loot { lootReveal(loot) }
+                } else {
+                    Label("Struck \(hit.foeName) for \(hit.damage) with your ally · \(hit.encounter.phaseLabel)", systemImage: "person.2")
+                        .font(.outfitSubheadline).foregroundStyle(Theme.accent)
+                        .labelStyle(TealIconLabelStyle())
+                }
+            }
+
             if result.xpMultiplier > 1 {
                 Label("\(String(format: "%.2f", result.xpMultiplier))× streak bonus", systemImage: "flame.fill")
                     .font(.outfitSubheadline).foregroundStyle(Theme.gold)
