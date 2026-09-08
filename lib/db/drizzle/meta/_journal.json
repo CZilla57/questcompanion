@@ -127,6 +127,13 @@
       "when": 1788906332346,
       "tag": "0017_blushing_shinko_yamashiro",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1788908705500,
+      "tag": "0018_last_thing",
+      "breakpoints": true
     }
   ]
 }

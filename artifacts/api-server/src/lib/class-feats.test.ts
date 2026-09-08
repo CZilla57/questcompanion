@@ -7,6 +7,13 @@ import {
   getFeat,
   passiveBonusPoints,
   canActivate,
+  FEAT_BRANCHES,
+  branchesForClass,
+  getBranch,
+  branchTreeUnlocked,
+  chosenBranchPassive,
+  BRANCH_UNLOCK_LEVEL,
+  BRANCH_BONUS,
 } from "./class-feats";
 
 describe("class-feats registry", () => {
@@ -119,5 +126,59 @@ describe("getFeat", () => {
   it("finds a known feat and misses an unknown one", () => {
     expect(getFeat("focus_surge")?.heroClass).toBe("mage");
     expect(getFeat("nope")).toBeUndefined();
+  });
+});
+
+describe("feat tree — the branching specialization (Act V, free respec)", () => {
+  const CLASSES = ["fighter", "mage", "ranger", "healer"] as const;
+
+  it("offers exactly two branches per class, each a distinct non-home Life Kingdom", () => {
+    for (const cls of CLASSES) {
+      const branches = branchesForClass(cls);
+      expect(branches).toHaveLength(2);
+      const kingdoms = new Set(branches.map((b) => b.kingdom));
+      expect(kingdoms.size).toBe(2); // two different callings
+      for (const b of branches) {
+        expect(b.heroClass).toBe(cls);
+        expect(b.label.length).toBeGreaterThan(0);
+        expect(b.description.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("has globally-unique branch ids", () => {
+    const ids = new Set(FEAT_BRANCHES.map((b) => b.id));
+    expect(ids.size).toBe(FEAT_BRANCHES.length);
+  });
+
+  it("the tree opens only at BRANCH_UNLOCK_LEVEL", () => {
+    expect(branchTreeUnlocked(BRANCH_UNLOCK_LEVEL - 1)).toBe(false);
+    expect(branchTreeUnlocked(BRANCH_UNLOCK_LEVEL)).toBe(true);
+  });
+
+  it("a chosen branch becomes a passive feat only when class matches AND tree is open", () => {
+    const branch = branchesForClass("fighter")[0]!;
+    // Right class, unlocked → a synthetic passive with the branch's kingdom + bonus.
+    const feat = chosenBranchPassive(branch.id, "fighter", BRANCH_UNLOCK_LEVEL);
+    expect(feat).not.toBeNull();
+    expect(feat!.kind).toBe("passive");
+    expect(feat!.passiveKingdom).toBe(branch.kingdom);
+    expect(feat!.passiveBonus).toBe(BRANCH_BONUS);
+    // Tree not yet open → no bonus.
+    expect(chosenBranchPassive(branch.id, "fighter", BRANCH_UNLOCK_LEVEL - 1)).toBeNull();
+    // Wrong class (e.g. after a class change) → no bonus, never an error.
+    expect(chosenBranchPassive(branch.id, "mage", BRANCH_UNLOCK_LEVEL)).toBeNull();
+    // No choice / unknown id → null.
+    expect(chosenBranchPassive(null, "fighter", BRANCH_UNLOCK_LEVEL)).toBeNull();
+    expect(chosenBranchPassive("nope", "fighter", BRANCH_UNLOCK_LEVEL)).toBeNull();
+  });
+
+  it("the branch bonus is upside-only through the passive seam (matches category, never lowers)", () => {
+    const branch = getBranch("fighter_warden")!; // hearth (household/errands)
+    const feat = chosenBranchPassive(branch.id, "fighter", BRANCH_UNLOCK_LEVEL)!;
+    const onKingdom = passiveBonusPoints([feat], "household", 40);
+    expect(onKingdom).toBe(Math.round(40 * BRANCH_BONUS));
+    // A category outside the branch's kingdom gets nothing (never negative).
+    expect(passiveBonusPoints([feat], "deep_work", 40)).toBe(0);
   });
 });

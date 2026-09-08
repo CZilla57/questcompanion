@@ -44,6 +44,10 @@ export const usersTable = pgTable("users", {
   // Act IV (Tactics & Stakes): the one consumable queued to apply to the NEXT
   // quest completion's roll, or null. Cleared when consumed. Upside-only.
   pendingConsumable: text("pending_consumable"),
+  // Act V (Depth & Collection): the hero's chosen specialization branch (a
+  // "second calling") from the feat tree, or null. FREE RESPEC — re-choosable
+  // anytime, nothing ever lost. Grants a passive XP bias; upside-only.
+  featBranch: text("feat_branch"),
   // Per-user timezone (IANA), captured from the client. Lets cron compute the
   // user's local hour for bedtime / quiet-hours.
   timezone: text("timezone"),
