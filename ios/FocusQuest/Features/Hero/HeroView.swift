@@ -47,6 +47,7 @@ final class HeroViewModel: ObservableObject {
 
 struct HeroView: View {
     @StateObject private var model = HeroViewModel()
+    @State private var namingCompanion = false
 
     var body: some View {
         NavigationStack {
@@ -68,6 +69,9 @@ struct HeroView: View {
                 }
                 .background(Theme.screenBackground)
                 .refreshable { await model.load() }
+                .sheet(isPresented: $namingCompanion) {
+                    CompanionNamingSheet(companion: bundle.hero.companion) { await model.load() }
+                }
             }
             .navigationTitle("Hero")
             .toolbar {
@@ -150,8 +154,15 @@ struct HeroView: View {
         Card {
             VStack(alignment: .leading, spacing: Theme.Space.sm) {
                 HStack {
-                    Label("Companion", systemImage: "pawprint.fill")
+                    Label(companion.displayName, systemImage: "pawprint.fill")
                         .font(.outfitSubheadlineBold).labelStyle(TealIconLabelStyle())
+                    Button {
+                        namingCompanion = true
+                    } label: {
+                        Image(systemName: "pencil").font(.caption)
+                    }
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("Name your companion")
                     Spacer()
                     Text("\(companion.bondTierName) · Tier \(companion.bondTier)").font(.outfitCaption).foregroundStyle(.secondary)
                 }
@@ -553,6 +564,70 @@ private extension EquippedGearItem {
         case "epic": return Color(h: 271, s: 0.91, l: 0.65)      // #a855f7
         case "legendary": return Color(h: 38, s: 0.92, l: 0.50)  // #f59e0b
         default: return Color(h: 220, s: 0.09, l: 0.65)          // #9ca3af common
+        }
+    }
+}
+
+// MARK: - Companion naming (Act III — the Living World)
+
+/// Rename the companion and pick its disposition. Purely cosmetic — the fallback
+/// name and warm disposition mean skipping this leaves the companion unchanged.
+private struct CompanionNamingSheet: View {
+    let companion: HeroStatus.Companion
+    let onSaved: () async -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var name: String
+    @State private var disposition: CompanionDisposition
+    @State private var saving = false
+    @State private var errorText: String?
+
+    init(companion: HeroStatus.Companion, onSaved: @escaping () async -> Void) {
+        self.companion = companion
+        self.onSaved = onSaved
+        _name = State(initialValue: companion.name ?? "")
+        _disposition = State(initialValue: CompanionDisposition(rawValue: companion.disposition ?? "warm") ?? .warm)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Name") {
+                    TextField("Name your companion", text: $name)
+                        .textInputAutocapitalization(.words)
+                }
+                Section("Disposition") {
+                    Picker("Disposition", selection: $disposition) {
+                        ForEach(CompanionDisposition.allCases) { d in Text(d.label).tag(d) }
+                    }
+                    .pickerStyle(.segmented)
+                    Text(disposition.hint).font(.outfitCaption).foregroundStyle(.secondary)
+                }
+                if let errorText {
+                    Text(errorText).font(.outfitCaption).foregroundStyle(Theme.danger)
+                }
+            }
+            .navigationTitle("Your companion")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { Task { await save() } }.disabled(saving)
+                }
+            }
+        }
+    }
+
+    private func save() async {
+        saving = true
+        errorText = nil
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        do {
+            _ = try await UserService.updateCompanion(name: trimmed.isEmpty ? nil : trimmed, disposition: disposition.rawValue)
+            await onSaved()
+            dismiss()
+        } catch {
+            errorText = error.userMessage
+            saving = false
         }
     }
 }

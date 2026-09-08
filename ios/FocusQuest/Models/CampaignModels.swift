@@ -160,3 +160,36 @@ struct DmBeat: Codable {
 struct DmBeatResponse: Codable {
     let beat: DmBeat?
 }
+
+// Act III (Living World) — naming the companion + setting its disposition.
+
+/// The three companion tones. `warm` is the default (the original voice).
+enum CompanionDisposition: String, CaseIterable, Identifiable {
+    case warm, wry, stoic
+    var id: String { rawValue }
+    var label: String { rawValue.prefix(1).uppercased() + rawValue.dropFirst() }
+    var hint: String {
+        switch self {
+        case .warm: return "Encouraging and kind"
+        case .wry: return "Dry and teasing"
+        case .stoic: return "Calm and grounded"
+        }
+    }
+}
+
+/// PATCH body. `name` is omitted when nil (leave unchanged); disposition always sent.
+struct CompanionUpdate: Encodable {
+    let name: String?
+    let disposition: String
+    enum CodingKeys: String, CodingKey { case name, disposition }
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(disposition, forKey: .disposition)
+        if let name { try c.encode(name, forKey: .name) }
+    }
+}
+
+struct CompanionIdentity: Codable {
+    let name: String?
+    let disposition: String
+}

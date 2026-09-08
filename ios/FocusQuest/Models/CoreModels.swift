@@ -114,6 +114,13 @@ struct HeroStatus: Codable {
         let bondTier: Int
         let bondTierName: String
         let bondQuestsCompleted: Int
+        // Act III (Living World): the companion as a named character. Optional so
+        // the app decodes against a server that hasn't deployed these yet.
+        let name: String?
+        let disposition: String?
+
+        /// Shown name, falling back to a neutral label until the user names it.
+        var displayName: String { (name?.isEmpty == false ? name : nil) ?? "Companion" }
     }
 
     /// SF Symbol counterpart of the hero mood, rendered in electric teal.
