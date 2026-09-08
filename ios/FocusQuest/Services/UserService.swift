@@ -68,6 +68,12 @@ enum UserService {
         try await APIClient.shared.patch("users/me/notification-prefs", body: prefs)
     }
 
+    /// Act III (Living World): name the companion and/or set its disposition.
+    @discardableResult
+    static func updateCompanion(name: String?, disposition: String) async throws -> CompanionIdentity {
+        try await APIClient.shared.patch("users/me/companion", body: CompanionUpdate(name: name, disposition: disposition))
+    }
+
     static func setTimezone() async throws {
         let _: Empty = try await APIClient.shared.request(
             "users/me/timezone", method: .post, body: TimezoneInput(tz: TZ.identifier)
