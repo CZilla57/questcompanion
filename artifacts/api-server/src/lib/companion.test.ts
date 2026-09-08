@@ -119,4 +119,28 @@ describe("completionCompanionReaction", () => {
   it("returns null when nothing notable happened", () => {
     expect(completionCompanionReaction({ ...base, bondBefore: 20 })).toBeNull();
   });
+
+  it("cheers a crit band when no bond/level moment fired", () => {
+    const line = completionCompanionReaction({ ...base, bondBefore: 20, band: "crit" });
+    expect(line).toBeTruthy();
+  });
+
+  it("gives a gentle, blame-free line on a fail band (anti-shame)", () => {
+    const line = completionCompanionReaction({ ...base, bondBefore: 20, band: "fail" });
+    expect(line).toBeTruthy();
+    expect(line!.toLowerCase()).not.toContain("fail");
+    expect(line!.toLowerCase()).not.toContain("you didn't");
+  });
+
+  it("stays quiet on success/partial — only crit or fail speak", () => {
+    expect(completionCompanionReaction({ ...base, bondBefore: 20, band: "success" })).toBeNull();
+    expect(completionCompanionReaction({ ...base, bondBefore: 20, band: "partial" })).toBeNull();
+  });
+
+  it("a bond-tier crossing or level-up still wins over the band", () => {
+    // 49 -> 50 crosses Steadfast, even on a crit.
+    expect(completionCompanionReaction({ ...base, bondBefore: 49, band: "crit" })).toContain("Steadfast");
+    // Level-up beats a crit when no tier crossing.
+    expect(completionCompanionReaction({ ...base, bondBefore: 20, leveledUp: true, newLevel: 6, band: "crit" })).toContain("6");
+  });
 });

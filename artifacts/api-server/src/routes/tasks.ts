@@ -607,7 +607,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
         oldStreak: number;
         freezeConsumed: boolean;
         heroRevived: boolean;
-        companionReaction: string | null;
+        bondBefore: number;
       };
 
   const outcome = await db.transaction(async (tx): Promise<TxOutcome> => {
@@ -725,15 +725,11 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     const unlockedByAward = newlyUnlocked(user, oldLevel.level, newLevel.level);
     const newLongestStreak = Math.max(user.longestStreak, newStreak);
 
-    // Act VI Living Companion: bond grows by one per completion (monotonic).
+    // Act VI Living Companion: bond grows by one per completion (monotonic). The
+    // companion's spoken reaction is derived AFTER the transaction (Act III),
+    // once the roll's band is known, so it can cheer a crit or gently mark a
+    // fail. Only bondBefore needs to escape the tx for that.
     const bondBefore = user.bondQuestsCompleted;
-    const companionReaction = completionCompanionReaction({
-      bondBefore,
-      leveledUp,
-      newLevel: newLevel.level,
-      userId,
-      now,
-    });
 
     // Persist user state.
     await tx.update(usersTable).set({
@@ -793,7 +789,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       oldStreak: user.streakDays,
       freezeConsumed,
       heroRevived,
-      companionReaction,
+      bondBefore,
     };
   });
   // ─────────────────────────────────────────────────────────────────────────────
@@ -823,7 +819,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
   }
 
   const { task, boostedBase, pointsToAdd, bonusAwarded, focusBonusAwarded, streakBonus, multiplierLabel, multiplierValue,
-    newTotalPoints, newLevel, leveledUp, unlockedByAward, newStreak, oldStreak, freezeConsumed, heroRevived, companionReaction } = outcome;
+    newTotalPoints, newLevel, leveledUp, unlockedByAward, newStreak, oldStreak, freezeConsumed, heroRevived, bondBefore } = outcome;
 
   // ─── Post-transaction side effects ───────────────────────────────────────────
   // These run outside the transaction.  Any failure here leaves the user with
@@ -995,6 +991,19 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
   } catch (err) {
     logger.error({ err, taskId: id }, "skill check / encounter failed; completing without them");
   }
+
+  // Act III — the Living Companion reacts to this completion. A bond-tier
+  // crossing or level-up wins; otherwise a crit or fail band lets the companion
+  // cheer or gently reassure (success/partial stay quiet). Derived here so the
+  // roll's band is known; a missing check (best-effort above) just omits it.
+  const companionReaction = completionCompanionReaction({
+    bondBefore,
+    leveledUp,
+    newLevel: newLevel.level,
+    userId,
+    now: new Date(),
+    band: skillCheck?.band,
+  });
 
   res.json({
     task: formatTask(task),

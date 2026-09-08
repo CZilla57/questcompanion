@@ -41,4 +41,13 @@ describe("companionReactionLine", () => {
   it("names the new level on a level-up", () => {
     expect(companionReactionLine("leveled_up", { userId: 1, now, newLevel: 12 })).toContain("12");
   });
+  it("gives a celebratory crit line", () => {
+    expect(companionReactionLine("crit", { userId: 1, now })).toBeTruthy();
+  });
+  it("gives a blame-free fail line — anti-shame", () => {
+    const line = companionReactionLine("fail", { userId: 1, now });
+    expect(line).toBeTruthy();
+    expect(line.toLowerCase()).not.toContain("fail");
+    expect(line.toLowerCase()).not.toContain("you didn't");
+  });
 });
