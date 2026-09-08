@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import { Swords } from "lucide-react";
+import { Swords, BookOpen } from "lucide-react";
+import { Link } from "wouter";
 import { useGetEncounterCurrent } from "@workspace/api-client-react";
 import { Card } from "@/components/ui/card";
 import { encounterPhaseLabel } from "@/lib/encounter";
@@ -46,9 +47,14 @@ export function PersonalEncounterCard() {
         </div>
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        Every quest you finish lands a blow. Crit rolls hit hardest.
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">
+          Every quest you finish lands a blow. Crit rolls hit hardest.
+        </p>
+        <Link href="/bestiary" className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline shrink-0">
+          <BookOpen className="h-3 w-3" aria-hidden /> Bestiary
+        </Link>
+      </div>
     </Card>
   );
 }

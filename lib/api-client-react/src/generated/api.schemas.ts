@@ -2406,6 +2406,37 @@ export interface PartyEncounter {
 }
 
 /**
+ * One roster slot in the discovery log. A discovered (felled ≥ 1) foe reveals its full copy and counts; the currently-active foe reveals its name/motive but withholds the earned defeat copy until felled; every other slot is a withheld silhouette (all fields null). Anti-shame — an unmet foe is "not yet encountered", never "unbeaten".
+ */
+export interface BestiaryEntry {
+  /** Stable 0-based roster position, for laying out silhouettes. */
+  slot: number;
+  /** Felled at least once — the entry is collected. */
+  discovered: boolean;
+  /** This is the hero's current foe. */
+  active: boolean;
+  /** Revealed iff discovered or active; null (silhouette) otherwise. */
+  name: string | null;
+  /** Revealed iff discovered or active; null otherwise. */
+  motive: string | null;
+  /** Earned copy — revealed only once felled; null otherwise. */
+  defeatBeat: string | null;
+  /** Earned copy — revealed only once felled; null otherwise. */
+  worldNote: string | null;
+  timesFelled: number;
+  firstFelledAt: string | null;
+  lastFelledAt: string | null;
+}
+
+export interface Bestiary {
+  entries: BestiaryEntry[];
+  /** How many roster foes the hero has felled at least once. */
+  discoveredCount: number;
+  /** Size of the foe roster (the completion target). */
+  total: number;
+}
+
+/**
  * The morning quest board or the evening make-camp.
  */
 export type DmBeatKind = typeof DmBeatKind[keyof typeof DmBeatKind];

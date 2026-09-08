@@ -92,6 +92,95 @@ export function encounterName(tier: number): string {
   return foeFor(tier).name;
 }
 
+// ─── Act V: the Bestiary (discovery log) ─────────────────────────────────────
+// A collection you complete by felling each of the roster's foes. Derived — the
+// fell history already lives in personal_encounters (name + felledAt), so there
+// is NO new table. Anti-shame: an unmet foe is "not yet encountered" (never
+// "unbeaten"); a foe you meet again is "faced again", never a setback.
+
+/** One record of a foe you felled — the name stamped on the encounter and when
+ *  it fell. The route supplies these from personal_encounters; the pure builder
+ *  stays source-agnostic (party fells could be merged in later). */
+export interface FoeFell {
+  name: string;
+  felledAt: Date;
+}
+
+export interface BestiaryEntry {
+  /** Stable roster slot (0-based), so the client can lay out silhouettes. */
+  slot: number;
+  /** Felled at least once — the entry is "collected". */
+  discovered: boolean;
+  /** The user's CURRENT foe (revealed even if never felled — it's already shown
+   *  on the Hero card — so the bestiary can mark "currently facing"). */
+  active: boolean;
+  /** Revealed (name + motive) iff discovered OR active; withheld otherwise so an
+   *  unmet foe stays a silhouette. */
+  name: string | null;
+  motive: string | null;
+  /** Earned copy — revealed ONLY once felled (you learn how it falls by felling it). */
+  defeatBeat: string | null;
+  worldNote: string | null;
+  timesFelled: number;
+  firstFelledAt: string | null;
+  lastFelledAt: string | null;
+}
+
+export interface Bestiary {
+  entries: BestiaryEntry[];
+  discoveredCount: number;
+  total: number;
+}
+
+/**
+ * Build the user's bestiary: the static roster crossed with their fell history.
+ * Pure and deterministic. A discovered (felled ≥ 1) foe reveals its full copy
+ * and counts; the currently-active foe reveals its name/motive (already visible
+ * elsewhere) but withholds the earned defeat copy until it actually falls; every
+ * other foe is a withheld silhouette. Order follows the roster.
+ */
+export function buildBestiary(fells: readonly FoeFell[], activeName: string | null): Bestiary {
+  // Fold the fell history by foe name (unknown names — e.g. a retired foe — are
+  // ignored so the log always reflects the current roster).
+  const stats = new Map<string, { count: number; first: Date; last: Date }>();
+  for (const f of fells) {
+    if (!foeByName(f.name)) continue;
+    const s = stats.get(f.name);
+    if (!s) stats.set(f.name, { count: 1, first: f.felledAt, last: f.felledAt });
+    else {
+      s.count += 1;
+      if (f.felledAt < s.first) s.first = f.felledAt;
+      if (f.felledAt > s.last) s.last = f.felledAt;
+    }
+  }
+
+  const entries: BestiaryEntry[] = FOES.map((foe, slot) => {
+    const s = stats.get(foe.name);
+    const discovered = s !== undefined;
+    const active = activeName === foe.name;
+    const reveal = discovered || active;
+    return {
+      slot,
+      discovered,
+      active,
+      name: reveal ? foe.name : null,
+      motive: reveal ? foe.motive : null,
+      // Defeat copy is earned by felling — withheld for an as-yet-unfelled active foe.
+      defeatBeat: discovered ? foe.defeatBeat : null,
+      worldNote: discovered ? foe.worldNote : null,
+      timesFelled: s?.count ?? 0,
+      firstFelledAt: s ? s.first.toISOString() : null,
+      lastFelledAt: s ? s.last.toISOString() : null,
+    };
+  });
+
+  return {
+    entries,
+    discoveredCount: entries.filter((e) => e.discovered).length,
+    total: FOES.length,
+  };
+}
+
 export const HP_MIN = 200;
 /** A base foe takes about this many solid (success) hits of your battle power. */
 export const HP_POWER_MULT = 3;
