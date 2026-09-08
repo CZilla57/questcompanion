@@ -120,6 +120,13 @@
       "when": 1788903412722,
       "tag": "0016_true_pandemic",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1788906332346,
+      "tag": "0017_blushing_shinko_yamashiro",
+      "breakpoints": true
     }
   ]
 }

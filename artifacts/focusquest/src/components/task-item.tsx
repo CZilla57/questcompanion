@@ -174,7 +174,18 @@ export function TaskItem({ task, onEdit, onLevelUp, onRescueNext }: TaskItemProp
               partial: `🎲 ${ability} check`,
               fail: `🎲 ${ability} check`,
             };
-            const math = `d20 ${sc.d20} ${sign(sc.modifier)} ${sign(sc.proficiency)} = ${sc.total} vs DC ${sc.dc}`;
+            // Act IV: flat upside (a Focus Draught bonus and/or Well-Rested) lands
+            // in `total` but not modifier/proficiency; show the residual as its own
+            // term so the sum reads correctly. Advantage/reroll alter the die itself.
+            const bonus = sc.total - sc.d20 - sc.modifier - sc.proficiency;
+            const bonusTerm = bonus !== 0 ? ` ${sign(bonus)}` : "";
+            const math = `d20 ${sc.d20} ${sign(sc.modifier)} ${sign(sc.proficiency)}${bonusTerm} = ${sc.total} vs DC ${sc.dc}`;
+            // Name the upside that rode this roll (boost already in the math).
+            const boons = [
+              res.consumableUsed ? `${res.consumableUsed.emoji} ${res.consumableUsed.name}` : null,
+              res.wellRested ? "🛌 Well-Rested" : null,
+            ].filter(Boolean);
+            const boonNote = boons.length ? ` · ${boons.join(" · ")}` : "";
             // Fail band → offer the rescue pathway on the NEXT quest (this one is
             // done). Upside-only: an offer of help, never a penalty. Other bands
             // and hosts without a handler show no action.
@@ -186,7 +197,7 @@ export function TaskItem({ task, onEdit, onLevelUp, onRescueNext }: TaskItemProp
               ) : undefined;
             toast({
               title: bandTitle[sc.band] ?? bandTitle.success,
-              description: res.skillCheckNarration ? `${math} · ${res.skillCheckNarration}` : math,
+              description: (res.skillCheckNarration ? `${math} · ${res.skillCheckNarration}` : math) + boonNote,
               className: `border ${bandStyle[sc.band] ?? bandStyle.success}`,
               ...(rescueAction ? { action: rescueAction } : {}),
             });

@@ -147,6 +147,7 @@ export * from './heroStatusCompanion';
 export * from './heroStatusCompanionBeat';
 export * from './heroStatusCompanionDisposition';
 export * from './heroStatusStage';
+export * from './heroStatusWellRested';
 export * from './hyperfocusPauseInput';
 export * from './initiationAward';
 export * from './initiationAwardKind';

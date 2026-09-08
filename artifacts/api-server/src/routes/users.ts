@@ -8,6 +8,7 @@ import { hungerStage, moodFor } from "../lib/hero-care";
 import { currentVignette } from "../lib/hero-flavor";
 import { bondTier, dayGap, deriveCompanionBeat } from "../lib/companion";
 import { companionLine, DISPOSITIONS, isDisposition } from "../lib/companion-copy";
+import { isWellRested, WELL_RESTED_BONUS } from "../lib/well-rested";
 import {
   kingdomForCategory, deriveNeglectInvitation, isWorldResting, kingdomStates,
   LIVELINESS_WINDOW_DAYS, type KingdomId,
@@ -229,6 +230,13 @@ router.get("/users/me/hero-status", async (req, res): Promise<void> => {
       // null until the user names it (client shows a neutral fallback).
       name: user.companionName,
       disposition: user.companionDisposition,
+    },
+    // Act IV "Well-Rested": earned upside from keeping a good run — a small roll
+    // bonus while active. Derived at read (non-null + future); never a penalty.
+    wellRested: {
+      active: isWellRested(user.wellRestedExpiresAt, now),
+      expiresAt: user.wellRestedExpiresAt ? user.wellRestedExpiresAt.toISOString() : null,
+      bonus: WELL_RESTED_BONUS,
     },
   });
 });

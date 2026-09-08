@@ -25,6 +25,8 @@ export interface TaskCompletionResult {
   skillCheckNarration?: string | null;
   /** A queued consumable spent on this completion's roll (Act IV), or null. Its boost is already reflected in skillCheck. */
   consumableUsed?: ConsumableUsed | null;
+  /** Whether an Act IV "Well-Rested" bonus rode this roll (earned by keeping a good run). The bonus is already reflected in skillCheck.total. */
+  wellRested?: boolean;
   /** The blow this completion landed on the player's personal encounter. Null when the encounter couldn't be updated (completion still succeeds). */
   encounterHit?: EncounterHit | null;
   /** The blow this completion landed on each shared party foe (one per accepted partnership). Empty when the user has no party or the update couldn't run (completion still succeeds). */

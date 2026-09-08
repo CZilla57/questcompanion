@@ -3279,7 +3279,7 @@ components:
 
     HeroStatus:
       type: object
-      required: [stage, mood, lastFedAt, activity, companion]
+      required: [stage, mood, lastFedAt, activity, companion, wellRested]
       properties:
         stage:
           type: string
@@ -3324,6 +3324,25 @@ components:
               type: string
               enum: [warm, wry, stoic]
               description: Flavors the companion's voice. Defaults to "warm" (the original tone).
+        wellRested:
+          type: object
+          required: [active, bonus]
+          description: >-
+            Act IV "Well-Rested" — earned upside from keeping a good run (advancing
+            the streak). While active, a small flat bonus rides quest-completion
+            rolls. Never a penalty; a broken run simply lets it lapse.
+          properties:
+            active:
+              type: boolean
+              description: Whether the bonus is currently in effect.
+            expiresAt:
+              type: string
+              format: date-time
+              nullable: true
+              description: When the rested window ends, or null if never earned / lapsed.
+            bonus:
+              type: integer
+              description: The flat roll bonus granted while active.
 
     CompanionUpdate:
       type: object
@@ -3837,6 +3856,9 @@ components:
           oneOf:
             - $ref: "#/components/schemas/ConsumableUsed"
             - type: "null"
+        wellRested:
+          type: boolean
+          description: Whether an Act IV "Well-Rested" bonus rode this roll (earned by keeping a good run). The bonus is already reflected in skillCheck.total.
         encounterHit:
           description: The blow this completion landed on the player's personal encounter. Null when the encounter couldn't be updated (completion still succeeds).
           oneOf:
