@@ -228,7 +228,13 @@ export const GetCharacterSheetResponse = zod.object({
   "abbreviation": zod.string(),
   "score": zod.number().describe('Ability score in [8, 20], derived from the source signal.'),
   "modifier": zod.number().describe('Classic floor((score - 10) \/ 2) modifier, the \"+N\" shown next to the ability.'),
-  "kingdomId": zod.string().nullable().describe('Source kingdom on the Life Kingdoms map, or null for Finesse, which reads focus discipline rather than a kingdom.')
+  "kingdomId": zod.string().nullable().describe('Source kingdom on the Life Kingdoms map, or null for Finesse, which reads focus discipline rather than a kingdom.'),
+  "progress": zod.object({
+  "fraction": zod.number().describe('Fill toward the next point, 0..1. 1 once the ability is maxed.'),
+  "toNext": zod.number().describe('Signal units still needed to reach the next point; 0 when maxed.'),
+  "nextScore": zod.number().nullable().describe('The score the next step reaches, or null when already at the max.'),
+  "atMax": zod.boolean().describe('True at the top of the ladder — no further point to climb toward.')
+}).describe('Sub-step fill toward the next ability point. The integer score only steps at a band boundary, so this exposes the distance travelled inside the current band — the felt \"that quest nudged my Might\" loop — derived from the same monotonic signal the score reads.')
 })),
   "proficiencyBonus": zod.number().describe('Added to every skill check; derived from the capital tier (+2…+6).'),
   "heroClass": zod.string(),

@@ -3271,9 +3271,33 @@ components:
         kingdomName:
           type: string
 
+    AbilityProgress:
+      type: object
+      required: [fraction, toNext, nextScore, atMax]
+      description: >-
+        Sub-step fill toward the next ability point. The integer score only steps
+        at a band boundary, so this exposes the distance travelled inside the
+        current band — the felt "that quest nudged my Might" loop — derived from
+        the same monotonic signal the score reads.
+      properties:
+        fraction:
+          type: number
+          format: float
+          description: Fill toward the next point, 0..1. 1 once the ability is maxed.
+        toNext:
+          type: integer
+          description: Signal units still needed to reach the next point; 0 when maxed.
+        nextScore:
+          type: integer
+          nullable: true
+          description: The score the next step reaches, or null when already at the max.
+        atMax:
+          type: boolean
+          description: True at the top of the ladder — no further point to climb toward.
+
     AbilityScore:
       type: object
-      required: [id, name, abbreviation, score, modifier, kingdomId]
+      required: [id, name, abbreviation, score, modifier, kingdomId, progress]
       properties:
         id:
           type: string
@@ -3294,6 +3318,8 @@ components:
           description: >-
             Source kingdom on the Life Kingdoms map, or null for Finesse, which
             reads focus discipline rather than a kingdom.
+        progress:
+          $ref: "#/components/schemas/AbilityProgress"
 
     SkillCheck:
       type: object
