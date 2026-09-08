@@ -6,6 +6,24 @@ import SwiftUI
 // the completion-result call site so the app still decodes if the server hasn't
 // deployed these yet.
 
+/// Sub-step fill toward the next ability point. The integer score only steps at
+/// a band boundary, so this shows how far the current life area has carried the
+/// score toward its next point — the felt "that quest nudged my Might" loop.
+/// Optional at the call site so the app decodes against a pre-progress server.
+struct AbilityProgress: Codable {
+    /// Fill toward the next point, 0..1. 1 once the ability is maxed.
+    let fraction: Double
+    /// Signal units still needed for the next point; 0 when maxed.
+    let toNext: Int
+    /// The score the next step reaches, or nil when already at the max.
+    let nextScore: Int?
+    /// True at the top of the ladder — no further point to climb toward.
+    let atMax: Bool
+
+    /// Clamped 0…1 fill for the bar.
+    var clampedFraction: Double { min(1, max(0, fraction)) }
+}
+
 struct AbilityScore: Codable, Identifiable {
     /// Ability id: might, intellect, attunement, presence, vigor, finesse.
     let id: String
@@ -15,6 +33,9 @@ struct AbilityScore: Codable, Identifiable {
     let modifier: Int
     /// Source kingdom on the Life Kingdoms map, or nil for Finesse.
     let kingdomId: String?
+    /// Fill toward the next ability point (Act I). Optional — decodes against a
+    /// server that hasn't deployed it yet.
+    let progress: AbilityProgress?
 
     /// Signed modifier for display: +3, +0, -1.
     var modifierText: String { modifier >= 0 ? "+\(modifier)" : "\(modifier)" }
@@ -37,12 +58,15 @@ struct SkillCheck: Codable {
     let proficiency: Int
     let total: Int
     let dc: Int
-    /// crit | success | glancing — never a failure band.
+    /// crit | success | partial | fail. Every band completes the quest in full;
+    /// "fail" is never a penalty — it offers a gentler next step (see offerRescue).
     let band: String
     /// Ability rolled (might, intellect, …).
     let ability: String
 
     var isCrit: Bool { band == "crit" }
+    /// The lowest band offers the supportive rescue pathway; never a loss.
+    var offerRescue: Bool { band == "fail" }
     var abilityName: String { ability.prefix(1).uppercased() + ability.dropFirst() }
     var mathText: String {
         let sign = { (n: Int) in n >= 0 ? "+\(n)" : "\(n)" }
