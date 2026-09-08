@@ -5,8 +5,14 @@ import {
   getFeat,
   unlockedFeats,
   lockedFeats,
+  branchesForClass,
+  getBranch,
+  branchTreeUnlocked,
+  BRANCH_UNLOCK_LEVEL,
+  BRANCH_BONUS,
   type FeatDef,
 } from "../lib/class-feats";
+import { KINGDOMS } from "../lib/kingdoms";
 import { isFeatureUnlocked, effectiveLevel } from "../lib/feature-gates";
 import {
   isBoostActive,
@@ -84,7 +90,55 @@ router.get("/users/me/feats", async (req, res): Promise<void> => {
   res.json({
     unlocked: unlockedFeats(user.avatarClass, level).map((f) => present(f, ctx)),
     locked: lockedFeats(user.avatarClass, level).map((f) => present(f, ctx)),
+    branchTree: branchTree(user, level),
   });
+});
+
+/** Act V: the specialization tree for the hero's class — the branches offered,
+ *  which (if any) is chosen, whether the tree has opened, and the unlock level
+ *  for a calm "opens at Level N" line. Free respec: `chosen` can change anytime. */
+function branchTree(user: User, level: number) {
+  const kingdomName = (id: string) => KINGDOMS.find((k) => k.id === id)?.name ?? id;
+  return {
+    unlocked: branchTreeUnlocked(level),
+    unlockLevel: BRANCH_UNLOCK_LEVEL,
+    chosen: getBranch(user.featBranch)?.heroClass === user.avatarClass ? user.featBranch : null,
+    bonusPct: Math.round(BRANCH_BONUS * 100),
+    branches: branchesForClass(user.avatarClass).map((b) => ({
+      id: b.id,
+      label: b.label,
+      emoji: b.emoji,
+      description: b.description,
+      kingdom: b.kingdom,
+      kingdomName: kingdomName(b.kingdom),
+    })),
+  };
+}
+
+// Act V: choose (or clear) the hero's specialization branch. FREE RESPEC — any
+// valid branch for the class, anytime, at no cost; `null` clears it. A choice
+// made before the tree unlocks is stored but simply inert until then.
+router.post("/users/me/feat-branch", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const userId = req.gameUserId!;
+  const branchId = (req.body ?? {}).branch as unknown;
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (!user) { res.status(404).json({ error: "User not found" }); return; }
+  if (!campaignsUnlocked(user)) { res.status(200).json({ chosen: null, reason: "locked" }); return; }
+
+  if (branchId === null) {
+    await db.update(usersTable).set({ featBranch: null }).where(eq(usersTable.id, userId));
+    res.json({ chosen: null, reason: "ok" });
+    return;
+  }
+  const branch = typeof branchId === "string" ? getBranch(branchId) : undefined;
+  if (!branch || branch.heroClass !== user.avatarClass) {
+    res.status(404).json({ error: "Unknown branch for this class" });
+    return;
+  }
+  await db.update(usersTable).set({ featBranch: branch.id }).where(eq(usersTable.id, userId));
+  res.json({ chosen: branch.id, reason: "ok" });
 });
 
 router.post("/users/me/feats/:id/activate", async (req, res): Promise<void> => {

@@ -2705,9 +2705,57 @@ export interface FeatView {
   atMax?: boolean | null;
 }
 
+/**
+ * One specialization branch — a "second calling" granting a passive XP bias in a Life Kingdom (Act V).
+ */
+export interface FeatBranch {
+  id: string;
+  label: string;
+  emoji: string;
+  description: string;
+  /** The Life Kingdom id this branch biases. */
+  kingdom: string;
+  kingdomName: string;
+}
+
+/**
+ * The hero's specialization tree (Act V). FREE RESPEC — `chosen` can change anytime at no cost; nothing is ever locked out. Upside-only.
+ */
+export interface FeatBranchTree {
+  /** Whether the tree has opened (hero at or past unlockLevel). */
+  unlocked: boolean;
+  /** Level at which the tree opens (for a calm "opens at Level N" line). */
+  unlockLevel: number;
+  /** The chosen branch id for this class, or null. */
+  chosen: string | null;
+  /** The passive XP bias each branch grants, as a percent. */
+  bonusPct: number;
+  branches: FeatBranch[];
+}
+
 export interface FeatsResponse {
   unlocked: FeatView[];
   locked: FeatView[];
+  branchTree?: FeatBranchTree;
+}
+
+export interface FeatBranchChoice {
+  /** A branch id valid for the hero's class, or null to clear. */
+  branch: string | null;
+}
+
+export type FeatBranchChoiceResultReason = typeof FeatBranchChoiceResultReason[keyof typeof FeatBranchChoiceResultReason];
+
+
+export const FeatBranchChoiceResultReason = {
+  ok: 'ok',
+  locked: 'locked',
+} as const;
+
+export interface FeatBranchChoiceResult {
+  /** The now-chosen branch id, or null when cleared / locked. */
+  chosen: string | null;
+  reason: FeatBranchChoiceResultReason;
 }
 
 export type FeatActivateResultReason = typeof FeatActivateResultReason[keyof typeof FeatActivateResultReason];

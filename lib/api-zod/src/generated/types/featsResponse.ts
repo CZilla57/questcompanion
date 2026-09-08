@@ -5,9 +5,11 @@
  * FocusQuest API - ADHD gamified task tracker
  * OpenAPI spec version: 0.1.0
  */
+import type { FeatBranchTree } from './featBranchTree';
 import type { FeatView } from './featView';
 
 export interface FeatsResponse {
   unlocked: FeatView[];
   locked: FeatView[];
+  branchTree?: FeatBranchTree;
 }

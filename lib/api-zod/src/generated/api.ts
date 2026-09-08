@@ -3147,7 +3147,21 @@ export const GetMyFeatsResponse = zod.object({
   "active": zod.boolean().nullish().describe('Active boost feats — whether the granted boost window is currently live'),
   "expiresAt": zod.coerce.date().nullish().describe('Active boost feats — active-until of the granted window'),
   "atMax": zod.boolean().nullish().describe('Mend (streak shield) — whether the shield stock is already at the cap')
-}))
+})),
+  "branchTree": zod.object({
+  "unlocked": zod.boolean().describe('Whether the tree has opened (hero at or past unlockLevel).'),
+  "unlockLevel": zod.number().describe('Level at which the tree opens (for a calm \"opens at Level N\" line).'),
+  "chosen": zod.string().nullable().describe('The chosen branch id for this class, or null.'),
+  "bonusPct": zod.number().describe('The passive XP bias each branch grants, as a percent.'),
+  "branches": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "emoji": zod.string(),
+  "description": zod.string(),
+  "kingdom": zod.string().describe('The Life Kingdom id this branch biases.'),
+  "kingdomName": zod.string()
+}).describe('One specialization branch — a \"second calling\" granting a passive XP bias in a Life Kingdom (Act V).'))
+}).optional().describe('The hero\'s specialization tree (Act V). FREE RESPEC — `chosen` can change anytime at no cost; nothing is ever locked out. Upside-only.')
 })
 
 
@@ -3159,6 +3173,19 @@ export const ActivateFeatResponse = zod.object({
   "reason": zod.enum(['ok', 'locked', 'on_cooldown', 'at_max']),
   "expiresAt": zod.coerce.date().nullish().describe('Boost feats — the new active-until after activating'),
   "owned": zod.number().nullish().describe('Mend — streak freezes held after activating (or the cap on at_max)')
+})
+
+
+/**
+ * @summary Choose (or clear) the hero's specialization branch — free respec, anytime (Act V)
+ */
+export const ChooseFeatBranchBody = zod.object({
+  "branch": zod.string().nullable().describe('A branch id valid for the hero\'s class, or null to clear.')
+})
+
+export const ChooseFeatBranchResponse = zod.object({
+  "chosen": zod.string().nullable().describe('The now-chosen branch id, or null when cleared \/ locked.'),
+  "reason": zod.enum(['ok', 'locked'])
 })
 
 

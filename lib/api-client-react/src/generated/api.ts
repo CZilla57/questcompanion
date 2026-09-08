@@ -57,6 +57,8 @@ import type {
   DopamineRewardInput,
   ErrorEnvelope,
   FeatActivateResult,
+  FeatBranchChoice,
+  FeatBranchChoiceResult,
   FeatsResponse,
   FinishBodyDoubleSprint200,
   FocusCompleteInput,
@@ -10324,6 +10326,77 @@ export const useActivateFeat = <TError = ErrorType<ErrorEnvelope>,
         TContext
       > => {
       return useMutation(getActivateFeatMutationOptions(options));
+    }
+
+export const getChooseFeatBranchUrl = () => {
+
+
+
+
+  return `/api/users/me/feat-branch`
+}
+
+/**
+ * @summary Choose (or clear) the hero's specialization branch — free respec, anytime (Act V)
+ */
+export const chooseFeatBranch = async (featBranchChoice: FeatBranchChoice, options?: RequestInit): Promise<FeatBranchChoiceResult> => {
+
+  return customFetch<FeatBranchChoiceResult>(getChooseFeatBranchUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      featBranchChoice,)
+  }
+);}
+
+
+
+
+export const getChooseFeatBranchMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof chooseFeatBranch>>, TError,{data: BodyType<FeatBranchChoice>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof chooseFeatBranch>>, TError,{data: BodyType<FeatBranchChoice>}, TContext> => {
+
+const mutationKey = ['chooseFeatBranch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof chooseFeatBranch>>, {data: BodyType<FeatBranchChoice>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  chooseFeatBranch(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChooseFeatBranchMutationResult = NonNullable<Awaited<ReturnType<typeof chooseFeatBranch>>>
+    export type ChooseFeatBranchMutationBody = BodyType<FeatBranchChoice>
+    export type ChooseFeatBranchMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Choose (or clear) the hero's specialization branch — free respec, anytime (Act V)
+ */
+export const useChooseFeatBranch = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof chooseFeatBranch>>, TError,{data: BodyType<FeatBranchChoice>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof chooseFeatBranch>>,
+        TError,
+        {data: BodyType<FeatBranchChoice>},
+        TContext
+      > => {
+      return useMutation(getChooseFeatBranchMutationOptions(options));
     }
 
 export const getGetCalendarHeatmapUrl = (params?: GetCalendarHeatmapParams,) => {

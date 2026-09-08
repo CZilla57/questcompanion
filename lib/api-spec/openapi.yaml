@@ -3058,6 +3058,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
 
+  /users/me/feat-branch:
+    post:
+      operationId: chooseFeatBranch
+      tags: [users]
+      summary: Choose (or clear) the hero's specialization branch — free respec, anytime (Act V)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeatBranchChoice"
+      responses:
+        "200":
+          description: The now-chosen branch (or null); a gentle "locked" when the campaign layer is closed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeatBranchChoiceResult"
+        "404":
+          description: Unknown branch for this class
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
   /calendar/heatmap:
     get:
       operationId: getCalendarHeatmap
@@ -5946,6 +5971,73 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/FeatView"
+        branchTree:
+          $ref: "#/components/schemas/FeatBranchTree"
+
+    FeatBranch:
+      type: object
+      required: [id, label, emoji, description, kingdom, kingdomName]
+      description: One specialization branch — a "second calling" granting a passive XP bias in a Life Kingdom (Act V).
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        emoji:
+          type: string
+        description:
+          type: string
+        kingdom:
+          type: string
+          description: The Life Kingdom id this branch biases.
+        kingdomName:
+          type: string
+
+    FeatBranchTree:
+      type: object
+      required: [unlocked, unlockLevel, chosen, bonusPct, branches]
+      description: >-
+        The hero's specialization tree (Act V). FREE RESPEC — `chosen` can change
+        anytime at no cost; nothing is ever locked out. Upside-only.
+      properties:
+        unlocked:
+          type: boolean
+          description: Whether the tree has opened (hero at or past unlockLevel).
+        unlockLevel:
+          type: integer
+          description: Level at which the tree opens (for a calm "opens at Level N" line).
+        chosen:
+          type: string
+          nullable: true
+          description: The chosen branch id for this class, or null.
+        bonusPct:
+          type: integer
+          description: The passive XP bias each branch grants, as a percent.
+        branches:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeatBranch"
+
+    FeatBranchChoice:
+      type: object
+      required: [branch]
+      properties:
+        branch:
+          type: string
+          nullable: true
+          description: A branch id valid for the hero's class, or null to clear.
+
+    FeatBranchChoiceResult:
+      type: object
+      required: [chosen, reason]
+      properties:
+        chosen:
+          type: string
+          nullable: true
+          description: The now-chosen branch id, or null when cleared / locked.
+        reason:
+          type: string
+          enum: [ok, locked]
 
     FeatActivateResult:
       type: object
