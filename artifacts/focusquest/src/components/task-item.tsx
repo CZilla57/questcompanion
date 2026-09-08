@@ -159,12 +159,14 @@ export function TaskItem({ task, onEdit, onLevelUp }: TaskItemProps) {
             const bandStyle: Record<string, string> = {
               crit: "border-amber-400 text-amber-300",
               success: "border-primary text-primary",
-              glancing: "border-border text-muted-foreground",
+              partial: "border-border text-muted-foreground",
+              fail: "border-border text-muted-foreground",
             };
             const bandTitle: Record<string, string> = {
               crit: `🎲 Critical! ${ability} check`,
               success: `🎲 ${ability} check`,
-              glancing: `🎲 ${ability} check`,
+              partial: `🎲 ${ability} check`,
+              fail: `🎲 ${ability} check`,
             };
             const math = `d20 ${sc.d20} ${sign(sc.modifier)} ${sign(sc.proficiency)} = ${sc.total} vs DC ${sc.dc}`;
             toast({

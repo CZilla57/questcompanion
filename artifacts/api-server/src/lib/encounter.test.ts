@@ -12,14 +12,16 @@ import {
 import type { CheckBand } from "./roll-engine";
 
 describe("damageForCheck", () => {
-  const bands: CheckBand[] = ["glancing", "success", "crit"];
+  const bands: CheckBand[] = ["fail", "partial", "success", "crit"];
 
-  it("scales base power by the band, crit hardest", () => {
+  it("scales base power by the band, crit hardest and fail lightest", () => {
     expect(damageForCheck(100, "crit")).toBeGreaterThan(damageForCheck(100, "success"));
-    expect(damageForCheck(100, "success")).toBeGreaterThan(damageForCheck(100, "glancing"));
+    expect(damageForCheck(100, "success")).toBeGreaterThan(damageForCheck(100, "partial"));
+    expect(damageForCheck(100, "partial")).toBeGreaterThan(damageForCheck(100, "fail"));
     expect(damageForCheck(100, "crit")).toBe(150);
     expect(damageForCheck(100, "success")).toBe(100);
-    expect(damageForCheck(100, "glancing")).toBe(60);
+    expect(damageForCheck(100, "partial")).toBe(60);
+    expect(damageForCheck(100, "fail")).toBe(40);
   });
 
   it("every hit lands — never below 1, even for tiny or zero power (upside-only)", () => {

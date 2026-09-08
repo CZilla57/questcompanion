@@ -11,10 +11,12 @@
 import type { CheckBand } from "./roll-engine";
 
 /** Damage a completed quest deals, scaled by its skill-check band. Every hit
- *  lands (upside-only): even a glancing blow chips HP, a crit hits hardest, and
- *  the result is never below 1 so a completion always contributes. */
+ *  lands (upside-only): even a fail chips HP (the foe merely holds the line, it
+ *  never strikes the player back), a crit hits hardest, and the result is never
+ *  below 1 so a completion always contributes. */
 export const BAND_DAMAGE_MULTIPLIER: Record<CheckBand, number> = {
-  glancing: 0.6,
+  fail: 0.4,
+  partial: 0.6,
   success: 1.0,
   crit: 1.5,
 };
