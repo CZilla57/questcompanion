@@ -45,6 +45,8 @@ import type {
   CampaignUpdate,
   CharacterSheet,
   Coins,
+  CompanionIdentity,
+  CompanionUpdate,
   CreateRescueEvent201,
   DeleteAccountRequest,
   DmBeatResponse,
@@ -3517,6 +3519,77 @@ export const usePutMyTimezone = <TError = ErrorType<ErrorEnvelope>,
         TContext
       > => {
       return useMutation(getPutMyTimezoneMutationOptions(options));
+    }
+
+export const getUpdateCompanionUrl = () => {
+
+
+
+
+  return `/api/users/me/companion`
+}
+
+/**
+ * @summary Name the companion and/or set its disposition (Act III)
+ */
+export const updateCompanion = async (companionUpdate: CompanionUpdate, options?: RequestInit): Promise<CompanionIdentity> => {
+
+  return customFetch<CompanionIdentity>(getUpdateCompanionUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      companionUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateCompanionMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCompanion>>, TError,{data: BodyType<CompanionUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCompanion>>, TError,{data: BodyType<CompanionUpdate>}, TContext> => {
+
+const mutationKey = ['updateCompanion'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCompanion>>, {data: BodyType<CompanionUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateCompanion(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCompanionMutationResult = NonNullable<Awaited<ReturnType<typeof updateCompanion>>>
+    export type UpdateCompanionMutationBody = BodyType<CompanionUpdate>
+    export type UpdateCompanionMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Name the companion and/or set its disposition (Act III)
+ */
+export const useUpdateCompanion = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCompanion>>, TError,{data: BodyType<CompanionUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateCompanion>>,
+        TError,
+        {data: BodyType<CompanionUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateCompanionMutationOptions(options));
     }
 
 export const getPauseHyperfocusUrl = () => {

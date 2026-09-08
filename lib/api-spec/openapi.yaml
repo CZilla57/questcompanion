@@ -999,6 +999,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
 
+  /users/me/companion:
+    patch:
+      operationId: updateCompanion
+      tags: [users]
+      summary: Name the companion and/or set its disposition (Act III)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompanionUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompanionIdentity"
+        "422":
+          description: Invalid name or disposition
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
   /users/me/hyperfocus/pause:
     post:
       operationId: pauseHyperfocus
@@ -3205,8 +3230,8 @@ components:
               type: string
         companion:
           type: object
-          required: [beat, line, bondTier, bondTierName, bondQuestsCompleted]
-          description: Living Companion reaction (Act VI) — derived relational beat + bond
+          required: [beat, line, bondTier, bondTierName, bondQuestsCompleted, name, disposition]
+          description: Living Companion reaction (Act VI) — derived relational beat + bond, plus its name/disposition (Act III)
           properties:
             beat:
               type: string
@@ -3220,6 +3245,38 @@ components:
               type: string
             bondQuestsCompleted:
               type: integer
+            name:
+              type: string
+              nullable: true
+              description: The companion's user-given name, or null until named (client shows a neutral fallback).
+            disposition:
+              type: string
+              enum: [warm, wry, stoic]
+              description: Flavors the companion's voice. Defaults to "warm" (the original tone).
+
+    CompanionUpdate:
+      type: object
+      description: Rename the companion and/or set its disposition (Act III). At least one field.
+      properties:
+        name:
+          type: string
+          nullable: true
+          maxLength: 24
+          description: New name (1–24 chars after trimming), or null to clear it back to the fallback.
+        disposition:
+          type: string
+          enum: [warm, wry, stoic]
+
+    CompanionIdentity:
+      type: object
+      required: [name, disposition]
+      properties:
+        name:
+          type: string
+          nullable: true
+        disposition:
+          type: string
+          enum: [warm, wry, stoic]
 
     KingdomsResponse:
       type: object

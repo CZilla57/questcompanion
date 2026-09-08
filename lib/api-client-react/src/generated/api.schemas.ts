@@ -190,7 +190,19 @@ export const HeroStatusCompanionBeat = {
 } as const;
 
 /**
- * Living Companion reaction (Act VI) — derived relational beat + bond
+ * Flavors the companion's voice. Defaults to "warm" (the original tone).
+ */
+export type HeroStatusCompanionDisposition = typeof HeroStatusCompanionDisposition[keyof typeof HeroStatusCompanionDisposition];
+
+
+export const HeroStatusCompanionDisposition = {
+  warm: 'warm',
+  wry: 'wry',
+  stoic: 'stoic',
+} as const;
+
+/**
+ * Living Companion reaction (Act VI) — derived relational beat + bond, plus its name/disposition (Act III)
  */
 export type HeroStatusCompanion = {
   beat: HeroStatusCompanionBeat;
@@ -199,6 +211,10 @@ export type HeroStatusCompanion = {
   bondTier: number;
   bondTierName: string;
   bondQuestsCompleted: number;
+  /** The companion's user-given name, or null until named (client shows a neutral fallback). */
+  name: string | null;
+  /** Flavors the companion's voice. Defaults to "warm" (the original tone). */
+  disposition: HeroStatusCompanionDisposition;
 };
 
 export interface HeroStatus {
@@ -208,8 +224,43 @@ export interface HeroStatus {
   lastFedAt: string;
   /** Current ambient "hero life" vignette (rotates every ~3h) */
   activity: HeroStatusActivity;
-  /** Living Companion reaction (Act VI) — derived relational beat + bond */
+  /** Living Companion reaction (Act VI) — derived relational beat + bond, plus its name/disposition (Act III) */
   companion: HeroStatusCompanion;
+}
+
+export type CompanionUpdateDisposition = typeof CompanionUpdateDisposition[keyof typeof CompanionUpdateDisposition];
+
+
+export const CompanionUpdateDisposition = {
+  warm: 'warm',
+  wry: 'wry',
+  stoic: 'stoic',
+} as const;
+
+/**
+ * Rename the companion and/or set its disposition (Act III). At least one field.
+ */
+export interface CompanionUpdate {
+  /**
+     * New name (1–24 chars after trimming), or null to clear it back to the fallback.
+     * @maxLength 24
+     */
+  name?: string | null;
+  disposition?: CompanionUpdateDisposition;
+}
+
+export type CompanionIdentityDisposition = typeof CompanionIdentityDisposition[keyof typeof CompanionIdentityDisposition];
+
+
+export const CompanionIdentityDisposition = {
+  warm: 'warm',
+  wry: 'wry',
+  stoic: 'stoic',
+} as const;
+
+export interface CompanionIdentity {
+  name: string | null;
+  disposition: CompanionIdentityDisposition;
 }
 
 export type KingdomStateId = typeof KingdomStateId[keyof typeof KingdomStateId];

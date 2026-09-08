@@ -608,6 +608,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
         freezeConsumed: boolean;
         heroRevived: boolean;
         bondBefore: number;
+        companionDisposition: string;
       };
 
   const outcome = await db.transaction(async (tx): Promise<TxOutcome> => {
@@ -790,6 +791,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       freezeConsumed,
       heroRevived,
       bondBefore,
+      companionDisposition: user.companionDisposition,
     };
   });
   // ─────────────────────────────────────────────────────────────────────────────
@@ -819,7 +821,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
   }
 
   const { task, boostedBase, pointsToAdd, bonusAwarded, focusBonusAwarded, streakBonus, multiplierLabel, multiplierValue,
-    newTotalPoints, newLevel, leveledUp, unlockedByAward, newStreak, oldStreak, freezeConsumed, heroRevived, bondBefore } = outcome;
+    newTotalPoints, newLevel, leveledUp, unlockedByAward, newStreak, oldStreak, freezeConsumed, heroRevived, bondBefore, companionDisposition } = outcome;
 
   // ─── Post-transaction side effects ───────────────────────────────────────────
   // These run outside the transaction.  Any failure here leaves the user with
@@ -1003,6 +1005,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     userId,
     now: new Date(),
     band: skillCheck?.band,
+    disposition: companionDisposition,
   });
 
   res.json({
