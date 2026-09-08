@@ -5,7 +5,7 @@ import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable
 import type { DifficultyLevel, VariantLadder } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, DAILY_BONUS_POINTS } from "../lib/gamification";
 import { newlyUnlocked, effectiveLevel, type FeatureKey } from "../lib/feature-gates";
-import { unlockedFeats, passiveBonusPoints } from "../lib/class-feats";
+import { unlockedFeats, passiveBonusPoints, chosenBranchPassive } from "../lib/class-feats";
 import { assignPoints, CATEGORY_LABELS, VALID_CATEGORIES } from "../lib/auto-points";
 import { advanceHabitStreak, reverseHabitStreak, type HabitStreakPreviousState } from "../lib/habit-streaks";
 import { toFrequency } from "../lib/recurrence";
@@ -690,8 +690,15 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     // above — it never touches streak/level math and can never lower a payout.
     // Passive feats unlock at a level past the campaigns gate, so the level
     // ladder itself keeps this dark until the campaign era.
+    // Act V: the hero's chosen specialization branch rides the same passive
+    // seam (a synthetic passive feat), so a "second calling" adds its upside-only
+    // XP bias exactly like a base passive. No branch / class mismatch / tree
+    // locked → chosenBranchPassive returns null and nothing is added.
+    const lvl = effectiveLevel(user);
+    const passiveFeats = unlockedFeats(user.avatarClass, lvl);
+    const branchFeat = chosenBranchPassive(user.featBranch, user.avatarClass, lvl);
     const passiveFeatBonus = passiveBonusPoints(
-      unlockedFeats(user.avatarClass, effectiveLevel(user)),
+      branchFeat ? [...passiveFeats, branchFeat] : passiveFeats,
       task.category,
       task.points,
     );

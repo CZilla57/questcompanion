@@ -2411,6 +2411,59 @@ export interface PartyEncounter {
 }
 
 /**
+ * The hero's Capital (Act V) — the seat of the realm, derived from the sum of lifetime kingdom points. Monotonic: it only ever grows, never a penalty. `fraction` is the fine-grained progress toward the next tier.
+ */
+export interface CapitalProgress {
+  /** Current capital tier (0…MAX_CAPITAL_TIER). */
+  tier: number;
+  /** Current tier's name (e.g. "Hamlet", "Crown City"). */
+  name: string;
+  /** Lifetime kingdom points feeding the capital. */
+  points: number;
+  /** True at the top of the ladder (no next tier). */
+  atMax: boolean;
+  /** The next tier's name, or null at max. */
+  nextName: string | null;
+  /** Lifetime points needed for the next tier, or null at max. */
+  nextThreshold: number | null;
+  /** Points still to go to the next tier (0 at max). */
+  pointsToNext: number;
+  /** Progress toward the next tier, 0..1 (1 at max). */
+  fraction: number;
+}
+
+/**
+ * One roster slot in the discovery log. A discovered (felled ≥ 1) foe reveals its full copy and counts; the currently-active foe reveals its name/motive but withholds the earned defeat copy until felled; every other slot is a withheld silhouette (all fields null). Anti-shame — an unmet foe is "not yet encountered", never "unbeaten".
+ */
+export interface BestiaryEntry {
+  /** Stable 0-based roster position, for laying out silhouettes. */
+  slot: number;
+  /** Felled at least once — the entry is collected. */
+  discovered: boolean;
+  /** This is the hero's current foe. */
+  active: boolean;
+  /** Revealed iff discovered or active; null (silhouette) otherwise. */
+  name: string | null;
+  /** Revealed iff discovered or active; null otherwise. */
+  motive: string | null;
+  /** Earned copy — revealed only once felled; null otherwise. */
+  defeatBeat: string | null;
+  /** Earned copy — revealed only once felled; null otherwise. */
+  worldNote: string | null;
+  timesFelled: number;
+  firstFelledAt: string | null;
+  lastFelledAt: string | null;
+}
+
+export interface Bestiary {
+  entries: BestiaryEntry[];
+  /** How many roster foes the hero has felled at least once. */
+  discoveredCount: number;
+  /** Size of the foe roster (the completion target). */
+  total: number;
+}
+
+/**
  * The morning quest board or the evening make-camp.
  */
 export type DmBeatKind = typeof DmBeatKind[keyof typeof DmBeatKind];
@@ -2710,9 +2763,57 @@ export interface FeatView {
   atMax?: boolean | null;
 }
 
+/**
+ * One specialization branch — a "second calling" granting a passive XP bias in a Life Kingdom (Act V).
+ */
+export interface FeatBranch {
+  id: string;
+  label: string;
+  emoji: string;
+  description: string;
+  /** The Life Kingdom id this branch biases. */
+  kingdom: string;
+  kingdomName: string;
+}
+
+/**
+ * The hero's specialization tree (Act V). FREE RESPEC — `chosen` can change anytime at no cost; nothing is ever locked out. Upside-only.
+ */
+export interface FeatBranchTree {
+  /** Whether the tree has opened (hero at or past unlockLevel). */
+  unlocked: boolean;
+  /** Level at which the tree opens (for a calm "opens at Level N" line). */
+  unlockLevel: number;
+  /** The chosen branch id for this class, or null. */
+  chosen: string | null;
+  /** The passive XP bias each branch grants, as a percent. */
+  bonusPct: number;
+  branches: FeatBranch[];
+}
+
 export interface FeatsResponse {
   unlocked: FeatView[];
   locked: FeatView[];
+  branchTree?: FeatBranchTree;
+}
+
+export interface FeatBranchChoice {
+  /** A branch id valid for the hero's class, or null to clear. */
+  branch: string | null;
+}
+
+export type FeatBranchChoiceResultReason = typeof FeatBranchChoiceResultReason[keyof typeof FeatBranchChoiceResultReason];
+
+
+export const FeatBranchChoiceResultReason = {
+  ok: 'ok',
+  locked: 'locked',
+} as const;
+
+export interface FeatBranchChoiceResult {
+  /** The now-chosen branch id, or null when cleared / locked. */
+  chosen: string | null;
+  reason: FeatBranchChoiceResultReason;
 }
 
 export type FeatActivateResultReason = typeof FeatActivateResultReason[keyof typeof FeatActivateResultReason];

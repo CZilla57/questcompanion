@@ -3,7 +3,7 @@ import {
   CATEGORY_TO_KINGDOM, kingdomForCategory, kingdomTier, KINGDOMS,
   deriveLiveliness, isWorldResting, WORLD_RESTING_THRESHOLD, LIVELINESS_WINDOW_DAYS,
   deriveNeglectInvitation, kingdomGrowth, capitalLifetime,
-  capitalTier, MAX_CAPITAL_TIER, CAPITAL_TIERS,
+  capitalTier, capitalProgress, MAX_CAPITAL_TIER, CAPITAL_TIERS,
   balanceRecentTotal,
 } from "./kingdoms";
 import { CATEGORY_LABELS } from "./auto-points";
@@ -313,5 +313,47 @@ describe("balance invariant", () => {
   it("a huge capital total does not change any kingdom's liveliness", () => {
     const total = balanceRecentTotal({ ...recent, capital: 999999 });
     expect(deriveLiveliness(100, total)).toBe("steady");
+  });
+});
+
+describe("capitalProgress (Act V — the Capital as a home that visibly grows)", () => {
+  it("reports the current tier + fine-grained progress to the next", () => {
+    // Camp = tier 2 @ 150; Hamlet = tier 3 @ 400. Halfway: 275.
+    const p = capitalProgress(275);
+    expect(p.name).toBe("Camp");
+    expect(p.nextName).toBe("Hamlet");
+    expect(p.nextThreshold).toBe(400);
+    expect(p.pointsToNext).toBe(125);
+    expect(p.atMax).toBe(false);
+    expect(p.fraction).toBeCloseTo((275 - 150) / (400 - 150), 5);
+  });
+
+  it("clamps at the top of the ladder — no next tier, full bar, no penalty below", () => {
+    const top = CAPITAL_TIERS[0]!; // Eternal Capital @ MAX_CAPITAL_TIER
+    const p = capitalProgress(top.minPoints + 5000);
+    expect(p.tier).toBe(MAX_CAPITAL_TIER);
+    expect(p.atMax).toBe(true);
+    expect(p.nextName).toBeNull();
+    expect(p.nextThreshold).toBeNull();
+    expect(p.pointsToNext).toBe(0);
+    expect(p.fraction).toBe(1);
+  });
+
+  it("is monotonic — more points never lowers the tier or the fraction within a tier", () => {
+    let lastTier = -1;
+    for (let pts = 0; pts <= 45000; pts += 137) {
+      const p = capitalProgress(pts);
+      expect(p.tier).toBeGreaterThanOrEqual(lastTier);
+      lastTier = p.tier;
+      expect(p.pointsToNext).toBeGreaterThanOrEqual(0);
+      expect(p.fraction).toBeGreaterThanOrEqual(0);
+      expect(p.fraction).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("at exactly a threshold, that tier is current with a fresh (0) fraction toward the next", () => {
+    const p = capitalProgress(400); // exactly Hamlet
+    expect(p.name).toBe("Hamlet");
+    expect(p.fraction).toBe(0);
   });
 });

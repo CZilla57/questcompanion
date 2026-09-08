@@ -2814,6 +2814,42 @@ export const GetEncounterCurrentResponse = zod.object({
 
 
 /**
+ * @summary The hero's Capital — a home that visibly grows, with progress to the next tier (Act V)
+ */
+export const GetCapitalResponse = zod.object({
+  "tier": zod.number().describe('Current capital tier (0…MAX_CAPITAL_TIER).'),
+  "name": zod.string().describe('Current tier\'s name (e.g. \"Hamlet\", \"Crown City\").'),
+  "points": zod.number().describe('Lifetime kingdom points feeding the capital.'),
+  "atMax": zod.boolean().describe('True at the top of the ladder (no next tier).'),
+  "nextName": zod.string().nullable().describe('The next tier\'s name, or null at max.'),
+  "nextThreshold": zod.number().nullable().describe('Lifetime points needed for the next tier, or null at max.'),
+  "pointsToNext": zod.number().describe('Points still to go to the next tier (0 at max).'),
+  "fraction": zod.number().describe('Progress toward the next tier, 0..1 (1 at max).')
+}).describe('The hero\'s Capital (Act V) — the seat of the realm, derived from the sum of lifetime kingdom points. Monotonic: it only ever grows, never a penalty. `fraction` is the fine-grained progress toward the next tier.')
+
+
+/**
+ * @summary The player's bestiary — a discovery log completed by felling each roster foe (Act V)
+ */
+export const GetBestiaryResponse = zod.object({
+  "entries": zod.array(zod.object({
+  "slot": zod.number().describe('Stable 0-based roster position, for laying out silhouettes.'),
+  "discovered": zod.boolean().describe('Felled at least once — the entry is collected.'),
+  "active": zod.boolean().describe('This is the hero\'s current foe.'),
+  "name": zod.string().nullable().describe('Revealed iff discovered or active; null (silhouette) otherwise.'),
+  "motive": zod.string().nullable().describe('Revealed iff discovered or active; null otherwise.'),
+  "defeatBeat": zod.string().nullable().describe('Earned copy — revealed only once felled; null otherwise.'),
+  "worldNote": zod.string().nullable().describe('Earned copy — revealed only once felled; null otherwise.'),
+  "timesFelled": zod.number(),
+  "firstFelledAt": zod.coerce.date().nullable(),
+  "lastFelledAt": zod.coerce.date().nullable()
+}).describe('One roster slot in the discovery log. A discovered (felled ≥ 1) foe reveals its full copy and counts; the currently-active foe reveals its name\/motive but withholds the earned defeat copy until felled; every other slot is a withheld silhouette (all fields null). Anti-shame — an unmet foe is \"not yet encountered\", never \"unbeaten\".')),
+  "discoveredCount": zod.number().describe('How many roster foes the hero has felled at least once.'),
+  "total": zod.number().describe('Size of the foe roster (the completion target).')
+})
+
+
+/**
  * @summary The user's parties and their shared foes (spawns a tier-1 foe on first view)
  */
 export const GetPartyEncountersResponseItem = zod.object({
@@ -3157,7 +3193,21 @@ export const GetMyFeatsResponse = zod.object({
   "active": zod.boolean().nullish().describe('Active boost feats — whether the granted boost window is currently live'),
   "expiresAt": zod.coerce.date().nullish().describe('Active boost feats — active-until of the granted window'),
   "atMax": zod.boolean().nullish().describe('Mend (streak shield) — whether the shield stock is already at the cap')
-}))
+})),
+  "branchTree": zod.object({
+  "unlocked": zod.boolean().describe('Whether the tree has opened (hero at or past unlockLevel).'),
+  "unlockLevel": zod.number().describe('Level at which the tree opens (for a calm \"opens at Level N\" line).'),
+  "chosen": zod.string().nullable().describe('The chosen branch id for this class, or null.'),
+  "bonusPct": zod.number().describe('The passive XP bias each branch grants, as a percent.'),
+  "branches": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "emoji": zod.string(),
+  "description": zod.string(),
+  "kingdom": zod.string().describe('The Life Kingdom id this branch biases.'),
+  "kingdomName": zod.string()
+}).describe('One specialization branch — a \"second calling\" granting a passive XP bias in a Life Kingdom (Act V).'))
+}).optional().describe('The hero\'s specialization tree (Act V). FREE RESPEC — `chosen` can change anytime at no cost; nothing is ever locked out. Upside-only.')
 })
 
 
@@ -3169,6 +3219,19 @@ export const ActivateFeatResponse = zod.object({
   "reason": zod.enum(['ok', 'locked', 'on_cooldown', 'at_max']),
   "expiresAt": zod.coerce.date().nullish().describe('Boost feats — the new active-until after activating'),
   "owned": zod.number().nullish().describe('Mend — streak freezes held after activating (or the cap on at_max)')
+})
+
+
+/**
+ * @summary Choose (or clear) the hero's specialization branch — free respec, anytime (Act V)
+ */
+export const ChooseFeatBranchBody = zod.object({
+  "branch": zod.string().nullable().describe('A branch id valid for the hero\'s class, or null to clear.')
+})
+
+export const ChooseFeatBranchResponse = zod.object({
+  "chosen": zod.string().nullable().describe('The now-chosen branch id, or null when cleared \/ locked.'),
+  "reason": zod.enum(['ok', 'locked'])
 })
 
 

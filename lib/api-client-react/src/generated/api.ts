@@ -31,6 +31,7 @@ import type {
   BattleResult,
   BattleStatus,
   BeginBrowserLoginParams,
+  Bestiary,
   BodyDoubleRoomState,
   BodyDoubleSprint,
   BodyDoubleSprintInput,
@@ -43,6 +44,7 @@ import type {
   CampaignDetail,
   CampaignInput,
   CampaignUpdate,
+  CapitalProgress,
   CharacterSheet,
   Coins,
   CompanionIdentity,
@@ -57,6 +59,8 @@ import type {
   DopamineRewardInput,
   ErrorEnvelope,
   FeatActivateResult,
+  FeatBranchChoice,
+  FeatBranchChoiceResult,
   FeatsResponse,
   FinishBodyDoubleSprint200,
   FocusCompleteInput,
@@ -8776,6 +8780,160 @@ export function useGetEncounterCurrent<TData = Awaited<ReturnType<typeof getEnco
 
 
 
+export const getGetCapitalUrl = () => {
+
+
+
+
+  return `/api/capital`
+}
+
+/**
+ * @summary The hero's Capital — a home that visibly grows, with progress to the next tier (Act V)
+ */
+export const getCapital = async ( options?: RequestInit): Promise<CapitalProgress> => {
+
+  return customFetch<CapitalProgress>(getGetCapitalUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCapitalQueryKey = () => {
+    return [
+    `/api/capital`
+    ] as const;
+    }
+
+
+export const getGetCapitalQueryOptions = <TData = Awaited<ReturnType<typeof getCapital>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCapital>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCapitalQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCapital>>> = ({ signal }) => getCapital({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCapital>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCapitalQueryResult = NonNullable<Awaited<ReturnType<typeof getCapital>>>
+export type GetCapitalQueryError = ErrorType<void>
+
+
+/**
+ * @summary The hero's Capital — a home that visibly grows, with progress to the next tier (Act V)
+ */
+
+export function useGetCapital<TData = Awaited<ReturnType<typeof getCapital>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCapital>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCapitalQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetBestiaryUrl = () => {
+
+
+
+
+  return `/api/bestiary`
+}
+
+/**
+ * @summary The player's bestiary — a discovery log completed by felling each roster foe (Act V)
+ */
+export const getBestiary = async ( options?: RequestInit): Promise<Bestiary> => {
+
+  return customFetch<Bestiary>(getGetBestiaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBestiaryQueryKey = () => {
+    return [
+    `/api/bestiary`
+    ] as const;
+    }
+
+
+export const getGetBestiaryQueryOptions = <TData = Awaited<ReturnType<typeof getBestiary>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBestiary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBestiaryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBestiary>>> = ({ signal }) => getBestiary({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBestiary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBestiaryQueryResult = NonNullable<Awaited<ReturnType<typeof getBestiary>>>
+export type GetBestiaryQueryError = ErrorType<void>
+
+
+/**
+ * @summary The player's bestiary — a discovery log completed by felling each roster foe (Act V)
+ */
+
+export function useGetBestiary<TData = Awaited<ReturnType<typeof getBestiary>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBestiary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBestiaryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getGetPartyEncountersUrl = () => {
 
 
@@ -10324,6 +10482,77 @@ export const useActivateFeat = <TError = ErrorType<ErrorEnvelope>,
         TContext
       > => {
       return useMutation(getActivateFeatMutationOptions(options));
+    }
+
+export const getChooseFeatBranchUrl = () => {
+
+
+
+
+  return `/api/users/me/feat-branch`
+}
+
+/**
+ * @summary Choose (or clear) the hero's specialization branch — free respec, anytime (Act V)
+ */
+export const chooseFeatBranch = async (featBranchChoice: FeatBranchChoice, options?: RequestInit): Promise<FeatBranchChoiceResult> => {
+
+  return customFetch<FeatBranchChoiceResult>(getChooseFeatBranchUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      featBranchChoice,)
+  }
+);}
+
+
+
+
+export const getChooseFeatBranchMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof chooseFeatBranch>>, TError,{data: BodyType<FeatBranchChoice>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof chooseFeatBranch>>, TError,{data: BodyType<FeatBranchChoice>}, TContext> => {
+
+const mutationKey = ['chooseFeatBranch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof chooseFeatBranch>>, {data: BodyType<FeatBranchChoice>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  chooseFeatBranch(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChooseFeatBranchMutationResult = NonNullable<Awaited<ReturnType<typeof chooseFeatBranch>>>
+    export type ChooseFeatBranchMutationBody = BodyType<FeatBranchChoice>
+    export type ChooseFeatBranchMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Choose (or clear) the hero's specialization branch — free respec, anytime (Act V)
+ */
+export const useChooseFeatBranch = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof chooseFeatBranch>>, TError,{data: BodyType<FeatBranchChoice>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof chooseFeatBranch>>,
+        TError,
+        {data: BodyType<FeatBranchChoice>},
+        TContext
+      > => {
+      return useMutation(getChooseFeatBranchMutationOptions(options));
     }
 
 export const getGetCalendarHeatmapUrl = (params?: GetCalendarHeatmapParams,) => {

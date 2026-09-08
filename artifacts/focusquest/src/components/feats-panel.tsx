@@ -2,13 +2,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetMyFeats, getGetMyFeatsQueryKey,
   useActivateFeat, getGetMyStatsQueryKey,
-  type FeatView,
+  useChooseFeatBranch,
+  type FeatView, type FeatBranchTree,
 } from "@workspace/api-client-react";
 import { browserTimeZone } from "@/lib/timezone";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Lock } from "lucide-react";
+import { Lock, Check, GitBranch } from "lucide-react";
 
 /** One unlocked feat: emoji, label, description, and — for active feats — a
  *  once-a-day "Use today" button that settles to "Ready tomorrow" after use. */
@@ -57,6 +58,84 @@ function LockedFeat({ feat }: { feat: FeatView }) {
 }
 
 /**
+ * Act V: the specialization tree — a chosen "second calling" that grants a
+ * passive XP bias in another Life Kingdom. FREE RESPEC: pick any branch anytime,
+ * re-choose whenever, nothing ever locked out ("focus, not a cage"). Renders a
+ * calm "opens at Level N" until the tree unlocks.
+ */
+function SpecializationSection({ tree }: { tree: FeatBranchTree }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const choose = useChooseFeatBranch();
+
+  async function pick(branch: string | null) {
+    try {
+      await choose.mutateAsync({ data: { branch } });
+      await qc.invalidateQueries({ queryKey: getGetMyFeatsQueryKey() });
+      toast({
+        title: branch ? "Calling chosen" : "Calling set aside",
+        description: branch ? "Its bias rides your next quests. Change it anytime." : "No specialization for now.",
+      });
+    } catch {
+      toast({ title: "Couldn't set your calling", description: "Please try again.", variant: "destructive" });
+    }
+  }
+
+  return (
+    <div className="space-y-2 pt-1">
+      <div className="flex items-center gap-2">
+        <GitBranch className="h-4 w-4 text-primary" aria-hidden />
+        <p className="text-sm font-semibold">Specialization</p>
+        {!tree.unlocked && (
+          <span className="text-xs text-muted-foreground">Opens at Level {tree.unlockLevel}</span>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Choose a second calling for a +{tree.bonusPct}% XP bias there. Free to change anytime — nothing is ever locked out.
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {tree.branches.map((b) => {
+          const chosen = tree.chosen === b.id;
+          return (
+            <div
+              key={b.id}
+              className={`flex items-start gap-2 rounded-lg border p-3 ${
+                chosen ? "border-primary/50 bg-primary/10" : "border-border bg-card/60"
+              }`}
+            >
+              <span className="text-lg leading-none" aria-hidden>{b.emoji}</span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">{b.label}</p>
+                <p className="text-xs text-muted-foreground">{b.description}</p>
+                {chosen ? (
+                  <button
+                    className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline disabled:opacity-50"
+                    onClick={() => pick(null)}
+                    disabled={choose.isPending}
+                  >
+                    <Check className="h-3 w-3" aria-hidden /> Chosen · set aside
+                  </button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-1.5 h-7"
+                    disabled={!tree.unlocked || choose.isPending}
+                    onClick={() => pick(b.id)}
+                  >
+                    {tree.unlocked ? "Choose" : "Locked"}
+                  </Button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/**
  * Class Feats: the hero's class-specific abilities, unlocked as they level.
  * Sits under the character sheet. Renders nothing until the campaign layer is
  * unlocked (the server returns empty), so it never appears before its time.
@@ -96,6 +175,7 @@ export function FeatsPanel() {
         {data.locked.map((f) => (
           <LockedFeat key={f.id} feat={f} />
         ))}
+        {data.branchTree && <SpecializationSection tree={data.branchTree} />}
       </CardContent>
     </Card>
   );
