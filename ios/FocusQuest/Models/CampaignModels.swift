@@ -120,6 +120,12 @@ struct EncounterHit: Codable {
     /// The Campaign — second wave: the treasure reveal on a fell (gear and/or
     /// bonus coins). Optional so the app decodes before the loot server deploys.
     let loot: LootDrop?
+    /// Act III (Living World): why the foe stands against you, and — on a fell —
+    /// the celebratory defeat beat + how the realm shifts. Optional so the app
+    /// decodes against a pre-deploy server. Anti-shame: only ever a win.
+    let motive: String?
+    let defeatBeat: String?
+    let worldNote: String?
     let encounter: EncounterView
 }
 
@@ -135,6 +141,9 @@ struct LootDrop: Codable {
 struct PersonalEncounterStatus: Codable {
     let name: String
     let tier: Int
+    /// Act III: why the foe stands against you — shown while it lives. Optional
+    /// so the app decodes against a pre-deploy server.
+    let motive: String?
     let encounter: EncounterView
 }
 

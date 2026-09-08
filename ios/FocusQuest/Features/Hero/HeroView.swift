@@ -304,6 +304,10 @@ struct HeroView: View {
                     Text("Tier \(status.tier)").font(.outfitCaption2).fontWeight(.bold).kerning(0.5)
                         .foregroundStyle(.secondary)
                 }
+                if let motive = status.motive, !motive.isEmpty {
+                    Text(motive).font(.outfitCaption).italic().foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
                         Capsule().fill(Color.white.opacity(0.12))
