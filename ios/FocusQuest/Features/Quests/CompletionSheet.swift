@@ -35,6 +35,12 @@ struct CompletionSheet: View {
                     Label("\(hit.name) felled! +\(hit.coins) coins", systemImage: "burst.fill")
                         .font(.outfitSubheadline).foregroundStyle(Theme.gold)
                         .labelStyle(TealIconLabelStyle())
+                    // Act III: the named foe's defeat beat + how the realm shifts.
+                    if let beat = hit.defeatBeat, !beat.isEmpty {
+                        Text([beat, hit.worldNote].compactMap { $0 }.joined(separator: " "))
+                            .font(.outfitCaption).italic().foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
                     // The Campaign — second wave: the treasure reveal.
                     if let loot = hit.loot { lootReveal(loot) }
                 } else {
