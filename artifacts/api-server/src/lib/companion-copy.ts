@@ -64,13 +64,33 @@ const LEVELED_UP = [
   "Level {n}! I always knew you had it in you.",
   "Level {n} — onward, together!",
 ];
+// The companion cheering the roll's high band. Reserved for the rare crit so it
+// stays a genuine spike, never routine.
+const CRIT = [
+  "A critical strike! I'll be retelling that one for weeks. ⚔️",
+  "Now THAT was legendary — nailed it! ✨",
+  "Perfect roll. You made that look easy.",
+];
+// The low band, reframed: affirms the quest is done in full, credits the effort,
+// and never blames. Anti-shame by construction — no "fail", no guilt.
+const FAIL = [
+  "That one dug its heels in — and you finished it anyway. That's the real win.",
+  "A stubborn quest. You saw it through all the same — I'm impressed.",
+  "Tough going, but it's done. Catch your breath, then onward.",
+];
 
 export function companionReactionLine(
-  kind: "bond_tier_up" | "leveled_up",
+  kind: "bond_tier_up" | "leveled_up" | "crit" | "fail",
   args: { userId: number; now: Date; bondTierName?: string; newLevel?: number },
 ): string {
-  if (kind === "bond_tier_up") {
-    return pick(BOND_TIER_UP, args.userId, args.now, "tierup").replace("{tier}", args.bondTierName ?? "closer");
+  switch (kind) {
+    case "bond_tier_up":
+      return pick(BOND_TIER_UP, args.userId, args.now, "tierup").replace("{tier}", args.bondTierName ?? "closer");
+    case "leveled_up":
+      return pick(LEVELED_UP, args.userId, args.now, "levelup").replace("{n}", String(args.newLevel ?? ""));
+    case "crit":
+      return pick(CRIT, args.userId, args.now, "crit");
+    case "fail":
+      return pick(FAIL, args.userId, args.now, "fail");
   }
-  return pick(LEVELED_UP, args.userId, args.now, "levelup").replace("{n}", String(args.newLevel ?? ""));
 }
