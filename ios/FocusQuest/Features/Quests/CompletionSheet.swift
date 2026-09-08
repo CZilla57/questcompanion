@@ -23,6 +23,11 @@ struct CompletionSheet: View {
             // The Campaign — Phase 1: the d20 skill check.
             if let check = result.skillCheck {
                 DiceRollView(check: check)
+                // Act IV: the consumable that rode this roll (boost already in the check).
+                if let used = result.consumableUsed {
+                    Text("\(used.emoji) \(used.name) spent")
+                        .font(.outfitCaption).foregroundStyle(Theme.accent)
+                }
                 if let narration = result.skillCheckNarration {
                     Text(narration).font(.outfitCaption).italic().foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)

@@ -70,7 +70,12 @@ struct SkillCheck: Codable {
     var abilityName: String { ability.prefix(1).uppercased() + ability.dropFirst() }
     var mathText: String {
         let sign = { (n: Int) in n >= 0 ? "+\(n)" : "\(n)" }
-        return "d20 \(d20) \(sign(modifier)) \(sign(proficiency)) = \(total) vs DC \(dc)"
+        // Act IV: a flat consumable bonus (e.g. Focus Draught +3) lands in `total`
+        // but not in modifier/proficiency; surface the residual so the sum reads
+        // correctly. Advantage/reroll alter `d20` itself, so they leave no residual.
+        let bonus = total - d20 - modifier - proficiency
+        let bonusText = bonus != 0 ? " \(sign(bonus))" : ""
+        return "d20 \(d20) \(sign(modifier)) \(sign(proficiency))\(bonusText) = \(total) vs DC \(dc)"
     }
 }
 
