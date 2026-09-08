@@ -5384,7 +5384,7 @@ components:
 
     PartyEncounter:
       type: object
-      required: [partnershipId, foeName, tier, encounter, members]
+      required: [partnershipId, foeName, tier, motive, encounter, members]
       properties:
         partnershipId:
           type: integer
@@ -5396,6 +5396,9 @@ components:
           type: string
         tier:
           type: integer
+        motive:
+          type: string
+          description: Why the shared foe stands against the party (Act III) — shown while it lives.
         encounter:
           $ref: "#/components/schemas/EncounterView"
         members:
@@ -5406,7 +5409,7 @@ components:
 
     PartyEncounterHit:
       type: object
-      required: [partnershipId, foeName, tier, damage, felled, coins, encounter]
+      required: [partnershipId, foeName, tier, damage, felled, coins, motive, defeatBeat, worldNote, encounter]
       properties:
         partnershipId:
           type: integer
@@ -5428,6 +5431,17 @@ components:
             - $ref: "#/components/schemas/LootDrop"
             - type: "null"
           description: This user's treasure reveal on a fell (each contributor rolls their own); null when not felled.
+        motive:
+          type: string
+          description: Why the shared foe stands against the party (Act III) — an external friction, never a member.
+        defeatBeat:
+          type: string
+          nullable: true
+          description: Celebratory defeat line, set only on a fell (null otherwise). Anti-shame — only ever a win.
+        worldNote:
+          type: string
+          nullable: true
+          description: How the realm shifts when the shared foe falls, set only on a fell (null otherwise).
         encounter:
           $ref: "#/components/schemas/EncounterView"
 

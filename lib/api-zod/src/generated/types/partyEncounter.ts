@@ -14,6 +14,8 @@ export interface PartyEncounter {
   partner?: UserSummary | null;
   foeName: string;
   tier: number;
+  /** Why the shared foe stands against the party (Act III) — shown while it lives. */
+  motive: string;
   encounter: EncounterView;
   /** Both members' contributions as teamwork — one entry per member, never a ranking. */
   members: PartyMemberContribution[];

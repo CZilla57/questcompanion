@@ -6,7 +6,7 @@ import {
 } from "@workspace/db";
 import { awardCoins } from "../lib/award-coins";
 import { encounterView, damageForCheck, type EncounterView } from "../lib/encounter";
-import { encounterName, encounterHp, nextTier } from "../lib/encounter-progress";
+import { encounterName, encounterHp, nextTier, foeByName, foeFor } from "../lib/encounter-progress";
 import { partyPower, partyLoot, rollUpContributions } from "../lib/party-encounter";
 import { awardLoot, type LootDrop } from "../lib/gear-rewards";
 import { formatUserSummary } from "./accountability";
@@ -63,6 +63,11 @@ export interface PartyEncounterHit {
   /** THIS user's treasure reveal on a fell (each contributor rolls their own).
    *  null when not felled. */
   loot: LootDrop | null;
+  /** Act III (Living World): why the shared foe stands (always) + its defeat
+   *  beat / world note (fell-only, null otherwise). Anti-shame — only a win. */
+  motive: string;
+  defeatBeat: string | null;
+  worldNote: string | null;
   encounter: EncounterView;
 }
 
@@ -89,6 +94,7 @@ export async function chipPartyEncounters(
 
     const { hit, felledInfo } = await db.transaction(async (tx): Promise<{ hit: PartyEncounterHit; felledInfo: { encId: number; tier: number; contributorIds: number[] } | null }> => {
       const enc = await activePartyEncounter(tx, p.id, combinedPower);
+      const foe = foeByName(enc.name) ?? foeFor(enc.tier);
       const damage = damageForCheck(power, band);
       const newTotal = enc.totalDamage + damage;
       const felled = newTotal >= enc.hp;
@@ -130,6 +136,9 @@ export async function chipPartyEncounters(
           felled,
           coins,
           loot: null,
+          motive: foe.motive,
+          defeatBeat: felled ? foe.defeatBeat : null,
+          worldNote: felled ? foe.worldNote : null,
           encounter: encounterView(enc.hp, newTotal),
         },
         felledInfo: felled ? { encId: enc.id, tier: enc.tier, contributorIds } : null,
@@ -179,11 +188,13 @@ router.get("/party/encounters", async (req, res): Promise<void> => {
     const partnerName = partner ? (partner.displayName ?? partner.username) : "Ally";
     const nameFor = (id: number) => (id === userId ? "You" : partnerName);
 
+    const foe = foeByName(enc.name) ?? foeFor(enc.tier);
     return {
       partnershipId: p.id,
       partner: partner ? formatUserSummary(partner) : null,
       foeName: enc.name,
       tier: enc.tier,
+      motive: foe.motive,
       encounter: encounterView(enc.hp, enc.totalDamage),
       members: rolled.map((r) => ({ userId: r.userId, name: nameFor(r.userId), damage: r.damage })),
     };

@@ -20,5 +20,11 @@ export interface PartyEncounterHit {
   coins: number;
   /** This user's treasure reveal on a fell (each contributor rolls their own); null when not felled. */
   loot?: LootDrop | null;
+  /** Why the shared foe stands against the party (Act III) — an external friction, never a member. */
+  motive: string;
+  /** Celebratory defeat line, set only on a fell (null otherwise). Anti-shame — only ever a win. */
+  defeatBeat: string | null;
+  /** How the realm shifts when the shared foe falls, set only on a fell (null otherwise). */
+  worldNote: string | null;
   encounter: EncounterView;
 }

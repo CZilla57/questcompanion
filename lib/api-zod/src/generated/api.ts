@@ -844,6 +844,9 @@ export const CompleteTaskResponse = zod.object({
 }),zod.null()]).describe('The gear item awarded, or null when no gear dropped.'),
   "bonusCoins": zod.number().describe('Extra coins granted when no gear dropped (0 when gear dropped). Always ≥ 0.')
 }),zod.null()]).optional().describe('This user\'s treasure reveal on a fell (each contributor rolls their own); null when not felled.'),
+  "motive": zod.string().describe('Why the shared foe stands against the party (Act III) — an external friction, never a member.'),
+  "defeatBeat": zod.string().nullable().describe('Celebratory defeat line, set only on a fell (null otherwise). Anti-shame — only ever a win.'),
+  "worldNote": zod.string().nullable().describe('How the realm shifts when the shared foe falls, set only on a fell (null otherwise).'),
   "encounter": zod.object({
   "hp": zod.number(),
   "totalDamage": zod.number(),
@@ -2806,6 +2809,7 @@ export const GetPartyEncountersResponseItem = zod.object({
 }),zod.null()]).optional(),
   "foeName": zod.string(),
   "tier": zod.number(),
+  "motive": zod.string().describe('Why the shared foe stands against the party (Act III) — shown while it lives.'),
   "encounter": zod.object({
   "hp": zod.number(),
   "totalDamage": zod.number(),
