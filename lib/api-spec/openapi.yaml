@@ -2651,6 +2651,21 @@ paths:
         "401":
           description: Unauthorized
 
+  /bestiary:
+    get:
+      operationId: getBestiary
+      summary: The player's bestiary — a discovery log completed by felling each roster foe (Act V)
+      tags: [users]
+      responses:
+        "200":
+          description: The roster crossed with the hero's fell history; unmet foes are withheld silhouettes.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Bestiary"
+        "401":
+          description: Unauthorized
+
   /party/encounters:
     get:
       operationId: getPartyEncounters
@@ -5637,6 +5652,66 @@ components:
         fraction:
           type: number
           description: Progress toward the next tier, 0..1 (1 at max).
+    BestiaryEntry:
+      type: object
+      required: [slot, discovered, active, name, motive, defeatBeat, worldNote, timesFelled, firstFelledAt, lastFelledAt]
+      description: >-
+        One roster slot in the discovery log. A discovered (felled ≥ 1) foe
+        reveals its full copy and counts; the currently-active foe reveals its
+        name/motive but withholds the earned defeat copy until felled; every
+        other slot is a withheld silhouette (all fields null). Anti-shame — an
+        unmet foe is "not yet encountered", never "unbeaten".
+      properties:
+        slot:
+          type: integer
+          description: Stable 0-based roster position, for laying out silhouettes.
+        discovered:
+          type: boolean
+          description: Felled at least once — the entry is collected.
+        active:
+          type: boolean
+          description: This is the hero's current foe.
+        name:
+          type: string
+          nullable: true
+          description: Revealed iff discovered or active; null (silhouette) otherwise.
+        motive:
+          type: string
+          nullable: true
+          description: Revealed iff discovered or active; null otherwise.
+        defeatBeat:
+          type: string
+          nullable: true
+          description: Earned copy — revealed only once felled; null otherwise.
+        worldNote:
+          type: string
+          nullable: true
+          description: Earned copy — revealed only once felled; null otherwise.
+        timesFelled:
+          type: integer
+        firstFelledAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastFelledAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    Bestiary:
+      type: object
+      required: [entries, discoveredCount, total]
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/BestiaryEntry"
+        discoveredCount:
+          type: integer
+          description: How many roster foes the hero has felled at least once.
+        total:
+          type: integer
+          description: Size of the foe roster (the completion target).
 
     PartyEncounterHit:
       type: object

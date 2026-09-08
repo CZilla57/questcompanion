@@ -2819,6 +2819,27 @@ export const GetCapitalResponse = zod.object({
 
 
 /**
+ * @summary The player's bestiary — a discovery log completed by felling each roster foe (Act V)
+ */
+export const GetBestiaryResponse = zod.object({
+  "entries": zod.array(zod.object({
+  "slot": zod.number().describe('Stable 0-based roster position, for laying out silhouettes.'),
+  "discovered": zod.boolean().describe('Felled at least once — the entry is collected.'),
+  "active": zod.boolean().describe('This is the hero\'s current foe.'),
+  "name": zod.string().nullable().describe('Revealed iff discovered or active; null (silhouette) otherwise.'),
+  "motive": zod.string().nullable().describe('Revealed iff discovered or active; null otherwise.'),
+  "defeatBeat": zod.string().nullable().describe('Earned copy — revealed only once felled; null otherwise.'),
+  "worldNote": zod.string().nullable().describe('Earned copy — revealed only once felled; null otherwise.'),
+  "timesFelled": zod.number(),
+  "firstFelledAt": zod.coerce.date().nullable(),
+  "lastFelledAt": zod.coerce.date().nullable()
+}).describe('One roster slot in the discovery log. A discovered (felled ≥ 1) foe reveals its full copy and counts; the currently-active foe reveals its name\/motive but withholds the earned defeat copy until felled; every other slot is a withheld silhouette (all fields null). Anti-shame — an unmet foe is \"not yet encountered\", never \"unbeaten\".')),
+  "discoveredCount": zod.number().describe('How many roster foes the hero has felled at least once.'),
+  "total": zod.number().describe('Size of the foe roster (the completion target).')
+})
+
+
+/**
  * @summary The user's parties and their shared foes (spawns a tier-1 foe on first view)
  */
 export const GetPartyEncountersResponseItem = zod.object({
