@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { Calendar as CalendarIcon, Clock, Plus, Filter, Zap, Info, Sparkles, RefreshCw } from "lucide-react";
 import { Task, useGetTasks, useCreateTask, useUpdateTask, useBreakdownTask, useGetQuestlines, TaskPriority } from "@workspace/api-client-react";
 import { TaskItem } from "@/components/task-item";
+import { RescueSheet } from "@/components/rescue-sheet";
 import { QuickAddBar } from "@/components/quick-add-bar";
 import { OutboxBlock } from "@/components/outbox-block";
 import { TodaysFocus } from "@/components/todays-focus";
@@ -133,6 +134,12 @@ export default function Tasks() {
   const visibleTasks = (tasks ?? []).filter((t) =>
     questlineFilter === "all" ? true : String(t.questlineId ?? "") === questlineFilter,
   );
+
+  // Fail-band rescue offer: a completion whose d20 lands on "fail" offers to
+  // break down the NEXT pending quest (the completed one is done). Hosted here
+  // so the RescueSheet targets a real, still-open task.
+  const [rescueNextOpen, setRescueNextOpen] = useState(false);
+  const nextPendingTask = visibleTasks.find((t) => !t.completed) ?? null;
 
   const createMutation = useCreateTask();
   const updateMutation = useUpdateTask();
@@ -343,7 +350,12 @@ export default function Tasks() {
           ))
         ) : visibleTasks.length > 0 ? (
           visibleTasks.map(task => (
-            <TaskItem key={task.id} task={task} onEdit={handleOpenEdit} />
+            <TaskItem
+              key={task.id}
+              task={task}
+              onEdit={handleOpenEdit}
+              onRescueNext={nextPendingTask ? () => setRescueNextOpen(true) : undefined}
+            />
           ))
         ) : (
           <div className="text-center py-20 border-2 border-dashed border-muted rounded-xl bg-card/50">
@@ -522,6 +534,11 @@ export default function Tasks() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Fail-band rescue offer — breaks down the next pending quest. */}
+      {nextPendingTask && (
+        <RescueSheet task={nextPendingTask} open={rescueNextOpen} onOpenChange={setRescueNextOpen} />
+      )}
 
       {/* Edit dialog (incomplete tasks only) */}
       <Dialog open={!!editTask && !editTask.completed} onOpenChange={(open) => { if (!open) setEditTask(null); }}>
