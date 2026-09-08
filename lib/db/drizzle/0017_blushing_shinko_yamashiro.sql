@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "well_rested_expires_at" timestamp;

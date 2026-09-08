@@ -217,6 +217,18 @@ export type HeroStatusCompanion = {
   disposition: HeroStatusCompanionDisposition;
 };
 
+/**
+ * Act IV "Well-Rested" — earned upside from keeping a good run (advancing the streak). While active, a small flat bonus rides quest-completion rolls. Never a penalty; a broken run simply lets it lapse.
+ */
+export type HeroStatusWellRested = {
+  /** Whether the bonus is currently in effect. */
+  active: boolean;
+  /** When the rested window ends, or null if never earned / lapsed. */
+  expiresAt?: string | null;
+  /** The flat roll bonus granted while active. */
+  bonus: number;
+};
+
 export interface HeroStatus {
   stage: HeroStatusStage;
   /** Short mood line matching the stage */
@@ -226,6 +238,8 @@ export interface HeroStatus {
   activity: HeroStatusActivity;
   /** Living Companion reaction (Act VI) — derived relational beat + bond, plus its name/disposition (Act III) */
   companion: HeroStatusCompanion;
+  /** Act IV "Well-Rested" — earned upside from keeping a good run (advancing the streak). While active, a small flat bonus rides quest-completion rolls. Never a penalty; a broken run simply lets it lapse. */
+  wellRested: HeroStatusWellRested;
 }
 
 export type CompanionUpdateDisposition = typeof CompanionUpdateDisposition[keyof typeof CompanionUpdateDisposition];
@@ -960,6 +974,8 @@ export interface TaskCompletionResult {
   skillCheckNarration?: string | null;
   /** A queued consumable spent on this completion's roll (Act IV), or null. Its boost is already reflected in skillCheck. */
   consumableUsed?: ConsumableUsed | null;
+  /** Whether an Act IV "Well-Rested" bonus rode this roll (earned by keeping a good run). The bonus is already reflected in skillCheck.total. */
+  wellRested?: boolean;
   /** The blow this completion landed on the player's personal encounter. Null when the encounter couldn't be updated (completion still succeeds). */
   encounterHit?: EncounterHit | null;
   /** The blow this completion landed on each shared party foe (one per accepted partnership). Empty when the user has no party or the update couldn't run (completion still succeeds). */

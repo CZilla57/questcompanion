@@ -1,6 +1,6 @@
 import { useGetAvatar, useGetHeroStatus } from "@workspace/api-client-react";
 import { Link } from "wouter";
-import { Swords, ChevronRight } from "lucide-react";
+import { Swords, ChevronRight, Moon } from "lucide-react";
 import { PixelHero } from "@/components/pixel-hero";
 import { HeroVitality } from "@/components/hero-vitality";
 import { heroSpriteEffect, type HungerStage } from "@/lib/hero-vitality";
@@ -82,6 +82,17 @@ export function HeroSummary() {
           <span className="font-bold text-primary tabular-nums text-base">{a.battlePower}</span>
           <span className="text-xs text-muted-foreground">battle power</span>
         </div>
+        {/* Act IV Well-Rested: earned upside from keeping a good run — a small
+            roll bonus. Only shown while active; its absence is never a penalty. */}
+        {heroStatus?.wellRested?.active && (
+          <div
+            className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+            title={`+${heroStatus.wellRested.bonus} to quest rolls while your good run holds`}
+          >
+            <Moon className="w-3 h-3" aria-hidden />
+            Well-Rested +{heroStatus.wellRested.bonus}
+          </div>
+        )}
         <HeroVitality compact />
         <Link
           href="/avatar"
