@@ -8,6 +8,8 @@ final class RewardsViewModel: ObservableObject {
         var dopamine: [DopamineReward]
         var mystery: MysteryStatus?
         var perks: [StatPerk]
+        var consumables: [ConsumableItem]
+        var pendingConsumable: String?
     }
     @Published var state: Loadable<Bundle> = .idle
     @Published var mysteryResult: MysteryResult?
@@ -20,12 +22,16 @@ final class RewardsViewModel: ObservableObject {
             async let dopamine = try? RewardsService.dopamineRewards()
             async let mystery = try? RewardsService.mysteryStatus()
             async let perks = try? RewardsService.statPerks()
+            async let consumables = try? RewardsService.consumables()
+            let consumablesResp = await consumables
             let bundle = Bundle(
                 coins: try await coins.balance,
                 rewards: try await rewards,
                 dopamine: await dopamine ?? [],
                 mystery: await mystery,
-                perks: (await perks)?.perks ?? []
+                perks: (await perks)?.perks ?? [],
+                consumables: consumablesResp?.items ?? [],
+                pendingConsumable: consumablesResp?.pending
             )
             state = .loaded(bundle)
         } catch { state = .failed(error.userMessage) }
@@ -34,6 +40,11 @@ final class RewardsViewModel: ObservableObject {
     func redeem(_ item: RewardStoreItem) async { _ = try? await RewardsService.redeem(id: item.id); await load() }
     func openMystery() async { mysteryResult = try? await RewardsService.openMystery(); await load() }
     func buyPerk(_ perk: StatPerk) async { _ = try? await RewardsService.buyPerk(id: perk.id); await load() }
+    func buyConsumable(_ item: ConsumableItem) async { _ = try? await RewardsService.buyConsumable(id: item.id); await load() }
+    /// Queue a consumable for the next roll, or pass nil to clear the queue.
+    func queueConsumable(_ item: ConsumableItem?) async {
+        _ = try? await RewardsService.activateConsumable(id: item?.id ?? "none"); await load()
+    }
     func addReward(label: String, tier: String) async { _ = try? await RewardsService.addReward(label: label, tier: tier); await load() }
     func deleteReward(_ item: RewardStoreItem) async { try? await RewardsService.deleteReward(id: item.id); await load() }
     func addDopamine(_ text: String) async { _ = try? await RewardsService.addDopamineReward(text: text); await load() }
@@ -311,6 +322,69 @@ struct RewardsView: View {
                                 .buttonStyle(.bordered).tint(Theme.gold)
                                 .disabled(!perk.affordable)
                             }
+                        }
+                    }
+                }
+            }
+
+            consumablesSection(bundle)
+        }
+    }
+
+    // MARK: - Consumables (Act IV: buy a potion, queue one for the next roll)
+
+    @ViewBuilder
+    private func consumablesSection(_ bundle: RewardsViewModel.Bundle) -> some View {
+        if !bundle.consumables.isEmpty {
+            VStack(alignment: .leading, spacing: Theme.Space.md) {
+                Text("Consumables").font(.outfitHeadline)
+                Text("Buy a potion, then queue one to boost your next quest's roll. Upside-only — it can only help.")
+                    .font(.outfitSubheadline).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                ForEach(bundle.consumables) { item in
+                    consumableCard(item, queued: bundle.pendingConsumable == item.id)
+                }
+            }
+        }
+    }
+
+    private func consumableCard(_ item: ConsumableItem, queued: Bool) -> some View {
+        Card {
+            VStack(alignment: .leading, spacing: Theme.Space.sm) {
+                HStack(spacing: Theme.Space.md) {
+                    Text(item.emoji).font(.system(size: 26))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(item.name).font(.outfitSubheadline)
+                        Text(item.description).font(.outfitCaption).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: Theme.Space.sm)
+                    if item.affordable {
+                        Button { Task { await model.buyConsumable(item) } } label: {
+                            Label("\(item.coinCost)", systemImage: "dollarsign.circle.fill")
+                                .labelStyle(TealIconLabelStyle(spacing: 3))
+                        }
+                        .buttonStyle(.bordered).tint(Theme.gold)
+                    } else {
+                        Text("\(item.remaining) to go").font(.outfitCaption).foregroundStyle(.secondary)
+                    }
+                }
+                HStack(spacing: Theme.Space.sm) {
+                    Text("\(item.quantity) held\(queued ? " · queued for next roll" : "")")
+                        .font(.outfitCaption).foregroundStyle(queued ? Theme.success : .secondary)
+                    Spacer(minLength: Theme.Space.sm)
+                    if item.quantity > 0 {
+                        if queued {
+                            Button { Task { await model.queueConsumable(nil) } } label: {
+                                Label("Queued", systemImage: "checkmark.circle.fill")
+                                    .labelStyle(TealIconLabelStyle(spacing: 3))
+                            }
+                            .buttonStyle(.bordered).tint(Theme.success)
+                        } else {
+                            Button { Task { await model.queueConsumable(item) } } label: {
+                                Text("Queue for next roll")
+                            }
+                            .buttonStyle(.bordered).tint(Theme.accent)
                         }
                     }
                 }

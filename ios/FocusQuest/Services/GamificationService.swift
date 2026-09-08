@@ -80,6 +80,21 @@ enum RewardsService {
     static func buyPerk(id: String) async throws -> StatPerkPurchaseResult {
         try await APIClient.shared.post("stat-perks/\(id)/buy")
     }
+
+    // Act IV consumables: buy a potion, then queue ONE to boost the next roll.
+    static func consumables() async throws -> ConsumablesResponse {
+        try await APIClient.shared.get("consumables")
+    }
+
+    static func buyConsumable(id: String) async throws -> ConsumablePurchaseResult {
+        try await APIClient.shared.post("consumables/\(id)/buy")
+    }
+
+    /// Queue a consumable for the next roll, or pass "none" to clear the queue.
+    @discardableResult
+    static func activateConsumable(id: String) async throws -> ConsumableQueue {
+        try await APIClient.shared.post("consumables/\(id)/activate")
+    }
 }
 
 enum HeroService {

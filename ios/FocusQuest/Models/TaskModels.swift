@@ -121,6 +121,17 @@ struct TaskCompletionResult: Codable {
     let skillCheck: SkillCheck?
     let skillCheckNarration: String?
     let encounterHit: EncounterHit?
+    // Act IV: the consumable spent on this completion's roll, if any. Its boost
+    // is already reflected in skillCheck. Optional for pre-deploy decoding.
+    let consumableUsed: ConsumableUsed?
+}
+
+/// A consumable spent on a completion's roll (Act IV). Shown as a small "used
+/// Focus Draught 🧪" note; the boost is already baked into the skill check.
+struct ConsumableUsed: Codable {
+    let id: String
+    let name: String
+    let emoji: String
 }
 
 struct SurpriseReward: Codable {

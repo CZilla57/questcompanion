@@ -103,6 +103,40 @@ struct StatPerkPurchaseResult: Codable {
     let owned: Int?
 }
 
+// MARK: - Consumables (Act IV: Tactics & Stakes)
+
+/// The consumables catalog with the user's owned quantities, coin balance, and
+/// the one item queued to boost the next quest roll (or nil). Upside-only.
+struct ConsumablesResponse: Codable {
+    let balance: Int
+    let pending: String?
+    let items: [ConsumableItem]
+}
+
+struct ConsumableItem: Codable, Identifiable {
+    let id: String
+    let name: String
+    let emoji: String
+    let description: String
+    let coinCost: Int
+    let quantity: Int
+    let affordable: Bool
+    let remaining: Int
+}
+
+struct ConsumablePurchaseResult: Codable {
+    let purchased: Bool
+    let reason: String
+    let balance: Int
+    let quantity: Int?
+    let remaining: Int?
+}
+
+/// The now-queued consumable id, or nil when the queue was cleared.
+struct ConsumableQueue: Codable {
+    let pending: String?
+}
+
 // MARK: - Dopamine menu
 
 struct DopamineReward: Codable, Identifiable {
