@@ -98,12 +98,30 @@ export interface SkillCheck {
 }
 
 /**
+ * A consumable's effect on the next roll (Act IV). Every kind is UPSIDE-ONLY —
+ * it can only raise the d20 or the total, never lower them, so a boost can only
+ * improve the band. Applied deterministically from the seed (see resolveCheck)
+ * so the roll stays stable and cannot be re-rolled by refetching.
+ */
+export type RollBoost =
+  | { kind: "bonus"; amount: number }   // flat + to the total
+  | { kind: "advantage" }               // roll twice, keep the higher die
+  | { kind: "reroll" };                 // if the die is low, reroll and keep the better
+
+/** A roll at or below this face is "low" enough for a Second Wind reroll. */
+export const REROLL_THRESHOLD = 10;
+
+/**
  * Resolve a check. A natural 20 is always a crit (rare, exciting, no DC math)
  * and a natural 1 is always the lowest band (classic auto-miss); otherwise
  * total ≥ DC is a success, a near miss (within PARTIAL_MARGIN of the DC) is a
  * "partial", and a wide miss is a "fail". Crucially, EVERY band still completes
  * the quest in full — "fail" is the roadmap's "fail-with-consequence" reframed
  * to the anti-shame law: the consequence is that we offer help, never a loss.
+ *
+ * An optional `boost` (a spent consumable) only ever helps: advantage/reroll
+ * take the HIGHER of two seeded dice, and bonus adds to the total. All seed-
+ * derived, so the result is still deterministic and un-rerollable.
  */
 export function resolveCheck(args: {
   seed: string;
@@ -111,9 +129,16 @@ export function resolveCheck(args: {
   proficiency: number;
   dc: number;
   ability: AbilityId;
+  boost?: RollBoost;
 }): SkillCheck {
-  const d20 = rollD20(args.seed);
-  const total = d20 + args.modifier + args.proficiency;
+  let d20 = rollD20(args.seed);
+  if (args.boost?.kind === "advantage") {
+    d20 = Math.max(d20, rollD20(args.seed + ":adv"));
+  } else if (args.boost?.kind === "reroll" && d20 <= REROLL_THRESHOLD) {
+    d20 = Math.max(d20, rollD20(args.seed + ":rr"));
+  }
+  const bonus = args.boost?.kind === "bonus" ? args.boost.amount : 0;
+  const total = d20 + args.modifier + args.proficiency + bonus;
   const band: CheckBand =
     d20 === 20 ? "crit"
     : d20 === 1 ? "fail"
@@ -143,6 +168,7 @@ export function resolveTaskCheck(args: {
   proficiency: number;
   category: string;
   difficulty: string;
+  boost?: RollBoost;
 }): SkillCheck {
   const ability = abilityForKingdom(kingdomForCategory(args.category));
   return resolveCheck({
@@ -151,6 +177,7 @@ export function resolveTaskCheck(args: {
     proficiency: args.proficiency,
     dc: dcForDifficulty(args.difficulty),
     ability,
+    boost: args.boost,
   });
 }
 

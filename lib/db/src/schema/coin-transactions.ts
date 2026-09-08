@@ -17,7 +17,8 @@ export type CoinReason =
   | "mystery_bonus"
   | "perk_xp_boost"
   | "perk_focus_boost"
-  | "perk_streak_shield";
+  | "perk_streak_shield"
+  | "consumable_buy";
 
 // Append-only audit ledger. Not surfaced in the UI (v1); exists for integrity,
 // debuggability, and reconstructing the denormalized users.coinBalance.

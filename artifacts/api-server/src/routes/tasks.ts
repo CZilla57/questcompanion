@@ -1,7 +1,7 @@
 import express, { Router, type IRouter } from "express";
-import { eq, and, or, desc, count, inArray, sql } from "drizzle-orm";
+import { eq, and, or, desc, count, inArray, sql, gt } from "drizzle-orm";
 import { applyMultiplier } from "../lib/xp-multiplier";
-import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable, taskStepsTable, questlinesTable, brainCheckinsTable, recurringTasksTable, kingdomPointsTable, focusSessionsTable } from "@workspace/db";
+import { db, usersTable, tasksTable, badgesTable, userBadgesTable, activityTable, userGearTable, taskStepsTable, questlinesTable, brainCheckinsTable, recurringTasksTable, kingdomPointsTable, focusSessionsTable, userConsumablesTable } from "@workspace/db";
 import type { DifficultyLevel, VariantLadder } from "@workspace/db";
 import { getLevelInfo, getPointsToNextLevel, DAILY_BONUS_POINTS } from "../lib/gamification";
 import { newlyUnlocked, effectiveLevel, type FeatureKey } from "../lib/feature-gates";
@@ -35,7 +35,8 @@ import { completionCompanionReaction } from "../lib/companion";
 import { growKingdom } from "../lib/kingdom-growth";
 import { capitalLifetime, capitalTier, type KingdomId } from "../lib/kingdoms";
 import { abilityScores, proficiencyBonus } from "../lib/character-sheet";
-import { resolveTaskCheck, taskCheckSeed, bandEffect, bandNarration, type SkillCheck } from "../lib/roll-engine";
+import { resolveTaskCheck, taskCheckSeed, bandEffect, bandNarration, type SkillCheck, type RollBoost } from "../lib/roll-engine";
+import { consumableById } from "../lib/consumables";
 import { chipPersonalEncounter, type EncounterHit } from "./encounter";
 import { chipPartyEncounters, type PartyEncounterHit } from "./party";
 import { getUserPower } from "./battle";
@@ -64,6 +65,7 @@ async function rollCompletionCheck(
   category: string,
   difficulty: string,
   completionDay: string,
+  boost?: RollBoost,
 ): Promise<SkillCheck> {
   const kingdomRows = await db
     .select({ kingdomId: kingdomPointsTable.kingdomId, lifetimePoints: kingdomPointsTable.lifetimePoints })
@@ -87,7 +89,38 @@ async function rollCompletionCheck(
     proficiency,
     category,
     difficulty,
+    boost,
   });
+}
+
+/**
+ * Act IV: atomically consume the user's queued consumable, if any and owned.
+ * Consume-then-apply (guarded decrement + clear pending in one tx) so a boost is
+ * only granted when a real charge was spent — never a free boost, never a
+ * negative quantity. Returns the spent consumable's boost + def, or null.
+ */
+async function consumeQueuedConsumable(
+  userId: number,
+  pendingId: string | null,
+): Promise<{ boost: RollBoost; def: ReturnType<typeof consumableById> } | null> {
+  if (!pendingId) return null;
+  const def = consumableById(pendingId);
+  if (!def) return null;
+  const spent = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .update(userConsumablesTable)
+      .set({ quantity: sql`${userConsumablesTable.quantity} - 1`, updatedAt: new Date() })
+      .where(and(
+        eq(userConsumablesTable.userId, userId),
+        eq(userConsumablesTable.consumableId, pendingId),
+        gt(userConsumablesTable.quantity, 0),
+      ))
+      .returning({ quantity: userConsumablesTable.quantity });
+    // Always clear the pending flag — used it, or it was stale.
+    await tx.update(usersTable).set({ pendingConsumable: null }).where(eq(usersTable.id, userId));
+    return !!row;
+  });
+  return spent ? { boost: def.boost, def } : null;
 }
 
 // node-postgres reports a unique-constraint violation as SQLSTATE 23505.
@@ -609,6 +642,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
         heroRevived: boolean;
         bondBefore: number;
         companionDisposition: string;
+        pendingConsumable: string | null;
       };
 
   const outcome = await db.transaction(async (tx): Promise<TxOutcome> => {
@@ -792,6 +826,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
       heroRevived,
       bondBefore,
       companionDisposition: user.companionDisposition,
+      pendingConsumable: user.pendingConsumable,
     };
   });
   // ─────────────────────────────────────────────────────────────────────────────
@@ -821,7 +856,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
   }
 
   const { task, boostedBase, pointsToAdd, bonusAwarded, focusBonusAwarded, streakBonus, multiplierLabel, multiplierValue,
-    newTotalPoints, newLevel, leveledUp, unlockedByAward, newStreak, oldStreak, freezeConsumed, heroRevived, bondBefore, companionDisposition } = outcome;
+    newTotalPoints, newLevel, leveledUp, unlockedByAward, newStreak, oldStreak, freezeConsumed, heroRevived, bondBefore, companionDisposition, pendingConsumable } = outcome;
 
   // ─── Post-transaction side effects ───────────────────────────────────────────
   // These run outside the transaction.  Any failure here leaves the user with
@@ -976,8 +1011,14 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
   let skillCheckNarration: string | null = null;
   let encounterHit: EncounterHit | null = null;
   let partyHits: PartyEncounterHit[] = [];
+  let consumableUsed: { id: string; name: string; emoji: string } | null = null;
   try {
-    skillCheck = await rollCompletionCheck(userId, id, task.category, task.difficulty, today!);
+    // Act IV: if a consumable is queued, consume it first (consume-then-apply)
+    // so its upside-only boost rides on THIS roll. A stale flag just yields no
+    // boost. Best-effort — never fails the completion.
+    const consumed = await consumeQueuedConsumable(userId, pendingConsumable);
+    if (consumed?.def) consumableUsed = { id: consumed.def.id, name: consumed.def.name, emoji: consumed.def.emoji };
+    skillCheck = await rollCompletionCheck(userId, id, task.category, task.difficulty, today!, consumed?.boost);
     skillCheckNarration = bandNarration(skillCheck.band, task.title);
     const effect = bandEffect(skillCheck.band);
     if (effect.bonusCoins > 0) {
@@ -1015,6 +1056,7 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     bonusPoints: bonusAwarded ? DAILY_BONUS_POINTS : 0,
     skillCheck,
     skillCheckNarration,
+    consumableUsed,
     encounterHit,
     partyHits,
     streakBonus,

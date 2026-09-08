@@ -47,6 +47,9 @@ import type {
   Coins,
   CompanionIdentity,
   CompanionUpdate,
+  ConsumablePurchaseResult,
+  ConsumableQueue,
+  ConsumablesResponse,
   CreateRescueEvent201,
   DeleteAccountRequest,
   DmBeatResponse,
@@ -9957,6 +9960,223 @@ export const useBuyStatPerk = <TError = ErrorType<ErrorEnvelope>,
         TContext
       > => {
       return useMutation(getBuyStatPerkMutationOptions(options));
+    }
+
+export const getGetConsumablesUrl = () => {
+
+
+
+
+  return `/api/consumables`
+}
+
+/**
+ * @summary Consumables catalog with the user's owned quantities, balance, and queued item (Act IV)
+ */
+export const getConsumables = async ( options?: RequestInit): Promise<ConsumablesResponse> => {
+
+  return customFetch<ConsumablesResponse>(getGetConsumablesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetConsumablesQueryKey = () => {
+    return [
+    `/api/consumables`
+    ] as const;
+    }
+
+
+export const getGetConsumablesQueryOptions = <TData = Awaited<ReturnType<typeof getConsumables>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConsumables>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetConsumablesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getConsumables>>> = ({ signal }) => getConsumables({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getConsumables>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetConsumablesQueryResult = NonNullable<Awaited<ReturnType<typeof getConsumables>>>
+export type GetConsumablesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Consumables catalog with the user's owned quantities, balance, and queued item (Act IV)
+ */
+
+export function useGetConsumables<TData = Awaited<ReturnType<typeof getConsumables>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConsumables>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetConsumablesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getBuyConsumableUrl = (id: 'focus_draught' | 'lucky_clover' | 'second_wind',) => {
+
+
+
+
+  return `/api/consumables/${id}/buy`
+}
+
+/**
+ * @summary Spend coins to buy a consumable (gentle no-op if unaffordable)
+ */
+export const buyConsumable = async (id: 'focus_draught' | 'lucky_clover' | 'second_wind', options?: RequestInit): Promise<ConsumablePurchaseResult> => {
+
+  return customFetch<ConsumablePurchaseResult>(getBuyConsumableUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getBuyConsumableMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyConsumable>>, TError,{id: 'focus_draught' | 'lucky_clover' | 'second_wind'}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof buyConsumable>>, TError,{id: 'focus_draught' | 'lucky_clover' | 'second_wind'}, TContext> => {
+
+const mutationKey = ['buyConsumable'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyConsumable>>, {id: 'focus_draught' | 'lucky_clover' | 'second_wind'}> = (props) => {
+          const {id} = props ?? {};
+
+          return  buyConsumable(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyConsumableMutationResult = NonNullable<Awaited<ReturnType<typeof buyConsumable>>>
+
+    export type BuyConsumableMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Spend coins to buy a consumable (gentle no-op if unaffordable)
+ */
+export const useBuyConsumable = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyConsumable>>, TError,{id: 'focus_draught' | 'lucky_clover' | 'second_wind'}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof buyConsumable>>,
+        TError,
+        {id: 'focus_draught' | 'lucky_clover' | 'second_wind'},
+        TContext
+      > => {
+      return useMutation(getBuyConsumableMutationOptions(options));
+    }
+
+export const getActivateConsumableUrl = (id: 'focus_draught' | 'lucky_clover' | 'second_wind' | 'none',) => {
+
+
+
+
+  return `/api/consumables/${id}/activate`
+}
+
+/**
+ * @summary Queue a consumable for the next roll ("none" clears the queue)
+ */
+export const activateConsumable = async (id: 'focus_draught' | 'lucky_clover' | 'second_wind' | 'none', options?: RequestInit): Promise<ConsumableQueue> => {
+
+  return customFetch<ConsumableQueue>(getActivateConsumableUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getActivateConsumableMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateConsumable>>, TError,{id: 'focus_draught' | 'lucky_clover' | 'second_wind' | 'none'}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof activateConsumable>>, TError,{id: 'focus_draught' | 'lucky_clover' | 'second_wind' | 'none'}, TContext> => {
+
+const mutationKey = ['activateConsumable'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof activateConsumable>>, {id: 'focus_draught' | 'lucky_clover' | 'second_wind' | 'none'}> = (props) => {
+          const {id} = props ?? {};
+
+          return  activateConsumable(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActivateConsumableMutationResult = NonNullable<Awaited<ReturnType<typeof activateConsumable>>>
+
+    export type ActivateConsumableMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Queue a consumable for the next roll ("none" clears the queue)
+ */
+export const useActivateConsumable = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateConsumable>>, TError,{id: 'focus_draught' | 'lucky_clover' | 'second_wind' | 'none'}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof activateConsumable>>,
+        TError,
+        {id: 'focus_draught' | 'lucky_clover' | 'second_wind' | 'none'},
+        TContext
+      > => {
+      return useMutation(getActivateConsumableMutationOptions(options));
     }
 
 export const getGetMyFeatsUrl = () => {

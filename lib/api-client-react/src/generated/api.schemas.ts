@@ -390,6 +390,72 @@ export interface SkillCheck {
   ability: SkillCheckAbility;
 }
 
+export type ConsumableItemId = typeof ConsumableItemId[keyof typeof ConsumableItemId];
+
+
+export const ConsumableItemId = {
+  focus_draught: 'focus_draught',
+  lucky_clover: 'lucky_clover',
+  second_wind: 'second_wind',
+} as const;
+
+export interface ConsumableItem {
+  id: ConsumableItemId;
+  name: string;
+  emoji: string;
+  description: string;
+  /** Coin price to buy one. */
+  coinCost: number;
+  /** How many the user currently owns. */
+  quantity: number;
+  /** Whether the balance covers one purchase. */
+  affordable: boolean;
+  /** Coins still needed to afford one (0 when affordable). Feeds the gentle "N more to go". */
+  remaining: number;
+}
+
+export interface ConsumablesResponse {
+  /** The user's current coin balance. */
+  balance: number;
+  /** The consumable queued to boost the next quest roll, or null. */
+  pending: string | null;
+  items: ConsumableItem[];
+}
+
+export type ConsumablePurchaseResultReason = typeof ConsumablePurchaseResultReason[keyof typeof ConsumablePurchaseResultReason];
+
+
+export const ConsumablePurchaseResultReason = {
+  ok: 'ok',
+  insufficient: 'insufficient',
+} as const;
+
+export interface ConsumablePurchaseResult {
+  /** True when a consumable was bought; false is a gentle no-op, never an error. */
+  purchased: boolean;
+  reason: ConsumablePurchaseResultReason;
+  /** The coin balance after the attempt. */
+  balance: number;
+  /** Owned quantity after a successful buy (present only when purchased). */
+  quantity?: number;
+  /** Coins still needed (present only when the buy was a gentle no-op). */
+  remaining?: number;
+}
+
+export interface ConsumableQueue {
+  /** The now-queued consumable id, or null when the queue was cleared. */
+  pending: string | null;
+}
+
+/**
+ * A consumable spent on a completion's roll; its boost is already reflected in the skillCheck.
+ */
+export interface ConsumableUsed {
+  id: string;
+  name: string;
+  emoji: string;
+}
+
 export interface CharacterSheet {
   abilities: AbilityScore[];
   /** Added to every skill check; derived from the capital tier (+2…+6). */
@@ -892,6 +958,8 @@ export interface TaskCompletionResult {
   skillCheck?: SkillCheck | null;
   /** Anti-shame narration for the check's outcome band; quotes the quest title, never blames. */
   skillCheckNarration?: string | null;
+  /** A queued consumable spent on this completion's roll (Act IV), or null. Its boost is already reflected in skillCheck. */
+  consumableUsed?: ConsumableUsed | null;
   /** The blow this completion landed on the player's personal encounter. Null when the encounter couldn't be updated (completion still succeeds). */
   encounterHit?: EncounterHit | null;
   /** The blow this completion landed on each shared party foe (one per accepted partnership). Empty when the user has no party or the update couldn't run (completion still succeeds). */

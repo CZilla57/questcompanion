@@ -31,3 +31,5 @@ export * from "./kingdom-points";
 export * from "./body-double";
 export * from "./api-tokens";
 export * from "./feat-activations";
+
+export * from "./user-consumables";

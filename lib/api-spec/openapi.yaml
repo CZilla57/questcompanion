@@ -2947,6 +2947,77 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
 
+  /consumables:
+    get:
+      operationId: getConsumables
+      tags: [users]
+      summary: Consumables catalog with the user's owned quantities, balance, and queued item (Act IV)
+      responses:
+        "200":
+          description: Balance, the pending queued consumable, and the catalog with owned quantities
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsumablesResponse"
+
+  /consumables/{id}/buy:
+    post:
+      operationId: buyConsumable
+      tags: [users]
+      summary: Spend coins to buy a consumable (gentle no-op if unaffordable)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [focus_draught, lucky_clover, second_wind]
+      responses:
+        "200":
+          description: Purchase outcome (purchased, or a gentle reason it couldn't buy)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsumablePurchaseResult"
+        "404":
+          description: Unknown consumable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /consumables/{id}/activate:
+    post:
+      operationId: activateConsumable
+      tags: [users]
+      summary: Queue a consumable for the next roll ("none" clears the queue)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [focus_draught, lucky_clover, second_wind, none]
+      responses:
+        "200":
+          description: The now-queued consumable id, or null when cleared
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsumableQueue"
+        "404":
+          description: Unknown consumable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: Not owned yet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
   /users/me/feats:
     get:
       operationId: getMyFeats
@@ -3408,6 +3479,89 @@ components:
           type: string
           enum: [might, intellect, attunement, presence, vigor, finesse]
 
+    ConsumableItem:
+      type: object
+      required: [id, name, emoji, description, coinCost, quantity, affordable, remaining]
+      properties:
+        id:
+          type: string
+          enum: [focus_draught, lucky_clover, second_wind]
+        name:
+          type: string
+        emoji:
+          type: string
+        description:
+          type: string
+        coinCost:
+          type: integer
+          description: Coin price to buy one.
+        quantity:
+          type: integer
+          description: How many the user currently owns.
+        affordable:
+          type: boolean
+          description: Whether the balance covers one purchase.
+        remaining:
+          type: integer
+          description: Coins still needed to afford one (0 when affordable). Feeds the gentle "N more to go".
+
+    ConsumablesResponse:
+      type: object
+      required: [balance, pending, items]
+      properties:
+        balance:
+          type: integer
+          description: The user's current coin balance.
+        pending:
+          type: string
+          nullable: true
+          description: The consumable queued to boost the next quest roll, or null.
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConsumableItem"
+
+    ConsumablePurchaseResult:
+      type: object
+      required: [purchased, reason, balance]
+      properties:
+        purchased:
+          type: boolean
+          description: True when a consumable was bought; false is a gentle no-op, never an error.
+        reason:
+          type: string
+          enum: [ok, insufficient]
+        balance:
+          type: integer
+          description: The coin balance after the attempt.
+        quantity:
+          type: integer
+          description: Owned quantity after a successful buy (present only when purchased).
+        remaining:
+          type: integer
+          description: Coins still needed (present only when the buy was a gentle no-op).
+
+    ConsumableQueue:
+      type: object
+      required: [pending]
+      properties:
+        pending:
+          type: string
+          nullable: true
+          description: The now-queued consumable id, or null when the queue was cleared.
+
+    ConsumableUsed:
+      type: object
+      required: [id, name, emoji]
+      description: A consumable spent on a completion's roll; its boost is already reflected in the skillCheck.
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        emoji:
+          type: string
+
     CharacterSheet:
       type: object
       required: [abilities, proficiencyBonus, heroClass, level, battlePower]
@@ -3678,6 +3832,11 @@ components:
           type: string
           nullable: true
           description: Anti-shame narration for the check's outcome band; quotes the quest title, never blames.
+        consumableUsed:
+          description: A queued consumable spent on this completion's roll (Act IV), or null. Its boost is already reflected in skillCheck.
+          oneOf:
+            - $ref: "#/components/schemas/ConsumableUsed"
+            - type: "null"
         encounterHit:
           description: The blow this completion landed on the player's personal encounter. Null when the encounter couldn't be updated (completion still succeeds).
           oneOf:

@@ -1,7 +1,8 @@
 import { useGetCoins } from "@workspace/api-client-react";
 import { StatPerksSection } from "@/components/stat-perks-section";
+import { ConsumablesSection } from "@/components/consumables-section";
 import { PageTabs } from "@/components/page-tabs";
-import { Coins, Zap } from "lucide-react";
+import { Coins, Zap, FlaskConical } from "lucide-react";
 
 export default function RewardsPerks() {
   const { data: coins } = useGetCoins();
@@ -30,6 +31,18 @@ export default function RewardsPerks() {
       </div>
 
       <StatPerksSection hideHeader />
+
+      {/* Consumables — buy a potion, queue one for your next quest's roll */}
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          <FlaskConical className="w-5 h-5 text-emerald-400" />
+          <h2 className="text-xl font-bold text-foreground">Consumables</h2>
+        </div>
+        <p className="text-muted-foreground leading-relaxed mb-4">
+          Buy a potion, then queue one to boost your next quest's roll. Every boost is upside-only — it can only help.
+        </p>
+        <ConsumablesSection hideHeader />
+      </div>
     </div>
   );
 }

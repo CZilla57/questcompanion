@@ -794,6 +794,11 @@ export const CompleteTaskResponse = zod.object({
   "ability": zod.enum(['might', 'intellect', 'attunement', 'presence', 'vigor', 'finesse'])
 }),zod.null()]).optional().describe('The d20 skill check resolved for this completion. Null when the roll could not be computed (completion still succeeds).'),
   "skillCheckNarration": zod.string().nullish().describe('Anti-shame narration for the check\'s outcome band; quotes the quest title, never blames.'),
+  "consumableUsed": zod.union([zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "emoji": zod.string()
+}).describe('A consumable spent on a completion\'s roll; its boost is already reflected in the skillCheck.'),zod.null()]).optional().describe('A queued consumable spent on this completion\'s roll (Act IV), or null. Its boost is already reflected in skillCheck.'),
   "encounterHit": zod.union([zod.object({
   "name": zod.string().describe('The foe\'s name.'),
   "tier": zod.number(),
@@ -3061,6 +3066,45 @@ export const BuyStatPerkResponse = zod.object({
   "remaining": zod.number().describe('Coins still needed (present on the insufficient no-op)'),
   "expiresAt": zod.coerce.date().nullish().describe('Boost perks — the new active-until after a successful buy'),
   "owned": zod.number().nullish().describe('Shield perk — streak freezes held after a successful buy (or the cap on at_max)')
+})
+
+
+/**
+ * @summary Consumables catalog with the user's owned quantities, balance, and queued item (Act IV)
+ */
+export const GetConsumablesResponse = zod.object({
+  "balance": zod.number().describe('The user\'s current coin balance.'),
+  "pending": zod.string().nullable().describe('The consumable queued to boost the next quest roll, or null.'),
+  "items": zod.array(zod.object({
+  "id": zod.enum(['focus_draught', 'lucky_clover', 'second_wind']),
+  "name": zod.string(),
+  "emoji": zod.string(),
+  "description": zod.string(),
+  "coinCost": zod.number().describe('Coin price to buy one.'),
+  "quantity": zod.number().describe('How many the user currently owns.'),
+  "affordable": zod.boolean().describe('Whether the balance covers one purchase.'),
+  "remaining": zod.number().describe('Coins still needed to afford one (0 when affordable). Feeds the gentle \"N more to go\".')
+}))
+})
+
+
+/**
+ * @summary Spend coins to buy a consumable (gentle no-op if unaffordable)
+ */
+export const BuyConsumableResponse = zod.object({
+  "purchased": zod.boolean().describe('True when a consumable was bought; false is a gentle no-op, never an error.'),
+  "reason": zod.enum(['ok', 'insufficient']),
+  "balance": zod.number().describe('The coin balance after the attempt.'),
+  "quantity": zod.number().optional().describe('Owned quantity after a successful buy (present only when purchased).'),
+  "remaining": zod.number().optional().describe('Coins still needed (present only when the buy was a gentle no-op).')
+})
+
+
+/**
+ * @summary Queue a consumable for the next roll ("none" clears the queue)
+ */
+export const ActivateConsumableResponse = zod.object({
+  "pending": zod.string().nullable().describe('The now-queued consumable id, or null when the queue was cleared.')
 })
 
 
