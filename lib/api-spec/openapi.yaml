@@ -3499,7 +3499,7 @@ components:
 
     AbilityScore:
       type: object
-      required: [id, name, abbreviation, score, modifier, kingdomId, progress]
+      required: [id, name, abbreviation, score, modifier, kingdomId, progress, gearBonus, effectiveScore, effectiveModifier]
       properties:
         id:
           type: string
@@ -3514,6 +3514,15 @@ components:
         modifier:
           type: integer
           description: Classic floor((score - 10) / 2) modifier, the "+N" shown next to the ability.
+        gearBonus:
+          type: integer
+          description: Equipped-gear score bonus for this ability (0 when none). Overlay only; never changes the earned score/modifier.
+        effectiveScore:
+          type: integer
+          description: score + gearBonus. May exceed 20 — gear breaks the natural ceiling.
+        effectiveModifier:
+          type: integer
+          description: floor((effectiveScore - 10) / 2) — the modifier the roll uses.
         kingdomId:
           type: string
           nullable: true
@@ -3525,7 +3534,7 @@ components:
 
     SkillCheck:
       type: object
-      required: [d20, modifier, proficiency, total, dc, band, ability]
+      required: [d20, modifier, proficiency, total, dc, band, ability, gearBonus]
       properties:
         d20:
           type: integer
@@ -3541,6 +3550,9 @@ components:
         dc:
           type: integer
           description: Difficulty class from the task's difficulty rung.
+        gearBonus:
+          type: integer
+          description: Modifier-space contribution from equipped gear, ≥ 0. Already included in total; surfaced so clients can label a "+N gear" term.
         band:
           type: string
           enum: [crit, success, partial, fail]

@@ -235,6 +235,9 @@ export const GetCharacterSheetResponse = zod.object({
   "abbreviation": zod.string(),
   "score": zod.number().describe('Ability score in [8, 20], derived from the source signal.'),
   "modifier": zod.number().describe('Classic floor((score - 10) \/ 2) modifier, the \"+N\" shown next to the ability.'),
+  "gearBonus": zod.number().describe('Equipped-gear score bonus for this ability (0 when none). Overlay only; never changes the earned score\/modifier.'),
+  "effectiveScore": zod.number().describe('score + gearBonus. May exceed 20 — gear breaks the natural ceiling.'),
+  "effectiveModifier": zod.number().describe('floor((effectiveScore - 10) \/ 2) — the modifier the roll uses.'),
   "kingdomId": zod.string().nullable().describe('Source kingdom on the Life Kingdoms map, or null for Finesse, which reads focus discipline rather than a kingdom.'),
   "progress": zod.object({
   "fraction": zod.number().describe('Fill toward the next point, 0..1. 1 once the ability is maxed.'),
@@ -795,6 +798,7 @@ export const CompleteTaskResponse = zod.object({
   "proficiency": zod.number(),
   "total": zod.number().describe('d20 + modifier + proficiency.'),
   "dc": zod.number().describe('Difficulty class from the task\'s difficulty rung.'),
+  "gearBonus": zod.number().describe('Modifier-space contribution from equipped gear, ≥ 0. Already included in total; surfaced so clients can label a \"+N gear\" term.'),
   "band": zod.enum(['crit', 'success', 'partial', 'fail']).describe('Outcome band. The quest completes in full regardless of band — none reduce the reward. crit adds a bonus; partial is a calm near-miss reframe; fail affirms full completion and offers the supportive rescue pathway (a gentler next step), never a penalty or debuff.'),
   "ability": zod.enum(['might', 'intellect', 'attunement', 'presence', 'vigor', 'finesse'])
 }),zod.null()]).optional().describe('The d20 skill check resolved for this completion. Null when the roll could not be computed (completion still succeeds).'),
