@@ -2649,7 +2649,8 @@ export const GetGearStoreResponse = zod.object({
   "owned": zod.boolean(),
   "equipped": zod.boolean(),
   "canAfford": zod.boolean(),
-  "meetsLevel": zod.boolean()
+  "meetsLevel": zod.boolean(),
+  "statMods": zod.record(zod.string(), zod.number()).describe('Per-ability score bonuses granted when equipped (ability id -> bonus). Empty when none.')
 })),
   "coinBalance": zod.number(),
   "userLevel": zod.number()
@@ -2718,7 +2719,8 @@ export const GetInventoryResponse = zod.object({
   "attunable": zod.boolean(),
   "attunementBonus": zod.number(),
   "salvageValue": zod.number(),
-  "acquiredAt": zod.string()
+  "acquiredAt": zod.string(),
+  "statMods": zod.record(zod.string(), zod.number()).describe('Per-ability score bonuses granted when equipped (ability id -> bonus). Empty when none.')
 })),
   "loadout": zod.array(zod.object({
   "slot": zod.enum(['weapon', 'helmet', 'armor', 'boots', 'accessory']),
@@ -2736,7 +2738,8 @@ export const GetInventoryResponse = zod.object({
   "attunable": zod.boolean(),
   "attunementBonus": zod.number(),
   "salvageValue": zod.number(),
-  "acquiredAt": zod.string()
+  "acquiredAt": zod.string(),
+  "statMods": zod.record(zod.string(), zod.number()).describe('Per-ability score bonuses granted when equipped (ability id -> bonus). Empty when none.')
 }).nullable()
 })),
   "equippedCount": zod.number(),

@@ -4979,7 +4979,7 @@ components:
 
     GearStoreItem:
       type: object
-      required: [id, name, description, slot, rarity, statPower, costCoins, levelRequired, icon, owned, equipped, canAfford, meetsLevel]
+      required: [id, name, description, slot, rarity, statPower, costCoins, levelRequired, icon, owned, equipped, canAfford, meetsLevel, statMods]
       properties:
         id:
           type: integer
@@ -5012,6 +5012,11 @@ components:
           type: boolean
         meetsLevel:
           type: boolean
+        statMods:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Per-ability score bonuses granted when equipped (ability id -> bonus). Empty when none.
 
     GearStoreResponse:
       type: object
@@ -5028,7 +5033,7 @@ components:
 
     InventoryItem:
       type: object
-      required: [id, name, description, slot, rarity, statPower, icon, equipped, attuned, attunable, attunementBonus, salvageValue, acquiredAt]
+      required: [id, name, description, slot, rarity, statPower, icon, equipped, attuned, attunable, attunementBonus, salvageValue, acquiredAt, statMods]
       properties:
         id:
           type: integer
@@ -5061,6 +5066,11 @@ components:
           type: integer
         acquiredAt:
           type: string
+        statMods:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Per-ability score bonuses granted when equipped (ability id -> bonus). Empty when none.
 
     InventoryLoadoutSlot:
       type: object

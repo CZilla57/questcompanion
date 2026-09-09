@@ -1947,6 +1947,11 @@ export const GearStoreItemRarity = {
   legendary: 'legendary',
 } as const;
 
+/**
+ * Per-ability score bonuses granted when equipped (ability id -> bonus). Empty when none.
+ */
+export type GearStoreItemStatMods = {[key: string]: number};
+
 export interface GearStoreItem {
   id: number;
   name: string;
@@ -1962,6 +1967,8 @@ export interface GearStoreItem {
   equipped: boolean;
   canAfford: boolean;
   meetsLevel: boolean;
+  /** Per-ability score bonuses granted when equipped (ability id -> bonus). Empty when none. */
+  statMods: GearStoreItemStatMods;
 }
 
 export interface GearStoreResponse {
@@ -1991,6 +1998,11 @@ export const InventoryItemRarity = {
   legendary: 'legendary',
 } as const;
 
+/**
+ * Per-ability score bonuses granted when equipped (ability id -> bonus). Empty when none.
+ */
+export type InventoryItemStatMods = {[key: string]: number};
+
 export interface InventoryItem {
   id: number;
   name: string;
@@ -2006,6 +2018,8 @@ export interface InventoryItem {
   attunementBonus: number;
   salvageValue: number;
   acquiredAt: string;
+  /** Per-ability score bonuses granted when equipped (ability id -> bonus). Empty when none. */
+  statMods: InventoryItemStatMods;
 }
 
 export type InventoryLoadoutSlotSlot = typeof InventoryLoadoutSlotSlot[keyof typeof InventoryLoadoutSlotSlot];
