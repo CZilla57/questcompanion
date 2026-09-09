@@ -359,6 +359,12 @@ export interface AbilityScore {
   score: number;
   /** Classic floor((score - 10) / 2) modifier, the "+N" shown next to the ability. */
   modifier: number;
+  /** Equipped-gear score bonus for this ability (0 when none). Overlay only; never changes the earned score/modifier. */
+  gearBonus: number;
+  /** score + gearBonus. May exceed 20 — gear breaks the natural ceiling. */
+  effectiveScore: number;
+  /** floor((effectiveScore - 10) / 2) — the modifier the roll uses. */
+  effectiveModifier: number;
   /** Source kingdom on the Life Kingdoms map, or null for Finesse, which reads focus discipline rather than a kingdom. */
   kingdomId: string | null;
   progress: AbilityProgress;
@@ -399,6 +405,8 @@ export interface SkillCheck {
   total: number;
   /** Difficulty class from the task's difficulty rung. */
   dc: number;
+  /** Modifier-space contribution from equipped gear, ≥ 0. Already included in total; surfaced so clients can label a "+N gear" term. */
+  gearBonus: number;
   /** Outcome band. The quest completes in full regardless of band — none reduce the reward. crit adds a bonus; partial is a calm near-miss reframe; fail affirms full completion and offers the supportive rescue pathway (a gentler next step), never a penalty or debuff. */
   band: SkillCheckBand;
   ability: SkillCheckAbility;
@@ -1939,6 +1947,11 @@ export const GearStoreItemRarity = {
   legendary: 'legendary',
 } as const;
 
+/**
+ * Per-ability score bonuses granted when equipped (ability id -> bonus). Empty when none.
+ */
+export type GearStoreItemStatMods = {[key: string]: number};
+
 export interface GearStoreItem {
   id: number;
   name: string;
@@ -1954,6 +1967,8 @@ export interface GearStoreItem {
   equipped: boolean;
   canAfford: boolean;
   meetsLevel: boolean;
+  /** Per-ability score bonuses granted when equipped (ability id -> bonus). Empty when none. */
+  statMods: GearStoreItemStatMods;
 }
 
 export interface GearStoreResponse {
@@ -1983,6 +1998,11 @@ export const InventoryItemRarity = {
   legendary: 'legendary',
 } as const;
 
+/**
+ * Per-ability score bonuses granted when equipped (ability id -> bonus). Empty when none.
+ */
+export type InventoryItemStatMods = {[key: string]: number};
+
 export interface InventoryItem {
   id: number;
   name: string;
@@ -1998,6 +2018,8 @@ export interface InventoryItem {
   attunementBonus: number;
   salvageValue: number;
   acquiredAt: string;
+  /** Per-ability score bonuses granted when equipped (ability id -> bonus). Empty when none. */
+  statMods: InventoryItemStatMods;
 }
 
 export type InventoryLoadoutSlotSlot = typeof InventoryLoadoutSlotSlot[keyof typeof InventoryLoadoutSlotSlot];

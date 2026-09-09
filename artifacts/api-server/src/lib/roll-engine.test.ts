@@ -263,3 +263,27 @@ describe("resolveCheck with a RollBoost — upside-only (Act IV consumables)", (
     expect(a).toEqual(b);
   });
 });
+
+describe("resolveCheck — gear bonus (upside-only)", () => {
+  const base = { seed: "task:1:1:2026-09-09", modifier: 1, proficiency: 2, dc: 15, ability: "intellect" as const };
+
+  it("adds a non-negative gearBonus to the total and surfaces it", () => {
+    const without = resolveCheck(base);
+    const with2 = resolveCheck({ ...base, gearBonus: 2 });
+    expect(with2.total).toBe(without.total + 2);
+    expect(with2.gearBonus).toBe(2);
+  });
+
+  it("is byte-identical to the pre-gear roll when gearBonus is absent or 0 (unequip = neutral)", () => {
+    const a = resolveCheck(base);
+    const b = resolveCheck({ ...base, gearBonus: 0 });
+    expect(b).toEqual({ ...a, gearBonus: 0 });
+  });
+
+  it("never lets a negative gearBonus lower the total", () => {
+    const without = resolveCheck(base);
+    const neg = resolveCheck({ ...base, gearBonus: -5 });
+    expect(neg.total).toBe(without.total);
+    expect(neg.gearBonus).toBe(0);
+  });
+});

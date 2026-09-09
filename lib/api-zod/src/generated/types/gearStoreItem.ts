@@ -7,6 +7,7 @@
  */
 import type { GearStoreItemRarity } from './gearStoreItemRarity';
 import type { GearStoreItemSlot } from './gearStoreItemSlot';
+import type { GearStoreItemStatMods } from './gearStoreItemStatMods';
 
 export interface GearStoreItem {
   id: number;
@@ -23,4 +24,6 @@ export interface GearStoreItem {
   equipped: boolean;
   canAfford: boolean;
   meetsLevel: boolean;
+  /** Per-ability score bonuses granted when equipped (ability id -> bonus). Empty when none. */
+  statMods: GearStoreItemStatMods;
 }

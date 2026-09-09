@@ -18,6 +18,8 @@ export interface SkillCheck {
   total: number;
   /** Difficulty class from the task's difficulty rung. */
   dc: number;
+  /** Modifier-space contribution from equipped gear, ≥ 0. Already included in total; surfaced so clients can label a "+N gear" term. */
+  gearBonus: number;
   /** Outcome band. The quest completes in full regardless of band — none reduce the reward. crit adds a bonus; partial is a calm near-miss reframe; fail affirms full completion and offers the supportive rescue pathway (a gentler next step), never a penalty or debuff. */
   band: SkillCheckBand;
   ability: SkillCheckAbility;

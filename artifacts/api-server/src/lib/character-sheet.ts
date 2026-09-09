@@ -16,6 +16,7 @@ import {
   capitalTier,
   capitalLifetime,
 } from "./kingdoms";
+import type { AbilityMods } from "./gear-mods";
 
 /** The six abilities. App-flavored names; the classic D&D ability each stands in
  *  for is noted so the modifier math reads as expected to a tabletop player. */
@@ -183,6 +184,13 @@ export interface AbilityScore {
   abbreviation: string;
   score: number;
   modifier: number;
+  /** Equipped-gear score bonus for this ability (0 when none). Overlay only —
+   *  never changes `score`/`modifier`, which stay the earned, monotonic values. */
+  gearBonus: number;
+  /** score + gearBonus. May exceed 20 (gear breaks the natural ceiling). */
+  effectiveScore: number;
+  /** floor((effectiveScore - 10) / 2) — the modifier the roll actually uses. */
+  effectiveModifier: number;
   /** Source kingdom (null for finesse) — lets a client link the score to its
    *  place on the Kingdom map. */
   kingdomId: KingdomId | null;
@@ -200,6 +208,7 @@ export interface FocusDiscipline {
 export function abilityScores(args: {
   lifetimeByKingdom: Partial<Record<KingdomId, number>>;
   focus: FocusDiscipline;
+  gearMods?: AbilityMods;
 }): AbilityScore[] {
   return ABILITIES.map((meta) => {
     const value = meta.kingdomId
@@ -207,12 +216,17 @@ export function abilityScores(args: {
       : args.focus.completedIntervals;
     const score = meta.kingdomId ? scoreForKingdomPoints(value) : scoreForFocus(value);
     const progress = stepProgress(value, meta.kingdomId ? KINGDOM_LADDER : FOCUS_LADDER);
+    const gearBonus = Math.max(0, args.gearMods?.[meta.id] ?? 0);
+    const effectiveScore = score + gearBonus;
     return {
       id: meta.id,
       name: meta.name,
       abbreviation: meta.abbreviation,
       score,
       modifier: abilityModifier(score),
+      gearBonus,
+      effectiveScore,
+      effectiveModifier: abilityModifier(effectiveScore),
       kingdomId: meta.kingdomId,
       progress,
     };
@@ -254,10 +268,11 @@ export function characterSheet(args: {
   heroClass: string;
   level: number;
   battlePower: number;
+  gearMods?: AbilityMods;
 }): CharacterSheet {
   const capitalPoints = capitalLifetime(args.lifetimeByKingdom);
   return {
-    abilities: abilityScores({ lifetimeByKingdom: args.lifetimeByKingdom, focus: args.focus }),
+    abilities: abilityScores({ lifetimeByKingdom: args.lifetimeByKingdom, focus: args.focus, gearMods: args.gearMods }),
     proficiencyBonus: proficiencyBonus(capitalTier(capitalPoints).tier),
     heroClass: args.heroClass,
     level: args.level,

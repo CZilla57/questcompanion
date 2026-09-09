@@ -95,6 +95,9 @@ export interface SkillCheck {
   band: CheckBand;
   /** Which ability was rolled (for "Might check" style display). */
   ability: AbilityId;
+  /** Modifier-space contribution from equipped gear's stat mods, ≥ 0. Already
+   *  included in `total`; surfaced so a client can label a "+N gear" term. */
+  gearBonus: number;
 }
 
 /**
@@ -135,6 +138,7 @@ export function resolveCheck(args: {
   ability: AbilityId;
   boost?: RollBoost;
   restedBonus?: number;
+  gearBonus?: number;
 }): SkillCheck {
   let d20 = rollD20(args.seed);
   if (args.boost?.kind === "advantage") {
@@ -142,10 +146,11 @@ export function resolveCheck(args: {
   } else if (args.boost?.kind === "reroll" && d20 <= REROLL_THRESHOLD) {
     d20 = Math.max(d20, rollD20(args.seed + ":rr"));
   }
-  // Both upside channels are additive and clamped non-negative, so a boost or a
-  // Well-Rested bonus can only ever raise the total.
+  // All upside channels are additive and clamped non-negative, so a boost, a
+  // Well-Rested bonus, or equipped gear can only ever raise the total.
   const boostBonus = args.boost?.kind === "bonus" ? args.boost.amount : 0;
-  const bonus = Math.max(0, boostBonus) + Math.max(0, args.restedBonus ?? 0);
+  const gearBonus = Math.max(0, args.gearBonus ?? 0);
+  const bonus = Math.max(0, boostBonus) + Math.max(0, args.restedBonus ?? 0) + gearBonus;
   const total = d20 + args.modifier + args.proficiency + bonus;
   const band: CheckBand =
     d20 === 20 ? "crit"
@@ -161,6 +166,7 @@ export function resolveCheck(args: {
     dc: args.dc,
     band,
     ability: args.ability,
+    gearBonus,
   };
 }
 
@@ -178,6 +184,7 @@ export function resolveTaskCheck(args: {
   difficulty: string;
   boost?: RollBoost;
   restedBonus?: number;
+  gearBonus?: number;
 }): SkillCheck {
   const ability = abilityForKingdom(kingdomForCategory(args.category));
   return resolveCheck({
@@ -188,6 +195,7 @@ export function resolveTaskCheck(args: {
     ability,
     boost: args.boost,
     restedBonus: args.restedBonus,
+    gearBonus: args.gearBonus,
   });
 }
 

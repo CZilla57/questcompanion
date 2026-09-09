@@ -33,9 +33,11 @@ import { isQuestlineAssignable } from "../lib/questlines";
 import { hungerStage } from "../lib/hero-care";
 import { completionCompanionReaction } from "../lib/companion";
 import { growKingdom } from "../lib/kingdom-growth";
-import { capitalLifetime, capitalTier, type KingdomId } from "../lib/kingdoms";
-import { abilityScores, proficiencyBonus } from "../lib/character-sheet";
+import { capitalLifetime, capitalTier, kingdomForCategory, type KingdomId } from "../lib/kingdoms";
+import { abilityScores, proficiencyBonus, abilityForKingdom } from "../lib/character-sheet";
 import { resolveTaskCheck, taskCheckSeed, bandEffect, bandNarration, type SkillCheck, type RollBoost } from "../lib/roll-engine";
+import { readEquippedGear } from "../lib/equipped-gear";
+import { equippedAbilityMods, gearModifierFor } from "../lib/gear-mods";
 import { consumableById } from "../lib/consumables";
 import { wellRestedBonus, wellRestedExpiry, shouldGrantWellRested, WELL_RESTED_BONUS } from "../lib/well-rested";
 import { chipPersonalEncounter, type EncounterHit } from "./encounter";
@@ -68,6 +70,7 @@ async function rollCompletionCheck(
   completionDay: string,
   boost?: RollBoost,
   restedBonus?: number,
+  gearBonus?: number,
 ): Promise<SkillCheck> {
   const kingdomRows = await db
     .select({ kingdomId: kingdomPointsTable.kingdomId, lifetimePoints: kingdomPointsTable.lifetimePoints })
@@ -93,6 +96,7 @@ async function rollCompletionCheck(
     difficulty,
     boost,
     restedBonus,
+    gearBonus,
   });
 }
 
@@ -1041,7 +1045,11 @@ router.post("/tasks/:id/complete", async (req, res): Promise<void> => {
     // the completion rested (earned by a prior good run). Composes with any
     // consumable boost; both are upside-only.
     const restedBonus = wellRestedActive ? WELL_RESTED_BONUS : 0;
-    skillCheck = await rollCompletionCheck(userId, id, task.category, task.difficulty, today!, consumed?.boost, restedBonus);
+    const equippedGear = await readEquippedGear(userId);
+    const gearMods = equippedAbilityMods(equippedGear);
+    const taskAbility = abilityForKingdom(kingdomForCategory(task.category));
+    const gearBonus = gearModifierFor(gearMods, taskAbility);
+    skillCheck = await rollCompletionCheck(userId, id, task.category, task.difficulty, today!, consumed?.boost, restedBonus, gearBonus);
     skillCheckNarration = bandNarration(skillCheck.band, task.title);
     const effect = bandEffect(skillCheck.band);
     if (effect.bonusCoins > 0) {

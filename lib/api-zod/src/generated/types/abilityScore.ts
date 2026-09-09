@@ -16,6 +16,12 @@ export interface AbilityScore {
   score: number;
   /** Classic floor((score - 10) / 2) modifier, the "+N" shown next to the ability. */
   modifier: number;
+  /** Equipped-gear score bonus for this ability (0 when none). Overlay only; never changes the earned score/modifier. */
+  gearBonus: number;
+  /** score + gearBonus. May exceed 20 — gear breaks the natural ceiling. */
+  effectiveScore: number;
+  /** floor((effectiveScore - 10) / 2) — the modifier the roll uses. */
+  effectiveModifier: number;
   /** Source kingdom on the Life Kingdoms map, or null for Finesse, which reads focus discipline rather than a kingdom. */
   kingdomId: string | null;
   progress: AbilityProgress;

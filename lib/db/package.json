@@ -12,7 +12,8 @@
   "scripts": {
     "generate": "drizzle-kit generate --config ./drizzle.config.ts",
     "migrate": "tsx ./src/migrate-cli.ts",
-    "check": "drizzle-kit check --config ./drizzle.config.ts"
+    "check": "drizzle-kit check --config ./drizzle.config.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "drizzle-orm": "catalog:",
@@ -24,6 +25,7 @@
     "@types/node": "catalog:",
     "@types/pg": "^8.20.0",
     "drizzle-kit": "^0.31.10",
-    "tsx": "catalog:"
+    "tsx": "catalog:",
+    "vitest": "^2.1.9"
   }
 }

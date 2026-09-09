@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
-import { db, usersTable, gearItemsTable, userGearTable, weeklyBattlesTable, activityTable } from "@workspace/db";
+import { db, usersTable, weeklyBattlesTable, activityTable } from "@workspace/db";
 import { getLevelInfo } from "../lib/gamification";
 import { calcBattlePower } from "./avatar";
 import { gearPower } from "../lib/attunement";
@@ -8,6 +8,7 @@ import { awardCoins } from "../lib/award-coins";
 import { COIN_EARN } from "../lib/coins";
 import { getWeekKey } from "../lib/week-key";
 import { getBossPower } from "../lib/solo-boss";
+import { readEquippedGear } from "../lib/equipped-gear";
 
 const router: IRouter = Router();
 
@@ -18,16 +19,12 @@ export async function getUserPower(userId: number): Promise<number> {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   if (!user) return 0;
 
-  const equipped = await db
-    .select({ gear: gearItemsTable, userGear: userGearTable })
-    .from(userGearTable)
-    .innerJoin(gearItemsTable, eq(userGearTable.gearItemId, gearItemsTable.id))
-    .where(and(eq(userGearTable.userId, userId), eq(userGearTable.equipped, true)));
+  const equipped = await readEquippedGear(userId);
 
   const power = gearPower(equipped.map(g => ({
-    statPower: g.gear.statPower,
-    rarity: g.gear.rarity,
-    attuned: g.userGear.attuned,
+    statPower: g.statPower,
+    rarity: g.rarity,
+    attuned: g.attuned,
   })));
   const level = getLevelInfo(user.totalPoints).level;
   return calcBattlePower(level, power);
