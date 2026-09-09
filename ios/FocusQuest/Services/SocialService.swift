@@ -49,12 +49,15 @@ enum SocialService {
 
     // MARK: - Body double
 
+    private struct OpenRoomsEnvelope: Decodable { let rooms: [BodyDoubleOpenRoom] }
+
     static func openRooms() async throws -> [BodyDoubleOpenRoom] {
-        try await APIClient.shared.get("body-double/rooms")
+        let env: OpenRoomsEnvelope = try await APIClient.shared.get("body-double/rooms/open")
+        return env.rooms
     }
 
     static func openRoom() async throws -> BodyDoubleRoomState {
-        try await APIClient.shared.post("body-double/rooms/open")
+        try await APIClient.shared.post("body-double/rooms")
     }
 
     static func room(id: Int) async throws -> BodyDoubleRoomState {
