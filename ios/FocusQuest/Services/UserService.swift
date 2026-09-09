@@ -42,6 +42,15 @@ enum UserService {
         try await APIClient.shared.get("users/me/character-sheet")
     }
 
+    // Act V: the bestiary (discovery log) and the capital (a home that grows).
+    static func bestiary() async throws -> Bestiary {
+        try await APIClient.shared.get("bestiary")
+    }
+
+    static func capital() async throws -> CapitalProgress {
+        try await APIClient.shared.get("capital")
+    }
+
     static func currentEncounter() async throws -> PersonalEncounterStatus {
         try await APIClient.shared.get("encounter/current")
     }

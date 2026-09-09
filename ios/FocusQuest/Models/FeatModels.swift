@@ -35,6 +35,41 @@ struct Feat: Codable, Identifiable {
 struct FeatsResponse: Codable {
     let unlocked: [Feat]
     let locked: [Feat]
+    // Act V: the specialization tree (free respec). Optional so the app decodes
+    // against a server that hasn't deployed it yet.
+    let branchTree: FeatBranchTree?
+}
+
+// MARK: - Act V: the branching specialization (free respec)
+
+/// One branch — a "second calling" granting a passive XP bias in a Life Kingdom.
+struct FeatBranch: Codable, Identifiable {
+    let id: String
+    let label: String
+    let emoji: String
+    let description: String
+    let kingdom: String
+    let kingdomName: String
+}
+
+/// The hero's specialization tree. FREE RESPEC — `chosen` can change anytime;
+/// nothing is ever locked out.
+struct FeatBranchTree: Codable {
+    let unlocked: Bool
+    let unlockLevel: Int
+    let chosen: String?
+    let bonusPct: Int
+    let branches: [FeatBranch]
+}
+
+/// POST /users/me/feat-branch body — `branch` id, or null to clear.
+struct FeatBranchChoiceInput: Encodable {
+    let branch: String?
+}
+
+struct FeatBranchChoiceResult: Codable {
+    let chosen: String?
+    let reason: String
 }
 
 /// POST /users/me/feats/:id/activate — `activated` is false with a gentle reason

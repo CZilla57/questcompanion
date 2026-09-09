@@ -12,4 +12,11 @@ enum FeatService {
         try await APIClient.shared.post(
             "users/me/feats/\(id)/activate", body: FeatActivateInput(tz: TZ.identifier))
     }
+
+    // Act V: choose (or clear) the specialization branch — free respec, anytime.
+    @discardableResult
+    static func chooseBranch(_ id: String?) async throws -> FeatBranchChoiceResult {
+        try await APIClient.shared.post(
+            "users/me/feat-branch", body: FeatBranchChoiceInput(branch: id))
+    }
 }

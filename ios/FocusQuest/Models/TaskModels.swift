@@ -127,6 +127,9 @@ struct TaskCompletionResult: Codable {
     // Act IV: the consumable spent on this completion's roll, if any. Its boost
     // is already reflected in skillCheck. Optional for pre-deploy decoding.
     let consumableUsed: ConsumableUsed?
+    // Act IV "Well-Rested": whether a rested bonus rode this roll (already in
+    // skillCheck.total). Optional/absent for pre-deploy.
+    let wellRested: Bool?
 }
 
 /// A consumable spent on a completion's roll (Act IV). Shown as a small "used

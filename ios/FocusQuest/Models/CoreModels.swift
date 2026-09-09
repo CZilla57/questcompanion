@@ -102,6 +102,15 @@ struct HeroStatus: Codable {
     let lastFedAt: String
     let activity: Activity
     let companion: Companion
+    // Act IV "Well-Rested": earned upside from keeping a good run — a small roll
+    // bonus while active. Optional so the app decodes against a pre-deploy server.
+    let wellRested: WellRested?
+
+    struct WellRested: Codable {
+        let active: Bool
+        let expiresAt: String?
+        let bonus: Int
+    }
 
     struct Activity: Codable {
         let id: String
