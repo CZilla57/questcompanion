@@ -68,7 +68,7 @@ final class QuestsViewModel: ObservableObject {
                 // Drop this quest's nudge promptly on complete; the refresh below
                 // still reconciles the uncomplete→re-add case.
                 QuestNudgeScheduler.cancel(questId: quest.id)
-                if result.leveledUp || !result.newBadges.isEmpty { completion = result }
+                if result.shouldCelebrate { completion = result }
             }
             await load()
             await QuestNudgeScheduler.refresh()
