@@ -36,9 +36,27 @@ struct AbilityScore: Codable, Identifiable {
     /// Fill toward the next ability point (Act I). Optional — decodes against a
     /// server that hasn't deployed it yet.
     let progress: AbilityProgress?
+    /// Flat bonus from equipped gear's stat_mods. Optional — decodes against a
+    /// server that hasn't deployed the gear overlay yet.
+    let gearBonus: Int?
+    /// Score including gear bonus. Optional — see gearBonus.
+    let effectiveScore: Int?
+    /// Modifier derived from effectiveScore. Optional — see gearBonus.
+    let effectiveModifier: Int?
 
     /// Signed modifier for display: +3, +0, -1.
     var modifierText: String { modifier >= 0 ? "+\(modifier)" : "\(modifier)" }
+
+    /// Effective score including gear bonus, falling back to the base score
+    /// against a server that hasn't deployed the gear overlay yet.
+    var effScore: Int { effectiveScore ?? score }
+    /// Effective modifier including gear bonus, falling back to the base
+    /// modifier against a server that hasn't deployed the gear overlay yet.
+    var effModifier: Int { effectiveModifier ?? modifier }
+    /// Flat gear bonus, or 0 against a server that hasn't deployed it yet.
+    var gearBonusValue: Int { gearBonus ?? 0 }
+    /// Signed effective modifier for display: +3, +0, -1.
+    var effectiveModifierText: String { effModifier >= 0 ? "+\(effModifier)" : "\(effModifier)" }
 }
 
 struct CharacterSheet: Codable {

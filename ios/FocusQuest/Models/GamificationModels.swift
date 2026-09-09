@@ -171,6 +171,9 @@ struct GearStoreItem: Codable, Identifiable {
     let equipped: Bool
     let canAfford: Bool
     let meetsLevel: Bool
+    // Ability-score bonuses this gear grants (ability id -> flat bonus).
+    // Optional so the app still decodes against a pre-stat_mods server.
+    let statMods: [String: Int]?
 }
 
 struct BuyGearResult: Codable {
@@ -210,12 +213,40 @@ struct InventoryItem: Codable, Identifiable {
     let attuned: Bool?
     let attunable: Bool?
     let attunementBonus: Int?
+    // Ability-score bonuses this gear grants (ability id -> flat bonus).
+    // Optional so the app still decodes against a pre-stat_mods server.
+    let statMods: [String: Int]?
 }
 
 struct InventoryLoadoutSlot: Codable, Identifiable {
     let slot: String
     let item: InventoryItem?
     var id: String { slot }
+}
+
+/// Uppercased 3-letter abbreviation for an ability id (might, intellect,
+/// attunement, presence, vigor, finesse) — for compact gear-card badges when
+/// the item only carries the raw id.
+func abilityAbbreviation(_ id: String) -> String { String(id.prefix(3)).uppercased() }
+
+extension GearStoreItem {
+    /// "+N ABB" badge for this item's largest stat_mods entry, or nil when the
+    /// item grants no ability bonus (or predates the gear overlay).
+    var abilityBadgeText: String? {
+        guard let mods = statMods, !mods.isEmpty,
+              let top = mods.max(by: { $0.value < $1.value }) else { return nil }
+        return "+\(top.value) \(abilityAbbreviation(top.key))"
+    }
+}
+
+extension InventoryItem {
+    /// "+N ABB" badge for this item's largest stat_mods entry, or nil when the
+    /// item grants no ability bonus (or predates the gear overlay).
+    var abilityBadgeText: String? {
+        guard let mods = statMods, !mods.isEmpty,
+              let top = mods.max(by: { $0.value < $1.value }) else { return nil }
+        return "+\(top.value) \(abilityAbbreviation(top.key))"
+    }
 }
 
 struct InventoryResponse: Codable {

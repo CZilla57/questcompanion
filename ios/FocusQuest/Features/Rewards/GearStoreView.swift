@@ -36,8 +36,13 @@ struct GearStoreView: View {
                             .foregroundStyle(Theme.accent).frame(width: 28)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.name).font(.outfitSubheadline)
-                            Text("\(item.slot.capitalized) · \(item.rarity.capitalized) · +\(item.statPower)")
-                                .font(.outfitCaption).foregroundStyle(.secondary)
+                            HStack(spacing: 4) {
+                                Text("\(item.slot.capitalized) · \(item.rarity.capitalized) · +\(item.statPower)")
+                                    .font(.outfitCaption).foregroundStyle(.secondary)
+                                if let badge = item.abilityBadgeText {
+                                    Text(badge).font(.outfitCaption2).foregroundStyle(Theme.accent)
+                                }
+                            }
                             if !item.meetsLevel { Text("Needs level \(item.levelRequired)").font(.outfitCaption2).foregroundStyle(Theme.danger) }
                         }
                         Spacer()

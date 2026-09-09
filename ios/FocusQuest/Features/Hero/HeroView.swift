@@ -211,8 +211,12 @@ struct HeroView: View {
                             Text(ability.name.uppercased())
                                 .font(.outfitCaption2).kerning(0.5).foregroundStyle(.secondary)
                                 .lineLimit(1).minimumScaleFactor(0.8)
-                            Text("\(ability.score)").font(.outfitTitle2Bold)
-                            Text(ability.modifierText).font(.outfitCaption).foregroundStyle(Theme.accent)
+                            Text("\(ability.effScore)").font(.outfitTitle2Bold)
+                            Text(ability.effectiveModifierText).font(.outfitCaption).foregroundStyle(Theme.accent)
+                            if ability.gearBonusValue > 0 {
+                                Text("+\(ability.gearBonusValue) gear")
+                                    .font(.outfitCaption2).foregroundStyle(Theme.accent)
+                            }
                             if let progress = ability.progress {
                                 AbilityProgressBar(progress: progress)
                                     .padding(.top, 3)
@@ -236,7 +240,10 @@ struct HeroView: View {
     /// Reads the score, modifier, and (when present) how close the next quest in
     /// this area is to the next point — spoken, never a bare number.
     private func abilityAccessibilityLabel(_ ability: AbilityScore) -> String {
-        var label = "\(ability.name) \(ability.score), modifier \(ability.modifierText)"
+        var label = "\(ability.name) \(ability.effScore), modifier \(ability.effectiveModifierText)"
+        if ability.gearBonusValue > 0 {
+            label += ", +\(ability.gearBonusValue) from gear"
+        }
         if let p = ability.progress {
             if p.atMax {
                 label += ", at its peak"
