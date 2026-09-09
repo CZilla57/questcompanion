@@ -139,9 +139,7 @@ final class TodayViewModel: ObservableObject {
             } else {
                 let result = try await QuestService.complete(id: quest.id)
                 replace(result.task)
-                if result.leveledUp || !result.newBadges.isEmpty || result.pointsAwarded > 0 {
-                    completion = result
-                }
+                if result.shouldCelebrate { completion = result }
                 await load()
             }
         } catch {

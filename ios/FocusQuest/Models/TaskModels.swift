@@ -130,6 +130,16 @@ struct TaskCompletionResult: Codable {
     // Act IV "Well-Rested": whether a rested bonus rode this roll (already in
     // skillCheck.total). Optional/absent for pre-deploy.
     let wellRested: Bool?
+
+    /// Whether this completion is worth presenting the CompletionSheet (the d20
+    /// roll, rewards, level-up, badges). The server rolls a skill check on every
+    /// completion regardless of the quest's day, so a normal completion — any XP
+    /// awarded, or a roll to reveal — is celebration-worthy, not just a level-up
+    /// or badge. Shared so the Today and Quests tabs can't drift apart: without
+    /// it, completing a past-day quest from the Quests tab skipped the dice.
+    var shouldCelebrate: Bool {
+        leveledUp || !newBadges.isEmpty || pointsAwarded > 0 || skillCheck != nil
+    }
 }
 
 /// A consumable spent on a completion's roll (Act IV). Shown as a small "used
