@@ -133,6 +133,9 @@ struct InventoryView: View {
                         Text("+\(item.attunementBonus ?? 0)")
                             .font(.outfitCaption).foregroundStyle(Color(h: 271, s: 0.91, l: 0.72))
                     }
+                    if let badge = item.abilityBadgeText {
+                        Text(badge).font(.outfitCaption2).foregroundStyle(Theme.accent)
+                    }
                 }
             }
             Spacer()
