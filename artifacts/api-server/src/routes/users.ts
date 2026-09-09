@@ -15,6 +15,8 @@ import {
 } from "../lib/kingdoms";
 import { unlockedFeatures } from "../lib/feature-gates";
 import { characterSheet } from "../lib/character-sheet";
+import { readEquippedGear } from "../lib/equipped-gear";
+import { equippedAbilityMods } from "../lib/gear-mods";
 import { buildHeroLook } from "./avatar";
 import { decideRename, isUniqueViolation, renameAvailableAt } from "../lib/rename";
 
@@ -343,12 +345,15 @@ router.get("/users/me/character-sheet", async (req, res): Promise<void> => {
   const hero = await buildHeroLook(userId);
   if (!hero) { res.status(404).json({ error: "User not found" }); return; }
 
+  const gearMods = equippedAbilityMods(await readEquippedGear(userId));
+
   res.json(characterSheet({
     lifetimeByKingdom,
     focus: { completedIntervals },
     heroClass: hero.avatarClass,
     level: hero.level,
     battlePower: hero.battlePower,
+    gearMods,
   }));
 });
 
