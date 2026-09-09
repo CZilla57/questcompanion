@@ -283,3 +283,33 @@ describe("ability progress on the real ladders", () => {
     }
   });
 });
+
+describe("abilityScores — gear overlay (upside-only)", () => {
+  const args = { lifetimeByKingdom: { athenaeum: 3000 }, focus: { completedIntervals: 0 } };
+
+  it("is unchanged when no gearMods are passed (backward compatible)", () => {
+    const sheet = abilityScores(args);
+    const intel = sheet.find((a) => a.id === "intellect")!;
+    expect(intel.score).toBe(16);
+    expect(intel.gearBonus).toBe(0);
+    expect(intel.effectiveScore).toBe(16);
+    expect(intel.effectiveModifier).toBe(intel.modifier);
+  });
+
+  it("overlays gear on top without moving the base score", () => {
+    const sheet = abilityScores({ ...args, gearMods: { intellect: 2 } });
+    const intel = sheet.find((a) => a.id === "intellect")!;
+    expect(intel.score).toBe(16); // base untouched
+    expect(intel.gearBonus).toBe(2);
+    expect(intel.effectiveScore).toBe(18);
+    expect(intel.effectiveModifier).toBe(intel.modifier + 1);
+  });
+
+  it("lets gear push the effective score past the natural 20 ceiling", () => {
+    const maxed = { lifetimeByKingdom: { athenaeum: 999_999 }, focus: { completedIntervals: 0 } };
+    const sheet = abilityScores({ ...maxed, gearMods: { intellect: 4 } });
+    const intel = sheet.find((a) => a.id === "intellect")!;
+    expect(intel.score).toBe(20); // earned cap
+    expect(intel.effectiveScore).toBe(24); // gear exceeds it
+  });
+});
