@@ -7,6 +7,7 @@
  */
 import type { InventoryItemRarity } from './inventoryItemRarity';
 import type { InventoryItemSlot } from './inventoryItemSlot';
+import type { InventoryItemStatMods } from './inventoryItemStatMods';
 
 export interface InventoryItem {
   id: number;
@@ -23,4 +24,6 @@ export interface InventoryItem {
   attunementBonus: number;
   salvageValue: number;
   acquiredAt: string;
+  /** Per-ability score bonuses granted when equipped (ability id -> bonus). Empty when none. */
+  statMods: InventoryItemStatMods;
 }
