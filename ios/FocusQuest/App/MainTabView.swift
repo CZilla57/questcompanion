@@ -44,7 +44,6 @@ struct MoreView: View {
                 }
                 Section("Social") {
                     NavigationLink { AlliesView() } label: { Label("Allies", systemImage: "person.2.fill") }
-                    NavigationLink { BodyDoubleView() } label: { Label("Body Double Rooms", systemImage: "person.3.sequence.fill") }
                 }
                 Section("Rewards") {
                     NavigationLink { RewardsView() } label: { Label("Coins & Rewards", systemImage: "creditcard.fill") }

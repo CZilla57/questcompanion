@@ -72,6 +72,20 @@ struct FocusView: View {
             PrimaryButton(title: "Start focus", systemImage: "play.fill", isLoading: model.isBusy) {
                 Task { await model.start() }
             }
+
+            NavigationLink {
+                BodyDoubleView()
+            } label: {
+                HStack(spacing: Theme.Space.sm) {
+                    Image(systemName: "person.3.sequence.fill")
+                    Text("Body Double Rooms").fontWeight(.semibold)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+            }
+            .buttonStyle(.bordered)
+            .tint(Theme.accent)
+            .controlSize(.large)
         }
     }
 
