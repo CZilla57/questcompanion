@@ -19,13 +19,24 @@ function AbilityBlock({ ability }: { ability: AbilityScore }) {
   const label = atMax
     ? `${ability.name} is at its peak`
     : `${ability.name} ${pct}% to ${nextScore} · ${toNext.toLocaleString()} to go`;
+  // Defensive: gear-overlay fields ship with the server that emits them; fall
+  // back to the base score/modifier if a client is ever built ahead of that
+  // server.
+  const gearBonus = ability.gearBonus ?? 0;
+  const effScore = ability.effectiveScore ?? ability.score;
+  const effMod = ability.effectiveModifier ?? ability.modifier;
   return (
     <div className="rounded-lg border border-border bg-card/60 p-3 text-center">
       <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
         {ability.name}
       </div>
-      <div className="mt-1 text-2xl font-semibold leading-none tabular-nums">{ability.score}</div>
-      <div className="mt-1 text-sm font-medium text-primary tabular-nums">{formatMod(ability.modifier)}</div>
+      <div className="mt-1 text-2xl font-semibold leading-none tabular-nums">{effScore}</div>
+      <div className="mt-1 text-sm font-medium text-primary tabular-nums">{formatMod(effMod)}</div>
+      {gearBonus > 0 && (
+        <div className="mt-0.5 text-[10px] font-medium text-amber-400 tabular-nums">
+          +{gearBonus} gear
+        </div>
+      )}
       <div
         className="mt-2 h-1 overflow-hidden rounded-full bg-muted"
         role="progressbar"
