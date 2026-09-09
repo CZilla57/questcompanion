@@ -10,8 +10,13 @@ struct CompletionSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
+        // A roll can stack many reward rows (well-rested + encounter + party
+        // hits + streak + companion + surprise). Scroll the celebration so tall
+        // results wrap in full instead of being squeezed to truncated lines;
+        // keep "Onward" pinned below the scroll so it's always reachable.
+        VStack(spacing: 0) {
+        ScrollView {
         VStack(spacing: Theme.Space.lg) {
-            Spacer()
             Image(systemName: result.leveledUp ? "sparkles" : "star.fill")
                 .font(.system(size: 68)).foregroundStyle(Theme.accent)
             Text(result.leveledUp ? "Level \(result.newLevel)!" : "Quest complete!")
@@ -26,6 +31,11 @@ struct CompletionSheet: View {
                 // Act IV: the consumable that rode this roll (boost already in the check).
                 if let used = result.consumableUsed {
                     Text("\(used.emoji) \(used.name) spent")
+                        .font(.outfitCaption).foregroundStyle(Theme.accent)
+                }
+                // Act IV Well-Rested: the earned rested bonus that rode this roll.
+                if result.wellRested == true {
+                    Text("🛌 Well-Rested bonus")
                         .font(.outfitCaption).foregroundStyle(Theme.accent)
                 }
                 if let narration = result.skillCheckNarration {
@@ -100,15 +110,22 @@ struct CompletionSheet: View {
                     .font(.outfitSubheadline).foregroundStyle(Theme.success)
                     .labelStyle(TealIconLabelStyle())
             }
-            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .multilineTextAlignment(.center)
+        .padding(.horizontal, Theme.Space.lg)
+        .padding(.vertical, Theme.Space.xl)
+        }
             PrimaryButton(title: "Onward", systemImage: "arrow.right") { dismiss() }
                 .padding(.horizontal, Theme.Space.xl)
+                .padding(.top, Theme.Space.sm)
                 .padding(.bottom, Theme.Space.xl)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .multilineTextAlignment(.center)
         .background(Theme.screenBackground)
-        .presentationDetents([.medium, .large])
+        // Open full-height so the whole celebration reads at once; the inner
+        // ScrollView still handles a roll with an unusually long stack of rows.
+        .presentationDetents([.large])
         // Celebrate once as the sheet appears — richer buzz on a level-up or crit.
         .onAppear {
             (result.leveledUp || result.skillCheck?.isCrit == true) ? Haptics.levelUp() : Haptics.success()

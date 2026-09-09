@@ -10,10 +10,15 @@ final class HeroViewModel: ObservableObject {
         let sheet: CharacterSheet?
         let encounter: PersonalEncounterStatus?
         let feats: FeatsResponse?
+        // Act V: the capital (a home that visibly grows). Optional so a pre-deploy
+        // server just omits the card.
+        let capital: CapitalProgress?
     }
     @Published var state: Loadable<Bundle> = .idle
     /// The active feat currently being used, so its button can show progress.
     @Published var activatingFeatId: String?
+    /// True while a specialization choice is in flight (Act V).
+    @Published var choosingBranch = false
 
     func load() async {
         state = .loading
@@ -25,14 +30,24 @@ final class HeroViewModel: ObservableObject {
             async let sheet = try? UserService.characterSheet()
             async let encounter = try? UserService.currentEncounter()
             async let feats = try? FeatService.list()
+            async let capital = try? UserService.capital()
             let bundle = Bundle(
                 hero: try await hero, avatar: await avatar, kingdoms: await kingdoms,
                 me: await me, sheet: await sheet, encounter: await encounter,
-                feats: await feats)
+                feats: await feats, capital: await capital)
             state = .loaded(bundle)
         } catch {
             state = .failed(error.userMessage)
         }
+    }
+
+    /// Act V free respec: choose a specialization branch, or nil to clear. Best-
+    /// effort; reloads so the feats card reflects the new calling.
+    func chooseBranch(_ id: String?) async {
+        choosingBranch = true
+        _ = try? await FeatService.chooseBranch(id)
+        choosingBranch = false
+        await load()
     }
 
     /// Use an active feat, then reload so its readiness flips and any granted
@@ -56,6 +71,8 @@ struct HeroView: View {
                     VStack(alignment: .leading, spacing: Theme.Space.lg) {
                         if let name = bundle.me?.username { heroName(name, avatar: bundle.avatar) }
                         characterCard(bundle.hero, avatar: bundle.avatar)
+                        if let wr = bundle.hero.wellRested, wr.active { wellRestedBadge(wr) }
+                        if let capital = bundle.capital { capitalCard(capital) }
                         if let sheet = bundle.sheet { characterSheetCard(sheet) }
                         if let feats = bundle.feats, !(feats.unlocked.isEmpty && feats.locked.isEmpty) {
                             featsCard(feats)
@@ -65,6 +82,10 @@ struct HeroView: View {
                         if let encounter = bundle.encounter { encounterCard(encounter) }
                         if let kingdoms = bundle.kingdoms { kingdomsCard(kingdoms) }
                     }
+                    // Bound the content to the viewport so long text (e.g. the Act V
+                    // specialization copy) wraps instead of forcing the whole
+                    // vertical ScrollView wider than the screen.
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(Theme.Space.lg)
                 }
                 .background(Theme.screenBackground)
@@ -234,6 +255,112 @@ struct HeroView: View {
                 SectionHeader("Class Feats")
                 ForEach(feats.unlocked) { feat in unlockedFeatRow(feat) }
                 ForEach(feats.locked) { feat in lockedFeatRow(feat) }
+                if let tree = feats.branchTree { specializationSection(tree) }
+            }
+        }
+    }
+
+    // MARK: - Act V: specialization (free respec — "focus, not a cage")
+
+    @ViewBuilder private func specializationSection(_ tree: FeatBranchTree) -> some View {
+        Divider().overlay(Theme.cardBorder)
+        VStack(alignment: .leading, spacing: Theme.Space.sm) {
+            HStack(spacing: 6) {
+                Label("Specialization", systemImage: "arrow.triangle.branch")
+                    .font(.outfitSubheadlineBold).labelStyle(TealIconLabelStyle(spacing: 4))
+                if !tree.unlocked {
+                    Text("Opens at Level \(tree.unlockLevel)").font(.outfitCaption).foregroundStyle(.secondary)
+                }
+            }
+            Text("Choose a second calling for a +\(tree.bonusPct)% XP bias there. Free to change anytime — nothing is ever locked out.")
+                .font(.outfitCaption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            ForEach(tree.branches) { branch in
+                branchRow(branch, chosen: tree.chosen == branch.id, unlocked: tree.unlocked)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func branchRow(_ branch: FeatBranch, chosen: Bool, unlocked: Bool) -> some View {
+        HStack(spacing: Theme.Space.sm) {
+            Text(branch.emoji).font(.outfitTitle2)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(branch.label).font(.outfitSubheadlineBold)
+                Text(branch.description).font(.outfitCaption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: Theme.Space.sm)
+            if chosen {
+                Button { Task { await model.chooseBranch(nil) } } label: {
+                    Label("Chosen", systemImage: "checkmark.circle.fill")
+                        .font(.outfitCaptionBold).labelStyle(TealIconLabelStyle(spacing: 3))
+                }
+                .buttonStyle(.bordered).tint(Theme.success)
+                .disabled(model.choosingBranch)
+            } else {
+                Button { Task { await model.chooseBranch(branch.id) } } label: {
+                    Text(unlocked ? "Choose" : "Locked").font(.outfitCaptionBold)
+                }
+                .buttonStyle(.bordered).tint(Theme.accent)
+                .disabled(!unlocked || model.choosingBranch)
+            }
+        }
+        .padding(Theme.Space.sm)
+        .background(chosen ? Theme.accentSoft : Color.clear)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    // MARK: - Act IV: Well-Rested badge
+
+    private func wellRestedBadge(_ wr: HeroStatus.WellRested) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "moon.stars.fill").foregroundStyle(Theme.accent)
+            Text("Well-Rested +\(wr.bonus)").font(.outfitSubheadlineBold).foregroundStyle(Theme.accent)
+            Text("to quest rolls while your good run holds").font(.outfitCaption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, Theme.Space.md).padding(.vertical, Theme.Space.sm)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.accentSoft)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    // MARK: - Act V: the Capital (a home that visibly grows)
+
+    private func capitalCard(_ capital: CapitalProgress) -> some View {
+        let founded = capital.tier > 0
+        return Card {
+            VStack(alignment: .leading, spacing: Theme.Space.sm) {
+                HStack {
+                    Label("The Capital", systemImage: "building.columns.fill")
+                        .font(.outfitSubheadlineBold).labelStyle(TealIconLabelStyle())
+                    Spacer()
+                    Text(founded ? capital.name : "Unfounded").font(.outfitCaption).foregroundStyle(.secondary)
+                }
+                // A .fill scene reports a wide ideal width; hosting it as an OVERLAY
+                // on a width-bounded Color.clear keeps it from stretching the card
+                // past the screen (mirrors capitalBand's pattern).
+                Color.clear
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 96)
+                    .overlay { KingdomSceneImage(kingdomId: "capital", tier: capital.tier, liveliness: nil, fill: true) }
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                if capital.atMax {
+                    Text("The realm is at its height — Eternal Capital. ✦")
+                        .font(.outfitCaption).foregroundStyle(Theme.accent)
+                } else {
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(Color.white.opacity(0.12))
+                            Capsule().fill(Theme.accent).frame(width: geo.size.width * max(0, min(1, capital.fraction)))
+                        }
+                    }
+                    .frame(height: 6)
+                    Text("\(capital.pointsToNext) to \(capital.nextName ?? "")")
+                        .font(.outfitCaption2).foregroundStyle(.secondary)
+                }
             }
         }
     }
@@ -324,6 +451,12 @@ struct HeroView: View {
                     Text(enc.status == "resting" ? "Recovering — it'll return" : "Every quest lands a blow")
                         .font(.outfitCaption2).foregroundStyle(.secondary)
                 }
+                // Act V: into the discovery log of foes you've felled.
+                NavigationLink { BestiaryView() } label: {
+                    Label("Bestiary", systemImage: "book.closed.fill")
+                        .font(.outfitCaption).labelStyle(TealIconLabelStyle(spacing: 3))
+                }
+                .buttonStyle(.plain).foregroundStyle(Theme.accent)
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(
@@ -632,6 +765,87 @@ private struct CompanionNamingSheet: View {
         } catch {
             errorText = error.userMessage
             saving = false
+        }
+    }
+}
+
+// MARK: - Act V: the Bestiary (discovery log)
+
+/// A collection you complete by felling each roster foe. Derived server-side
+/// from the hero's fell history. Anti-shame: an unmet foe is a "not yet
+/// encountered" silhouette, never "unbeaten"; facing one again is a re-match.
+struct BestiaryView: View {
+    @State private var state: Loadable<Bestiary> = .idle
+
+    var body: some View {
+        AsyncContentView(state: state, retry: { Task { await load() } }) { bestiary in
+            ScrollView {
+                VStack(alignment: .leading, spacing: Theme.Space.md) {
+                    Text("The frictions you've faced as foes. Fell one to add it to your log — the ones you haven't met yet wait in shadow.")
+                        .font(.outfitSubheadline).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("\(bestiary.discoveredCount) / \(bestiary.total) discovered")
+                        .font(.outfitSubheadlineBold).foregroundStyle(Theme.accent)
+                    ForEach(bestiary.entries) { entry in foeCard(entry) }
+                }
+                .padding(Theme.Space.lg)
+            }
+            .background(Theme.screenBackground)
+            .refreshable { await load() }
+        }
+        .navigationTitle("Bestiary")
+        .task { if state.value == nil { await load() } }
+    }
+
+    private func load() async {
+        state = .loading
+        do { state = .loaded(try await UserService.bestiary()) }
+        catch { state = .failed(error.userMessage) }
+    }
+
+    @ViewBuilder private func foeCard(_ entry: BestiaryEntry) -> some View {
+        if entry.revealed {
+            Card {
+                VStack(alignment: .leading, spacing: Theme.Space.sm) {
+                    HStack {
+                        Text(entry.name ?? "").font(.outfitHeadline)
+                        Spacer(minLength: Theme.Space.sm)
+                        if entry.active {
+                            Text("Currently facing").font(.outfitCaption2).fontWeight(.bold)
+                                .foregroundStyle(Theme.accent)
+                        } else if entry.timesFelled > 1 {
+                            Text("felled ×\(entry.timesFelled)").font(.outfitCaption2).foregroundStyle(.secondary)
+                        }
+                    }
+                    if let motive = entry.motive, !motive.isEmpty {
+                        Text(motive).font(.outfitCaption).italic().foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if entry.discovered {
+                        if let beat = entry.defeatBeat, !beat.isEmpty {
+                            Text(beat).font(.outfitCaption).foregroundStyle(.primary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        if let note = entry.worldNote, !note.isEmpty {
+                            Text(note).font(.outfitCaption2).foregroundStyle(Theme.accent)
+                        }
+                    } else {
+                        Text("You're facing this one now — fell it to complete its entry.")
+                            .font(.outfitCaption2).foregroundStyle(.secondary)
+                    }
+                }
+            }
+        } else {
+            Card {
+                HStack(spacing: Theme.Space.md) {
+                    Image(systemName: "questionmark.circle").font(.outfitTitle2).foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("? ? ?").font(.outfitSubheadlineBold).foregroundStyle(.secondary)
+                        Text("Not yet encountered").font(.outfitCaption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                }
+            }
         }
     }
 }

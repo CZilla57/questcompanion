@@ -252,3 +252,46 @@ struct CompanionIdentity: Codable {
     let name: String?
     let disposition: String
 }
+
+// MARK: - Bestiary (Act V: Depth & Collection — the discovery log)
+
+/// One roster slot in the discovery log. Discovered (felled ≥1) foes reveal full
+/// copy; the currently-active foe reveals name/motive but withholds the earned
+/// defeat copy until felled; every other slot is a withheld silhouette (nils).
+struct BestiaryEntry: Codable, Identifiable {
+    var id: Int { slot }
+    let slot: Int
+    let discovered: Bool
+    let active: Bool
+    let name: String?
+    let motive: String?
+    let defeatBeat: String?
+    let worldNote: String?
+    let timesFelled: Int
+    let firstFelledAt: String?
+    let lastFelledAt: String?
+
+    /// Revealed (name + motive) iff discovered or currently active.
+    var revealed: Bool { name != nil }
+}
+
+struct Bestiary: Codable {
+    let entries: [BestiaryEntry]
+    let discoveredCount: Int
+    let total: Int
+}
+
+// MARK: - Capital (Act V: the hero's seat, a home that visibly grows)
+
+/// Derived from the sum of lifetime kingdom points; monotonic (only ever grows).
+/// `fraction` is the fine-grained progress toward the next tier.
+struct CapitalProgress: Codable {
+    let tier: Int
+    let name: String
+    let points: Int
+    let atMax: Bool
+    let nextName: String?
+    let nextThreshold: Int?
+    let pointsToNext: Int
+    let fraction: Double
+}
