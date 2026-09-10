@@ -1,6 +1,13 @@
 import Foundation
 import WidgetKit
 
+/// A single quest surfaced in the widget's snapshot list.
+struct SnapshotQuest: Codable, Hashable, Identifiable {
+    let id: Int
+    let title: String
+    let completed: Bool
+}
+
 /// Small at-a-glance snapshot the app writes and the widgets read. Shared through
 /// the App Group container so the extension (a separate process) can render it
 /// without a network call. Compiled into BOTH the app and widget targets.
@@ -15,6 +22,16 @@ struct WidgetSnapshot: Codable, Hashable {
     var todayTotal: Int
     /// When the snapshot was written — lets a widget show "as of" freshness if needed.
     var updatedAt: Date
+    /// Id of the quest the app is nudging next (matches `focusQuestTitle`), for deep
+    /// links and completion actions. `nil` when there's no next quest.
+    var nextQuestId: Int? = nil
+    /// A short list of today's quests for widgets that show more than the single
+    /// next-up quest.
+    var topQuests: [SnapshotQuest] = []
+    /// Coin balance, when available. `nil` when not yet known.
+    var coins: Int? = nil
+    /// Whether a focus session is currently active.
+    var activeFocus: Bool = false
 
     /// Shown before any real data has been written (widget gallery / first install).
     static let placeholder = WidgetSnapshot(
@@ -24,7 +41,14 @@ struct WidgetSnapshot: Codable, Hashable {
         levelName: "Trailblazer",
         todayCompleted: 2,
         todayTotal: 6,
-        updatedAt: .now)
+        updatedAt: .now,
+        nextQuestId: 1,
+        topQuests: [
+            SnapshotQuest(id: 1, title: "Plan tomorrow's top three", completed: false),
+            SnapshotQuest(id: 2, title: "Clear the inbox", completed: true),
+        ],
+        coins: 120,
+        activeFocus: false)
 
     /// Empty state — authenticated but nothing due today.
     static let empty = WidgetSnapshot(
@@ -34,7 +58,22 @@ struct WidgetSnapshot: Codable, Hashable {
         levelName: "Novice",
         todayCompleted: 0,
         todayTotal: 0,
-        updatedAt: .now)
+        updatedAt: .now,
+        nextQuestId: nil,
+        topQuests: [],
+        coins: 0,
+        activeFocus: false)
+}
+
+/// The v1 on-disk shape, kept only to migrate an already-stored snapshot into v2.
+private struct LegacySnapshotV1: Codable {
+    var focusQuestTitle: String?
+    var streakDays: Int
+    var level: Int
+    var levelName: String
+    var todayCompleted: Int
+    var todayTotal: Int
+    var updatedAt: Date
 }
 
 /// Reads and writes the shared `WidgetSnapshot` in the App Group container. The
@@ -42,7 +81,8 @@ struct WidgetSnapshot: Codable, Hashable {
 enum WidgetSharedStore {
     /// App Group id — must be listed in BOTH targets' entitlements.
     static let appGroupID = "group.app.focusquest"
-    private static let snapshotKey = "widget.snapshot.v1"
+    private static let snapshotKey = "widget.snapshot.v2"
+    private static let legacyKey = "widget.snapshot.v1"
 
     private static var defaults: UserDefaults? { UserDefaults(suiteName: appGroupID) }
 
@@ -56,9 +96,23 @@ enum WidgetSharedStore {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
-    /// Read the last-written snapshot, or `nil` if nothing has been stored yet.
+    /// Read the last-written snapshot, migrating a v1 payload if that's all that's
+    /// stored. Returns `nil` if nothing has been stored yet.
     static func read() -> WidgetSnapshot? {
-        guard let data = defaults?.data(forKey: snapshotKey) else { return nil }
-        return try? JSONDecoder().decode(WidgetSnapshot.self, from: data)
+        if let data = defaults?.data(forKey: snapshotKey),
+           let snap = try? JSONDecoder().decode(WidgetSnapshot.self, from: data) {
+            return snap
+        }
+        // Migrate a v1 payload: decode the old shape, map new fields to defaults.
+        if let data = defaults?.data(forKey: legacyKey),
+           let legacy = try? JSONDecoder().decode(LegacySnapshotV1.self, from: data) {
+            return WidgetSnapshot(
+                focusQuestTitle: legacy.focusQuestTitle, streakDays: legacy.streakDays,
+                level: legacy.level, levelName: legacy.levelName,
+                todayCompleted: legacy.todayCompleted, todayTotal: legacy.todayTotal,
+                updatedAt: legacy.updatedAt,
+                nextQuestId: nil, topQuests: [], coins: nil, activeFocus: false)
+        }
+        return nil
     }
 }
