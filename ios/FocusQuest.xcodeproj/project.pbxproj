@@ -11,6 +11,8 @@
 		FQAA00000000000000000004 /* IntentActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQAA00000000000000000002 /* IntentActions.swift */; };
 		FQAA00000000000000000006 /* QuestEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQAA00000000000000000005 /* QuestEntity.swift */; };
 		FQAA00000000000000000007 /* QuestEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQAA00000000000000000005 /* QuestEntity.swift */; };
+		FQAA00000000000000000009 /* IntentOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQAA00000000000000000008 /* IntentOptions.swift */; };
+		FQAA00000000000000000010 /* IntentOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQAA00000000000000000008 /* IntentOptions.swift */; };
 		FQDD00000000000000000001 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000001 /* APIClient.swift */; };
 		FQDD00000000000000000002 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000002 /* APIError.swift */; };
 		FQDD00000000000000000003 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000003 /* Keychain.swift */; };
@@ -66,6 +68,7 @@
 /* Begin PBXFileReference section */
 		FQAA00000000000000000002 /* IntentActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentActions.swift; sourceTree = "<group>"; };
 		FQAA00000000000000000005 /* QuestEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuestEntity.swift; sourceTree = "<group>"; };
+		FQAA00000000000000000008 /* IntentOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentOptions.swift; sourceTree = "<group>"; };
 		FQCC00000000000000000001 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = APIClient.swift; path = FocusQuest/Networking/APIClient.swift; sourceTree = SOURCE_ROOT; };
 		FQCC00000000000000000002 /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = APIError.swift; path = FocusQuest/Networking/APIError.swift; sourceTree = SOURCE_ROOT; };
 		FQCC00000000000000000003 /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Keychain.swift; path = FocusQuest/Auth/Keychain.swift; sourceTree = SOURCE_ROOT; };
@@ -139,6 +142,7 @@
 			children = (
 				FQAA00000000000000000002 /* IntentActions.swift */,
 				FQAA00000000000000000005 /* QuestEntity.swift */,
+				FQAA00000000000000000008 /* IntentOptions.swift */,
 			);
 			path = IntentCore;
 			sourceTree = "<group>";
@@ -282,6 +286,7 @@
 				FQ000000000000000000B007 /* WidgetSharedStore.swift in Sources */,
 				FQAA00000000000000000003 /* IntentActions.swift in Sources */,
 				FQAA00000000000000000006 /* QuestEntity.swift in Sources */,
+				FQAA00000000000000000009 /* IntentOptions.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -293,6 +298,7 @@
 				FQ000000000000000000B008 /* WidgetSharedStore.swift in Sources */,
 				FQAA00000000000000000004 /* IntentActions.swift in Sources */,
 				FQAA00000000000000000007 /* QuestEntity.swift in Sources */,
+				FQAA00000000000000000010 /* IntentOptions.swift in Sources */,
 				FQDD00000000000000000001 /* APIClient.swift in Sources */,
 				FQDD00000000000000000002 /* APIError.swift in Sources */,
 				FQDD00000000000000000003 /* Keychain.swift in Sources */,
