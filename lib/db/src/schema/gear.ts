@@ -1,8 +1,9 @@
-import { pgTable, serial, text, integer, timestamp, boolean, unique } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, timestamp, boolean, unique, jsonb } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
 
 export type GearSlot = "weapon" | "helmet" | "armor" | "boots" | "accessory";
 export type GearRarity = "common" | "rare" | "epic" | "legendary";
+export type GearAbilityId = "might" | "intellect" | "attunement" | "presence" | "vigor" | "finesse";
 
 export const gearItemsTable = pgTable("gear_items", {
   id: serial("id").primaryKey(),
@@ -18,6 +19,10 @@ export const gearItemsTable = pgTable("gear_items", {
   // Catalog expansion: false = drop-only treasure (won't appear in the Gear Store).
   // The store filters on this; loot/awardStreakGear draw from the full pool.
   inStore: boolean("in_store").notNull().default(true),
+  // Gear stat mods (RPG-depth Act I(b)): a { abilityId: evenScoreBonus } map.
+  // Raises the matching ability on the sheet + roll while equipped; upside-only.
+  // Empty for common items (they carry statPower only). See lib/gear-mods.ts.
+  statMods: jsonb("stat_mods").$type<Partial<Record<GearAbilityId, number>>>().notNull().default({}),
 }, (table) => [
   unique("gear_items_name_unique").on(table.name),
 ]);

@@ -104,6 +104,22 @@ function RarityBadge({ rarity }: { rarity: string }) {
   );
 }
 
+/** Per-ability score bonus a piece of gear grants when equipped, e.g. "+2 MIG". */
+function AbilityModBadges({ statMods }: { statMods: Record<string, number> }) {
+  return (
+    <>
+      {Object.entries(statMods).map(([ability, bonus]) => (
+        <span
+          key={ability}
+          className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-400/10 text-amber-400"
+        >
+          +{bonus} {ability.slice(0, 3)}
+        </span>
+      ))}
+    </>
+  );
+}
+
 function PowerBar({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = Math.min((value / max) * 100, 100);
   return (
@@ -264,6 +280,7 @@ function GearCard({
 
       <div className="flex items-center gap-2 flex-wrap">
         <RarityBadge rarity={item.rarity} />
+        <AbilityModBadges statMods={item.statMods} />
         <span className="text-xs text-muted-foreground">{SLOT_LABELS[item.slot]}</span>
         <span className="ml-auto text-xs font-medium" style={{ color: rarityColor }}>
           +{item.statPower} power
@@ -657,6 +674,7 @@ function InventoryTab() {
                     </div>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <RarityBadge rarity={item.rarity} />
+                      <AbilityModBadges statMods={item.statMods} />
                       <span className="text-xs text-muted-foreground">{SLOT_LABELS[item.slot]}</span>
                     </div>
                   </div>

@@ -47,6 +47,7 @@ router.get("/gear/store", async (req, res): Promise<void> => {
       equipped: ownedMap.get(item.id)?.equipped ?? false,
       canAfford: user.coinBalance >= costCoins,
       meetsLevel: levelInfo.level >= item.levelRequired,
+      statMods: item.statMods ?? {},
     };
   });
 
@@ -86,6 +87,7 @@ router.get("/gear/inventory", async (req, res): Promise<void> => {
     attunementBonus: attunementBonus(gear.statPower),
     salvageValue: salvageValue(gear.rarity),
     acquiredAt: userGear.acquiredAt.toISOString(),
+    statMods: gear.statMods ?? {},
   }));
 
   // Per-slot loadout: the equipped item in each slot (or null), in grid order.

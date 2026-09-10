@@ -1,11 +1,11 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
-import { gearItemsTable, type GearSlot, type GearRarity } from "./schema";
+import { gearItemsTable, type GearSlot, type GearRarity, type GearAbilityId } from "./schema";
 
 export interface GearRosterItem {
   name: string; description: string; slot: GearSlot; rarity: GearRarity;
   statPower: number; costXp: number; levelRequired: number; icon: string; spriteId: string;
-  inStore: boolean;
+  inStore: boolean; statMods: Partial<Record<GearAbilityId, number>>;
 }
 
 // Power formula (single source of truth). Level dominates the power tier; rarity is a modest
@@ -22,7 +22,40 @@ export function gearStatPower(levelRequired: number, rarity: GearRarity): number
 interface Row {
   name: string; description: string; slot: GearSlot; rarity: GearRarity;
   levelRequired: number; icon: string; spriteId: string; inStore: boolean;
+  ability?: GearAbilityId; // optional per-item override; default derived by rosterAbility()
 }
+
+// The ability each item boosts. Default is by slot, with weapon spriteId
+// overrides so the weapon slot spans might/intellect/finesse — making the
+// weapon choice a real decision, not a fixed spread. helmet carries attunement
+// (a circlet of clarity) so all six abilities are covered across the catalog.
+// A row may set `ability` to override for marquee flavor.
+const DEFAULT_ABILITY_BY_SLOT: Record<GearSlot, GearAbilityId> = {
+  weapon: "might",
+  helmet: "attunement",
+  armor: "vigor",
+  boots: "finesse",
+  accessory: "presence",
+};
+const WEAPON_SPRITE_ABILITY: Record<string, GearAbilityId> = {
+  staff: "intellect",
+  "archmage-staff": "intellect",
+  bow: "finesse",
+  slingshot: "finesse",
+  crossbow: "finesse",
+};
+export function rosterAbility(row: Row): GearAbilityId {
+  if (row.ability) return row.ability;
+  if (row.slot === "weapon" && WEAPON_SPRITE_ABILITY[row.spriteId]) {
+    return WEAPON_SPRITE_ABILITY[row.spriteId]!;
+  }
+  return DEFAULT_ABILITY_BY_SLOT[row.slot];
+}
+
+// Mirrors BONUS_BY_RARITY in api-server/src/lib/gear-mods.ts — keep in sync.
+const ABILITY_BONUS_BY_RARITY: Record<GearRarity, number> = {
+  common: 0, rare: 2, epic: 2, legendary: 4,
+};
 
 // `inStore: true`  → the curated buy-your-way-up ladder (rarity roughly tracks level; priced by the
 //                    Honest-Coin rarity ladder 20/60/150/400).
@@ -67,7 +100,7 @@ const ROSTER: Row[] = [
 
   // ── ARMOR ──────────────────────────────────────────────────────────────────
   { name: "Leather Vest",       description: "Light, flexible protection.",           slot: "armor",  rarity: "common",    levelRequired: 1,  icon: "ShieldHalf", spriteId: "leather-armor", inStore: true },
-  { name: "Chainmail",          description: "Interlocking steel rings.",             slot: "armor",  rarity: "rare",      levelRequired: 6,  icon: "ShieldHalf", spriteId: "mail",          inStore: true },
+  { name: "Chainmail",          description: "Interlocking steel rings.",             slot: "armor",  rarity: "rare",      levelRequired: 5,  icon: "ShieldHalf", spriteId: "mail",          inStore: true },
   { name: "Plate Armor",        description: "Heavy forged protection.",              slot: "armor",  rarity: "epic",      levelRequired: 13, icon: "ShieldHalf", spriteId: "plate",         inStore: true },
   { name: "Dragonscale Plate",  description: "Forged from dragon hide.",              slot: "armor",  rarity: "legendary", levelRequired: 26, icon: "ShieldHalf", spriteId: "dragon-plate",  inStore: true },
   // drop-only exotics
@@ -107,7 +140,10 @@ const ROSTER: Row[] = [
 
 export const GEAR_CATALOG: GearRosterItem[] = ROSTER.map((r) => {
   const statPower = gearStatPower(r.levelRequired, r.rarity);
-  return { ...r, statPower, costXp: statPower * 50 };
+  const bonus = ABILITY_BONUS_BY_RARITY[r.rarity];
+  const statMods: Partial<Record<GearAbilityId, number>> =
+    bonus > 0 ? { [rosterAbility(r)]: bonus } : {};
+  return { ...r, statPower, costXp: statPower * 50, statMods };
 });
 
 /**
@@ -126,6 +162,7 @@ export async function seedGear(
         description: item.description, slot: item.slot, rarity: item.rarity,
         statPower: item.statPower, costXp: item.costXp, levelRequired: item.levelRequired,
         icon: item.icon, spriteId: item.spriteId, inStore: item.inStore,
+        statMods: item.statMods,
       },
     });
   }

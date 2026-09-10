@@ -1,0 +1,1 @@
+ALTER TABLE "gear_items" ADD COLUMN "stat_mods" jsonb DEFAULT '{}'::jsonb NOT NULL;
