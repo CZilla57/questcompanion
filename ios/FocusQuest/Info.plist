@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>FocusQuest</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string></string>
+	</dict>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+	</dict>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<!-- Enables the Focus session Live Activity (ActivityKit). -->
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<!-- Bundled web-matching typeface (variable font, see DesignSystem/Font+Outfit.swift) -->
+	<key>UIAppFonts</key>
+	<array>
+		<string>Outfit.ttf</string>
+	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>FocusQuest uses the microphone to let you capture quests by voice.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>FocusQuest transcribes your voice so you can capture a quest by speaking.</string>
+	<!-- OAuth (Auth0) callback URL scheme. Must match the redirect URI registered
+	     in Auth0 and the RN app: focusquest://auth -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>app.focusquest.ios.auth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>focusquest</string>
+			</array>
+		</dict>
+	</array>
+	<!-- FocusQuest runtime configuration. Override per build with an .xcconfig or
+	     by editing these values. See ios/README.md. -->
+	<key>FQAPIBaseURL</key>
+	<string>$(FQ_API_BASE_URL)</string>
+	<key>FQAuth0Domain</key>
+	<string>$(FQ_AUTH0_DOMAIN)</string>
+	<key>FQAuth0ClientID</key>
+	<string>$(FQ_AUTH0_CLIENT_ID)</string>
+</dict>
+</plist>
