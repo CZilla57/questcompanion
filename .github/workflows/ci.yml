@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, claude/swift-mobile-app-a70k2k]
+    branches: [main]
   pull_request:
-    branches: [main, claude/swift-mobile-app-a70k2k]
+    branches: [main]
 
 jobs:
   check:
@@ -30,16 +30,14 @@ jobs:
           PORT: "5173"
           BASE_PATH: "/"
 
-  # Builds the native iOS app. Runs only where the app exists — the
-  # swift-mobile-app integration line and its PRs — and comes along when that
-  # branch eventually merges to main, so main gains iOS coverage with the code.
-  # The app is not on main today, so this job is a no-op there (nothing to build).
+  # Builds the native iOS app. The app now lives on main (merged via #103), so
+  # this job runs on pushes to main and PRs targeting it, giving the iOS source
+  # CI coverage alongside the code it now carries.
   ios:
-    # Run only where the app lives: pushes to the integration branch and PRs
-    # targeting it. (On a pull_request, github.ref_name is the merge ref, so we
-    # match on base_ref.) When swift-mobile-app eventually merges to main, add
-    # 'main' here so main keeps building the app it now carries.
-    if: github.base_ref == 'claude/swift-mobile-app-a70k2k' || github.ref_name == 'claude/swift-mobile-app-a70k2k'
+    # Run on pushes to main (github.ref_name == 'main') and PRs targeting main.
+    # (On a pull_request, github.ref_name is the merge ref, so we match on
+    # base_ref for PRs.)
+    if: github.base_ref == 'main' || github.ref_name == 'main'
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
