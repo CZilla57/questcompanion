@@ -228,12 +228,36 @@ final class FocusViewModel: ObservableObject {
 
     // MARK: - Foreground / background lifecycle
 
-    /// Call when the app returns to the foreground: catch up elapsed phases, then
-    /// resume ticking the current (future) phase. Safe when idle or paused.
+    /// Call when the app returns to the foreground. When a session is already
+    /// running locally, catch up elapsed phases and resume ticking the current
+    /// (future) phase. When idle, adopt any server-started session — Siri's
+    /// `StartFocusIntent` runs in the background and creates a session with no local
+    /// timer, so the app must pick it up here or it would be orphaned. Safe when paused.
     func onForeground() async {
-        guard isActive else { return }
-        await reconcile()
-        if isActive && !isPaused { startTicker() }
+        if isActive {
+            await reconcile()
+            if isActive && !isPaused { startTicker() }
+        } else {
+            await adoptServerSessionIfAny()
+        }
+    }
+
+    /// Pull the current server-side session (if any) and adopt it into a fresh focus
+    /// interval, mirroring the cold-start `load()` path. Called on foreground when no
+    /// local session is running, so a session started outside the app (Siri /
+    /// Shortcuts) is taken over rather than left running only on the server.
+    private func adoptServerSessionIfAny() async {
+        guard !isActive else { return }
+        do {
+            guard let active = try await FocusService.active() else { return }
+            // adopt() derives the phase window from the matching preset, so ensure the
+            // preset list is loaded (it normally is once the Focus tab has appeared).
+            if presets.isEmpty { presets = (try? await FocusService.presets()) ?? [] }
+            adopt(active)
+        } catch {
+            // Transient failure (e.g. offline): skip adoption this cycle, no user-facing
+            // error. The next foreground or a manual reload will retry.
+        }
     }
 
     /// Call when the app is backgrounded: the ticker can't fire while suspended.
