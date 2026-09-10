@@ -7,6 +7,29 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FQAA00000000000000000003 /* IntentActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQAA00000000000000000002 /* IntentActions.swift */; };
+		FQAA00000000000000000004 /* IntentActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQAA00000000000000000002 /* IntentActions.swift */; };
+		FQDD00000000000000000001 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000001 /* APIClient.swift */; };
+		FQDD00000000000000000002 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000002 /* APIError.swift */; };
+		FQDD00000000000000000003 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000003 /* Keychain.swift */; };
+		FQDD00000000000000000004 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000004 /* AppConfig.swift */; };
+		FQDD00000000000000000005 /* BrainModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000005 /* BrainModels.swift */; };
+		FQDD00000000000000000006 /* CampaignModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000006 /* CampaignModels.swift */; };
+		FQDD00000000000000000007 /* CoreModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000007 /* CoreModels.swift */; };
+		FQDD00000000000000000008 /* Enums.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000008 /* Enums.swift */; };
+		FQDD00000000000000000009 /* FeatModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000009 /* FeatModels.swift */; };
+		FQDD00000000000000000010 /* FocusModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000010 /* FocusModels.swift */; };
+		FQDD00000000000000000011 /* GamificationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000011 /* GamificationModels.swift */; };
+		FQDD00000000000000000012 /* MiscModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000012 /* MiscModels.swift */; };
+		FQDD00000000000000000013 /* QuestlineModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000013 /* QuestlineModels.swift */; };
+		FQDD00000000000000000014 /* SocialModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000014 /* SocialModels.swift */; };
+		FQDD00000000000000000015 /* TaskModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000015 /* TaskModels.swift */; };
+		FQDD00000000000000000016 /* QuestService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000016 /* QuestService.swift */; };
+		FQDD00000000000000000017 /* FocusService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000017 /* FocusService.swift */; };
+		FQDD00000000000000000018 /* BrainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000018 /* BrainService.swift */; };
+		FQDD00000000000000000019 /* UserService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000019 /* UserService.swift */; };
+		FQDD00000000000000000020 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000020 /* Theme.swift */; };
+		FQDD00000000000000000021 /* Font+Outfit.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQCC00000000000000000021 /* Font+Outfit.swift */; };
 		FQ000000000000000000B003 /* FocusActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQ000000000000000000B002 /* FocusActivityAttributes.swift */; };
 		FQ000000000000000000B004 /* FocusActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQ000000000000000000B002 /* FocusActivityAttributes.swift */; };
 		FQ000000000000000000B007 /* WidgetSharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FQ000000000000000000B006 /* WidgetSharedStore.swift */; };
@@ -39,6 +62,28 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		FQAA00000000000000000002 /* IntentActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentActions.swift; sourceTree = "<group>"; };
+		FQCC00000000000000000001 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = APIClient.swift; path = FocusQuest/Networking/APIClient.swift; sourceTree = SOURCE_ROOT; };
+		FQCC00000000000000000002 /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = APIError.swift; path = FocusQuest/Networking/APIError.swift; sourceTree = SOURCE_ROOT; };
+		FQCC00000000000000000003 /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Keychain.swift; path = FocusQuest/Auth/Keychain.swift; sourceTree = SOURCE_ROOT; };
+		FQCC00000000000000000004 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppConfig.swift; path = FocusQuest/App/AppConfig.swift; sourceTree = SOURCE_ROOT; };
+		FQCC00000000000000000005 /* BrainModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BrainModels.swift; path = FocusQuest/Models/BrainModels.swift; sourceTree = SOURCE_ROOT; };
+		FQCC00000000000000000006 /* CampaignModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CampaignModels.swift; path = FocusQuest/Models/CampaignModels.swift; sourceTree = SOURCE_ROOT; };
+		FQCC00000000000000000007 /* CoreModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CoreModels.swift; path = FocusQuest/Models/CoreModels.swift; sourceTree = SOURCE_ROOT; };
+		FQCC00000000000000000008 /* Enums.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Enums.swift; path = FocusQuest/Models/Enums.swift; sourceTree = SOURCE_ROOT; };
+		FQCC00000000000000000009 /* FeatModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FeatModels.swift; path = FocusQuest/Models/FeatModels.swift; sourceTree = SOURCE_ROOT; };
+		FQCC00000000000000000010 /* FocusModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FocusModels.swift; path = FocusQuest/Models/FocusModels.swift; sourceTree = SOURCE_ROOT; };
+		FQCC00000000000000000011 /* GamificationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = GamificationModels.swift; path = FocusQuest/Models/GamificationModels.swift; sourceTree = SOURCE_ROOT; };
+		FQCC00000000000000000012 /* MiscModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MiscModels.swift; path = FocusQuest/Models/MiscModels.swift; sourceTree = SOURCE_ROOT; };
+		FQCC00000000000000000013 /* QuestlineModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = QuestlineModels.swift; path = FocusQuest/Models/QuestlineModels.swift; sourceTree = SOURCE_ROOT; };
+		FQCC00000000000000000014 /* SocialModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SocialModels.swift; path = FocusQuest/Models/SocialModels.swift; sourceTree = SOURCE_ROOT; };
+		FQCC00000000000000000015 /* TaskModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TaskModels.swift; path = FocusQuest/Models/TaskModels.swift; sourceTree = SOURCE_ROOT; };
+		FQCC00000000000000000016 /* QuestService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = QuestService.swift; path = FocusQuest/Services/QuestService.swift; sourceTree = SOURCE_ROOT; };
+		FQCC00000000000000000017 /* FocusService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FocusService.swift; path = FocusQuest/Services/FocusService.swift; sourceTree = SOURCE_ROOT; };
+		FQCC00000000000000000018 /* BrainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BrainService.swift; path = FocusQuest/Services/BrainService.swift; sourceTree = SOURCE_ROOT; };
+		FQCC00000000000000000019 /* UserService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = UserService.swift; path = FocusQuest/Services/UserService.swift; sourceTree = SOURCE_ROOT; };
+		FQCC00000000000000000020 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Theme.swift; path = FocusQuest/DesignSystem/Theme.swift; sourceTree = SOURCE_ROOT; };
+		FQCC00000000000000000021 /* Font+Outfit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "Font+Outfit.swift"; path = "FocusQuest/DesignSystem/Font+Outfit.swift"; sourceTree = SOURCE_ROOT; };
 		FQ0000000000000000000001 /* FocusQuest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FocusQuest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FQ00000000000000000000F1 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 		FQ000000000000000000B001 /* FocusQuestWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FocusQuestWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -86,6 +131,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		FQAA00000000000000000001 /* IntentCore */ = {
+			isa = PBXGroup;
+			children = (
+				FQAA00000000000000000002 /* IntentActions.swift */,
+			);
+			path = IntentCore;
+			sourceTree = "<group>";
+		};
 		FQ0000000000000000000000 = {
 			isa = PBXGroup;
 			children = (
@@ -111,6 +164,7 @@
 			children = (
 				FQ000000000000000000B002 /* FocusActivityAttributes.swift */,
 				FQ000000000000000000B006 /* WidgetSharedStore.swift */,
+				FQAA00000000000000000001 /* IntentCore */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -222,6 +276,7 @@
 			files = (
 				FQ000000000000000000B003 /* FocusActivityAttributes.swift in Sources */,
 				FQ000000000000000000B007 /* WidgetSharedStore.swift in Sources */,
+				FQAA00000000000000000003 /* IntentActions.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -231,6 +286,28 @@
 			files = (
 				FQ000000000000000000B004 /* FocusActivityAttributes.swift in Sources */,
 				FQ000000000000000000B008 /* WidgetSharedStore.swift in Sources */,
+				FQAA00000000000000000004 /* IntentActions.swift in Sources */,
+				FQDD00000000000000000001 /* APIClient.swift in Sources */,
+				FQDD00000000000000000002 /* APIError.swift in Sources */,
+				FQDD00000000000000000003 /* Keychain.swift in Sources */,
+				FQDD00000000000000000004 /* AppConfig.swift in Sources */,
+				FQDD00000000000000000005 /* BrainModels.swift in Sources */,
+				FQDD00000000000000000006 /* CampaignModels.swift in Sources */,
+				FQDD00000000000000000007 /* CoreModels.swift in Sources */,
+				FQDD00000000000000000008 /* Enums.swift in Sources */,
+				FQDD00000000000000000009 /* FeatModels.swift in Sources */,
+				FQDD00000000000000000010 /* FocusModels.swift in Sources */,
+				FQDD00000000000000000011 /* GamificationModels.swift in Sources */,
+				FQDD00000000000000000012 /* MiscModels.swift in Sources */,
+				FQDD00000000000000000013 /* QuestlineModels.swift in Sources */,
+				FQDD00000000000000000014 /* SocialModels.swift in Sources */,
+				FQDD00000000000000000015 /* TaskModels.swift in Sources */,
+				FQDD00000000000000000016 /* QuestService.swift in Sources */,
+				FQDD00000000000000000017 /* FocusService.swift in Sources */,
+				FQDD00000000000000000018 /* BrainService.swift in Sources */,
+				FQDD00000000000000000019 /* UserService.swift in Sources */,
+				FQDD00000000000000000020 /* Theme.swift in Sources */,
+				FQDD00000000000000000021 /* Font+Outfit.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
