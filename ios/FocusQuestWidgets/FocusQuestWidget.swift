@@ -64,7 +64,7 @@ struct FocusHomeView: View {
             Spacer(minLength: 4)
             questBlock
             Spacer(minLength: 4)
-            startFocusPill
+            actionButtons
         }
     }
 
@@ -79,7 +79,7 @@ struct FocusHomeView: View {
                 levelBadge
                 Spacer(minLength: 4)
                 todayProgress
-                startFocusPill
+                actionButtons
             }
             .frame(maxWidth: 130, alignment: .trailing)
         }
@@ -121,8 +121,26 @@ struct FocusHomeView: View {
             .font(.caption2).foregroundStyle(.secondary)
     }
 
-    private var startFocusPill: some View {
-        Label("Start Focus", systemImage: "timer")
+    /// Interactive buttons (iOS 17+ min target): complete the next quest and start
+    /// a focus session — both run their App Intent in the widget-extension process
+    /// without opening the app. The whole-tile `.widgetURL` remains the fallback tap.
+    @ViewBuilder private var actionButtons: some View {
+        VStack(spacing: 6) {
+            if let id = snapshot.nextQuestId, let title = snapshot.focusQuestTitle {
+                Button(intent: CompleteQuestIntent(quest: QuestEntity(id: id, title: title))) {
+                    pill("Complete", systemImage: "checkmark.circle")
+                }
+                .buttonStyle(.plain)
+            }
+            Button(intent: StartFocusIntent()) {
+                pill("Start Focus", systemImage: "timer")
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func pill(_ text: String, systemImage: String) -> some View {
+        Label(text, systemImage: systemImage)
             .font(.caption2.bold())
             .padding(.vertical, 5).padding(.horizontal, 10)
             .frame(maxWidth: .infinity)
@@ -164,8 +182,17 @@ struct FocusAccessoryView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Label("\(snapshot.streakDays)-day streak", systemImage: "flame.fill")
                     .font(.headline)
-                Text(snapshot.focusQuestTitle ?? "All clear today")
-                    .font(.caption).lineLimit(2)
+                if let id = snapshot.nextQuestId, let title = snapshot.focusQuestTitle {
+                    // Interactive complete right from the Lock Screen (iOS 17+).
+                    Button(intent: CompleteQuestIntent(quest: QuestEntity(id: id, title: title))) {
+                        Label(title, systemImage: "checkmark.circle")
+                            .font(.caption).lineLimit(2)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Text(snapshot.focusQuestTitle ?? "All clear today")
+                        .font(.caption).lineLimit(2)
+                }
             }
             .widgetAccentable()
         }

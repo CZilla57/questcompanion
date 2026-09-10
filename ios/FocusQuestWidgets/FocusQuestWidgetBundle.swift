@@ -8,6 +8,9 @@ struct FocusQuestWidgetBundle: WidgetBundle {
     var body: some Widget {
         FocusQuestHomeWidget()
         FocusQuestAccessoryWidget()
+        QuestListWidget()
+        StatsWidget()
+        ConfigurableFocusWidget()
         FocusActivityLiveActivity()
     }
 }

@@ -111,7 +111,10 @@ final class TodayViewModel: ObservableObject {
     /// widgets render it without a network call.
     private func publishWidgetSnapshot() {
         guard let s = stats.value else { return }
-        let title = focusSuggestion?.task.title ?? quests.first { !$0.completed }?.title
+        let pending = quests.filter { !$0.completed }
+        let title = focusSuggestion?.task.title ?? pending.first?.title
+        let nextId = focusSuggestion?.task.id ?? pending.first?.id
+        let top = quests.prefix(4).map { SnapshotQuest(id: $0.id, title: $0.title, completed: $0.completed) }
         WidgetSharedStore.write(WidgetSnapshot(
             focusQuestTitle: title,
             streakDays: s.streakDays,
@@ -119,7 +122,11 @@ final class TodayViewModel: ObservableObject {
             levelName: s.levelName,
             todayCompleted: s.todayTasksCompleted,
             todayTotal: s.todayTasksTotal,
-            updatedAt: .now))
+            updatedAt: .now,
+            nextQuestId: nextId,
+            topQuests: Array(top),
+            coins: nil,
+            activeFocus: false))
     }
 
     func skipFocus(_ suggestion: MomentumSuggestion) async {
