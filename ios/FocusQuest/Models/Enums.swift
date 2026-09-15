@@ -30,6 +30,25 @@ enum TaskCategory: String, Codable, CaseIterable {
         case .default: return "star.fill"
         }
     }
+
+    /// Human-readable name for pickers — mirrors the web `CATEGORIES` labels so
+    /// both surfaces read identically.
+    var label: String {
+        switch self {
+        case .health: return "Health"
+        case .deepWork: return "Deep Work"
+        case .learning: return "Learning"
+        case .finance: return "Finance"
+        case .admin: return "Admin"
+        case .household: return "Household"
+        case .social: return "Social"
+        case .creative: return "Creative"
+        case .selfCare: return "Self-Care"
+        case .errands: return "Errands"
+        case .travel: return "Travel"
+        case .default: return "General"
+        }
+    }
 }
 
 enum Priority: String, Codable, CaseIterable {

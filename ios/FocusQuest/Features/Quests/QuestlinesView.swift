@@ -99,7 +99,7 @@ struct QuestlineDetailView: View {
             }
         }
         .sheet(isPresented: $showQuickAdd) {
-            QuickAddSheet(onCreated: { _ in Task { await load() } }, questlineId: questlineId)
+            AddQuestSheet(onCreated: { _ in Task { await load() } }, questlineId: questlineId)
         }
         .task { if state.value == nil { await load() } }
     }

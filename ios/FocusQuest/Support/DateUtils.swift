@@ -30,6 +30,12 @@ enum DateUtils {
             ?? dateOnly.date(from: string)
     }
 
+    /// Local calendar date as `yyyy-MM-dd` — the plain-date shape the API wants
+    /// for recurring quest start/end dates.
+    static func ymd(_ date: Date) -> String {
+        dateOnly.string(from: date)
+    }
+
     /// e.g. "2h ago", "in 3 days".
     static func relative(_ string: String?) -> String {
         guard let date = parse(string) else { return "" }
