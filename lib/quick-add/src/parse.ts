@@ -1,4 +1,4 @@
-import type { ParsedQuickAdd, Priority } from "./types";
+import type { ParsedQuickAdd, ParsedRecurrence, Priority } from "./types";
 import { resolveHashtag } from "./categories";
 
 const PRIORITY_ALIASES: Record<string, Priority> = {
@@ -163,14 +163,57 @@ function extractDate(text: string, now: Date): Field<string> {
   return { value, rest };
 }
 
+function extractRecurrence(text: string, now: Date): Field<ParsedRecurrence> {
+  let value: ParsedRecurrence | undefined;
+  let rest = text;
+  const set = (r: ParsedRecurrence) => { value = r; return " "; };
+
+  // "every day" / "everyday" / "daily" → weekly, all seven
+  rest = rest.replace(/\b(every\s*day|everyday|daily)\b/i,
+    () => set({ frequency: "weekly", daysOfWeek: [0, 1, 2, 3, 4, 5, 6] }));
+
+  // "every weekday" / "weekdays" → Mon–Fri
+  if (value === undefined) {
+    rest = rest.replace(/\b(every\s+weekday|weekdays)\b/i,
+      () => set({ frequency: "weekly", daysOfWeek: [1, 2, 3, 4, 5] }));
+  }
+
+  // "every monday", "every mon and wed", "every mon, tue"
+  if (value === undefined) {
+    const day = "sunday|sun|monday|mon|tuesday|tues|tue|wednesday|weds|wed|thursday|thurs|thur|thu|friday|fri|saturday|sat";
+    const re = new RegExp(`\\bevery\\s+((?:${day})(?:\\s*(?:,|and|&|\\/)\\s*(?:${day}))*)\\b`, "i");
+    rest = rest.replace(re, (whole, group: string) => {
+      const days = Array.from(new Set(
+        group.split(/\s*(?:,|and|&|\/)\s*/i)
+          .map((w) => WEEKDAYS[w.toLowerCase()])
+          .filter((n): n is number => n !== undefined),
+      )).sort((a, b) => a - b);
+      return days.length ? set({ frequency: "weekly", daysOfWeek: days }) : whole;
+    });
+  }
+
+  // bare "weekly" / "every week" → today's weekday
+  if (value === undefined) {
+    rest = rest.replace(/\b(weekly|every\s+week)\b/i,
+      () => set({ frequency: "weekly", daysOfWeek: [now.getDay()] }));
+  }
+
+  return { value, rest };
+}
+
 export function parseQuickAdd(input: string, opts: { now: Date }): ParsedQuickAdd {
   const p = extractPriority(input);
   const h = extractHashtag(p.rest);
-  const d = extractDate(h.rest, opts.now);
+  const r = extractRecurrence(h.rest, opts.now);
+  // extractDate still runs (on recurrence-stripped text) to strip any stray date
+  // token from the title, e.g. "every friday next week" — but its value is
+  // discarded when a recurrence was found (a recurring quest has no single dueDate).
+  const d = extractDate(r.rest, opts.now);
   const t = extractTime(d.rest);
 
   const result: ParsedQuickAdd = { title: cleanTitle(t.rest) };
-  if (d.value) result.dueDate = d.value;
+  if (r.value) result.recurrence = r.value;
+  else if (d.value) result.dueDate = d.value;
   if (t.value) result.dueTime = t.value;
   if (p.value) result.priority = p.value;
   if (h.value) result.category = h.value;

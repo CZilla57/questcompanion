@@ -140,3 +140,50 @@ describe("parseQuickAdd — full line, order independent", () => {
     expect(parseQuickAdd("tomorrow 3pm !high", { now: NOW }).title).toBe("");
   });
 });
+
+describe("parseQuickAdd — weekly recurrence", () => {
+  it("'every day' → weekly, all seven days, no dueDate", () => {
+    const r = parseQuickAdd("stretch every day", { now: NOW });
+    expect(r.recurrence).toEqual({ frequency: "weekly", daysOfWeek: [0, 1, 2, 3, 4, 5, 6] });
+    expect(r.dueDate).toBeUndefined();
+    expect(r.title).toBe("stretch");
+  });
+
+  it("'every weekday' → Mon–Fri", () => {
+    const r = parseQuickAdd("gym every weekday", { now: NOW });
+    expect(r.recurrence).toEqual({ frequency: "weekly", daysOfWeek: [1, 2, 3, 4, 5] });
+    expect(r.title).toBe("gym");
+  });
+
+  it("'every mon and wed' → those days, deduped and sorted", () => {
+    const r = parseQuickAdd("standup every mon and wed", { now: NOW });
+    expect(r.recurrence).toEqual({ frequency: "weekly", daysOfWeek: [1, 3] });
+    expect(r.title).toBe("standup");
+  });
+
+  it("bare 'weekly' anchors to today's weekday (Sunday=0)", () => {
+    const r = parseQuickAdd("review weekly", { now: NOW });
+    expect(r.recurrence).toEqual({ frequency: "weekly", daysOfWeek: [0] });
+    expect(r.title).toBe("review");
+  });
+
+  it("'every friday' is recurring and does NOT set dueDate", () => {
+    const r = parseQuickAdd("call mom every friday", { now: NOW });
+    expect(r.recurrence).toEqual({ frequency: "weekly", daysOfWeek: [5] });
+    expect(r.dueDate).toBeUndefined();
+    expect(r.title).toBe("call mom");
+  });
+
+  it("control: bare 'friday' is still a one-off dueDate, no recurrence", () => {
+    const r = parseQuickAdd("call mom friday", { now: NOW });
+    expect(r.recurrence).toBeUndefined();
+    expect(r.dueDate).toBe("2026-07-17");
+  });
+
+  it("keeps dueTime alongside a recurrence", () => {
+    const r = parseQuickAdd("stretch every day at 8am", { now: NOW });
+    expect(r.recurrence).toEqual({ frequency: "weekly", daysOfWeek: [0, 1, 2, 3, 4, 5, 6] });
+    expect(r.dueTime).toBe("08:00");
+    expect(r.title).toBe("stretch");
+  });
+});
