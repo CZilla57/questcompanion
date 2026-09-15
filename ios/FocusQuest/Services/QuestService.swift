@@ -82,4 +82,8 @@ enum QuestService {
     static func recurringCreate(_ input: RecurringInput) async throws -> RecurringTask {
         try await APIClient.shared.post("recurring-tasks", body: input)
     }
+
+    static func recurringUpdate(id: Int, _ update: RecurringUpdate) async throws -> RecurringTask {
+        try await APIClient.shared.patch("recurring-tasks/\(id)", body: update)
+    }
 }
