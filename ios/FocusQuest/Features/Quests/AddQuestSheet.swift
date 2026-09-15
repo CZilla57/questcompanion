@@ -25,8 +25,10 @@ struct AddQuestSheet: View {
     @State private var priority: Priority = .medium
     @State private var category: TaskCategory = .default
 
-    // Standard-only.
-    @State private var hasDueDate = false
+    // Standard-only. A standard quest is due *today* by default — the server
+    // rejects a non-anchored quest with no dueDate — and "Anchor" is the web's
+    // escape hatch for a deadline-free quest (sends `isAnchored`, no dueDate).
+    @State private var isAnchored = false
     @State private var dueDate = Date()
     @State private var hasDueTime = false
     @State private var dueTime = Date()
@@ -141,15 +143,21 @@ struct AddQuestSheet: View {
     }
 
     private var standardSection: some View {
-        Section("Schedule") {
-            Toggle("Due date", isOn: $hasDueDate.animation())
-            if hasDueDate {
-                DatePicker("Date", selection: $dueDate, displayedComponents: .date)
+        Section {
+            Toggle("No deadline (anchor)", isOn: $isAnchored.animation())
+            if !isAnchored {
+                DatePicker("Due date", selection: $dueDate, displayedComponents: .date)
                 Toggle("Due time", isOn: $hasDueTime.animation())
                 if hasDueTime {
                     DatePicker("Time", selection: $dueTime, displayedComponents: .hourAndMinute)
                 }
             }
+        } header: {
+            Text("Schedule")
+        } footer: {
+            Text(isAnchored
+                ? "Anchored quests have no deadline — they stay on your list until done."
+                : "Defaults to today. Turn on Anchor to keep it around with no due date.")
         }
     }
 
@@ -237,7 +245,7 @@ struct AddQuestSheet: View {
             if let p = parsed.priority.flatMap(Priority.init(rawValue:)) { priority = p }
             if let c = parsed.category.flatMap(TaskCategory.init(rawValue:)) { category = c }
             if let d = parsed.dueDate.flatMap({ DateUtils.parse($0) }) {
-                hasDueDate = true
+                isAnchored = false
                 dueDate = d
             }
             if let t = parsed.dueTime, let parsedTime = Self.hm.date(from: t) {
@@ -260,8 +268,15 @@ struct AddQuestSheet: View {
                 input.category = category == .default ? nil : category
                 input.questlineId = questlineId
                 input.clientKey = UUID().uuidString
-                if hasDueDate { input.dueDate = DateUtils.ymd(dueDate) }
-                if hasDueDate, hasDueTime { input.dueTime = Self.hm.string(from: dueTime) }
+                // Exactly one of the two, mirroring the web create form: an
+                // anchored quest carries no dueDate, otherwise dueDate (today by
+                // default) is required by the server.
+                if isAnchored {
+                    input.isAnchored = true
+                } else {
+                    input.dueDate = DateUtils.ymd(dueDate)
+                    if hasDueTime { input.dueTime = Self.hm.string(from: dueTime) }
+                }
                 let quest = try await QuestService.create(input)
                 onCreated(quest)
             } else {
