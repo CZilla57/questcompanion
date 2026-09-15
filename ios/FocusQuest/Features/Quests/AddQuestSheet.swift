@@ -244,13 +244,22 @@ struct AddQuestSheet: View {
             title = parsed.title
             if let p = parsed.priority.flatMap(Priority.init(rawValue:)) { priority = p }
             if let c = parsed.category.flatMap(TaskCategory.init(rawValue:)) { category = c }
-            if let d = parsed.dueDate.flatMap({ DateUtils.parse($0) }) {
-                isAnchored = false
-                dueDate = d
-            }
-            if let t = parsed.dueTime, let parsedTime = Self.hm.date(from: t) {
-                hasDueTime = true
-                dueTime = parsedTime
+
+            if let r = parsed.recurrence, allowsRecurring {
+                // Recurrence detected → flip to the Recurring form, pre-filled.
+                mode = .recurring
+                draft.apply(r)
+                if let t = parsed.dueTime { draft.timeOfDay = t }
+            } else {
+                // One-off fill (or recurring not allowed in a questline context).
+                if let d = parsed.dueDate.flatMap({ DateUtils.parse($0) }) {
+                    isAnchored = false
+                    dueDate = d
+                }
+                if let t = parsed.dueTime, let parsedTime = Self.hm.date(from: t) {
+                    hasDueTime = true
+                    dueTime = parsedTime
+                }
             }
         } catch {
             self.error = error.userMessage

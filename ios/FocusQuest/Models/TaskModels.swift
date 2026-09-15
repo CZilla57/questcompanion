@@ -61,6 +61,19 @@ struct ParsedQuickAdd: Codable {
     let dueTime: String?
     let priority: String?
     let category: String?
+    let recurrence: ParsedRecurrence?
+}
+
+/// The recurrence descriptor from `/tasks/parse` (camelCase keys, snake_case
+/// enum values) — all optional so a one-off response decodes fine. Mirrors the
+/// shared `ParsedRecurrence` TS type.
+struct ParsedRecurrence: Codable {
+    let frequency: Frequency
+    let daysOfWeek: [Int]?
+    let monthlyMode: MonthlyMode?
+    let dayOfMonth: Int?
+    let weekOfMonth: Int?
+    let monthOfYear: Int?
 }
 
 struct TranscribeResult: Codable { let text: String }
@@ -249,6 +262,22 @@ struct RecurringDraft {
     /// server would reject.
     var needsWeekday: Bool { frequency == .weekly || monthlyMode == .nthWeekday }
     var isValid: Bool { !needsWeekday || !daysOfWeek.isEmpty }
+}
+
+extension RecurringDraft {
+    /// Overlay a parsed recurrence descriptor onto the draft's defaults, leaving
+    /// any field the parser didn't resolve at its default (e.g. startDate stays
+    /// today). `leadDays` follows the frequency's default, matching the sheet's
+    /// own frequency-change behavior.
+    mutating func apply(_ r: ParsedRecurrence) {
+        frequency = r.frequency
+        leadDays = r.frequency.defaultLeadDays
+        if let days = r.daysOfWeek, !days.isEmpty { daysOfWeek = days }
+        if let mode = r.monthlyMode { monthlyMode = mode }
+        if let d = r.dayOfMonth { dayOfMonth = d }
+        if let w = r.weekOfMonth { weekOfMonth = w }
+        if let mo = r.monthOfYear { monthOfYear = mo }
+    }
 }
 
 /// Wire payload for `POST /recurring-tasks`.
