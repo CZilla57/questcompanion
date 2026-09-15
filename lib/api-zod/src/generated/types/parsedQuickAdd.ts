@@ -7,6 +7,7 @@
  */
 import type { ParsedQuickAddCategory } from './parsedQuickAddCategory';
 import type { ParsedQuickAddPriority } from './parsedQuickAddPriority';
+import type { ParsedRecurrence } from './parsedRecurrence';
 
 export interface ParsedQuickAdd {
   title: string;
@@ -18,4 +19,5 @@ export interface ParsedQuickAdd {
   priority?: ParsedQuickAddPriority;
   /** @nullable */
   category?: ParsedQuickAddCategory;
+  recurrence?: ParsedRecurrence;
 }

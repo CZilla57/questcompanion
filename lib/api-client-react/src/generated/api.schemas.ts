@@ -647,6 +647,45 @@ export const ParsedQuickAddCategory = {
   default: 'default',
 } as const;
 
+export type ParsedRecurrenceFrequency = typeof ParsedRecurrenceFrequency[keyof typeof ParsedRecurrenceFrequency];
+
+
+export const ParsedRecurrenceFrequency = {
+  weekly: 'weekly',
+  monthly: 'monthly',
+  yearly: 'yearly',
+} as const;
+
+export type ParsedRecurrenceMonthlyMode = typeof ParsedRecurrenceMonthlyMode[keyof typeof ParsedRecurrenceMonthlyMode];
+
+
+export const ParsedRecurrenceMonthlyMode = {
+  day_of_month: 'day_of_month',
+  nth_weekday: 'nth_weekday',
+} as const;
+
+export interface ParsedRecurrence {
+  frequency: ParsedRecurrenceFrequency;
+  /** Days of week for weekly recurrence (0=Sun..6=Sat) */
+  daysOfWeek?: number[];
+  monthlyMode?: ParsedRecurrenceMonthlyMode;
+  /**
+     * @minimum 1
+     * @maximum 31
+     */
+  dayOfMonth?: number;
+  /**
+     * @minimum 1
+     * @maximum 4
+     */
+  weekOfMonth?: number;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  monthOfYear?: number;
+}
+
 export interface ParsedQuickAdd {
   title: string;
   /** @nullable */
@@ -657,6 +696,7 @@ export interface ParsedQuickAdd {
   priority?: ParsedQuickAddPriority;
   /** @nullable */
   category?: ParsedQuickAddCategory;
+  recurrence?: ParsedRecurrence;
 }
 
 export interface TranscribeResult {

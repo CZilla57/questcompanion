@@ -647,12 +647,31 @@ export const ParseQuickAddBody = zod.object({
   "today": zod.string().regex(parseQuickAddBodyTodayRegExp).optional().describe('The client\'s local calendar date (YYYY-MM-DD), used to anchor relative date parsing in the client\'s timezone.')
 })
 
+export const parseQuickAddResponseRecurrenceDaysOfWeekItemMin = 0;
+export const parseQuickAddResponseRecurrenceDaysOfWeekItemMax = 6;
+
+export const parseQuickAddResponseRecurrenceDayOfMonthMax = 31;
+
+export const parseQuickAddResponseRecurrenceWeekOfMonthMax = 4;
+
+export const parseQuickAddResponseRecurrenceMonthOfYearMax = 12;
+
+
+
 export const ParseQuickAddResponse = zod.object({
   "title": zod.string(),
   "dueDate": zod.string().nullish(),
   "dueTime": zod.string().nullish(),
   "priority": zod.union([zod.literal('low'),zod.literal('medium'),zod.literal('high'),zod.literal(null)]).nullish(),
-  "category": zod.union([zod.literal('health'),zod.literal('deep_work'),zod.literal('learning'),zod.literal('finance'),zod.literal('admin'),zod.literal('household'),zod.literal('social'),zod.literal('creative'),zod.literal('self_care'),zod.literal('errands'),zod.literal('travel'),zod.literal('default'),zod.literal(null)]).nullish()
+  "category": zod.union([zod.literal('health'),zod.literal('deep_work'),zod.literal('learning'),zod.literal('finance'),zod.literal('admin'),zod.literal('household'),zod.literal('social'),zod.literal('creative'),zod.literal('self_care'),zod.literal('errands'),zod.literal('travel'),zod.literal('default'),zod.literal(null)]).nullish(),
+  "recurrence": zod.object({
+  "frequency": zod.enum(['weekly', 'monthly', 'yearly']),
+  "daysOfWeek": zod.array(zod.number().min(parseQuickAddResponseRecurrenceDaysOfWeekItemMin).max(parseQuickAddResponseRecurrenceDaysOfWeekItemMax)).optional().describe('Days of week for weekly recurrence (0=Sun..6=Sat)'),
+  "monthlyMode": zod.enum(['day_of_month', 'nth_weekday']).optional(),
+  "dayOfMonth": zod.number().min(1).max(parseQuickAddResponseRecurrenceDayOfMonthMax).optional(),
+  "weekOfMonth": zod.number().min(1).max(parseQuickAddResponseRecurrenceWeekOfMonthMax).optional(),
+  "monthOfYear": zod.number().min(1).max(parseQuickAddResponseRecurrenceMonthOfYearMax).optional()
+}).optional()
 })
 
 

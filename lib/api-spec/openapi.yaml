@@ -3792,6 +3792,38 @@ components:
         category:
           type: ["string", "null"]
           enum: [health, deep_work, learning, finance, admin, household, social, creative, self_care, errands, travel, default, null]
+        recurrence:
+          $ref: "#/components/schemas/ParsedRecurrence"
+
+    ParsedRecurrence:
+      type: object
+      required: [frequency]
+      properties:
+        frequency:
+          type: string
+          enum: [weekly, monthly, yearly]
+        daysOfWeek:
+          type: array
+          description: Days of week for weekly recurrence (0=Sun..6=Sat)
+          items:
+            type: integer
+            minimum: 0
+            maximum: 6
+        monthlyMode:
+          type: string
+          enum: [day_of_month, nth_weekday]
+        dayOfMonth:
+          type: integer
+          minimum: 1
+          maximum: 31
+        weekOfMonth:
+          type: integer
+          minimum: 1
+          maximum: 4
+        monthOfYear:
+          type: integer
+          minimum: 1
+          maximum: 12
 
     TranscribeResult:
       type: object
