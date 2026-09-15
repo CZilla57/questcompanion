@@ -368,7 +368,7 @@ router.post("/tasks/parse", async (req, res): Promise<void> => {
   const deterministic = parseQuickAdd(text, { now });
 
   // Deterministic path was enough — no LLM call needed.
-  if (deterministic.dueDate || deterministic.dueTime) {
+  if (deterministic.dueDate || deterministic.dueTime || deterministic.recurrence) {
     res.json(deterministic);
     return;
   }
