@@ -213,6 +213,13 @@ struct RecurringTask: Codable, Identifiable {
     let totalCompletions: Int
     let lastCompletedDate: String?
     let frequency: String
+    // Cadence detail (nil for weekly rules, and for any field the rule doesn't
+    // use). Present so the edit form can pre-fill the exact stored rule; the GET
+    // response carries them straight from the row.
+    let monthlyMode: MonthlyMode?
+    let dayOfMonth: Int?
+    let weekOfMonth: Int?
+    let monthOfYear: Int?
     let leadDays: Int
     let scheduleLabel: String
     let streakUnit: String
@@ -278,6 +285,34 @@ extension RecurringDraft {
         if let w = r.weekOfMonth { weekOfMonth = w }
         if let mo = r.monthOfYear { monthOfYear = mo }
     }
+
+    /// Seed the form from an existing template so Edit opens on the stored rule.
+    /// Fields the rule doesn't use keep the draft's sensible defaults (e.g. a
+    /// weekly rule leaves `dayOfMonth` at 1) so switching cadence in the sheet
+    /// still shows populated controls.
+    init(from task: RecurringTask) {
+        self.init()
+        frequency = Frequency(rawValue: task.frequency) ?? .weekly
+        daysOfWeek = task.daysOfWeek
+        if let mode = task.monthlyMode { monthlyMode = mode }
+        if let d = task.dayOfMonth { dayOfMonth = d }
+        if let w = task.weekOfMonth { weekOfMonth = w }
+        if let mo = task.monthOfYear { monthOfYear = mo }
+        leadDays = task.leadDays
+        timeOfDay = task.timeOfDay
+        if let start = Self.ymd.date(from: task.startDate) { startDate = start }
+        if let end = task.endDate, let parsed = Self.ymd.date(from: end) {
+            hasEndDate = true
+            endDate = parsed
+        }
+    }
+
+    private static let ymd: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
 }
 
 /// Wire payload for `POST /recurring-tasks`.
@@ -328,6 +363,96 @@ struct RecurringInput: Encodable {
         return RecurringInput(
             title: title, description: description, priority: priority, category: category,
             // nth_weekday carries exactly one weekday; day_of_month carries none.
+            daysOfWeek: byWeekday ? Array(draft.daysOfWeek.prefix(1)) : [],
+            timeOfDay: draft.timeOfDay,
+            startDate: ymd(draft.startDate), endDate: endDate,
+            frequency: draft.frequency,
+            monthlyMode: draft.monthlyMode,
+            dayOfMonth: byWeekday ? nil : draft.dayOfMonth,
+            weekOfMonth: byWeekday ? draft.weekOfMonth : nil,
+            monthOfYear: draft.frequency == .yearly ? draft.monthOfYear : nil,
+            leadDays: draft.leadDays)
+    }
+}
+
+/// Wire payload for `PATCH /recurring-tasks/:id`.
+///
+/// The server merges with **presence semantics**: a cadence key present in the
+/// body wins even as `null` (which clears it), while an absent key keeps the
+/// stored value. Swift's synthesized `Encodable` *omits* nil optionals, so a
+/// weekly edit would leave stale `dayOfMonth`/`weekOfMonth`/… behind. The custom
+/// `encode(to:)` below always emits the cadence keys — as `null` when unused —
+/// so the server sees the same coherent rule the web sends. Mirrors the web's
+/// `RecurrencePayload` field-for-field.
+struct RecurringUpdate: Encodable {
+    var title: String
+    var priority: Priority
+    var category: TaskCategory?
+    var daysOfWeek: [Int]
+    var timeOfDay: String
+    var startDate: String
+    var endDate: String?
+    var frequency: Frequency
+    var monthlyMode: MonthlyMode?
+    var dayOfMonth: Int?
+    var weekOfMonth: Int?
+    var monthOfYear: Int?
+    var leadDays: Int
+
+    private enum CodingKeys: String, CodingKey {
+        case title, priority, category, daysOfWeek, timeOfDay, startDate, endDate
+        case frequency, monthlyMode, dayOfMonth, weekOfMonth, monthOfYear, leadDays
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(title, forKey: .title)
+        try c.encode(priority, forKey: .priority)
+        // Category only when explicitly set — a `.default` selection lets the
+        // server keep whatever it had (matching create's auto-categorize).
+        try c.encodeIfPresent(category, forKey: .category)
+        try c.encode(daysOfWeek, forKey: .daysOfWeek)
+        try c.encode(timeOfDay, forKey: .timeOfDay)
+        try c.encode(startDate, forKey: .startDate)
+        try c.encode(leadDays, forKey: .leadDays)
+        try c.encode(frequency, forKey: .frequency)
+        // Always-present keys: `encode` (not `encodeIfPresent`) writes `null`
+        // when the value is nil, so presence semantics clear the stale field.
+        try c.encode(endDate, forKey: .endDate)
+        try c.encode(monthlyMode, forKey: .monthlyMode)
+        try c.encode(dayOfMonth, forKey: .dayOfMonth)
+        try c.encode(weekOfMonth, forKey: .weekOfMonth)
+        try c.encode(monthOfYear, forKey: .monthOfYear)
+    }
+
+    private static let ymdFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+    private static func ymd(_ date: Date) -> String { ymdFormatter.string(from: date) }
+
+    /// Prune the draft to the chosen rule's fields, exactly like
+    /// `RecurringInput.build`, but keep the cleared cadence fields as `nil` so
+    /// `encode(to:)` sends them as explicit `null`.
+    static func build(title: String, priority: Priority,
+                      category: TaskCategory?, draft: RecurringDraft) -> RecurringUpdate {
+        let category = category == .default ? nil : category
+        let endDate = draft.hasEndDate ? ymd(draft.endDate) : nil
+
+        if draft.frequency == .weekly {
+            return RecurringUpdate(
+                title: title, priority: priority, category: category,
+                daysOfWeek: draft.daysOfWeek, timeOfDay: draft.timeOfDay,
+                startDate: ymd(draft.startDate), endDate: endDate,
+                frequency: .weekly, monthlyMode: nil, dayOfMonth: nil,
+                weekOfMonth: nil, monthOfYear: nil, leadDays: draft.leadDays)
+        }
+
+        let byWeekday = draft.monthlyMode == .nthWeekday
+        return RecurringUpdate(
+            title: title, priority: priority, category: category,
             daysOfWeek: byWeekday ? Array(draft.daysOfWeek.prefix(1)) : [],
             timeOfDay: draft.timeOfDay,
             startDate: ymd(draft.startDate), endDate: endDate,
