@@ -81,6 +81,11 @@ const MONTHS: Record<string, number> = {
   jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
 };
 
+const ORDINAL_WORDS: Record<string, number> = {
+  first: 1, second: 2, third: 3, fourth: 4,
+  "1st": 1, "2nd": 2, "3rd": 3, "4th": 4,
+};
+
 function ymd(d: Date): string { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
 function atMidnight(now: Date): Date { return new Date(now.getFullYear(), now.getMonth(), now.getDate()); }
 function addDays(base: Date, n: number): Date { const r = new Date(base); r.setDate(r.getDate() + n); return r; }
@@ -196,6 +201,41 @@ function extractRecurrence(text: string, now: Date): Field<ParsedRecurrence> {
   if (value === undefined) {
     rest = rest.replace(/\b(weekly|every\s+week)\b/i,
       () => set({ frequency: "weekly", daysOfWeek: [now.getDay()] }));
+  }
+
+  // "first monday of the month" / "3rd friday monthly"
+  if (value === undefined) {
+    const day = "sunday|sun|monday|mon|tuesday|tues|tue|wednesday|weds|wed|thursday|thurs|thur|thu|friday|fri|saturday|sat";
+    const re = new RegExp(
+      `\\b(first|second|third|fourth|1st|2nd|3rd|4th)\\s+(${day})\\b(?:\\s+(?:of\\s+(?:the\\s+)?month|monthly))?`,
+      "i",
+    );
+    rest = rest.replace(re, (whole, ord: string, name: string) => {
+      const w = ORDINAL_WORDS[ord.toLowerCase()];
+      const dn = WEEKDAYS[name.toLowerCase()];
+      if (!w || dn === undefined) return whole;
+      return set({ frequency: "monthly", monthlyMode: "nth_weekday", weekOfMonth: w, daysOfWeek: [dn] });
+    });
+  }
+
+  // "monthly on the 15th" / "every month on the 1st" / bare "monthly"
+  if (value === undefined) {
+    rest = rest.replace(
+      /\b(?:monthly|every\s+month)(?:\s+on\s+(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)?)?\b/i,
+      (whole, dom: string | undefined) => {
+        const dayNum = dom ? parseInt(dom, 10) : now.getDate();
+        if (dayNum < 1 || dayNum > 31) return whole;
+        return set({ frequency: "monthly", monthlyMode: "day_of_month", dayOfMonth: dayNum });
+      });
+  }
+
+  // "yearly" / "annually" / "every year" → today's month + day
+  if (value === undefined) {
+    rest = rest.replace(/\b(yearly|annually|every\s+year)\b/i,
+      () => set({
+        frequency: "yearly", monthlyMode: "day_of_month",
+        dayOfMonth: now.getDate(), monthOfYear: now.getMonth() + 1,
+      }));
   }
 
   return { value, rest };

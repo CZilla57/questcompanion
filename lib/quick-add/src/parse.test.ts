@@ -187,3 +187,28 @@ describe("parseQuickAdd — weekly recurrence", () => {
     expect(r.title).toBe("stretch");
   });
 });
+
+describe("parseQuickAdd — monthly & yearly recurrence", () => {
+  it("'monthly on the 1st' → day_of_month 1", () => {
+    const r = parseQuickAdd("pay rent monthly on the 1st", { now: NOW });
+    expect(r.recurrence).toEqual({ frequency: "monthly", monthlyMode: "day_of_month", dayOfMonth: 1 });
+    expect(r.title).toBe("pay rent");
+  });
+
+  it("bare 'monthly' anchors day_of_month to today's date (12)", () => {
+    const r = parseQuickAdd("pay rent monthly", { now: NOW });
+    expect(r.recurrence).toEqual({ frequency: "monthly", monthlyMode: "day_of_month", dayOfMonth: 12 });
+  });
+
+  it("'first monday of the month' → nth_weekday, week 1, Monday", () => {
+    const r = parseQuickAdd("report first monday of the month", { now: NOW });
+    expect(r.recurrence).toEqual({ frequency: "monthly", monthlyMode: "nth_weekday", weekOfMonth: 1, daysOfWeek: [1] });
+    expect(r.title).toBe("report");
+  });
+
+  it("'yearly' anchors month+day to today (2026-07-12 → month 7, day 12)", () => {
+    const r = parseQuickAdd("taxes yearly", { now: NOW });
+    expect(r.recurrence).toEqual({ frequency: "yearly", monthlyMode: "day_of_month", dayOfMonth: 12, monthOfYear: 7 });
+    expect(r.title).toBe("taxes");
+  });
+});
