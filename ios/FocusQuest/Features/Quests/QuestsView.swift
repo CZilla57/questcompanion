@@ -122,7 +122,10 @@ struct QuestsView: View {
                 }
             }
             .sheet(isPresented: $model.showQuickAdd) {
-                QuickAddSheet { _ in Task { await model.load(); await QuestNudgeScheduler.refresh() } }
+                AddQuestSheet(
+                    onCreated: { _ in Task { await model.load(); await QuestNudgeScheduler.refresh() } },
+                    onRecurringCreated: { Task { await model.load(); await QuestNudgeScheduler.refresh() } }
+                )
             }
             .sheet(item: $model.completion) { CompletionSheet(result: $0) }
             .task {

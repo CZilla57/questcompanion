@@ -199,7 +199,7 @@ struct TodayView: View {
             .refreshable { await model.load() }
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $model.showQuickAdd) {
-                QuickAddSheet { quest in model.quests.insert(quest, at: 0); Task { await model.load() } }
+                AddQuestSheet { quest in model.quests.insert(quest, at: 0); Task { await model.load() } }
             }
             .sheet(item: $model.completion) { result in CompletionSheet(result: result) }
             .task { await model.load() }
