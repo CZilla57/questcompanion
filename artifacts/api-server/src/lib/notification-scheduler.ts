@@ -28,17 +28,27 @@ import { isRecapEmailConfigured, sendEmail } from "./email/send-email";
 import { renderRecapEmail } from "./email/render-recap";
 import { generateJson, isAiConfigured } from "./ai/client";
 import {
-  selectPush, consumesBudget, DAILY_PUSH_BUDGET, PUSH_SPACING_MIN,
-  type PushCandidate, type EnvelopeState,
+  selectPush, consumesBudget, stampTarget, DAILY_PUSH_BUDGET, PUSH_SPACING_MIN,
+  type PushCandidate, type EnvelopeState, type CandidateKind,
 } from "./notification-envelope";
 import { isFeatureUnlocked } from "./feature-gates";
 import { SWEEP_STALE_MIN, SWEEP_MAX_AGE_HOURS } from "./body-double";
 import { pingHeartbeat } from "./heartbeat";
 import { pushToUser } from "./push-dispatch-live";
+import type { PushPayload } from "./push-notifications";
 import type { User } from "@workspace/db";
 
-async function notify(userId: number, title: string, body: string, tag: string, data?: Record<string, unknown>) {
-  await pushToUser(userId, { title, body, tag, ...(data ? { data } : {}) });
+// Single choke point for every envelope-dispatched payload: stamps data.target
+// from the candidate's kind (Act VII deep-link routing) before it ever reaches
+// pushToUser, so every push sent through notify() is routable on tap.
+export function buildNotifyPayload(
+  kind: CandidateKind, title: string, body: string, tag: string, data?: Record<string, unknown>,
+): PushPayload {
+  return stampTarget(kind, { title, body, tag, ...(data ? { data } : {}) });
+}
+
+async function notify(userId: number, kind: CandidateKind, title: string, body: string, tag: string, data?: Record<string, unknown>) {
+  await pushToUser(userId, buildNotifyPayload(kind, title, body, tag, data));
 }
 
 type ProducedCandidate = PushCandidate & { commit: () => Promise<void> };
@@ -334,7 +344,7 @@ async function runEnvelopePass(users: User[], now: Date) {
       if (claimed.length === 0) continue; // another tick won this slot
 
       try {
-        await notify(user.id, produced.title, produced.body, produced.tag, produced.url ? { url: produced.url } : undefined);
+        await notify(user.id, produced.kind, produced.title, produced.body, produced.tag, produced.url ? { url: produced.url } : undefined);
       } catch (err) {
         // Nothing was delivered — un-charge OUR claim so a transient failure
         // can't burn a budget slot or spacing-block protection for 90 min.
