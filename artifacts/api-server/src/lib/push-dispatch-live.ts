@@ -2,6 +2,9 @@ import { eq, and, inArray } from "drizzle-orm";
 import { db, pushSubscriptionsTable, deviceTokensTable } from "@workspace/db";
 import { sendPushNotification, type PushPayload } from "./push-notifications";
 import { buildExpoMessages, sendExpoPush, expoHttpTransport } from "./expo-push";
+import {
+  apnsConfigFromEnv, apnsHttpTransport, buildApnsRequests, sendApnsPush,
+} from "./apns-push";
 import type { DispatchDeps } from "./device-dispatch";
 import { sendWebToUser, bestEffortDispatch, type WebPushDeps } from "./push-dispatch";
 
@@ -38,6 +41,21 @@ export function buildDispatchDeps(): DispatchDeps {
       await db.delete(deviceTokensTable).where(inArray(deviceTokensTable.token, tokens));
     },
     sendWeb: (userId, payload) => sendWebToUser(userId, payload, webDeps),
+    listApnsTokens: async (userId) => {
+      const rows = await db
+        .select({ token: deviceTokensTable.token })
+        .from(deviceTokensTable)
+        .where(and(
+          eq(deviceTokensTable.userId, userId),
+          eq(deviceTokensTable.provider, "apns"),
+        ));
+      return rows.map((r) => r.token);
+    },
+    sendApns: async (tokens, payload) => {
+      const cfg = apnsConfigFromEnv();
+      if (!cfg) return tokens.map(() => ({ status: "ok" as const })); // unconfigured: no-op, prune nothing
+      return sendApnsPush(buildApnsRequests(tokens, payload, cfg.bundleId), apnsHttpTransport(cfg));
+    },
   };
 }
 
