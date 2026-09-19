@@ -29,6 +29,24 @@ struct MainTabView: View {
         .onChange(of: scenePhase) { _, p in
             if p == .active { Task { await QuestNudgeScheduler.refresh() } }
         }
+        // Deep-link path for a "reflection" notification target: presented as a
+        // sheet (its own NavigationStack, since ReflectionView expects a nav-bar
+        // host for its .navigationTitle) so it opens regardless of which tab is
+        // active. The existing manual NavigationLink to ReflectionView inside
+        // MoreView below is untouched.
+        .sheet(isPresented: Binding(
+            get: { router.pendingDetail == .reflection },
+            set: { if !$0 { router.pendingDetail = nil } }
+        )) {
+            NavigationStack {
+                ReflectionView()
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Done") { router.pendingDetail = nil }
+                        }
+                    }
+            }
+        }
     }
 }
 

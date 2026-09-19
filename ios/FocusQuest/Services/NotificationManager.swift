@@ -165,7 +165,10 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
         [.banner, .sound]
     }
 
-    /// Routes a notification tap to the relevant screen.
+    /// Routes a notification tap to the relevant screen: local Focus/Quest nudges by
+    /// identifier prefix, or a remote push's server-stamped `target` (Task 4's
+    /// `stampTarget`/`KIND_ROUTE`, delivered as a top-level `target` key alongside
+    /// `aps` in the APNs payload, which iOS surfaces in `userInfo`).
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse
@@ -175,6 +178,19 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
             AppRouter.shared.tab = .focus
         } else if identifier.hasPrefix("quest.") {
             AppRouter.shared.tab = .quests
+        }
+
+        if let target = response.notification.request.content.userInfo["target"] as? [String: Any],
+           let screen = target["screen"] as? String {
+            switch screen {
+            case "today": AppRouter.shared.tab = .today
+            case "hero": AppRouter.shared.tab = .hero
+            case "focus": AppRouter.shared.tab = .focus
+            case "reflection":
+                AppRouter.shared.tab = .more
+                AppRouter.shared.pendingDetail = .reflection
+            default: break
+            }
         }
     }
 }

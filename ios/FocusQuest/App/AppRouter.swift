@@ -12,4 +12,10 @@ final class AppRouter: ObservableObject {
 
     enum Tab: Int { case today, quests, focus, hero, more }
     @Published var tab: Tab = .today
+
+    /// A non-tab destination nested inside a tab (e.g. Reflection lives under the
+    /// More tab). Set alongside `tab` when a deep link targets one of these so the
+    /// hosting view can present it, then cleared once presented/dismissed.
+    enum DetailRoute: Equatable { case reflection }
+    @Published var pendingDetail: DetailRoute?
 }
