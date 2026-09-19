@@ -109,6 +109,12 @@ export function apnsHttpTransport(cfg: ApnsConfig): ApnsTransport {
     }
     const send = (r: ApnsRequest): Promise<ApnsReceipt> =>
       new Promise((resolve) => {
+        let settled = false;
+        const settle = (receipt: ApnsReceipt) => {
+          if (settled) return;
+          settled = true;
+          resolve(receipt);
+        };
         const stream = client.request({
           ":method": "POST",
           ":path": `/3/device/${r.token}`,
@@ -121,12 +127,17 @@ export function apnsHttpTransport(cfg: ApnsConfig): ApnsTransport {
         stream.on("response", (h) => { status = Number(h[":status"]); });
         stream.on("data", (c) => { data += c; });
         stream.on("end", () => {
-          if (status === 200) return resolve({ status: "ok" });
+          if (status === 200) return settle({ status: "ok" });
           let reason: string | undefined;
           try { reason = JSON.parse(data).reason; } catch { /* non-JSON */ }
-          resolve({ status: "error", reason });
+          settle({ status: "error", reason });
         });
-        stream.on("error", () => resolve({ status: "error" }));
+        stream.on("error", () => settle({ status: "error" }));
+        // destroy() with no error (the timeout above, or the session-level
+        // timeout destroying this stream along with it) emits only 'close',
+        // never 'end'/'error' — without this, the promise hangs forever and
+        // the timeout stops preventing the stall it exists to prevent.
+        stream.on("close", () => settle({ status: "error" }));
         stream.end();
       });
     try {
