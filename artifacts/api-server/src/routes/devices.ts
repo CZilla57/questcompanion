@@ -7,17 +7,20 @@ const router: IRouter = Router();
 router.post("/devices", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) { res.status(401).json({ error: "Unauthorized" }); return; }
   const userId = req.gameUserId;
-  const { token, provider } = req.body as { token?: string; provider?: string };
+  const { token, provider, environment } = req.body as {
+    token?: string; provider?: string; environment?: string;
+  };
   if (!token || (provider !== "expo" && provider !== "apns")) {
     res.status(400).json({ error: "token and provider ('expo'|'apns') are required" });
     return;
   }
+  const env = environment === "sandbox" || environment === "production" ? environment : null;
   await db
     .insert(deviceTokensTable)
-    .values({ userId, provider, token, platform: "ios" })
+    .values({ userId, provider, token, platform: "ios", environment: env })
     .onConflictDoUpdate({
       target: [deviceTokensTable.provider, deviceTokensTable.token],
-      set: { userId, lastSeenAt: new Date() },
+      set: { userId, environment: env, lastSeenAt: new Date() },
     });
   res.status(201).json({ success: true });
 });

@@ -84,7 +84,7 @@ async function sendRoomInvites(hostId: number): Promise<void> {
       title,
       body: "Drop in and work alongside",
       tag: "bodydouble-invite",
-      data: { url: "/focus" },
+      data: { url: "/focus", target: { screen: "focus" } },
     });
   }
 }

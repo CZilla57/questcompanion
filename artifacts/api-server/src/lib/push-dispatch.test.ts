@@ -39,6 +39,8 @@ describe("bestEffortDispatch", () => {
   const dispatchDeps = (over: Record<string, unknown> = {}) => ({
     listExpoTokens: vi.fn().mockResolvedValue([]),
     sendExpo: vi.fn().mockResolvedValue([]),
+    listApnsTokens: vi.fn().mockResolvedValue([]),
+    sendApns: vi.fn().mockResolvedValue([]),
     pruneTokens: vi.fn().mockResolvedValue(undefined),
     sendWeb: vi.fn().mockResolvedValue(1),
     ...over,

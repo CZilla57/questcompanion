@@ -37,6 +37,7 @@ final class AuthManager: ObservableObject {
         await APIClient.shared.setToken(token)
         if token != nil {
             status = .authenticated
+            await NotificationManager.shared.reregisterIfAuthorized()
             // Confirm the token is still valid; sign out silently if not.
             await refreshAuthUser()
         } else {
@@ -72,6 +73,7 @@ final class AuthManager: ObservableObject {
             self.token = token
             await APIClient.shared.setToken(token)
             status = .authenticated
+            await NotificationManager.shared.reregisterIfAuthorized()
             await refreshAuthUser()
         } catch is CancellationError {
             // Ignore explicit cancellation.
@@ -87,6 +89,32 @@ final class AuthManager: ObservableObject {
     func logout() async {
         isWorking = true
         defer { isWorking = false }
+        // Deregister the push token FIRST, while the bearer is still valid server-side —
+        // once serverLogout() below deletes the session, DELETE /devices/:token 401s and
+        // the token is orphaned (keeps receiving this user's pushes after sign-out; the
+        // delete route requires being authenticated as the token's current owner, so
+        // once we've signed out there is no credential left to retry with). Retry a few
+        // times first, since a transient network blip is the common failure mode — this
+        // is not a full fix for a device that's offline for the whole window; that
+        // residual case self-heals only if someone (this user or another) registers a
+        // token on this device again later, since registration upserts by token.
+        if let apnsToken = UserDefaults.standard.string(forKey: "apnsToken") {
+            var deregistered = false
+            for attempt in 0..<3 {
+                do {
+                    try await DeviceService.unregister(token: apnsToken)
+                    deregistered = true
+                    break
+                } catch {
+                    if attempt < 2 {
+                        try? await Task.sleep(nanoseconds: UInt64(500_000_000 * (attempt + 1)))
+                    }
+                }
+            }
+            if deregistered {
+                UserDefaults.standard.removeObject(forKey: "apnsToken")
+            }
+        }
         // Invalidate the server session while the token is still attached.
         try? await AuthService.serverLogout()
         Keychain.delete(account: tokenAccount)

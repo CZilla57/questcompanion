@@ -9,6 +9,7 @@ export const deviceTokensTable = pgTable(
     provider: text("provider").notNull(), // 'expo' | 'apns'
     token: text("token").notNull(),
     platform: text("platform").notNull().default("ios"),
+    environment: text("environment"), // 'sandbox' | 'production' for apns; null for expo
     createdAt: timestamp("created_at").notNull().defaultNow(),
     lastSeenAt: timestamp("last_seen_at").notNull().defaultNow(),
   },

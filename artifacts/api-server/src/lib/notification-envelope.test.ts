@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
-  DAILY_PUSH_BUDGET, PUSH_SPACING_MIN, KIND_META, inQuietHours, selectPush,
-  consumesBudget, validatePrefsBody, type PushCandidate, type EnvelopeState,
+  DAILY_PUSH_BUDGET, PUSH_SPACING_MIN, KIND_META, KIND_ROUTE, inQuietHours, selectPush,
+  consumesBudget, validatePrefsBody, stampTarget, type PushCandidate, type EnvelopeState,
 } from "./notification-envelope";
 
 const allOn = {
@@ -168,5 +168,21 @@ describe("validatePrefsBody", () => {
     expect(validatePrefsBody({ ...good, quietHoursEnd: -1 }).ok).toBe(false);
     expect(validatePrefsBody({ ...good, quietHoursEnd: 7.5 }).ok).toBe(false);
     expect(validatePrefsBody(null).ok).toBe(false);
+  });
+});
+
+describe("KIND_ROUTE", () => {
+  it("has a route for every CandidateKind (no push can be un-routable)", () => {
+    for (const kind of Object.keys(KIND_META)) {
+      expect(KIND_ROUTE[kind as keyof typeof KIND_ROUTE]).toBeDefined();
+      expect(typeof KIND_ROUTE[kind as keyof typeof KIND_ROUTE].screen).toBe("string");
+    }
+  });
+});
+
+describe("stampTarget", () => {
+  it("attaches the kind's route as data.target, preserving existing data", () => {
+    const out = stampTarget("context_nudge", { title: "T", body: "B", data: { x: 1 } });
+    expect(out.data).toEqual({ x: 1, target: KIND_ROUTE.context_nudge });
   });
 });

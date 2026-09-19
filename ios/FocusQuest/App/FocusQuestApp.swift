@@ -13,6 +13,25 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         UNUserNotificationCenter.current().delegate = NotificationManager.shared
         return true
     }
+
+    /// Forwards the APNs device token to the API so pushes can be addressed to this
+    /// device. Fire-and-forget: registration failure here shouldn't affect app launch.
+    func application(
+        _ application: UIApplication,
+        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+    ) {
+        let hex = deviceToken.map { String(format: "%02x", $0) }.joined()
+        Task { try? await DeviceService.register(token: hex, environment: DeviceService.currentEnvironment) }
+    }
+
+    /// Non-fatal: local notifications still work without a remote token. Logged, not
+    /// surfaced to the user.
+    func application(
+        _ application: UIApplication,
+        didFailToRegisterForRemoteNotificationsWithError error: Error
+    ) {
+        print("APNs registration failed: \(error.localizedDescription)")
+    }
 }
 
 @main
