@@ -30,12 +30,19 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
     /// Ensures we have permission to post local notifications, requesting it once if
     /// the user has not yet been asked.
     ///
+    /// Local nudges and remote pushes share one authorization + delegate surface: once
+    /// the user is authorized (already, or freshly granted here), this also kicks off
+    /// remote registration so `AppDelegate` gets a device token to hand to the API.
+    /// `registerForRemoteNotifications()` is safe to call repeatedly/idempotently — it's
+    /// Apple's recommended pattern, since the token can rotate.
+    ///
     /// - Returns: `true` if notifications may be posted (authorized/provisional, or a
     ///   freshly granted request), `false` if denied.
     func requestAuthorizationIfNeeded() async -> Bool {
         await refreshAuthorizationStatus()
         switch authorizationStatus {
         case .authorized, .provisional, .ephemeral:
+            UIApplication.shared.registerForRemoteNotifications()
             return true
         case .denied:
             return false
@@ -43,6 +50,9 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
             let granted = (try? await UNUserNotificationCenter.current()
                 .requestAuthorization(options: [.alert, .sound])) ?? false
             await refreshAuthorizationStatus()
+            if granted {
+                UIApplication.shared.registerForRemoteNotifications()
+            }
             return granted
         @unknown default:
             await refreshAuthorizationStatus()
