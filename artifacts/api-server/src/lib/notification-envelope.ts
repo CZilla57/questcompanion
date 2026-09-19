@@ -2,6 +2,8 @@
 // Producers offer candidates; this module picks at most one per user per tick.
 // Pure — all state comes in via EnvelopeState so the rules are exhaustively testable.
 
+import type { PushPayload } from "./push-notifications";
+
 // The budget governs non-critical sends only. Critical is exempt both ways —
 // never blocked by a spent budget, never charged against it (consumesBudget) —
 // so a marathon hyperfocus day can't silence protection. Spacing and the
@@ -41,6 +43,23 @@ export const KIND_META: Record<CandidateKind, KindMeta> = {
   companion_milestone: { category: "hero",       klass: "milestone" },
   hero_flavor:         { category: "hero",       klass: "ambient" },
 };
+
+export interface RouteTarget { screen: string; params?: Record<string, string> }
+
+// Every CandidateKind maps to a screen the iOS app can open on tap. Keep this
+// exhaustive — the test in this file fails if any kind is missing a route.
+export const KIND_ROUTE: Record<CandidateKind, RouteTarget> = {
+  hyperfocus:          { screen: "focus" },
+  hunger_warning:      { screen: "hero" },
+  context_nudge:       { screen: "today" },
+  reflection_prompt:   { screen: "reflection" },
+  companion_milestone: { screen: "hero" },
+  hero_flavor:         { screen: "hero" },
+};
+
+export function stampTarget(kind: CandidateKind, payload: PushPayload): PushPayload {
+  return { ...payload, data: { ...(payload.data ?? {}), target: KIND_ROUTE[kind] } };
+}
 
 const CLASS_RANK: Record<CandidateClass, number> = {
   critical: 0, reminder: 1, reflection: 2, milestone: 3, ambient: 4,
