@@ -3,7 +3,7 @@ import { db, pushSubscriptionsTable, deviceTokensTable } from "@workspace/db";
 import { sendPushNotification, type PushPayload } from "./push-notifications";
 import { buildExpoMessages, sendExpoPush, expoHttpTransport } from "./expo-push";
 import {
-  apnsConfigFromEnv, apnsHttpTransport, buildApnsRequests, sendApnsPush,
+  apnsConfigFromEnv, apnsHttpTransport, buildApnsRequests, sendApnsPush, type ApnsReceipt,
 } from "./apns-push";
 import type { DispatchDeps } from "./device-dispatch";
 import { sendWebToUser, bestEffortDispatch, type WebPushDeps } from "./push-dispatch";
@@ -43,18 +43,45 @@ export function buildDispatchDeps(): DispatchDeps {
     sendWeb: (userId, payload) => sendWebToUser(userId, payload, webDeps),
     listApnsTokens: async (userId) => {
       const rows = await db
-        .select({ token: deviceTokensTable.token })
+        .select({ token: deviceTokensTable.token, environment: deviceTokensTable.environment })
         .from(deviceTokensTable)
         .where(and(
           eq(deviceTokensTable.userId, userId),
           eq(deviceTokensTable.provider, "apns"),
         ));
-      return rows.map((r) => r.token);
+      return rows.map((r) => ({
+        token: r.token,
+        environment: r.environment as "sandbox" | "production" | null,
+      }));
     },
     sendApns: async (tokens, payload) => {
       const cfg = apnsConfigFromEnv();
-      if (!cfg) return tokens.map(() => ({ status: "ok" as const })); // unconfigured: no-op, prune nothing
-      return sendApnsPush(buildApnsRequests(tokens, payload, cfg.bundleId), apnsHttpTransport(cfg));
+      if (!cfg) return []; // unconfigured: no-op, no fake receipts (see Minor #6 below)
+
+      // Route each token to its own registered environment; fall back to the
+      // server's configured environment only for pre-migration rows with no
+      // stored value. Keep receipts aligned to the ORIGINAL token order — the
+      // caller correlates tokens[i] with receipts[i].
+      const receipts: ApnsReceipt[] = new Array(tokens.length);
+      const buckets = new Map<"sandbox" | "production", number[]>();
+      tokens.forEach((t, i) => {
+        const env = t.environment ?? cfg.environment;
+        if (!buckets.has(env)) buckets.set(env, []);
+        buckets.get(env)!.push(i);
+      });
+
+      await Promise.all(
+        Array.from(buckets.entries()).map(async ([environment, indices]) => {
+          const bucketCfg = { ...cfg, environment };
+          const bucketTokens = indices.map((i) => tokens[i].token);
+          const bucketReceipts = await sendApnsPush(
+            buildApnsRequests(bucketTokens, payload, bucketCfg.bundleId),
+            apnsHttpTransport(bucketCfg),
+          );
+          indices.forEach((i, j) => { receipts[i] = bucketReceipts[j]; });
+        }),
+      );
+      return receipts;
     },
   };
 }

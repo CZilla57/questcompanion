@@ -400,7 +400,10 @@ router.post("/accountability/partners/:id/nudge", async (req, res): Promise<void
   const [sender] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   const label = reactionLabel(kind as NudgeKind, reaction) ?? "";
   const title = `${sender?.username ?? "An ally"} ${kind === "poke" ? "poked" : "cheered"} you`;
-  await pushToUser(recipientId, { title, body: label, tag: `nudge-${kind}` });
+  await pushToUser(recipientId, {
+    title, body: label, tag: `nudge-${kind}`,
+    data: { target: { screen: "today" } },
+  });
 
   res.status(201).json({
     id: nudge.id,

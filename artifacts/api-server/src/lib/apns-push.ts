@@ -100,7 +100,13 @@ export function apnsHttpTransport(cfg: ApnsConfig): ApnsTransport {
     // only exists to stop Node's default "no listener" behavior from throwing an
     // uncaught exception and crashing the process. Transports must never throw.
     client.on("error", () => {});
-    const auth = providerJwt(cfg);
+    client.setTimeout(10_000, () => client.destroy());
+    let auth: string;
+    try {
+      auth = providerJwt(cfg);
+    } catch {
+      return requests.map(() => ({ status: "error" as const }));
+    }
     const send = (r: ApnsRequest): Promise<ApnsReceipt> =>
       new Promise((resolve) => {
         const stream = client.request({
@@ -110,6 +116,7 @@ export function apnsHttpTransport(cfg: ApnsConfig): ApnsTransport {
           "content-type": "application/json",
           ...r.headers,
         });
+        stream.setTimeout(10_000, () => stream.destroy());
         let status = 0, data = "";
         stream.on("response", (h) => { status = Number(h[":status"]); });
         stream.on("data", (c) => { data += c; });

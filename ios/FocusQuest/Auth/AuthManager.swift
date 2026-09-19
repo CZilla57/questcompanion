@@ -37,6 +37,7 @@ final class AuthManager: ObservableObject {
         await APIClient.shared.setToken(token)
         if token != nil {
             status = .authenticated
+            await NotificationManager.shared.reregisterIfAuthorized()
             // Confirm the token is still valid; sign out silently if not.
             await refreshAuthUser()
         } else {
@@ -72,6 +73,7 @@ final class AuthManager: ObservableObject {
             self.token = token
             await APIClient.shared.setToken(token)
             status = .authenticated
+            await NotificationManager.shared.reregisterIfAuthorized()
             await refreshAuthUser()
         } catch is CancellationError {
             // Ignore explicit cancellation.
@@ -87,12 +89,19 @@ final class AuthManager: ObservableObject {
     func logout() async {
         isWorking = true
         defer { isWorking = false }
+        // Deregister the push token FIRST, while the bearer is still valid server-side —
+        // once serverLogout() below deletes the session, DELETE /devices/:token 401s and
+        // the token is orphaned (keeps receiving pushes after sign-out).
+        if let apnsToken = UserDefaults.standard.string(forKey: "apnsToken") {
+            do {
+                try await DeviceService.unregister(token: apnsToken)
+                UserDefaults.standard.removeObject(forKey: "apnsToken")
+            } catch {
+                // Best-effort: leave the cached token so the next logout can retry.
+            }
+        }
         // Invalidate the server session while the token is still attached.
         try? await AuthService.serverLogout()
-        if let apnsToken = UserDefaults.standard.string(forKey: "apnsToken") {
-            try? await DeviceService.unregister(token: apnsToken)
-            UserDefaults.standard.removeObject(forKey: "apnsToken")
-        }
         Keychain.delete(account: tokenAccount)
         token = nil
         await APIClient.shared.setToken(nil)

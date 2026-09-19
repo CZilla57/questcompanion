@@ -2,13 +2,14 @@ import Foundation
 import UserNotifications
 import UIKit
 
-/// On-device local notifications only.
+/// Local notification scheduling + the shared notification-center delegate for
+/// both local and remote (APNs) notifications.
 ///
-/// This service manages **local** user notifications via `UNUserNotificationCenter`
-/// — there is no push, no APNs, and no remote-notification background mode involved.
-/// It is the foundation for scheduling Focus phase-end alerts (and, later, quest
-/// nudges) entirely on the device. It also acts as the notification-center delegate
-/// so taps route the user to the right screen and foreground alerts still surface.
+/// Schedules local alerts (Focus phase-end, quest due-time nudges) entirely on
+/// the device. As `UNUserNotificationCenterDelegate`, it also handles taps on
+/// BOTH local notifications (by identifier prefix) and remote pushes (by the
+/// server-stamped `target` in the payload), routing either to the right screen
+/// via `AppRouter`.
 @MainActor
 final class NotificationManager: NSObject, ObservableObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationManager()
@@ -57,6 +58,20 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
         @unknown default:
             await refreshAuthorizationStatus()
             return authorizationStatus == .authorized || authorizationStatus == .provisional
+        }
+    }
+
+    /// Re-registers for remote notifications if authorization was already
+    /// granted, without prompting. Call after any successful authentication so a
+    /// user whose token was dropped (logout, rotation, fresh login) gets a fresh
+    /// one without needing to visit Focus or Settings first.
+    func reregisterIfAuthorized() async {
+        await refreshAuthorizationStatus()
+        switch authorizationStatus {
+        case .authorized, .provisional, .ephemeral:
+            UIApplication.shared.registerForRemoteNotifications()
+        default:
+            break
         }
     }
 

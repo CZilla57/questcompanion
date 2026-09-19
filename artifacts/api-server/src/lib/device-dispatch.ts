@@ -5,8 +5,11 @@ import { deadTokensFromApnsReceipts, type ApnsReceipt } from "./apns-push";
 export interface DispatchDeps {
   listExpoTokens(userId: number): Promise<string[]>;
   sendExpo(tokens: string[], payload: PushPayload): Promise<ExpoReceipt[]>;
-  listApnsTokens(userId: number): Promise<string[]>;
-  sendApns(tokens: string[], payload: PushPayload): Promise<ApnsReceipt[]>;
+  listApnsTokens(userId: number): Promise<{ token: string; environment: "sandbox" | "production" | null }[]>;
+  sendApns(
+    tokens: { token: string; environment: "sandbox" | "production" | null }[],
+    payload: PushPayload,
+  ): Promise<ApnsReceipt[]>;
   pruneTokens(tokens: string[]): Promise<void>;
   sendWeb(userId: number, payload: PushPayload): Promise<number>;
 }
@@ -38,7 +41,7 @@ export async function dispatchToUser(
   if (apnsTokens.length > 0) {
     const apnsReceipts = await deps.sendApns(apnsTokens, payload);
     apnsSent = apnsReceipts.filter((r) => r.status === "ok").length;
-    apnsDead = deadTokensFromApnsReceipts(apnsTokens, apnsReceipts);
+    apnsDead = deadTokensFromApnsReceipts(apnsTokens.map((t) => t.token), apnsReceipts);
   }
 
   const dead = [...expoDead, ...apnsDead];

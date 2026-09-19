@@ -39,7 +39,10 @@ describe("dispatchToUser", () => {
       sendWeb: async () => 0,
       listExpoTokens: async () => [],
       sendExpo: async () => [],
-      listApnsTokens: async () => ["APN_A", "APN_B"],
+      listApnsTokens: async () => [
+        { token: "APN_A", environment: null },
+        { token: "APN_B", environment: "sandbox" as const },
+      ],
       sendApns: async () => [{ status: "ok" as const }, { status: "error" as const, reason: "Unregistered" }],
       pruneTokens: async (t: string[]) => { pruned.push(...t); },
     };
