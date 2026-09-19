@@ -6,6 +6,7 @@ enum DeviceService {
 
     static func register(token: String, environment: String) async throws {
         let _: Empty = try await APIClient.shared.post("devices", body: RegisterInput(token: token, environment: environment))
+        UserDefaults.standard.set(token, forKey: "apnsToken")
     }
 
     static func unregister(token: String) async throws {

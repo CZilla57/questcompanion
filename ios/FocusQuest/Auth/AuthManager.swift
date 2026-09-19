@@ -89,6 +89,10 @@ final class AuthManager: ObservableObject {
         defer { isWorking = false }
         // Invalidate the server session while the token is still attached.
         try? await AuthService.serverLogout()
+        if let apnsToken = UserDefaults.standard.string(forKey: "apnsToken") {
+            try? await DeviceService.unregister(token: apnsToken)
+            UserDefaults.standard.removeObject(forKey: "apnsToken")
+        }
         Keychain.delete(account: tokenAccount)
         token = nil
         await APIClient.shared.setToken(nil)
