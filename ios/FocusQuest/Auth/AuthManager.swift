@@ -91,13 +91,28 @@ final class AuthManager: ObservableObject {
         defer { isWorking = false }
         // Deregister the push token FIRST, while the bearer is still valid server-side —
         // once serverLogout() below deletes the session, DELETE /devices/:token 401s and
-        // the token is orphaned (keeps receiving pushes after sign-out).
+        // the token is orphaned (keeps receiving this user's pushes after sign-out; the
+        // delete route requires being authenticated as the token's current owner, so
+        // once we've signed out there is no credential left to retry with). Retry a few
+        // times first, since a transient network blip is the common failure mode — this
+        // is not a full fix for a device that's offline for the whole window; that
+        // residual case self-heals only if someone (this user or another) registers a
+        // token on this device again later, since registration upserts by token.
         if let apnsToken = UserDefaults.standard.string(forKey: "apnsToken") {
-            do {
-                try await DeviceService.unregister(token: apnsToken)
+            var deregistered = false
+            for attempt in 0..<3 {
+                do {
+                    try await DeviceService.unregister(token: apnsToken)
+                    deregistered = true
+                    break
+                } catch {
+                    if attempt < 2 {
+                        try? await Task.sleep(nanoseconds: UInt64(500_000_000 * (attempt + 1)))
+                    }
+                }
+            }
+            if deregistered {
                 UserDefaults.standard.removeObject(forKey: "apnsToken")
-            } catch {
-                // Best-effort: leave the cached token so the next logout can retry.
             }
         }
         // Invalidate the server session while the token is still attached.
