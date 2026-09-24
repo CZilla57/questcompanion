@@ -11,7 +11,7 @@ import { browserTimeZone } from "@/lib/timezone";
 import { readSessionRecord, writeSessionRecord, clearSessionRecord, authVerdict, onboardingVerdict } from "@/lib/offline-session";
 import { isUnlocked, type FeatureKey } from "@/lib/feature-gates";
 import { USERNAME_REGEX, heroNameError } from "@/lib/username";
-import { Swords, Trophy } from "lucide-react";
+import { Swords } from "lucide-react";
 
 import NowScreen from "@/pages/now";
 import Tasks from "@/pages/tasks";
@@ -32,6 +32,7 @@ import QuestlineDetail from "@/pages/questline-detail";
 import RewardsStore from "@/pages/rewards-store";
 import RewardsPerks from "@/pages/rewards-perks";
 import Reflection from "@/pages/reflection";
+import { LandingPage } from "@/pages/landing";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -262,27 +263,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
   const verdict = authVerdict({ isAuthenticated, failure, record: readSessionRecord() });
   if (verdict === "out") {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-center max-w-sm px-6">
-          <div className="mb-6 flex justify-center">
-            <div className="p-5 rounded-3xl bg-primary/10 border border-primary/20">
-              <Trophy className="w-12 h-12 text-primary drop-shadow-[0_0_10px_rgba(0,255,255,0.6)]" />
-            </div>
-          </div>
-          <h1 className="mb-2 text-2xl font-bold tracking-tight">FocusQuest</h1>
-          <p className="mb-8 text-muted-foreground">
-            Gamified tasks and habits for ADHD. Complete quests, earn XP, and build streaks.
-          </p>
-          <button
-            onClick={login}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-colors"
-          >
-            Log in to play
-          </button>
-        </div>
-      </div>
-    );
+    return <LandingPage onLogin={login} />;
   }
 
   return <>{children}</>;
