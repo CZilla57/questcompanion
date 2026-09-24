@@ -2,6 +2,7 @@
 // verdict is "out" — it is not a wouter route, so any deep link shows it and
 // login's returnTo brings the user back. Everything here is static marketing
 // copy: no API calls, no game rules (those stay on the server).
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowRight, Brain, Check, Coins, Flame, Gift, LifeBuoy, ListPlus,
   Map as MapIcon, ShieldCheck, Sparkles, Swords, Timer, TrendingUp, Trophy, Users,
@@ -50,7 +51,7 @@ const STEPS = [
   {
     icon: ListPlus,
     title: "Drop in your quests",
-    body: "Type it the way you'd say it — \"call Mom every Sunday\" — and quick-add turns it into a quest, repeat schedule included. Big ones break down into small steps.",
+    body: "Type it the way you'd say it — \"call Mom tomorrow\" — and quick-add turns it into a quest with a due date. Big ones break down into small steps.",
   },
   {
     icon: Swords,
@@ -69,7 +70,7 @@ const FEATURES = [
   { icon: LifeBuoy, color: "text-accent", title: "Rescue when you're stuck", body: "Too big? Can't start? Overwhelmed? Rescue breaks a quest into first steps or starts a 2-minute micro-start." },
   { icon: Timer, color: "text-primary", title: "Focus sessions", body: "Timed focus sessions, plus body-doubling rooms where you can work next to your allies." },
   { icon: ShieldCheck, color: "text-[hsl(var(--chart-4))]", title: "No-shame streaks", body: "Streak shields cover the rough days. There are no guilt trips and no red overdue walls." },
-  { icon: Gift, color: "text-[hsl(var(--chart-5))]", title: "A dopamine menu", body: "Spend the coins you earn on real-life treats that you choose, so rewards feel like rewards." },
+  { icon: Gift, color: "text-[hsl(var(--chart-5))]", title: "A dopamine menu", body: "Build a menu of small treats you pick, and get one suggested after a quest. Spend your coins on bigger rewards or a mystery box." },
   { icon: Users, color: "text-secondary", title: "Campaigns & party quests", body: "Tell a long goal in chapters, then team up with allies against weekly bosses." },
 ];
 
@@ -80,6 +81,34 @@ const KINGDOMS = [
   { id: "athenaeum", name: "Athenaeum", domain: "Learning & creating" },
   { id: "crossroads", name: "Crossroads", domain: "Friends & travel" },
 ];
+
+/** True once the element comes within `margin` of the viewport; latches so
+ *  sprites mount once and stay. Keeps below-the-fold PixelHero canvases (image
+ *  loads + render slots) off the logged-out page's first paint. */
+function useNearViewport<T extends Element>(margin = "200px") {
+  const ref = useRef<T>(null);
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || near) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setNear(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setNear(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: margin },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [near, margin]);
+  return [ref, near] as const;
+}
 
 function LoginButton({ onLogin, className = "" }: { onLogin: () => void; className?: string }) {
   return (
@@ -168,6 +197,7 @@ function LoginCard({ onLogin }: { onLogin: () => void }) {
 }
 
 export function LandingPage({ onLogin }: { onLogin: () => void }) {
+  const [heroesRef, heroesNear] = useNearViewport<HTMLDivElement>();
   return (
     // overflow-x-clip, not -hidden: hidden makes this div a scroll container,
     // which silently breaks the sticky header below.
@@ -311,11 +341,11 @@ export function LandingPage({ onLogin }: { onLogin: () => void }) {
             title="Pick a class. Earn your gear."
             sub="Your hero levels up as you finish quests, from rags to legendary loot. Their look is yours to choose."
           />
-          <div className="grid grid-cols-2 gap-5 md:grid-cols-4">
+          <div ref={heroesRef} className="grid grid-cols-2 gap-5 md:grid-cols-4">
             {CLASS_HEROES.map((h) => (
               <div key={h.name} className="flex flex-col items-center rounded-2xl border border-card-border bg-card p-5 text-center">
                 <div className="mb-4 rounded-xl bg-gradient-to-b from-primary/10 to-transparent p-2">
-                  <PixelHero look={h.look} size={112} />
+                  {heroesNear ? <PixelHero look={h.look} size={112} /> : <div className="h-[112px] w-[112px]" />}
                 </div>
                 <p className="font-bold">{h.name}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{h.blurb}</p>
